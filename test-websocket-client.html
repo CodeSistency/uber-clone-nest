@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Clone WebSocket Test Client</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .disconnected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .ride-info { background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Uber Clone WebSocket Test Client</h1>
+
+        <div class="section">
+            <h2>Connection Status</h2>
+            <div id="status" class="status disconnected">Disconnected</div>
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div class="section">
+            <h2>Ride Tracking</h2>
+            <input type="number" id="rideId" placeholder="Ride ID" value="123">
+            <input type="text" id="userId" placeholder="User ID" value="user_test">
+            <button onclick="joinRide()">Join Ride</button>
+            <div id="rideInfo" class="ride-info" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>Driver Simulation</h2>
+            <input type="number" id="driverId" placeholder="Driver ID" value="1">
+            <button onclick="startDriverSimulation()">Start Location Updates</button>
+            <button onclick="stopDriverSimulation()">Stop Updates</button>
+            <div id="driverStatus"></div>
+        </div>
+
+        <div class="section">
+            <h2>Chat</h2>
+            <input type="text" id="message" placeholder="Type message..." style="width: 70%;">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <div class="section">
+            <h2>Emergency</h2>
+            <button onclick="sendSOS()">🚨 Send SOS Alert</button>
+        </div>
+
+        <div class="section">
+            <h2>Event Log</h2>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        let driverInterval;
+        let currentRideId = null;
+        let currentUserId = null;
+        let driverLocation = { lat: 40.7128, lng: -74.0060 };
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#dc3545' :
+                         type === 'success' ? '#28a745' :
+                         type === 'warning' ? '#ffc107' : '#007bff';
+
+            logElement.innerHTML += `<div style="color: ${color}; margin: 2px 0;">
+                [${timestamp}] ${message}
+            </div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = connected ? 'Connected' : 'Disconnected';
+            statusElement.className = `status ${connected ? 'connected' : 'disconnected'}`;
+        }
+
+        function connect() {
+            if (socket && socket.connected) {
+                log('Already connected');
+                return;
+            }
+
+            socket = io('http://localhost:3000/uber-realtime');
+
+            socket.on('connect', () => {
+                log('Connected to WebSocket server', 'success');
+                updateStatus(true);
+            });
+
+            socket.on('disconnect', () => {
+                log('Disconnected from WebSocket server', 'warning');
+                updateStatus(false);
+            });
+
+            // Ride events
+            socket.on('driver:location:updated', (data) => {
+                log(`📍 Driver location updated: ${data.location.lat}, ${data.location.lng}`, 'success');
+                updateRideInfo(data);
+            });
+
+            socket.on('ride:accepted', (data) => {
+                log(`✅ Ride accepted by driver ${data.driverId}`, 'success');
+                updateRideInfo(data);
+            });
+
+            socket.on('ride:completed', (data) => {
+                log(`🏁 Ride completed by driver ${data.driverId}`, 'success');
+                updateRideInfo(data);
+            });
+
+            // Chat events
+            socket.on('chat:new-message', (data) => {
+                log(`💬 ${data.senderId}: ${data.message}`);
+            });
+
+            // Emergency events
+            socket.on('emergency:sos-triggered', (data) => {
+                log(`🚨 EMERGENCY SOS from ${data.userId}: ${data.message}`, 'error');
+            });
+
+            socket.on('connect_error', (error) => {
+                log(`Connection error: ${error.message}`, 'error');
+                updateStatus(false);
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                stopDriverSimulation();
+            }
+        }
+
+        function joinRide() {
+            if (!socket || !socket.connected) {
+                log('Please connect first', 'error');
+                return;
+            }
+
+            const rideId = parseInt(document.getElementById('rideId').value);
+            const userId = document.getElementById('userId').value;
+
+            currentRideId = rideId;
+            currentUserId = userId;
+
+            socket.emit('ride:join', { rideId, userId }, (response) => {
+                if (response.status === 'success') {
+                    log(`Joined ride ${rideId} as ${userId}`, 'success');
+                    document.getElementById('rideInfo').style.display = 'block';
+                    document.getElementById('rideInfo').innerHTML = `
+                        <strong>Ride ${rideId}</strong><br>
+                        User: ${userId}<br>
+                        Status: Waiting for driver...
+                    `;
+                }
+            });
+        }
+
+        function startDriverSimulation() {
+            if (!socket || !socket.connected) {
+                log('Please connect first', 'error');
+                return;
+            }
+
+            const driverId = parseInt(document.getElementById('driverId').value);
+
+            if (driverInterval) {
+                clearInterval(driverInterval);
+            }
+
+            log(`Starting driver simulation for driver ${driverId}`, 'success');
+
+            driverInterval = setInterval(() => {
+                // Simulate driver movement
+                driverLocation.lat += (Math.random() - 0.5) * 0.001;
+                driverLocation.lng += (Math.random() - 0.5) * 0.001;
+
+                socket.emit('driver:location:update', {
+                    driverId,
+                    location: driverLocation,
+                    rideId: currentRideId
+                }, (response) => {
+                    if (response.status === 'success') {
+                        document.getElementById('driverStatus').innerHTML =
+                            `📍 Driver ${driverId} at: ${driverLocation.lat.toFixed(6)}, ${driverLocation.lng.toFixed(6)}`;
+                    }
+                });
+            }, 2000); // Update every 2 seconds
+        }
+
+        function stopDriverSimulation() {
+            if (driverInterval) {
+                clearInterval(driverInterval);
+                driverInterval = null;
+                log('Driver simulation stopped');
+                document.getElementById('driverStatus').innerHTML = '';
+            }
+        }
+
+        function sendMessage() {
+            if (!socket || !socket.connected) {
+                log('Please connect first', 'error');
+                return;
+            }
+
+            const message = document.getElementById('message').value.trim();
+            if (!message) return;
+
+            socket.emit('chat:message', {
+                rideId: currentRideId,
+                senderId: currentUserId,
+                message: message
+            }, (response) => {
+                if (response.status === 'success') {
+                    log(`You: ${message}`);
+                    document.getElementById('message').value = '';
+                }
+            });
+        }
+
+        function sendSOS() {
+            if (!socket || !socket.connected) {
+                log('Please connect first', 'error');
+                return;
+            }
+
+            socket.emit('emergency:sos', {
+                userId: currentUserId,
+                rideId: currentRideId,
+                location: driverLocation,
+                message: 'Test emergency - need help!'
+            }, (response) => {
+                if (response.status === 'success') {
+                    log('🚨 SOS Alert sent!', 'error');
+                }
+            });
+        }
+
+        function updateRideInfo(data) {
+            const rideInfoElement = document.getElementById('rideInfo');
+            if (rideInfoElement.style.display !== 'none') {
+                let status = 'Unknown';
+                if (data.driverId) {
+                    status = `Driver ${data.driverId} assigned`;
+                }
+                if (data.location) {
+                    status += ` - Location: ${data.location.lat.toFixed(4)}, ${data.location.lng.toFixed(4)}`;
+                }
+
+                rideInfoElement.innerHTML = `
+                    <strong>Ride ${currentRideId}</strong><br>
+                    User: ${currentUserId}<br>
+                    Status: ${status}
+                `;
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Enter key for message input
+        document.getElementById('message').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Auto-connect on page load
+        window.addEventListener('load', () => {
+            log('WebSocket Test Client loaded');
+            log('Click "Connect" to start testing real-time features');
+        });
+    </script>
+</body>
+</html>

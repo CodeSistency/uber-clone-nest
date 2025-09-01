@@ -1,0 +1,378 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================
+// SECTION 1: CORE USER & DRIVER TABLES
+// =========================================
+
+// Stores basic user information linked to Clerk ID
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(100)
+  clerkId   String   @unique @map("clerk_id") @db.VarChar(50)
+
+  // Relations
+  rides            Ride[]
+  deliveryOrders   DeliveryOrder[]
+  wallet           Wallet?
+  ratings          Rating[]
+  emergencyContacts EmergencyContact[]
+  sentMessages     ChatMessage[] @relation("MessageSender")
+  receivedRatings  Rating[] @relation("RatedUser")
+  notificationPreferences NotificationPreferences?
+  pushTokens       PushToken[]
+  notifications    Notification[]
+
+  @@map("users")
+}
+
+// Stores driver/courier information, their vehicle, and status
+model Driver {
+  id                   Int      @id @default(autoincrement())
+  firstName            String   @map("first_name") @db.VarChar(50)
+  lastName             String   @map("last_name") @db.VarChar(50)
+  profileImageUrl      String?  @map("profile_image_url")
+  carImageUrl          String?  @map("car_image_url")
+  carModel             String?  @map("car_model") @db.VarChar(100)
+  licensePlate         String?  @unique @map("license_plate") @db.VarChar(20)
+  carSeats             Int      @map("car_seats")
+  status               String   @default("offline") @db.VarChar(20)
+  verificationStatus   String   @default("pending") @map("verification_status") @db.VarChar(20)
+  canDoDeliveries      Boolean  @default(false) @map("can_do_deliveries")
+
+  // Relations
+  documents       DriverDocument[]
+  rides           Ride[]
+  deliveryOrders  DeliveryOrder[]
+
+  @@map("drivers")
+}
+
+// Stores driver verification documents
+model DriverDocument {
+  id                 Int      @id @default(autoincrement())
+  driverId           Int      @map("driver_id")
+  documentType       String   @map("document_type") @db.VarChar(50)
+  documentUrl        String   @map("document_url")
+  uploadedAt         DateTime @default(now()) @map("uploaded_at")
+  verificationStatus String   @default("pending") @map("verification_status") @db.VarChar(20)
+
+  // Relations
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_documents")
+}
+
+// =========================================
+// SECTION 2: RIDE-SHARING TABLES
+// =========================================
+
+// Defines different ride tiers and their pricing structure
+model RideTier {
+  id            Int     @id @default(autoincrement())
+  name          String  @db.VarChar(50)
+  baseFare      Decimal @map("base_fare") @db.Decimal(10, 2)
+  perMinuteRate Decimal @map("per_minute_rate") @db.Decimal(10, 2)
+  perMileRate   Decimal @map("per_mile_rate") @db.Decimal(10, 2)
+  imageUrl      String? @map("image_url")
+
+  // Relations
+  rides Ride[]
+
+  @@map("ride_tiers")
+}
+
+// Stores information about each ride
+model Ride {
+  rideId              Int      @id @default(autoincrement()) @map("ride_id")
+  originAddress       String   @map("origin_address") @db.VarChar(255)
+  destinationAddress  String   @map("destination_address") @db.VarChar(255)
+  originLatitude      Decimal  @map("origin_latitude") @db.Decimal(9, 6)
+  originLongitude     Decimal  @map("origin_longitude") @db.Decimal(9, 6)
+  destinationLatitude Decimal  @map("destination_latitude") @db.Decimal(9, 6)
+  destinationLongitude Decimal @map("destination_longitude") @db.Decimal(9, 6)
+  rideTime            Int      @map("ride_time")
+  farePrice           Decimal  @map("fare_price") @db.Decimal(10, 2)
+  paymentStatus       String   @map("payment_status") @db.VarChar(20)
+  driverId            Int?     @map("driver_id")
+  userId              String   @map("user_id") @db.VarChar(100)
+  tierId              Int?     @map("tier_id")
+  scheduledFor        DateTime? @map("scheduled_for")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Relations
+  driver    Driver?    @relation(fields: [driverId], references: [id])
+  tier      RideTier?  @relation(fields: [tierId], references: [id])
+  user      User?      @relation(fields: [userId], references: [clerkId])
+  ratings   Rating[]
+  messages  ChatMessage[]
+
+  @@map("rides")
+}
+
+// =========================================
+// SECTION 3: MARKETPLACE & DELIVERY TABLES
+// =========================================
+
+// Represents businesses on the platform (restaurants, shops, etc.)
+model Store {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(150)
+  address      String   @db.VarChar(255)
+  latitude     Decimal  @db.Decimal(9, 6)
+  longitude    Decimal  @db.Decimal(9, 6)
+  category     String?  @db.VarChar(50)
+  cuisineType  String?  @map("cuisine_type") @db.VarChar(50)
+  logoUrl      String?  @map("logo_url")
+  rating       Decimal  @default(0.00) @db.Decimal(3, 2)
+  isOpen       Boolean  @default(true) @map("is_open")
+  ownerClerkId String?  @map("owner_clerk_id") @db.VarChar(50)
+
+  // Relations
+  products       Product[]
+  deliveryOrders DeliveryOrder[]
+  ratings        Rating[]
+
+  @@map("stores")
+}
+
+// Represents items sold by stores
+model Product {
+  id          Int      @id @default(autoincrement())
+  storeId     Int      @map("store_id")
+  name        String   @db.VarChar(150)
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?  @map("image_url")
+  category    String?  @db.VarChar(50)
+  isAvailable Boolean  @default(true) @map("is_available")
+
+  // Relations
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+// Tracks a delivery order from creation to completion
+model DeliveryOrder {
+  orderId          Int      @id @default(autoincrement()) @map("order_id")
+  userClerkId      String   @map("user_clerk_id") @db.VarChar(50)
+  storeId          Int      @map("store_id")
+  courierId        Int?     @map("courier_id")
+  deliveryAddress  String   @map("delivery_address") @db.VarChar(255)
+  deliveryLatitude  Decimal  @map("delivery_latitude") @db.Decimal(9, 6)
+  deliveryLongitude Decimal @map("delivery_longitude") @db.Decimal(9, 6)
+  totalPrice       Decimal  @map("total_price") @db.Decimal(10, 2)
+  deliveryFee      Decimal  @map("delivery_fee") @db.Decimal(10, 2)
+  tip              Decimal  @default(0.00) @db.Decimal(10, 2)
+  status           String   @default("pending") @db.VarChar(50)
+  paymentStatus    String   @default("pending") @map("payment_status") @db.VarChar(20)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User?      @relation(fields: [userClerkId], references: [clerkId])
+  store    Store      @relation(fields: [storeId], references: [id])
+  courier  Driver?    @relation(fields: [courierId], references: [id])
+  orderItems OrderItem[]
+  ratings   Rating[]
+  messages  ChatMessage[]
+
+  @@map("delivery_orders")
+}
+
+// Join table for products within a delivery order
+model OrderItem {
+  id               Int     @id @default(autoincrement())
+  orderId          Int     @map("order_id")
+  productId        Int     @map("product_id")
+  quantity         Int
+  priceAtPurchase  Decimal @map("price_at_purchase") @db.Decimal(10, 2)
+
+  // Relations
+  order   DeliveryOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+// =========================================
+// SECTION 4: SHARED & GENERAL PURPOSE TABLES
+// =========================================
+
+// Manages promotional codes and discounts for rides or deliveries
+model Promotion {
+  id                  Int      @id @default(autoincrement())
+  promoCode           String   @unique @map("promo_code") @db.VarChar(50)
+  discountPercentage  Decimal? @map("discount_percentage") @db.Decimal(5, 2)
+  discountAmount      Decimal? @map("discount_amount") @db.Decimal(10, 2)
+  expiryDate          DateTime? @map("expiry_date")
+  isActive            Boolean  @default(true) @map("is_active")
+
+  @@map("promotions")
+}
+
+// Manages user wallet balances
+model Wallet {
+  id         Int      @id @default(autoincrement())
+  userClerkId String   @unique @map("user_clerk_id") @db.VarChar(50)
+  balance    Decimal  @default(0.00) @db.Decimal(10, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user               User                @relation(fields: [userClerkId], references: [clerkId], onDelete: Cascade)
+  walletTransactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+// Tracks all wallet transactions (credits and debits)
+model WalletTransaction {
+  id               Int      @id @default(autoincrement())
+  walletId         Int      @map("wallet_id")
+  amount           Decimal  @db.Decimal(10, 2)
+  transactionType  String   @map("transaction_type") @db.VarChar(20)
+  description      String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+
+// Stores ratings for rides, deliveries, or stores
+model Rating {
+  id               Int      @id @default(autoincrement())
+  rideId           Int?     @map("ride_id")
+  orderId          Int?     @map("order_id")
+  storeId          Int?     @map("store_id")
+  ratedByClerkId   String   @map("rated_by_clerk_id") @db.VarChar(50)
+  ratedClerkId     String?  @map("rated_clerk_id") @db.VarChar(50)
+  ratingValue      Int      @map("rating_value")
+  comment          String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  ride     Ride?          @relation(fields: [rideId], references: [rideId])
+  order    DeliveryOrder? @relation(fields: [orderId], references: [orderId])
+  store    Store?         @relation(fields: [storeId], references: [id])
+  ratedBy  User           @relation(fields: [ratedByClerkId], references: [clerkId])
+  ratedUser User?         @relation("RatedUser", fields: [ratedClerkId], references: [clerkId])
+
+  @@map("ratings")
+}
+
+// Stores emergency contacts for users
+model EmergencyContact {
+  id           Int    @id @default(autoincrement())
+  userClerkId  String @map("user_clerk_id") @db.VarChar(50)
+  contactName  String @map("contact_name") @db.VarChar(100)
+  contactPhone String @map("contact_phone") @db.VarChar(20)
+
+  // Relations
+  user User @relation(fields: [userClerkId], references: [clerkId], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+}
+
+// Stores chat messages for rides or deliveries
+model ChatMessage {
+  id            Int      @id @default(autoincrement())
+  rideId        Int?     @map("ride_id")
+  orderId       Int?     @map("order_id")
+  senderClerkId String   @map("sender_clerk_id") @db.VarChar(50)
+  messageText   String   @map("message_text")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  ride   Ride?          @relation(fields: [rideId], references: [rideId])
+  order  DeliveryOrder? @relation(fields: [orderId], references: [orderId])
+  sender User           @relation("MessageSender", fields: [senderClerkId], references: [clerkId])
+
+  @@map("chat_messages")
+}
+
+// =========================================
+// SECTION 5: NOTIFICATION SYSTEM TABLES
+// =========================================
+
+// Stores user notification preferences
+model NotificationPreferences {
+  id                  Int      @id @default(autoincrement())
+  userClerkId         String   @unique @map("user_clerk_id") @db.VarChar(50)
+  pushEnabled         Boolean  @default(true) @map("push_enabled")
+  smsEnabled          Boolean  @default(false) @map("sms_enabled")
+  emailEnabled        Boolean  @default(false) @map("email_enabled")
+  rideUpdates         Boolean  @default(true) @map("ride_updates")
+  driverMessages      Boolean  @default(true) @map("driver_messages")
+  promotional         Boolean  @default(false) @map("promotional")
+  emergencyAlerts     Boolean  @default(true) @map("emergency_alerts")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userClerkId], references: [clerkId], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+// Stores push notification tokens for devices
+model PushToken {
+  id                 Int      @id @default(autoincrement())
+  userClerkId        String   @map("user_clerk_id") @db.VarChar(50)
+  token              String   @unique @db.VarChar(255)
+  deviceType         String?  @map("device_type") @db.VarChar(20) // 'ios', 'android', 'web'
+  deviceId           String?  @map("device_id") @db.VarChar(255)
+  isActive           Boolean  @default(true) @map("is_active")
+  lastUsedAt         DateTime? @map("last_used_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userClerkId], references: [clerkId], onDelete: Cascade)
+
+  @@index([userClerkId, isActive])
+  @@map("push_tokens")
+}
+
+// Stores notification history and delivery status
+model Notification {
+  id               Int      @id @default(autoincrement())
+  userClerkId      String   @map("user_clerk_id") @db.VarChar(50)
+  type             String   @db.VarChar(50) // 'ride_accepted', 'driver_arrived', etc.
+  title            String   @db.VarChar(255)
+  message          String?
+  data             Json?    // Additional data for the notification
+  isRead           Boolean  @default(false) @map("is_read")
+  pushSent         Boolean  @default(false) @map("push_sent")
+  pushSentAt       DateTime? @map("push_sent_at")
+  smsSent          Boolean  @default(false) @map("sms_sent")
+  smsSentAt        DateTime? @map("sms_sent_at")
+  emailSent        Boolean  @default(false) @map("email_sent")
+  emailSentAt      DateTime? @map("email_sent_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  readAt           DateTime? @map("read_at")
+
+  // Relations
+  user User @relation(fields: [userClerkId], references: [clerkId], onDelete: Cascade)
+
+  @@index([userClerkId, createdAt])
+  @@index([type, createdAt])
+  @@map("notifications")
+}
+
+// =========================================
+// END OF SCHEMA
+// =========================================
