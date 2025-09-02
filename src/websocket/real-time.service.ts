@@ -21,7 +21,10 @@ export class RealTimeService {
   // In-memory storage for real-time data
   private clients: Map<string, ClientInfo> = new Map();
   private driverLocations: Map<number, DriverLocation> = new Map();
-  private activeRides: Map<number, { driverId: number; userId: string; passengers: string[] }> = new Map();
+  private activeRides: Map<
+    number,
+    { driverId: number; userId: string; passengers: string[] }
+  > = new Map();
   private driverStatuses: Map<number, string> = new Map();
 
   // Redis-like Pub/Sub simulation (in production, use actual Redis)
@@ -35,7 +38,9 @@ export class RealTimeService {
       rideId: undefined,
     });
 
-    this.logger.log(`Client added: ${socket.id} (User: ${userId || 'unknown'}, Driver: ${driverId || 'none'})`);
+    this.logger.log(
+      `Client added: ${socket.id} (User: ${userId || 'unknown'}, Driver: ${driverId || 'none'})`,
+    );
   }
 
   removeClient(socket: Socket) {
@@ -51,13 +56,18 @@ export class RealTimeService {
     }
   }
 
-  updateDriverLocation(driverId: number, location: { lat: number; lng: number }) {
+  updateDriverLocation(
+    driverId: number,
+    location: { lat: number; lng: number },
+  ) {
     this.driverLocations.set(driverId, {
       ...location,
       timestamp: new Date(),
     });
 
-    this.logger.debug(`Driver ${driverId} location updated: ${location.lat}, ${location.lng}`);
+    this.logger.debug(
+      `Driver ${driverId} location updated: ${location.lat}, ${location.lng}`,
+    );
   }
 
   getDriverLocation(driverId: number): DriverLocation | undefined {
@@ -88,7 +98,7 @@ export class RealTimeService {
     }
 
     // Update client info
-    this.clients.forEach(client => {
+    this.clients.forEach((client) => {
       if (client.userId === userId) {
         client.rideId = rideId;
       }
@@ -100,7 +110,7 @@ export class RealTimeService {
   removeUserFromRide(userId: string, rideId: number) {
     const ride = this.activeRides.get(rideId);
     if (ride) {
-      ride.passengers = ride.passengers.filter(id => id !== userId);
+      ride.passengers = ride.passengers.filter((id) => id !== userId);
 
       // If no more passengers, clean up ride
       if (ride.passengers.length === 0 && ride.driverId === 0) {
@@ -109,7 +119,7 @@ export class RealTimeService {
     }
 
     // Update client info
-    this.clients.forEach(client => {
+    this.clients.forEach((client) => {
       if (client.userId === userId && client.rideId === rideId) {
         client.rideId = undefined;
       }
@@ -139,7 +149,7 @@ export class RealTimeService {
       }
 
       // Remove all passengers from ride
-      ride.passengers.forEach(userId => {
+      ride.passengers.forEach((userId) => {
         this.removeUserFromRide(userId, rideId);
       });
 
@@ -173,8 +183,8 @@ export class RealTimeService {
 
   getOnlineDrivers(): number[] {
     return Array.from(this.driverStatuses.entries())
-      .filter(([_, status]) => status === 'online')
-      .map(([driverId, _]) => driverId);
+      .filter(([, status]) => status === 'online')
+      .map(([driverId]) => driverId);
   }
 
   // Pub/Sub simulation methods
@@ -198,9 +208,11 @@ export class RealTimeService {
   publish(channel: string, message: any) {
     const channelSubs = this.subscribers.get(channel);
     if (channelSubs) {
-      channelSubs.forEach(subscriberId => {
+      channelSubs.forEach((subscriberId) => {
         // In a real implementation, this would send to Redis subscribers
-        this.logger.debug(`Published to ${subscriberId}: ${JSON.stringify(message)}`);
+        this.logger.debug(
+          `Published to ${subscriberId}: ${JSON.stringify(message)}`,
+        );
       });
     }
   }

@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -26,16 +42,18 @@ export class UsersController {
               id: { type: 'number' },
               name: { type: 'string' },
               email: { type: 'string' },
-              clerk_id: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              clerk_id: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Missing required fields' })
   @ApiResponse({ status: 500, description: 'Database error' })
-  async createUser(@Body() createUserDto: CreateUserDto): Promise<{ data: User[] }> {
+  async createUser(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<{ data: User[] }> {
     const user = await this.usersService.createUser(createUserDto);
     return { data: [user] };
   }
@@ -54,7 +72,9 @@ export class UsersController {
   @ApiParam({ name: 'clerkId', description: 'Clerk user ID' })
   @ApiResponse({ status: 200, description: 'User found' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async findUserByClerkId(@Param('clerkId') clerkId: string): Promise<User | null> {
+  async findUserByClerkId(
+    @Param('clerkId') clerkId: string,
+  ): Promise<User | null> {
     return this.usersService.findUserByClerkId(clerkId);
   }
 
@@ -88,7 +108,10 @@ export class UsersController {
   @Get(':clerkId/rides')
   @ApiOperation({ summary: 'Get user rides' })
   @ApiParam({ name: 'clerkId', description: 'Clerk user ID' })
-  @ApiResponse({ status: 200, description: 'User rides retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User rides retrieved successfully',
+  })
   async getUserRides(@Param('clerkId') clerkId: string): Promise<any[]> {
     return this.usersService.getUserRides(clerkId);
   }
@@ -96,8 +119,13 @@ export class UsersController {
   @Get(':clerkId/orders')
   @ApiOperation({ summary: 'Get user delivery orders' })
   @ApiParam({ name: 'clerkId', description: 'Clerk user ID' })
-  @ApiResponse({ status: 200, description: 'User orders retrieved successfully' })
-  async getUserDeliveryOrders(@Param('clerkId') clerkId: string): Promise<any[]> {
+  @ApiResponse({
+    status: 200,
+    description: 'User orders retrieved successfully',
+  })
+  async getUserDeliveryOrders(
+    @Param('clerkId') clerkId: string,
+  ): Promise<any[]> {
     return this.usersService.getUserDeliveryOrders(clerkId);
   }
 }

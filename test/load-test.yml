@@ -1,0 +1,56 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: Warm up
+    - duration: 120
+      arrivalRate: 50
+      name: Load test
+    - duration: 60
+      arrivalRate: 100
+      name: Stress test
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+
+scenarios:
+  - name: 'Create rides'
+    weight: 40
+    flow:
+      - post:
+          url: '/api/ride/create'
+          json:
+            origin_address: '123 Test St, Test City'
+            destination_address: '456 Test Ave, Test City'
+            origin_latitude: 40.7128
+            origin_longitude: -74.0060
+            destination_latitude: 40.7589
+            destination_longitude: -73.9851
+            ride_time: 25
+            fare_price: 15.75
+            payment_status: 'pending'
+            user_id: 'user_load_test_{{ $randomInt }}'
+            tier_id: 1
+
+  - name: 'Get fare estimates'
+    weight: 30
+    flow:
+      - get:
+          url: '/api/ride/estimate?tierId=1&minutes=20&miles=5'
+
+  - name: 'Get user rides'
+    weight: 20
+    flow:
+      - get:
+          url: '/api/ride/user_load_test_{{ $randomInt }}'
+
+  - name: 'Create users'
+    weight: 10
+    flow:
+      - post:
+          url: '/api/user'
+          json:
+            name: 'Load Test User {{ $randomInt }}'
+            email: 'loadtest{{ $randomInt }}@example.com'
+            clerkId: 'user_load_{{ $randomInt }}'

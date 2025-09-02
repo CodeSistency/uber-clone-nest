@@ -1,5 +1,19 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { DriversService } from './drivers.service';
 import { Driver, DriverDocument } from '@prisma/client';
 import { RegisterDriverDto } from './dto/register-driver.dto';
@@ -20,10 +34,10 @@ export class DriversController {
       properties: {
         data: {
           type: 'array',
-          items: { type: 'object' }
-        }
-      }
-    }
+          items: { type: 'object' },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getAllDrivers(): Promise<{ data: Driver[] }> {
@@ -37,7 +51,9 @@ export class DriversController {
   @ApiResponse({ status: 201, description: 'Driver created successfully' })
   @ApiResponse({ status: 400, description: 'Missing required fields' })
   @ApiResponse({ status: 500, description: 'Database error' })
-  async registerDriver(@Body() registerDriverDto: RegisterDriverDto): Promise<Driver> {
+  async registerDriver(
+    @Body() registerDriverDto: RegisterDriverDto,
+  ): Promise<Driver> {
     return this.driversService.registerDriver(registerDriverDto);
   }
 
@@ -47,7 +63,9 @@ export class DriversController {
   @ApiResponse({ status: 201, description: 'Document uploaded successfully' })
   @ApiResponse({ status: 400, description: 'Missing required fields' })
   @ApiResponse({ status: 500, description: 'Database error' })
-  async uploadDocument(@Body() uploadDocumentDto: UploadDocumentDto): Promise<DriverDocument> {
+  async uploadDocument(
+    @Body() uploadDocumentDto: UploadDocumentDto,
+  ): Promise<DriverDocument> {
     return this.driversService.uploadDocument(uploadDocumentDto);
   }
 
@@ -58,9 +76,9 @@ export class DriversController {
     schema: {
       type: 'object',
       properties: {
-        status: { type: 'string', example: 'online' }
-      }
-    }
+        status: { type: 'string', example: 'online' },
+      },
+    },
   })
   @ApiResponse({ status: 200, description: 'Status updated successfully' })
   @ApiResponse({ status: 400, description: 'Missing or invalid status' })
@@ -68,9 +86,12 @@ export class DriversController {
   @ApiResponse({ status: 500, description: 'Database error' })
   async updateDriverStatus(
     @Param('driverId') driverId: string,
-    @Body() body: { status: string }
+    @Body() body: { status: string },
   ): Promise<Driver> {
-    return this.driversService.updateDriverStatus(Number(driverId), body.status);
+    return this.driversService.updateDriverStatus(
+      Number(driverId),
+      body.status,
+    );
   }
 
   @Get('ride-requests')
@@ -90,12 +111,12 @@ export class DriversController {
               origin_address: { type: 'string' },
               destination_address: { type: 'string' },
               fare_price: { type: 'string' },
-              tier_name: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              tier_name: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getRideRequests(): Promise<{ data: any[] }> {
@@ -115,7 +136,10 @@ export class DriversController {
   }
 
   @Put(':id')
-  async updateDriver(@Param('id') id: string, @Body() data: any): Promise<Driver> {
+  async updateDriver(
+    @Param('id') id: string,
+    @Body() data: any,
+  ): Promise<Driver> {
     return this.driversService.updateDriver(Number(id), data);
   }
 

@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsNumber, IsDateString, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -8,15 +14,15 @@ export class UpdatePromotionDto {
   @IsString()
   promoCode?: string;
 
-  @ApiPropertyOptional({ example: 15.00 })
+  @ApiPropertyOptional({ example: 15.0 })
   @IsOptional()
-  @Transform(({ value }) => value ? parseFloat(value) : value)
+  @Transform(({ value }) => (value ? parseFloat(value) : value))
   @IsNumber()
   discountPercentage?: number;
 
-  @ApiPropertyOptional({ example: 5.00 })
+  @ApiPropertyOptional({ example: 5.0 })
   @IsOptional()
-  @Transform(({ value }) => value ? parseFloat(value) : value)
+  @Transform(({ value }) => (value ? parseFloat(value) : value))
   @IsNumber()
   discountAmount?: number;
 

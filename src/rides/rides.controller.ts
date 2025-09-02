@@ -1,5 +1,12 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { RidesService } from './rides.service';
 import { Ride, Rating } from '@prisma/client';
 import { CreateRideDto } from './dto/create-ride.dto';
@@ -27,16 +34,16 @@ export class RidesController {
   @ApiParam({ name: 'id', description: 'The Clerk ID of the user' })
   @ApiResponse({
     status: 200,
-    description: 'Returns an array of the user\'s past rides',
+    description: "Returns an array of the user's past rides",
     schema: {
       type: 'object',
       properties: {
         data: {
           type: 'array',
-          items: { type: 'object' }
-        }
-      }
-    }
+          items: { type: 'object' },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'User ID is missing' })
   @ApiResponse({ status: 500, description: 'Database error' })
@@ -48,14 +55,19 @@ export class RidesController {
   @ApiOperation({ summary: 'Schedule a ride for a future date and time' })
   @ApiBody({ type: ScheduleRideDto })
   @ApiResponse({ status: 201, description: 'Ride scheduled successfully' })
-  @ApiResponse({ status: 400, description: 'Missing fields or invalid tier ID' })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing fields or invalid tier ID',
+  })
   @ApiResponse({ status: 500, description: 'Database error' })
   async scheduleRide(@Body() scheduleRideDto: ScheduleRideDto): Promise<Ride> {
     return this.ridesService.scheduleRide(scheduleRideDto);
   }
 
   @Get('estimate')
-  @ApiOperation({ summary: 'Provide fare estimate based on route and ride tier' })
+  @ApiOperation({
+    summary: 'Provide fare estimate based on route and ride tier',
+  })
   @ApiQuery({ name: 'tierId', description: 'The ID of the ride_tier' })
   @ApiQuery({ name: 'minutes', description: 'Estimated duration of the ride' })
   @ApiQuery({ name: 'miles', description: 'Estimated distance of the ride' })
@@ -74,11 +86,11 @@ export class RidesController {
             perMileRate: { type: 'number' },
             estimatedMinutes: { type: 'number' },
             estimatedMiles: { type: 'number' },
-            totalFare: { type: 'number' }
-          }
-        }
-      }
-    }
+            totalFare: { type: 'number' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Missing required parameters' })
   @ApiResponse({ status: 500, description: 'Database error' })
@@ -90,19 +102,27 @@ export class RidesController {
     const estimate = await this.ridesService.getFareEstimate(
       Number(tierId),
       Number(minutes),
-      Number(miles)
+      Number(miles),
     );
     return { data: estimate };
   }
 
   @Post(':rideId/accept')
-  @ApiOperation({ summary: 'Allow a driver to accept an available ride request' })
+  @ApiOperation({
+    summary: 'Allow a driver to accept an available ride request',
+  })
   @ApiParam({ name: 'rideId', description: 'The unique ID of the ride' })
   @ApiBody({ type: AcceptRideDto })
   @ApiResponse({ status: 200, description: 'Ride accepted successfully' })
   @ApiResponse({ status: 400, description: 'Missing fields' })
-  @ApiResponse({ status: 404, description: 'Ride is not available or doesn\'t exist' })
-  @ApiResponse({ status: 409, description: 'Ride was already accepted by another driver' })
+  @ApiResponse({
+    status: 404,
+    description: "Ride is not available or doesn't exist",
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Ride was already accepted by another driver',
+  })
   @ApiResponse({ status: 500, description: 'Database error' })
   async acceptRide(
     @Param('rideId') rideId: string,
@@ -116,7 +136,10 @@ export class RidesController {
   @ApiParam({ name: 'rideId', description: 'The unique ID of the ride' })
   @ApiBody({ type: RateRideDto })
   @ApiResponse({ status: 201, description: 'Rating submitted successfully' })
-  @ApiResponse({ status: 400, description: 'Missing fields or invalid rating value' })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing fields or invalid rating value',
+  })
   @ApiResponse({ status: 404, description: 'Ride not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async rateRide(

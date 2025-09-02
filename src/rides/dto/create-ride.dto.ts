@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsDecimal } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -19,7 +19,7 @@ export class CreateRideDto {
   @IsNumber()
   origin_latitude: number;
 
-  @ApiProperty({ example: -74.0060 })
+  @ApiProperty({ example: -74.006 })
   @IsNotEmpty()
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()
@@ -55,7 +55,7 @@ export class CreateRideDto {
   payment_status: string;
 
   @ApiProperty({ example: 1, required: false })
-  @Transform(({ value }) => value ? parseInt(value) : null)
+  @Transform(({ value }) => (value ? parseInt(value) : null))
   @IsNumber()
   driver_id?: number;
 
@@ -65,7 +65,7 @@ export class CreateRideDto {
   user_id: string;
 
   @ApiProperty({ example: 1, required: false })
-  @Transform(({ value }) => value ? parseInt(value) : null)
+  @Transform(({ value }) => (value ? parseInt(value) : null))
   @IsNumber()
   tier_id?: number;
 }

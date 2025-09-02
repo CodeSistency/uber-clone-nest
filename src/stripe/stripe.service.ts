@@ -12,7 +12,9 @@ export class StripeService {
     const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
 
     if (!stripeSecretKey) {
-      console.warn('⚠️  STRIPE_SECRET_KEY not found. Stripe functionality will be disabled.');
+      console.warn(
+        '⚠️  STRIPE_SECRET_KEY not found. Stripe functionality will be disabled.',
+      );
       return;
     }
 
@@ -23,11 +25,15 @@ export class StripeService {
 
   private checkStripeConfigured(): void {
     if (!this.stripe) {
-      throw new Error('Stripe is not configured. Please set STRIPE_SECRET_KEY in your environment variables.');
+      throw new Error(
+        'Stripe is not configured. Please set STRIPE_SECRET_KEY in your environment variables.',
+      );
     }
   }
 
-  async createPaymentIntent(createPaymentIntentDto: CreatePaymentIntentDto): Promise<any> {
+  async createPaymentIntent(
+    createPaymentIntentDto: CreatePaymentIntentDto,
+  ): Promise<any> {
     this.checkStripeConfigured();
     const { name, email, amount } = createPaymentIntentDto;
 
@@ -50,7 +56,7 @@ export class StripeService {
     // Create ephemeral key for mobile apps
     const ephemeralKey = await this.stripe.ephemeralKeys.create(
       { customer: customer.id },
-      { apiVersion: '2025-08-27.basil' }
+      { apiVersion: '2025-08-27.basil' },
     );
 
     // Create payment intent
@@ -81,7 +87,8 @@ export class StripeService {
 
   async confirmPayment(confirmPaymentDto: ConfirmPaymentDto): Promise<any> {
     this.checkStripeConfigured();
-    const { payment_method_id, payment_intent_id, customer_id } = confirmPaymentDto;
+    const { payment_method_id, payment_intent_id, customer_id } =
+      confirmPaymentDto;
 
     try {
       // Attach payment method to customer
@@ -94,11 +101,12 @@ export class StripeService {
         payment_intent_id,
         {
           payment_method: payment_method_id,
-        }
+        },
       );
 
       // Confirm the payment
-      const confirmedPayment = await this.stripe.paymentIntents.confirm(payment_intent_id);
+      const confirmedPayment =
+        await this.stripe.paymentIntents.confirm(payment_intent_id);
 
       return {
         success: true,
@@ -144,7 +152,8 @@ export class StripeService {
 
   async getPaymentStatus(paymentIntentId: string): Promise<any> {
     this.checkStripeConfigured();
-    const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent =
+      await this.stripe.paymentIntents.retrieve(paymentIntentId);
 
     return {
       id: paymentIntent.id,

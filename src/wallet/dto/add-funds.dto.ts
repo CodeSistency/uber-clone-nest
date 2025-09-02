@@ -8,7 +8,7 @@ export class AddFundsDto {
   @IsString()
   userClerkId: string;
 
-  @ApiProperty({ example: 50.00 })
+  @ApiProperty({ example: 50.0 })
   @IsNotEmpty()
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()

@@ -1,6 +1,16 @@
-import { IsString, IsEnum, IsObject, IsOptional, IsArray, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsObject,
+  IsOptional,
+  IsArray,
+  IsIn,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { NotificationType, NotificationChannel } from '../interfaces/notification.interface';
+import {
+  NotificationType,
+  NotificationChannel,
+} from '../interfaces/notification.interface';
 
 export class CreateNotificationDto {
   @ApiProperty({

@@ -11,20 +11,19 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable global validation pipes
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-    transformOptions: {
-      enableImplicitConversion: true,
-    },
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
 
   // Global exception filters
-  app.useGlobalFilters(
-    new AllExceptionsFilter(),
-    new PrismaExceptionFilter(),
-  );
+  app.useGlobalFilters(new AllExceptionsFilter(), new PrismaExceptionFilter());
 
   // Global interceptors
   app.useGlobalInterceptors(
@@ -35,7 +34,9 @@ async function bootstrap() {
   // Configure Swagger
   const config = new DocumentBuilder()
     .setTitle('Uber Clone API')
-    .setDescription('Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features')
+    .setDescription(
+      'Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features',
+    )
     .setVersion('1.0.0')
     .addTag('users', 'User management endpoints')
     .addTag('drivers', 'Driver management endpoints')
@@ -59,8 +60,12 @@ async function bootstrap() {
   });
 
   await app.listen(process.env.PORT ?? 3000);
-  console.log(`🚀 Application is running on: http://localhost:${process.env.PORT ?? 3000}`);
-  console.log(`📖 Swagger documentation: http://localhost:${process.env.PORT ?? 3000}/api`);
+  console.log(
+    `🚀 Application is running on: http://localhost:${process.env.PORT ?? 3000}`,
+  );
+  console.log(
+    `📖 Swagger documentation: http://localhost:${process.env.PORT ?? 3000}/api`,
+  );
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
 }
-bootstrap();
+void bootstrap();

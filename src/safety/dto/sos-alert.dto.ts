@@ -18,8 +18,8 @@ export class SOSAlertDto {
     type: 'object',
     properties: {
       latitude: { type: 'number', example: 40.7128 },
-      longitude: { type: 'number', example: -74.0060 }
-    }
+      longitude: { type: 'number', example: -74.006 },
+    },
   })
   @IsNotEmpty()
   location: {

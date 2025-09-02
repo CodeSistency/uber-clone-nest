@@ -9,7 +9,6 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,22 +20,30 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
+import { AppConfigService } from '../config/config.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationPreferencesDto } from './dto/update-preferences.dto';
 import { RegisterPushTokenDto } from './dto/register-push-token.dto';
-import { NotificationType, NotificationChannel } from './interfaces/notification.interface';
+import {
+  NotificationType,
+  NotificationChannel,
+} from './interfaces/notification.interface';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly configService: AppConfigService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Send a notification',
-    description: 'Send a notification to a specific user through configured channels (push, SMS, WebSocket)',
+    description:
+      'Send a notification to a specific user through configured channels (push, SMS, WebSocket)',
   })
   @ApiBody({
     type: CreateNotificationDto,
@@ -84,7 +91,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Register push notification token',
-    description: 'Register a device token for Firebase Cloud Messaging push notifications',
+    description:
+      'Register a device token for Firebase Cloud Messaging push notifications',
   })
   @ApiBody({
     type: RegisterPushTokenDto,
@@ -101,7 +109,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Push token registered successfully' },
+        message: {
+          type: 'string',
+          example: 'Push token registered successfully',
+        },
       },
     },
   })
@@ -144,7 +155,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Push token unregistered successfully' },
+        message: {
+          type: 'string',
+          example: 'Push token unregistered successfully',
+        },
       },
     },
   })
@@ -164,7 +178,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update notification preferences',
-    description: 'Update user notification preferences for different channels and types',
+    description:
+      'Update user notification preferences for different channels and types',
   })
   @ApiBody({
     type: UpdateNotificationPreferencesDto,
@@ -181,7 +196,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Notification preferences updated successfully' },
+        message: {
+          type: 'string',
+          example: 'Notification preferences updated successfully',
+        },
       },
     },
   })
@@ -193,7 +211,10 @@ export class NotificationsController {
     @Body() updatePreferencesDto: UpdateNotificationPreferencesDto,
     @Query('userId') userId: string,
   ) {
-    await this.notificationsService.updateNotificationPreferences(userId, updatePreferencesDto);
+    await this.notificationsService.updateNotificationPreferences(
+      userId,
+      updatePreferencesDto,
+    );
     return { message: 'Notification preferences updated successfully' };
   }
 
@@ -231,7 +252,10 @@ export class NotificationsController {
             type: 'object',
             properties: {
               id: { type: 'number', example: 1 },
-              userClerkId: { type: 'string', example: 'user_2abc123def456ghi789jkl012' },
+              userClerkId: {
+                type: 'string',
+                example: 'user_2abc123def456ghi789jkl012',
+              },
               type: { type: 'string', example: 'ride_accepted' },
               title: { type: 'string', example: 'Ride Accepted!' },
               message: { type: 'string', example: 'Your driver is on the way' },
@@ -311,7 +335,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test ride request notification',
-    description: 'Send a test ride request notification (for development and testing)',
+    description:
+      'Send a test ride request notification (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -325,7 +350,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Test ride request notification sent' },
+        message: {
+          type: 'string',
+          example: 'Test ride request notification sent',
+        },
         result: {
           type: 'array',
           items: {
@@ -349,14 +377,15 @@ export class NotificationsController {
       message: 'This is a test ride request notification',
       data: {
         rideId: 999,
-        pickupLocation: { lat: 40.7128, lng: -74.0060 },
-        fare: 25.50,
+        pickupLocation: { lat: 40.7128, lng: -74.006 },
+        fare: 25.5,
       },
       channels: [NotificationChannel.PUSH],
       priority: 'normal' as any,
     };
 
-    const result = await this.notificationsService.sendNotification(testPayload);
+    const result =
+      await this.notificationsService.sendNotification(testPayload);
     return {
       message: 'Test ride request notification sent',
       result,
@@ -367,7 +396,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test driver arrived notification',
-    description: 'Send a test driver arrived notification (for development and testing)',
+    description:
+      'Send a test driver arrived notification (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -381,7 +411,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Test driver arrived notification sent' },
+        message: {
+          type: 'string',
+          example: 'Test driver arrived notification sent',
+        },
         result: {
           type: 'array',
           items: {
@@ -412,7 +445,8 @@ export class NotificationsController {
       priority: 'high' as any,
     };
 
-    const result = await this.notificationsService.sendNotification(testPayload);
+    const result =
+      await this.notificationsService.sendNotification(testPayload);
     return {
       message: 'Test driver arrived notification sent',
       result,
@@ -423,7 +457,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test emergency notification',
-    description: 'Send a test emergency notification (for development and testing)',
+    description:
+      'Send a test emergency notification (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -437,7 +472,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Test emergency notification sent' },
+        message: {
+          type: 'string',
+          example: 'Test emergency notification sent',
+        },
         result: {
           type: 'array',
           items: {
@@ -461,14 +499,15 @@ export class NotificationsController {
       message: 'Emergency alert triggered. Help is on the way.',
       data: {
         rideId: 999,
-        location: { lat: 40.7128, lng: -74.0060 },
+        location: { lat: 40.7128, lng: -74.006 },
         emergencyType: 'test',
       },
       channels: [NotificationChannel.PUSH, NotificationChannel.SMS],
       priority: 'critical' as any,
     };
 
-    const result = await this.notificationsService.sendNotification(testPayload);
+    const result =
+      await this.notificationsService.sendNotification(testPayload);
     return {
       message: 'Test emergency notification sent',
       result,
@@ -479,7 +518,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test bulk driver notifications',
-    description: 'Send notifications to multiple drivers (for development and testing)',
+    description:
+      'Send notifications to multiple drivers (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -493,14 +533,17 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Bulk notifications sent for ride 123' },
+        message: {
+          type: 'string',
+          example: 'Bulk notifications sent for ride 123',
+        },
       },
     },
   })
   async testBulkDriverNotifications(@Query('rideId') rideId: string) {
     await this.notificationsService.notifyNearbyDrivers(parseInt(rideId), {
       lat: 40.7128,
-      lng: -74.0060,
+      lng: -74.006,
     });
 
     return {
@@ -512,7 +555,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test driver location update notification',
-    description: 'Send a test notification when driver location updates (for development and testing)',
+    description:
+      'Send a test notification when driver location updates (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -526,7 +570,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Driver location update notification sent' },
+        message: {
+          type: 'string',
+          example: 'Driver location update notification sent',
+        },
         result: {
           type: 'array',
           items: {
@@ -550,14 +597,15 @@ export class NotificationsController {
       message: 'Your driver location has been updated',
       data: {
         rideId: 999,
-        driverLocation: { lat: 40.7128, lng: -74.0060 },
+        driverLocation: { lat: 40.7128, lng: -74.006 },
         eta: '5 mins',
       },
       channels: ['websocket' as any],
       priority: 'normal' as any,
     };
 
-    const result = await this.notificationsService.sendNotification(testPayload);
+    const result =
+      await this.notificationsService.sendNotification(testPayload);
     return {
       message: 'Driver location update notification sent',
       result,
@@ -568,7 +616,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test ride status change notification',
-    description: 'Send a test notification for ride status changes (for development and testing)',
+    description:
+      'Send a test notification for ride status changes (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -644,7 +693,8 @@ export class NotificationsController {
       priority: 'high' as any,
     };
 
-    const result = await this.notificationsService.sendNotification(testPayload);
+    const result =
+      await this.notificationsService.sendNotification(testPayload);
     return {
       message: `Ride ${status} notification sent`,
       result,
@@ -655,7 +705,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test promotional notification',
-    description: 'Send a test promotional notification (for development and testing)',
+    description:
+      'Send a test promotional notification (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -694,13 +745,16 @@ export class NotificationsController {
       data: {
         offer: '20% off',
         code: 'SAVE20',
-        validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        validUntil: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
       },
       channels: [NotificationChannel.PUSH],
       priority: 'normal' as any,
     };
 
-    const result = await this.notificationsService.sendNotification(testPayload);
+    const result =
+      await this.notificationsService.sendNotification(testPayload);
     return {
       message: 'Promotional notification sent',
       result,
@@ -711,7 +765,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Test system maintenance notification',
-    description: 'Send a test system maintenance notification (for development and testing)',
+    description:
+      'Send a test system maintenance notification (for development and testing)',
     deprecated: true,
   })
   @ApiQuery({
@@ -725,7 +780,10 @@ export class NotificationsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'System maintenance notification sent' },
+        message: {
+          type: 'string',
+          example: 'System maintenance notification sent',
+        },
         result: {
           type: 'array',
           items: {
@@ -746,9 +804,12 @@ export class NotificationsController {
       userId,
       type: NotificationType.SYSTEM_MAINTENANCE,
       title: 'Scheduled Maintenance ⏰',
-      message: 'System maintenance will occur tonight from 2-4 AM. Service may be interrupted.',
+      message:
+        'System maintenance will occur tonight from 2-4 AM. Service may be interrupted.',
       data: {
-        maintenanceStart: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+        maintenanceStart: new Date(
+          Date.now() + 4 * 60 * 60 * 1000,
+        ).toISOString(),
         maintenanceEnd: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
         expectedDowntime: '2 hours',
       },
@@ -756,7 +817,8 @@ export class NotificationsController {
       priority: 'normal' as any,
     };
 
-    const result = await this.notificationsService.sendNotification(testPayload);
+    const result =
+      await this.notificationsService.sendNotification(testPayload);
     return {
       message: 'System maintenance notification sent',
       result,
@@ -766,7 +828,8 @@ export class NotificationsController {
   @Get('test/status')
   @ApiOperation({
     summary: 'Get notification system status',
-    description: 'Check the status of notification services (Firebase, Twilio, WebSocket)',
+    description:
+      'Check the status of notification services (Firebase, Twilio, WebSocket)',
   })
   @ApiResponse({
     status: 200,
@@ -779,6 +842,7 @@ export class NotificationsController {
           properties: {
             initialized: { type: 'boolean', example: true },
             status: { type: 'string', example: 'operational' },
+            projectId: { type: 'string', example: 'your-firebase-project' },
           },
         },
         twilio: {
@@ -786,6 +850,7 @@ export class NotificationsController {
           properties: {
             initialized: { type: 'boolean', example: true },
             status: { type: 'string', example: 'operational' },
+            phoneNumber: { type: 'string', example: '+1234567890' },
           },
         },
         websocket: {
@@ -800,19 +865,23 @@ export class NotificationsController {
     },
   })
   async getNotificationStatus() {
-    // This would check the status of Firebase, Twilio, and other services
+    const firebaseConfig = this.configService.firebase;
+    const twilioConfig = this.configService.twilio;
+
     return {
       firebase: {
-        initialized: true, // This would come from FirebaseService.isInitialized()
-        status: 'operational',
+        initialized: firebaseConfig.initialized,
+        status: firebaseConfig.isConfigured() ? 'configured' : 'missing_credentials',
+        projectId: firebaseConfig.projectId || null,
       },
       twilio: {
-        initialized: true, // This would come from TwilioService.isInitialized()
-        status: 'operational',
+        initialized: twilioConfig.initialized,
+        status: twilioConfig.isConfigured() ? 'configured' : 'missing_credentials',
+        phoneNumber: twilioConfig.phoneNumber || null,
       },
       websocket: {
-        status: 'operational',
-        activeConnections: 0, // This would come from WebSocket service
+        status: 'operational', // WebSocket is always available
+        activeConnections: 0, // Would need to get from WebSocket service
       },
       timestamp: new Date().toISOString(),
     };

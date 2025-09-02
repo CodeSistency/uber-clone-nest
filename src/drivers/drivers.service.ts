@@ -23,7 +23,15 @@ export class DriversService {
   }
 
   async registerDriver(registerDriverDto: RegisterDriverDto): Promise<Driver> {
-    const { firstName, lastName, email, clerkId, carModel, licensePlate, carSeats, profileImageUrl, carImageUrl } = registerDriverDto;
+    const {
+      firstName,
+      lastName,
+      carModel,
+      licensePlate,
+      carSeats,
+      profileImageUrl,
+      carImageUrl,
+    } = registerDriverDto;
 
     return this.prisma.driver.create({
       data: {
@@ -38,7 +46,9 @@ export class DriversService {
     });
   }
 
-  async uploadDocument(uploadDocumentDto: UploadDocumentDto): Promise<DriverDocument> {
+  async uploadDocument(
+    uploadDocumentDto: UploadDocumentDto,
+  ): Promise<DriverDocument> {
     const { driverId, documentType, documentUrl } = uploadDocumentDto;
 
     return this.prisma.driverDocument.create({
@@ -71,7 +81,10 @@ export class DriversService {
     });
   }
 
-  async updateDriver(id: number, data: Prisma.DriverUpdateInput): Promise<Driver> {
+  async updateDriver(
+    id: number,
+    data: Prisma.DriverUpdateInput,
+  ): Promise<Driver> {
     return this.prisma.driver.update({
       where: { id },
       data,
@@ -102,7 +115,7 @@ export class DriversService {
       },
     });
 
-    return rides.map(ride => ({
+    return rides.map((ride) => ({
       ride_id: ride.rideId,
       origin_address: ride.originAddress,
       destination_address: ride.destinationAddress,

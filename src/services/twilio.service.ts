@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AppConfigService } from '../config/config.service';
 import { Twilio } from 'twilio';
 
 export interface SMSMessage {
@@ -23,22 +24,26 @@ export class TwilioService {
   private twilioClient: Twilio | null = null;
   private defaultFromNumber: string | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private appConfigService: AppConfigService,
+  ) {
     this.initializeTwilio();
   }
 
   private initializeTwilio(): void {
     try {
-      const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
-      const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
-      this.defaultFromNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER') || null;
+      const twilioConfig = this.appConfigService.twilio;
 
-      if (!accountSid || !authToken || !this.defaultFromNumber) {
-        this.logger.warn('Twilio configuration not found. SMS functionality will be disabled.');
+      if (!twilioConfig.isConfigured()) {
+        this.logger.warn(
+          'Twilio configuration not found. SMS functionality will be disabled.',
+        );
         return;
       }
 
-      this.twilioClient = new Twilio(accountSid, authToken);
+      this.defaultFromNumber = twilioConfig.phoneNumber!;
+      this.twilioClient = new Twilio(twilioConfig.accountSid!, twilioConfig.authToken!);
       this.logger.log('Twilio client initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize Twilio:', error);
@@ -73,7 +78,9 @@ export class TwilioService {
         dateCreated: twilioMessage.dateCreated,
       };
 
-      this.logger.log(`SMS sent successfully: ${twilioMessage.sid} to ${message.to}`);
+      this.logger.log(
+        `SMS sent successfully: ${twilioMessage.sid} to ${message.to}`,
+      );
       return response;
     } catch (error) {
       this.logger.error('Failed to send SMS:', error);
@@ -96,10 +103,10 @@ export class TwilioService {
     }
 
     try {
-      const promises = messages.map(message => this.sendSMS(message));
+      const promises = messages.map((message) => this.sendSMS(message));
       const results = await Promise.allSettled(promises);
 
-      const responses = results.map(result => {
+      const responses = results.map((result) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
@@ -108,8 +115,10 @@ export class TwilioService {
         }
       });
 
-      const successCount = responses.filter(r => r !== null).length;
-      this.logger.log(`Bulk SMS completed: ${successCount}/${messages.length} successful`);
+      const successCount = responses.filter((r) => r !== null).length;
+      this.logger.log(
+        `Bulk SMS completed: ${successCount}/${messages.length} successful`,
+      );
 
       return responses;
     } catch (error) {
@@ -153,7 +162,10 @@ export class TwilioService {
       const phoneRegex = /^\+?[1-9]\d{1,14}$/;
       return phoneRegex.test(phoneNumber);
     } catch (error) {
-      this.logger.error(`Failed to validate phone number ${phoneNumber}:`, error);
+      this.logger.error(
+        `Failed to validate phone number ${phoneNumber}:`,
+        error,
+      );
       // If validation fails, assume the number is valid to not block SMS sending
       return true;
     }
@@ -191,6 +203,9 @@ export class TwilioService {
       PROMOTIONAL: `🎁 Special offer: ${data.offer || 'Check out our latest deals!'}`,
     };
 
-    return templates[type] || `Notification: ${data.message || 'You have a new message'}`;
+    return (
+      templates[type] ||
+      `Notification: ${data.message || 'You have a new message'}`
+    );
   }
 }

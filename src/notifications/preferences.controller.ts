@@ -1,22 +1,20 @@
 import {
   Controller,
   Get,
-  Post,
   Put,
-  Delete,
   Body,
-  Param,
   Query,
   HttpCode,
   HttpStatus,
-  UseGuards,
+  Post,
+  Delete,
+  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-  ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
@@ -40,7 +38,8 @@ export class PreferencesController {
   })
   @ApiOperation({
     summary: 'Get notification preferences',
-    description: 'Get user notification preferences for different channels and types',
+    description:
+      'Get user notification preferences for different channels and types',
   })
   @ApiQuery({
     name: 'userId',
@@ -69,7 +68,7 @@ export class PreferencesController {
       },
     },
   })
-  async getPreferences(@Query('userId') userId: string) {
+  getPreferences(@Query('userId') userId: string) {
     // In a real implementation, you'd get this from the JWT token
     // For now, we'll pass it as a query parameter
     return {
@@ -100,7 +99,10 @@ export class PreferencesController {
     @Body() updatePreferencesDto: UpdateNotificationPreferencesDto,
     @Query('userId') userId: string,
   ) {
-    await this.notificationsService.updateNotificationPreferences(userId, updatePreferencesDto);
+    await this.notificationsService.updateNotificationPreferences(
+      userId,
+      updatePreferencesDto,
+    );
     return { message: 'Notification preferences updated successfully' };
   }
 

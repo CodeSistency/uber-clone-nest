@@ -18,7 +18,10 @@ export interface Response<T> {
 export class TransformInterceptor<T>
   implements NestInterceptor<T, Response<T>>
 {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<Response<T>> {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
 
@@ -29,7 +32,7 @@ export class TransformInterceptor<T>
         statusCode: response.statusCode,
         timestamp: new Date().toISOString(),
         path: request.url,
-      }))
+      })),
     );
   }
 }

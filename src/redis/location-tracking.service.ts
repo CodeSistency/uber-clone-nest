@@ -20,7 +20,6 @@ interface RideUpdate {
 
 @Injectable()
 export class LocationTrackingService extends RedisPubSubService {
-
   private driverLocations: Map<number, DriverLocation> = new Map();
   private rideSubscribers: Map<number, Set<string>> = new Map();
 
@@ -37,7 +36,7 @@ export class LocationTrackingService extends RedisPubSubService {
     super.handleIncomingMessage(channel, message);
 
     try {
-      const data = JSON.parse(message);
+      const data: any = JSON.parse(message);
 
       switch (channel) {
         case 'driver:locations':
@@ -56,7 +55,11 @@ export class LocationTrackingService extends RedisPubSubService {
   }
 
   // Driver location updates
-  async updateDriverLocation(driverId: number, location: { lat: number; lng: number }, rideId?: number) {
+  async updateDriverLocation(
+    driverId: number,
+    location: { lat: number; lng: number },
+    rideId?: number,
+  ) {
     const locationData: DriverLocation = {
       driverId,
       location,
@@ -72,13 +75,17 @@ export class LocationTrackingService extends RedisPubSubService {
 
     // If ride is active, publish ride update
     if (rideId) {
-      await this.publishRideUpdate(rideId, 'location', { driverLocation: location });
+      await this.publishRideUpdate(rideId, 'location', {
+        driverLocation: location,
+      });
     }
 
-    console.debug(`Driver ${driverId} location updated: ${location.lat}, ${location.lng}`);
+    console.debug(
+      `Driver ${driverId} location updated: ${location.lat}, ${location.lng}`,
+    );
   }
 
-  async getDriverLocation(driverId: number): Promise<DriverLocation | null> {
+  getDriverLocation(driverId: number): DriverLocation | null {
     return this.driverLocations.get(driverId) || null;
   }
 
@@ -92,13 +99,15 @@ export class LocationTrackingService extends RedisPubSubService {
     // Send current driver location if available
     const driverLocation = await this.getDriverLocationForRide(rideId);
     if (driverLocation) {
-      await this.publishRideUpdate(rideId, 'location', { driverLocation: driverLocation.location });
+      await this.publishRideUpdate(rideId, 'location', {
+        driverLocation: driverLocation.location,
+      });
     }
 
     console.log(`User ${userId} subscribed to ride ${rideId}`);
   }
 
-  async unsubscribeFromRide(rideId: number, userId: string) {
+  unsubscribeFromRide(rideId: number, userId: string) {
     const subscribers = this.rideSubscribers.get(rideId);
     if (subscribers) {
       subscribers.delete(userId);
@@ -153,8 +162,8 @@ export class LocationTrackingService extends RedisPubSubService {
     // If ride is active, forward to ride subscribers
     if (data.rideId) {
       this.publishRideUpdate(data.rideId, 'location', {
-        driverLocation: data.location
-      }).catch(error => {
+        driverLocation: data.location,
+      }).catch((error) => {
         console.error('Failed to publish ride update:', error);
       });
     }
@@ -172,7 +181,7 @@ export class LocationTrackingService extends RedisPubSubService {
   private async getDriverLocationForRide(rideId: number) {
     // In a real implementation, you'd query the database for the driver assigned to this ride
     // For now, we'll check our in-memory storage
-    for (const [driverId, location] of this.driverLocations.entries()) {
+    for (const [, location] of this.driverLocations.entries()) {
       if (location.rideId === rideId) {
         return location;
       }
@@ -186,8 +195,10 @@ export class LocationTrackingService extends RedisPubSubService {
       redisConnected: this.isRedisConnected(),
       activeDrivers: this.driverLocations.size,
       activeRides: this.rideSubscribers.size,
-      totalSubscribers: Array.from(this.rideSubscribers.values())
-        .reduce((total, subscribers) => total + subscribers.size, 0),
+      totalSubscribers: Array.from(this.rideSubscribers.values()).reduce(
+        (total, subscribers) => total + subscribers.size,
+        0,
+      ),
       timestamp: new Date(),
     };
   }

@@ -19,18 +19,16 @@ export class LoggingInterceptor implements NestInterceptor {
     const now = Date.now();
 
     this.logger.log(
-      `${method} ${url} - Body: ${JSON.stringify(body)} - Params: ${JSON.stringify(params)} - Query: ${JSON.stringify(query)} - User-Agent: ${userAgent}`
+      `${method} ${url} - Body: ${JSON.stringify(body)} - Params: ${JSON.stringify(params)} - Query: ${JSON.stringify(query)} - User-Agent: ${userAgent}`,
     );
 
     return next.handle().pipe(
-      tap((data) => {
+      tap(() => {
         const response = context.switchToHttp().getResponse();
         const delay = Date.now() - now;
 
-        this.logger.log(
-          `${method} ${url} ${response.statusCode} - ${delay}ms`
-        );
-      })
+        this.logger.log(`${method} ${url} ${response.statusCode} - ${delay}ms`);
+      }),
     );
   }
 }

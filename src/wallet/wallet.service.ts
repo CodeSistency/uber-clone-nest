@@ -7,7 +7,9 @@ import { AddFundsDto } from './dto/add-funds.dto';
 export class WalletService {
   constructor(private prisma: PrismaService) {}
 
-  async getUserWallet(userId: string): Promise<{ wallet: Wallet; transactions: WalletTransaction[] } | null> {
+  async getUserWallet(
+    userId: string,
+  ): Promise<{ wallet: Wallet; transactions: WalletTransaction[] } | null> {
     // Find or create wallet for user
     let wallet = await this.prisma.wallet.findUnique({
       where: { userClerkId: userId },
@@ -65,7 +67,11 @@ export class WalletService {
     return updatedWallet;
   }
 
-  async deductFunds(userClerkId: string, amount: number, description: string): Promise<Wallet> {
+  async deductFunds(
+    userClerkId: string,
+    amount: number,
+    description: string,
+  ): Promise<Wallet> {
     const wallet = await this.prisma.wallet.findUnique({
       where: { userClerkId },
     });

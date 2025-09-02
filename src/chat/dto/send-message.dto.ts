@@ -7,7 +7,7 @@ export class SendMessageDto {
   @IsString()
   senderClerkId: string;
 
-  @ApiProperty({ example: 'I\'ll be there in 2 minutes.' })
+  @ApiProperty({ example: "I'll be there in 2 minutes." })
   @IsNotEmpty()
   @IsString()
   messageText: string;

@@ -31,7 +31,10 @@ export class ChatService {
     });
   }
 
-  async sendRideMessage(rideId: number, sendMessageDto: SendMessageDto): Promise<ChatMessage> {
+  async sendRideMessage(
+    rideId: number,
+    sendMessageDto: SendMessageDto,
+  ): Promise<ChatMessage> {
     const { senderClerkId, messageText } = sendMessageDto;
 
     return this.prisma.chatMessage.create({
@@ -46,7 +49,10 @@ export class ChatService {
     });
   }
 
-  async sendOrderMessage(orderId: number, sendMessageDto: SendMessageDto): Promise<ChatMessage> {
+  async sendOrderMessage(
+    orderId: number,
+    sendMessageDto: SendMessageDto,
+  ): Promise<ChatMessage> {
     const { senderClerkId, messageText } = sendMessageDto;
 
     return this.prisma.chatMessage.create({

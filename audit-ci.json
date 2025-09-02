@@ -1,0 +1,23 @@
+{
+  "levels": {
+    "low": true,
+    "moderate": true,
+    "high": true,
+    "critical": true
+  },
+  "report": {
+    "type": "json",
+    "path": "./test/reports/security-audit.json"
+  },
+  "allowlist": [
+    {
+      "GHSA-776f-qx25-q3cc": "Low severity - Redis dependency",
+      "GHSA-8cf7-32gw-wr33": "Low severity - Socket.io dependency"
+    }
+  ],
+  "path-allowlist": [
+    "/test/**",
+    "/docs/**",
+    "/scripts/**"
+  ]
+}

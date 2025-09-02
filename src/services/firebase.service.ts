@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AppConfigService } from '../config/config.service';
 import * as admin from 'firebase-admin';
 
 export interface PushNotificationPayload {
@@ -21,25 +22,36 @@ export class FirebaseService {
   private readonly logger = new Logger(FirebaseService.name);
   private firebaseApp: admin.app.App | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private appConfigService: AppConfigService,
+  ) {
     this.initializeFirebase();
   }
 
   private initializeFirebase(): void {
     try {
-      const serviceAccount = this.configService.get<string>('FIREBASE_SERVICE_ACCOUNT');
-      const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
+      const firebaseConfig = this.appConfigService.firebase;
 
-      if (!serviceAccount || !projectId) {
-        this.logger.warn('Firebase configuration not found. Push notifications will be disabled.');
+      if (!firebaseConfig.isConfigured()) {
+        this.logger.warn(
+          'Firebase configuration not found. Push notifications will be disabled.',
+        );
         return;
       }
 
-      // Initialize Firebase Admin SDK
-      this.firebaseApp = admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(serviceAccount)),
-        projectId: projectId,
-      });
+      // Initialize Firebase Admin SDK with only required and available properties
+      const firebaseAppConfig: admin.AppOptions = {
+        credential: admin.credential.cert(JSON.parse(firebaseConfig.serviceAccount!)),
+        projectId: firebaseConfig.projectId!,
+      };
+
+      // Add optional properties if available
+      if (firebaseConfig.storageBucket) {
+        firebaseAppConfig.storageBucket = firebaseConfig.storageBucket;
+      }
+
+      this.firebaseApp = admin.initializeApp(firebaseAppConfig);
 
       this.logger.log('Firebase Admin SDK initialized successfully');
     } catch (error) {
@@ -90,7 +102,9 @@ export class FirebaseService {
 
       // Handle specific Firebase errors
       if (error.code === 'messaging/registration-token-not-registered') {
-        this.logger.warn(`Token ${token} is not registered, should be removed from database`);
+        this.logger.warn(
+          `Token ${token} is not registered, should be removed from database`,
+        );
         throw new Error('INVALID_TOKEN');
       }
 
@@ -112,7 +126,7 @@ export class FirebaseService {
 
     try {
       const message = {
-        tokens: tokens.map(t => t.token),
+        tokens: tokens.map((t) => t.token),
         notification: {
           title: payload.title,
           body: payload.body,
@@ -135,8 +149,12 @@ export class FirebaseService {
         },
       };
 
-      const response = await this.firebaseApp.messaging().sendEachForMulticast(message);
-      this.logger.log(`Multicast notification sent: ${response.successCount} success, ${response.failureCount} failures`);
+      const response = await this.firebaseApp
+        .messaging()
+        .sendEachForMulticast(message);
+      this.logger.log(
+        `Multicast notification sent: ${response.successCount} success, ${response.failureCount} failures`,
+      );
       return response;
     } catch (error) {
       this.logger.error('Failed to send multicast notification:', error);
@@ -150,7 +168,9 @@ export class FirebaseService {
     payload: PushNotificationPayload,
   ): Promise<admin.messaging.BatchResponse | null> {
     if (!this.firebaseApp) {
-      this.logger.warn(`Firebase not initialized, cannot send notification to user ${userId}`);
+      this.logger.warn(
+        `Firebase not initialized, cannot send notification to user ${userId}`,
+      );
       return null;
     }
 
@@ -161,10 +181,15 @@ export class FirebaseService {
 
     try {
       const response = await this.sendMulticastNotification(tokens, payload);
-      this.logger.log(`Notification sent to user ${userId}: ${response.successCount}/${tokens.length} successful`);
+      this.logger.log(
+        `Notification sent to user ${userId}: ${response.successCount}/${tokens.length} successful`,
+      );
       return response;
     } catch (error) {
-      this.logger.error(`Failed to send notification to user ${userId}:`, error);
+      this.logger.error(
+        `Failed to send notification to user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -180,23 +205,26 @@ export class FirebaseService {
 
     try {
       // Send a test message with dry run to validate token
-      await this.firebaseApp.messaging().send({
-        token: token,
-        notification: {
-          title: 'Test',
-          body: 'Test',
-        },
-        android: {
-          priority: 'normal',
-        },
-        apns: {
-          payload: {
-            aps: {
-              sound: 'default',
+      await this.firebaseApp.messaging().send(
+        {
+          token: token,
+          notification: {
+            title: 'Test',
+            body: 'Test',
+          },
+          android: {
+            priority: 'normal',
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: 'default',
+              },
             },
           },
         },
-      }, true); // dryRun = true
+        true,
+      ); // dryRun = true
 
       return true;
     } catch (error) {

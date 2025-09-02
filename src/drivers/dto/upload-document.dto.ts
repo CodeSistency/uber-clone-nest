@@ -7,7 +7,10 @@ export class UploadDocumentDto {
   @IsNumber()
   driverId: number;
 
-  @ApiProperty({ example: 'license', description: 'Document type (license, vehicle_registration, etc.)' })
+  @ApiProperty({
+    example: 'license',
+    description: 'Document type (license, vehicle_registration, etc.)',
+  })
   @IsNotEmpty()
   @IsString()
   documentType: string;

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { Ride, Rating, Prisma } from '@prisma/client';
+import { Ride, Rating } from '@prisma/client';
 import { CreateRideDto } from './dto/create-ride.dto';
 import { ScheduleRideDto } from './dto/schedule-ride.dto';
 import { AcceptRideDto } from './dto/accept-ride.dto';
@@ -61,7 +61,10 @@ export class RidesService {
       });
       this.logger.log(`Notified drivers about new ride ${ride.rideId}`);
     } catch (error) {
-      this.logger.error(`Failed to notify drivers about ride ${ride.rideId}:`, error);
+      this.logger.error(
+        `Failed to notify drivers about ride ${ride.rideId}:`,
+        error,
+      );
     }
 
     return ride;
@@ -114,7 +117,11 @@ export class RidesService {
     });
   }
 
-  async getFareEstimate(tierId: number, minutes: number, miles: number): Promise<any> {
+  async getFareEstimate(
+    tierId: number,
+    minutes: number,
+    miles: number,
+  ): Promise<any> {
     const tier = await this.prisma.rideTier.findUnique({
       where: { id: tierId },
     });
@@ -127,7 +134,7 @@ export class RidesService {
     const perMinuteRate = Number(tier.perMinuteRate);
     const perMileRate = Number(tier.perMileRate);
 
-    const totalFare = baseFare + (minutes * perMinuteRate) + (miles * perMileRate);
+    const totalFare = baseFare + minutes * perMinuteRate + miles * perMileRate;
 
     return {
       tier: tier.name,
@@ -140,7 +147,10 @@ export class RidesService {
     };
   }
 
-  async acceptRide(rideId: number, acceptRideDto: AcceptRideDto): Promise<Ride> {
+  async acceptRide(
+    rideId: number,
+    acceptRideDto: AcceptRideDto,
+  ): Promise<Ride> {
     const { driverId } = acceptRideDto;
 
     // Check if ride exists and is available
@@ -181,13 +191,17 @@ export class RidesService {
         driverId,
         'accepted',
         {
-          driverName: updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
+          driverName:
+            updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
           vehicleInfo: `${updatedRide.driver?.carModel} - ${updatedRide.driver?.licensePlate}`,
         },
       );
       this.logger.log(`Notified passenger about accepted ride ${rideId}`);
     } catch (error) {
-      this.logger.error(`Failed to notify passenger about accepted ride ${rideId}:`, error);
+      this.logger.error(
+        `Failed to notify passenger about accepted ride ${rideId}:`,
+        error,
+      );
     }
 
     return updatedRide;
@@ -262,7 +276,10 @@ export class RidesService {
       );
       this.logger.log(`Notified passenger about started ride ${rideId}`);
     } catch (error) {
-      this.logger.error(`Failed to notify passenger about started ride ${rideId}:`, error);
+      this.logger.error(
+        `Failed to notify passenger about started ride ${rideId}:`,
+        error,
+      );
     }
 
     return updatedRide;
@@ -304,9 +321,14 @@ export class RidesService {
           vehicleInfo: `${ride.driver?.carModel} - ${ride.driver?.licensePlate}`,
         },
       );
-      this.logger.log(`Notified passenger about driver arrival for ride ${rideId}`);
+      this.logger.log(
+        `Notified passenger about driver arrival for ride ${rideId}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to notify passenger about driver arrival for ride ${rideId}:`, error);
+      this.logger.error(
+        `Failed to notify passenger about driver arrival for ride ${rideId}:`,
+        error,
+      );
     }
 
     return updatedRide;
@@ -349,7 +371,10 @@ export class RidesService {
       );
       this.logger.log(`Notified passenger about completed ride ${rideId}`);
     } catch (error) {
-      this.logger.error(`Failed to notify passenger about completed ride ${rideId}:`, error);
+      this.logger.error(
+        `Failed to notify passenger about completed ride ${rideId}:`,
+        error,
+      );
     }
 
     return updatedRide;
@@ -407,7 +432,10 @@ export class RidesService {
 
       this.logger.log(`Notified parties about cancelled ride ${rideId}`);
     } catch (error) {
-      this.logger.error(`Failed to notify parties about cancelled ride ${rideId}:`, error);
+      this.logger.error(
+        `Failed to notify parties about cancelled ride ${rideId}:`,
+        error,
+      );
     }
 
     return updatedRide;

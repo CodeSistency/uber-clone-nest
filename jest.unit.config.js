@@ -1,0 +1,20 @@
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  rootDir: 'src',
+  testMatch: ['**/__tests__/**/*.unit.spec.ts', '**/*.unit.spec.ts'],
+  collectCoverageFrom: [
+    '**/*.ts',
+    '!**/*.spec.ts',
+    '!**/*.d.ts',
+    '!main.ts',
+    '!**/node_modules/**',
+  ],
+  coverageDirectory: '../coverage/unit',
+  coverageReporters: ['text', 'lcov', 'html'],
+  setupFilesAfterEnv: ['<rootDir>/../test/setup/unit-setup.ts'],
+  testTimeout: 10000,
+  verbose: true,
+  detectOpenHandles: true,
+  forceExit: true,
+};

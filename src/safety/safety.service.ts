@@ -7,7 +7,8 @@ export class SafetyService {
   constructor(private prisma: PrismaService) {}
 
   async triggerSOS(sosAlertDto: SOSAlertDto): Promise<any> {
-    const { userClerkId, rideId, location, emergencyType, message } = sosAlertDto;
+    const { userClerkId, rideId, location, emergencyType, message } =
+      sosAlertDto;
 
     // Get user information
     const user = await this.prisma.user.findUnique({
@@ -42,15 +43,17 @@ export class SafetyService {
       emergencyType,
       message,
       timestamp: new Date(),
-      emergencyContacts: emergencyContacts.map(contact => ({
+      emergencyContacts: emergencyContacts.map((contact) => ({
         name: contact.contactName,
         phone: contact.contactPhone,
       })),
-      driverInfo: ride?.driver ? {
-        id: ride.driver.id,
-        name: `${ride.driver.firstName} ${ride.driver.lastName}`,
-        phone: 'N/A', // In real app, driver would have phone number
-      } : null,
+      driverInfo: ride?.driver
+        ? {
+            id: ride.driver.id,
+            name: `${ride.driver.firstName} ${ride.driver.lastName}`,
+            phone: 'N/A', // In real app, driver would have phone number
+          }
+        : null,
     };
 
     // In a real application, you would:

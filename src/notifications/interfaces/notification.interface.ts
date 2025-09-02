@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+// No imports needed for this interface file
 
 export enum NotificationType {
   RIDE_REQUEST = 'ride_request',

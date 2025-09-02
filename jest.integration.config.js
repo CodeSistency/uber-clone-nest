@@ -1,0 +1,22 @@
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  rootDir: 'src',
+  testMatch: ['**/__tests__/**/*.integration.spec.ts', '**/*.integration.spec.ts'],
+  collectCoverageFrom: [
+    '**/*.ts',
+    '!**/*.spec.ts',
+    '!**/*.d.ts',
+    '!main.ts',
+    '!**/node_modules/**',
+  ],
+  coverageDirectory: '../coverage/integration',
+  coverageReporters: ['text', 'lcov', 'html'],
+  setupFilesAfterEnv: ['<rootDir>/../test/setup/integration-setup.ts'],
+  testTimeout: 30000,
+  verbose: true,
+  detectOpenHandles: true,
+  forceExit: true,
+  globalSetup: '<rootDir>/../test/setup/global-setup.ts',
+  globalTeardown: '<rootDir>/../test/setup/global-teardown.ts',
+};

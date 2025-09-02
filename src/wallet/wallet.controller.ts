@@ -1,5 +1,11 @@
 import { Controller, Get, Post, Query, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { Wallet } from '@prisma/client';
 import { AddFundsDto } from './dto/add-funds.dto';
@@ -22,11 +28,11 @@ export class WalletController {
           type: 'object',
           properties: {
             wallet: { type: 'object' },
-            transactions: { type: 'array' }
-          }
-        }
-      }
-    }
+            transactions: { type: 'array' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'User ID is missing' })
   @ApiResponse({ status: 500, description: 'Database error' })
@@ -36,7 +42,7 @@ export class WalletController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Add funds to a user\'s wallet' })
+  @ApiOperation({ summary: "Add funds to a user's wallet" })
   @ApiBody({ type: AddFundsDto })
   @ApiResponse({ status: 200, description: 'Funds added successfully' })
   @ApiResponse({ status: 400, description: 'Missing fields' })

@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'redis';
 
@@ -19,7 +24,8 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
   constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
-    const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+    const redisUrl =
+      this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
 
     try {
       // Create Redis clients
@@ -27,10 +33,7 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
       this.subscriber = Redis.createClient({ url: redisUrl });
 
       // Connect to Redis
-      await Promise.all([
-        this.publisher.connect(),
-        this.subscriber.connect(),
-      ]);
+      await Promise.all([this.publisher.connect(), this.subscriber.connect()]);
 
       this.isConnected = true;
       this.logger.log('Redis Pub/Sub connected successfully');
@@ -48,9 +51,10 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
       this.subscriber.on('message', (channel, message) => {
         this.handleIncomingMessage(channel, message);
       });
-
     } catch (error) {
-      this.logger.warn('Redis connection failed, falling back to in-memory Pub/Sub');
+      this.logger.warn(
+        'Redis connection failed, falling back to in-memory Pub/Sub',
+      );
       this.logger.warn('Error:', error.message);
       this.isConnected = false;
     }
@@ -69,7 +73,9 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
   // Publish a message to a channel
   async publish(channel: string, data: any): Promise<void> {
     if (!this.isConnected) {
-      this.logger.warn(`Redis not connected. Message to ${channel} not published.`);
+      this.logger.warn(
+        `Redis not connected. Message to ${channel} not published.`,
+      );
       return;
     }
 
@@ -107,7 +113,9 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
   // Unsubscribe from a channel
   async unsubscribe(channel: string): Promise<void> {
     if (!this.isConnected) {
-      this.logger.warn(`Redis not connected. Cannot unsubscribe from ${channel}.`);
+      this.logger.warn(
+        `Redis not connected. Cannot unsubscribe from ${channel}.`,
+      );
       return;
     }
 
@@ -138,7 +146,8 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
   getConnectionInfo() {
     return {
       isConnected: this.isConnected,
-      redisUrl: this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+      redisUrl:
+        this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
     };
   }
 }

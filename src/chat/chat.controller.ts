@@ -1,5 +1,11 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 import { ChatMessage } from '@prisma/client';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -12,18 +18,28 @@ export class ChatController {
   @Get(':rideId/messages')
   @ApiOperation({ summary: 'Get chat history for a specific ride' })
   @ApiParam({ name: 'rideId', description: 'The unique ID of the ride' })
-  @ApiResponse({ status: 200, description: 'Returns an array of chat messages' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns an array of chat messages',
+  })
   @ApiResponse({ status: 400, description: 'Ride ID is missing' })
   @ApiResponse({ status: 500, description: 'Database error' })
-  async getRideMessages(@Param('rideId') rideId: string): Promise<ChatMessage[]> {
+  async getRideMessages(
+    @Param('rideId') rideId: string,
+  ): Promise<ChatMessage[]> {
     return this.chatService.getRideMessages(Number(rideId));
   }
 
   @Get('order/:orderId/messages')
   @ApiOperation({ summary: 'Get chat history for a specific order' })
   @ApiParam({ name: 'orderId', description: 'The unique ID of the order' })
-  @ApiResponse({ status: 200, description: 'Returns an array of chat messages' })
-  async getOrderMessages(@Param('orderId') orderId: string): Promise<ChatMessage[]> {
+  @ApiResponse({
+    status: 200,
+    description: 'Returns an array of chat messages',
+  })
+  async getOrderMessages(
+    @Param('orderId') orderId: string,
+  ): Promise<ChatMessage[]> {
     return this.chatService.getOrderMessages(Number(orderId));
   }
 
@@ -57,7 +73,9 @@ export class ChatController {
   @ApiOperation({ summary: 'Get all messages sent by a user' })
   @ApiParam({ name: 'userId', description: 'The Clerk ID of the user' })
   @ApiResponse({ status: 200, description: 'Returns user messages' })
-  async getUserMessages(@Param('userId') userId: string): Promise<ChatMessage[]> {
+  async getUserMessages(
+    @Param('userId') userId: string,
+  ): Promise<ChatMessage[]> {
     return this.chatService.getUserMessages(userId);
   }
 }

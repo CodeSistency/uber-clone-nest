@@ -8,7 +8,7 @@ export class ApplyPromoDto {
   @IsString()
   promoCode: string;
 
-  @ApiProperty({ example: 25.00 })
+  @ApiProperty({ example: 25.0 })
   @IsNotEmpty()
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()

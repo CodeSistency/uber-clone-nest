@@ -19,7 +19,7 @@ export class ScheduleRideDto {
   @IsNumber()
   origin_latitude: number;
 
-  @ApiProperty({ example: -73.9840 })
+  @ApiProperty({ example: -73.984 })
   @IsNotEmpty()
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()

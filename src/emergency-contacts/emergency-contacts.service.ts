@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { EmergencyContact } from '@prisma/client';
+import { EmergencyContact, Prisma } from '@prisma/client';
 import { CreateEmergencyContactDto } from './dto/create-emergency-contact.dto';
 
 @Injectable()
@@ -13,7 +13,9 @@ export class EmergencyContactsService {
     });
   }
 
-  async createEmergencyContact(createContactDto: CreateEmergencyContactDto): Promise<EmergencyContact> {
+  async createEmergencyContact(
+    createContactDto: CreateEmergencyContactDto,
+  ): Promise<EmergencyContact> {
     const { userClerkId, contactName, contactPhone } = createContactDto;
 
     return this.prisma.emergencyContact.create({
@@ -25,7 +27,10 @@ export class EmergencyContactsService {
     });
   }
 
-  async updateEmergencyContact(id: number, data: any): Promise<EmergencyContact> {
+  async updateEmergencyContact(
+    id: number,
+    data: Prisma.EmergencyContactUpdateInput,
+  ): Promise<EmergencyContact> {
     return this.prisma.emergencyContact.update({
       where: { id },
       data,

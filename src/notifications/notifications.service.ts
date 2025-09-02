@@ -1,6 +1,9 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { FirebaseService, PushNotificationPayload } from '../services/firebase.service';
+import {
+  FirebaseService,
+  PushNotificationPayload,
+} from '../services/firebase.service';
 import { TwilioService, SMSMessage } from '../services/twilio.service';
 import {
   NotificationType,
@@ -8,7 +11,6 @@ import {
   NotificationPayload,
   NotificationDeliveryResult,
 } from './interfaces/notification.interface';
-import { CreateNotificationDto } from './dto/create-notification.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -37,7 +39,10 @@ export class NotificationsService {
     const deliveryResults: NotificationDeliveryResult[] = [];
 
     // Send push notifications
-    if (channelsToUse.includes(NotificationChannel.PUSH) && pushTokens.length > 0) {
+    if (
+      channelsToUse.includes(NotificationChannel.PUSH) &&
+      pushTokens.length > 0
+    ) {
       try {
         const pushPayload: PushNotificationPayload = {
           title,
@@ -61,7 +66,10 @@ export class NotificationsService {
           timestamp: new Date(),
         });
       } catch (error) {
-        this.logger.error(`Push notification failed for user ${userId}:`, error);
+        this.logger.error(
+          `Push notification failed for user ${userId}:`,
+          error,
+        );
         deliveryResults.push({
           success: false,
           channel: NotificationChannel.PUSH,
@@ -72,10 +80,13 @@ export class NotificationsService {
     }
 
     // Send SMS notifications
-    if (channelsToUse.includes(NotificationChannel.SMS) && preferences?.smsEnabled) {
+    if (
+      channelsToUse.includes(NotificationChannel.SMS) &&
+      preferences?.smsEnabled
+    ) {
       try {
         const smsMessage: SMSMessage = {
-          to: await this.getUserPhoneNumber(userId),
+          to: this.getUserPhoneNumber(),
           body: this.twilioService.getSMSTemplate(type, data),
         };
 
@@ -106,13 +117,24 @@ export class NotificationsService {
         title,
         message,
         data,
-        pushSent: deliveryResults.some(r => r.channel === NotificationChannel.PUSH && r.success),
-        smsSent: deliveryResults.some(r => r.channel === NotificationChannel.SMS && r.success),
-        pushSentAt: deliveryResults.find(r => r.channel === NotificationChannel.PUSH && r.success)?.timestamp,
-        smsSentAt: deliveryResults.find(r => r.channel === NotificationChannel.SMS && r.success)?.timestamp,
+        pushSent: deliveryResults.some(
+          (r) => r.channel === NotificationChannel.PUSH && r.success,
+        ),
+        smsSent: deliveryResults.some(
+          (r) => r.channel === NotificationChannel.SMS && r.success,
+        ),
+        pushSentAt: deliveryResults.find(
+          (r) => r.channel === NotificationChannel.PUSH && r.success,
+        )?.timestamp,
+        smsSentAt: deliveryResults.find(
+          (r) => r.channel === NotificationChannel.SMS && r.success,
+        )?.timestamp,
       });
     } catch (error) {
-      this.logger.error(`Failed to save notification history for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to save notification history for user ${userId}:`,
+        error,
+      );
     }
 
     return deliveryResults;
@@ -122,14 +144,17 @@ export class NotificationsService {
     payloads: NotificationPayload[],
   ): Promise<NotificationDeliveryResult[][]> {
     const results = await Promise.all(
-      payloads.map(payload => this.sendNotification(payload)),
+      payloads.map((payload) => this.sendNotification(payload)),
     );
 
     this.logger.log(`Bulk notifications completed: ${payloads.length} sent`);
     return results;
   }
 
-  async notifyNearbyDrivers(rideId: number, pickupLocation: { lat: number; lng: number }): Promise<void> {
+  async notifyNearbyDrivers(
+    rideId: number,
+    pickupLocation: { lat: number; lng: number },
+  ): Promise<void> {
     try {
       // Find nearby drivers (within 5km)
       const nearbyDrivers = await this.prisma.driver.findMany({
@@ -147,23 +172,30 @@ export class NotificationsService {
 
       // For now, we'll send a generic notification to test the system
       // In a real implementation, you'd get the driver-user mapping from your database
-      const notifications: NotificationPayload[] = nearbyDrivers.map(driver => ({
-        userId: `driver_${driver.id}`, // Placeholder - replace with actual user ID mapping
-        type: NotificationType.RIDE_REQUEST,
-        title: 'New Ride Request',
-        message: 'A new ride is available in your area',
-        data: {
-          rideId,
-          pickupLocation,
-        },
-        channels: [NotificationChannel.PUSH],
-        priority: 'high',
-      }));
+      const notifications: NotificationPayload[] = nearbyDrivers.map(
+        (driver) => ({
+          userId: `driver_${driver.id}`, // Placeholder - replace with actual user ID mapping
+          type: NotificationType.RIDE_REQUEST,
+          title: 'New Ride Request',
+          message: 'A new ride is available in your area',
+          data: {
+            rideId,
+            pickupLocation,
+          },
+          channels: [NotificationChannel.PUSH],
+          priority: 'high',
+        }),
+      );
 
       await this.sendBulkNotifications(notifications);
-      this.logger.log(`Notified ${nearbyDrivers.length} drivers about ride ${rideId}`);
+      this.logger.log(
+        `Notified ${nearbyDrivers.length} drivers about ride ${rideId}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to notify nearby drivers for ride ${rideId}:`, error);
+      this.logger.error(
+        `Failed to notify nearby drivers for ride ${rideId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -238,7 +270,10 @@ export class NotificationsService {
 
       this.logger.log(`Push token registered for user ${userId}`);
     } catch (error) {
-      this.logger.error(`Failed to register push token for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to register push token for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -258,7 +293,10 @@ export class NotificationsService {
 
       this.logger.log(`Push token unregistered for user ${userId}`);
     } catch (error) {
-      this.logger.error(`Failed to unregister push token for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to unregister push token for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -290,7 +328,10 @@ export class NotificationsService {
 
       this.logger.log(`Notification preferences updated for user ${userId}`);
     } catch (error) {
-      this.logger.error(`Failed to update notification preferences for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to update notification preferences for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -308,12 +349,18 @@ export class NotificationsService {
         skip: offset,
       });
     } catch (error) {
-      this.logger.error(`Failed to get notification history for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get notification history for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async markNotificationAsRead(notificationId: number, userId: string): Promise<void> {
+  async markNotificationAsRead(
+    notificationId: number,
+    userId: string,
+  ): Promise<void> {
     try {
       await this.prisma.notification.updateMany({
         where: {
@@ -326,7 +373,10 @@ export class NotificationsService {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to mark notification ${notificationId} as read:`, error);
+      this.logger.error(
+        `Failed to mark notification ${notificationId} as read:`,
+        error,
+      );
       throw error;
     }
   }
@@ -337,17 +387,22 @@ export class NotificationsService {
         where: { userClerkId: userId },
       });
 
-      return preferences || {
-        pushEnabled: true,
-        smsEnabled: false,
-        emailEnabled: false,
-        rideUpdates: true,
-        driverMessages: true,
-        promotional: false,
-        emergencyAlerts: true,
-      };
+      return (
+        preferences || {
+          pushEnabled: true,
+          smsEnabled: false,
+          emailEnabled: false,
+          rideUpdates: true,
+          driverMessages: true,
+          promotional: false,
+          emergencyAlerts: true,
+        }
+      );
     } catch (error) {
-      this.logger.error(`Failed to get notification preferences for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get notification preferences for user ${userId}:`,
+        error,
+      );
       return null;
     }
   }
@@ -366,7 +421,7 @@ export class NotificationsService {
         },
       });
 
-      return tokens.map(token => ({
+      return tokens.map((token) => ({
         token: token.token,
         deviceType: token.deviceType || undefined,
         deviceId: token.deviceId || undefined,
@@ -378,7 +433,7 @@ export class NotificationsService {
     }
   }
 
-  private async getUserPhoneNumber(userId: string): Promise<string> {
+  private getUserPhoneNumber(): string {
     // This would typically come from user profile
     // For now, return a placeholder
     return '+1234567890';
@@ -398,7 +453,7 @@ export class NotificationsService {
     // Use SMS for critical notifications
     if (
       (type === NotificationType.EMERGENCY_TRIGGERED ||
-       type === NotificationType.PAYMENT_FAILED) &&
+        type === NotificationType.PAYMENT_FAILED) &&
       preferences?.smsEnabled
     ) {
       channels.push(NotificationChannel.SMS);
@@ -423,7 +478,9 @@ export class NotificationsService {
     }
   }
 
-  private getNotificationTypeForRideStatus(status: string): NotificationType | null {
+  private getNotificationTypeForRideStatus(
+    status: string,
+  ): NotificationType | null {
     switch (status) {
       case 'accepted':
         return NotificationType.RIDE_ACCEPTED;

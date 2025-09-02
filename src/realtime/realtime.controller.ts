@@ -1,5 +1,11 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 import { RealTimeService } from '../websocket/real-time.service';
 import { LocationTrackingService } from '../redis/location-tracking.service';
 
@@ -72,7 +78,7 @@ export class RealtimeController {
           type: 'object',
           properties: {
             lat: { type: 'number', example: 40.7128 },
-            lng: { type: 'number', example: -74.0060 },
+            lng: { type: 'number', example: -74.006 },
           },
         },
         rideId: { type: 'number', example: 123 },
@@ -80,8 +86,19 @@ export class RealtimeController {
     },
   })
   @ApiResponse({ status: 200, description: 'Location update published' })
-  async testDriverLocation(@Body() data: { driverId: number; location: { lat: number; lng: number }; rideId?: number }) {
-    await this.locationTrackingService.updateDriverLocation(data.driverId, data.location, data.rideId);
+  async testDriverLocation(
+    @Body()
+    data: {
+      driverId: number;
+      location: { lat: number; lng: number };
+      rideId?: number;
+    },
+  ) {
+    await this.locationTrackingService.updateDriverLocation(
+      data.driverId,
+      data.location,
+      data.rideId,
+    );
     return { message: 'Driver location updated via Redis Pub/Sub' };
   }
 
@@ -98,7 +115,10 @@ export class RealtimeController {
   })
   @ApiResponse({ status: 200, description: 'User subscribed to ride updates' })
   async testRideSubscribe(@Body() data: { rideId: number; userId: string }) {
-    await this.locationTrackingService.subscribeToRide(data.rideId, data.userId);
+    await this.locationTrackingService.subscribeToRide(
+      data.rideId,
+      data.userId,
+    );
     return { message: `User ${data.userId} subscribed to ride ${data.rideId}` };
   }
 
@@ -114,7 +134,7 @@ export class RealtimeController {
           type: 'object',
           properties: {
             lat: { type: 'number', example: 40.7128 },
-            lng: { type: 'number', example: -74.0060 },
+            lng: { type: 'number', example: -74.006 },
           },
         },
         message: { type: 'string', example: 'Help needed!' },
@@ -122,12 +142,15 @@ export class RealtimeController {
     },
   })
   @ApiResponse({ status: 200, description: 'Emergency alert sent' })
-  async testEmergencyAlert(@Body() data: {
-    userId: string;
-    rideId: number;
-    location: { lat: number; lng: number };
-    message: string;
-  }) {
+  async testEmergencyAlert(
+    @Body()
+    data: {
+      userId: string;
+      rideId: number;
+      location: { lat: number; lng: number };
+      message: string;
+    },
+  ) {
     await this.locationTrackingService.sendEmergencyAlert(data);
     return { message: 'Emergency alert sent via Redis Pub/Sub' };
   }
@@ -155,7 +178,8 @@ export class RealtimeController {
     },
   })
   async getDriverLocation(@Param('driverId') driverId: string) {
-    const location: DriverLocationInfo | null = await this.locationTrackingService.getDriverLocation(Number(driverId));
+    const location: DriverLocationInfo | null =
+      await this.locationTrackingService.getDriverLocation(Number(driverId));
     return {
       driverId: Number(driverId),
       location,
@@ -174,7 +198,10 @@ export class RealtimeController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Event emitted to WebSocket clients' })
+  @ApiResponse({
+    status: 200,
+    description: 'Event emitted to WebSocket clients',
+  })
   async emitWebSocketEvent(@Body() data: { event: string; data: any }) {
     // This would require access to the WebSocket server instance
     // For now, just return success
@@ -196,7 +223,10 @@ export class RealtimeController {
           type: 'object',
           properties: {
             type: { type: 'string', example: 'WebSocket' },
-            useCase: { type: 'string', example: 'Real-time bidirectional communication' },
+            useCase: {
+              type: 'string',
+              example: 'Real-time bidirectional communication',
+            },
             advantages: { type: 'array', items: { type: 'string' } },
             connections: { type: 'number' },
           },
