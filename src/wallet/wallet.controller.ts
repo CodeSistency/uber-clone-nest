@@ -16,8 +16,16 @@ export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get user wallet balance and transaction history' })
-  @ApiQuery({ name: 'userId', description: 'The Clerk ID of the user' })
+  @ApiOperation({
+    summary: 'Get user wallet balance and transaction history',
+    description: 'Retrieve the current wallet balance and complete transaction history for a user'
+  })
+  @ApiQuery({
+    name: 'userId',
+    description: 'The Clerk ID of the user',
+    example: 'user_2abc123def456',
+    required: true
+  })
   @ApiResponse({
     status: 200,
     description: 'Returns wallet and transaction data',
@@ -27,14 +35,38 @@ export class WalletController {
         data: {
           type: 'object',
           properties: {
-            wallet: { type: 'object' },
-            transactions: { type: 'array' },
-          },
-        },
-      },
-    },
+            wallet: {
+              type: 'object',
+              properties: {
+                id: { type: 'number', example: 1 },
+                user_clerk_id: { type: 'string', example: 'user_2abc123def456' },
+                balance: { type: 'number', example: 125.50 },
+                currency: { type: 'string', example: 'USD' },
+                created_at: { type: 'string', format: 'date-time' },
+                updated_at: { type: 'string', format: 'date-time' }
+              }
+            },
+            transactions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  wallet_id: { type: 'number', example: 1 },
+                  amount: { type: 'number', example: 50.00 },
+                  type: { type: 'string', example: 'credit', enum: ['credit', 'debit'] },
+                  description: { type: 'string', example: 'Wallet top-up' },
+                  created_at: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   })
   @ApiResponse({ status: 400, description: 'User ID is missing' })
+  @ApiResponse({ status: 404, description: 'Wallet not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getUserWallet(@Query('userId') userId: string): Promise<{ data: any }> {
     const result = await this.walletService.getUserWallet(userId);
@@ -42,10 +74,31 @@ export class WalletController {
   }
 
   @Post()
-  @ApiOperation({ summary: "Add funds to a user's wallet" })
-  @ApiBody({ type: AddFundsDto })
-  @ApiResponse({ status: 200, description: 'Funds added successfully' })
-  @ApiResponse({ status: 400, description: 'Missing fields' })
+  @ApiOperation({
+    summary: "Add funds to a user's wallet",
+    description: 'Add money to a user wallet and create a transaction record'
+  })
+  @ApiBody({
+    type: AddFundsDto,
+    description: 'Fund addition details'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Funds added successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        user_clerk_id: { type: 'string', example: 'user_2abc123def456' },
+        balance: { type: 'number', example: 175.50 },
+        currency: { type: 'string', example: 'USD' },
+        created_at: { type: 'string', format: 'date-time' },
+        updated_at: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Missing fields or invalid amount' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async addFunds(@Body() addFundsDto: AddFundsDto): Promise<Wallet> {
     return this.walletService.addFunds(addFundsDto);

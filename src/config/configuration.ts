@@ -93,6 +93,26 @@ export default (): Config => ({
   },
 
   // ===============================
+  // CLERK CONFIGURATION
+  // ===============================
+  clerk: {
+    secretKey: process.env.CLERK_SECRET_KEY || '',
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY || '',
+    jwtPublicKey: process.env.CLERK_JWT_PUBLIC_KEY || '',
+    apiUrl: process.env.CLERK_API_URL || 'https://api.clerk.com/v1',
+    frontendApi: process.env.CLERK_FRONTEND_API || 'clerk.your-domain.com',
+    domain: process.env.CLERK_DOMAIN || 'your-domain.com',
+
+    // Helper methods
+    isConfigured: (): boolean => {
+      return !!(process.env.CLERK_SECRET_KEY && process.env.CLERK_PUBLISHABLE_KEY && process.env.CLERK_JWT_PUBLIC_KEY);
+    },
+    getBaseUrl: (): string => {
+      return process.env.NODE_ENV === 'production' ? `https://${process.env.CLERK_DOMAIN || 'your-domain.com'}` : 'http://localhost:3000';
+    },
+  },
+
+  // ===============================
   // NOTIFICATION CONFIGURATION
   // ===============================
   notification: {

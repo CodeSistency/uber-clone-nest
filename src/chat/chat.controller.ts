@@ -16,13 +16,40 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Get(':rideId/messages')
-  @ApiOperation({ summary: 'Get chat history for a specific ride' })
-  @ApiParam({ name: 'rideId', description: 'The unique ID of the ride' })
+  @ApiOperation({
+    summary: 'Get chat history for a specific ride',
+    description: 'Retrieve all chat messages exchanged between driver and passenger for a specific ride'
+  })
+  @ApiParam({
+    name: 'rideId',
+    description: 'The unique ID of the ride',
+    example: '1',
+    type: Number
+  })
   @ApiResponse({
     status: 200,
-    description: 'Returns an array of chat messages',
+    description: 'Returns an array of chat messages ordered by timestamp',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1 },
+          rideId: { type: 'number', example: 1 },
+          senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+          messageText: { type: 'string', example: "I'll be there in 2 minutes." },
+          created_at: { type: 'string', format: 'date-time' },
+          updated_at: { type: 'string', format: 'date-time' }
+        }
+      }
+    }
   })
-  @ApiResponse({ status: 400, description: 'Ride ID is missing' })
+  @ApiResponse({
+    status: 400,
+    description: 'Ride ID is missing or invalid'
+  })
+  @ApiResponse({ status: 403, description: 'Not authorized to view this ride chat' })
+  @ApiResponse({ status: 404, description: 'Ride not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getRideMessages(
     @Param('rideId') rideId: string,
@@ -31,12 +58,41 @@ export class ChatController {
   }
 
   @Get('order/:orderId/messages')
-  @ApiOperation({ summary: 'Get chat history for a specific order' })
-  @ApiParam({ name: 'orderId', description: 'The unique ID of the order' })
+  @ApiOperation({
+    summary: 'Get chat history for a specific order',
+    description: 'Retrieve all chat messages for a delivery order conversation'
+  })
+  @ApiParam({
+    name: 'orderId',
+    description: 'The unique ID of the delivery order',
+    example: '1',
+    type: Number
+  })
   @ApiResponse({
     status: 200,
-    description: 'Returns an array of chat messages',
+    description: 'Returns an array of chat messages for the order',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1 },
+          orderId: { type: 'number', example: 1 },
+          senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+          messageText: { type: 'string', example: 'Package delivered successfully.' },
+          created_at: { type: 'string', format: 'date-time' },
+          updated_at: { type: 'string', format: 'date-time' }
+        }
+      }
+    }
   })
+  @ApiResponse({
+    status: 400,
+    description: 'Order ID is missing or invalid'
+  })
+  @ApiResponse({ status: 403, description: 'Not authorized to view this order chat' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 500, description: 'Database error' })
   async getOrderMessages(
     @Param('orderId') orderId: string,
   ): Promise<ChatMessage[]> {
@@ -44,11 +100,41 @@ export class ChatController {
   }
 
   @Post(':rideId/messages')
-  @ApiOperation({ summary: 'Send a new message in the chat for a ride' })
-  @ApiParam({ name: 'rideId', description: 'The unique ID of the ride' })
-  @ApiBody({ type: SendMessageDto })
-  @ApiResponse({ status: 201, description: 'Message sent successfully' })
-  @ApiResponse({ status: 400, description: 'Missing fields' })
+  @ApiOperation({
+    summary: 'Send a new message in the chat for a ride',
+    description: 'Send a message in the ride chat between driver and passenger'
+  })
+  @ApiParam({
+    name: 'rideId',
+    description: 'The unique ID of the ride',
+    example: '1',
+    type: Number
+  })
+  @ApiBody({
+    type: SendMessageDto,
+    description: 'Message details including sender and content'
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Message sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        rideId: { type: 'number', example: 1 },
+        senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+        messageText: { type: 'string', example: "I'll be there in 2 minutes." },
+        created_at: { type: 'string', format: 'date-time' },
+        updated_at: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing fields or invalid message content'
+  })
+  @ApiResponse({ status: 403, description: 'Not authorized to send messages for this ride' })
+  @ApiResponse({ status: 404, description: 'Ride not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async sendRideMessage(
     @Param('rideId') rideId: string,
@@ -58,10 +144,42 @@ export class ChatController {
   }
 
   @Post('order/:orderId/messages')
-  @ApiOperation({ summary: 'Send a new message in the chat for an order' })
-  @ApiParam({ name: 'orderId', description: 'The unique ID of the order' })
-  @ApiBody({ type: SendMessageDto })
-  @ApiResponse({ status: 201, description: 'Message sent successfully' })
+  @ApiOperation({
+    summary: 'Send a new message in the chat for an order',
+    description: 'Send a message in the delivery order chat conversation'
+  })
+  @ApiParam({
+    name: 'orderId',
+    description: 'The unique ID of the delivery order',
+    example: '1',
+    type: Number
+  })
+  @ApiBody({
+    type: SendMessageDto,
+    description: 'Message details including sender and content'
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Message sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        orderId: { type: 'number', example: 1 },
+        senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+        messageText: { type: 'string', example: 'Package is on the way.' },
+        created_at: { type: 'string', format: 'date-time' },
+        updated_at: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing fields or invalid message content'
+  })
+  @ApiResponse({ status: 403, description: 'Not authorized to send messages for this order' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({ status: 500, description: 'Database error' })
   async sendOrderMessage(
     @Param('orderId') orderId: string,
     @Body() sendMessageDto: SendMessageDto,
@@ -70,9 +188,40 @@ export class ChatController {
   }
 
   @Get('user/:userId/messages')
-  @ApiOperation({ summary: 'Get all messages sent by a user' })
-  @ApiParam({ name: 'userId', description: 'The Clerk ID of the user' })
-  @ApiResponse({ status: 200, description: 'Returns user messages' })
+  @ApiOperation({
+    summary: 'Get all messages sent by a user',
+    description: 'Retrieve all chat messages sent by a specific user across all rides and orders'
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'The Clerk ID of the user whose messages to retrieve',
+    example: 'user_2abc123def456'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns an array of all messages sent by the user',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1 },
+          rideId: { type: 'number', example: 1, nullable: true },
+          orderId: { type: 'number', example: null, nullable: true },
+          senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+          messageText: { type: 'string', example: 'Thank you for the ride!' },
+          created_at: { type: 'string', format: 'date-time' },
+          updated_at: { type: 'string', format: 'date-time' }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User ID is missing or invalid'
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 500, description: 'Database error' })
   async getUserMessages(
     @Param('userId') userId: string,
   ): Promise<ChatMessage[]> {

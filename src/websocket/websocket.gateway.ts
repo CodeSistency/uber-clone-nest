@@ -16,6 +16,13 @@ import {
   NotificationType,
   NotificationChannel,
 } from '../notifications/interfaces/notification.interface';
+import { DriverLocationUpdateDto } from './dto/driver-location-update.dto';
+import { RideJoinDto } from './dto/ride-join.dto';
+import { RideAcceptDto } from './dto/ride-accept.dto';
+import { ChatMessageDto } from './dto/chat-message.dto';
+import { DriverStatusUpdateDto } from './dto/driver-status-update.dto';
+import { EmergencySOSDto } from './dto/emergency-sos.dto';
+import { RideCompleteDto } from './dto/ride-complete.dto';
 
 @WebSocketGateway({
   cors: {
@@ -56,11 +63,7 @@ export class WebSocketGatewayClass
   @SubscribeMessage('driver:location:update')
   handleDriverLocationUpdate(
     @MessageBody()
-    data: {
-      driverId: number;
-      location: { lat: number; lng: number };
-      rideId?: number;
-    },
+    data: DriverLocationUpdateDto,
   ) {
     const { driverId, location, rideId } = data;
 
@@ -81,7 +84,7 @@ export class WebSocketGatewayClass
 
   // User joins ride tracking
   @SubscribeMessage('ride:join')
-  handleJoinRide(@MessageBody() data: { rideId: number; userId: string }) {
+  handleJoinRide(@MessageBody() data: RideJoinDto) {
     const { rideId, userId } = data;
 
     // Join ride room
@@ -102,7 +105,7 @@ export class WebSocketGatewayClass
   // Driver accepts ride
   @SubscribeMessage('ride:accept')
   async handleRideAccept(
-    @MessageBody() data: { rideId: number; driverId: number; userId: string },
+    @MessageBody() data: RideAcceptDto,
     @ConnectedSocket() client: Socket,
   ) {
     const { rideId, driverId, userId } = data;
@@ -144,12 +147,7 @@ export class WebSocketGatewayClass
   @SubscribeMessage('chat:message')
   handleChatMessage(
     @MessageBody()
-    data: {
-      rideId?: number;
-      orderId?: number;
-      senderId: string;
-      message: string;
-    },
+    data: ChatMessageDto,
   ) {
     const { rideId, orderId, senderId, message } = data;
 
@@ -169,7 +167,7 @@ export class WebSocketGatewayClass
   // Driver status updates
   @SubscribeMessage('driver:status:update')
   handleDriverStatusUpdate(
-    @MessageBody() data: { driverId: number; status: string },
+    @MessageBody() data: DriverStatusUpdateDto,
   ) {
     const { driverId, status } = data;
 
@@ -190,12 +188,7 @@ export class WebSocketGatewayClass
   @SubscribeMessage('emergency:sos')
   async handleEmergencySOS(
     @MessageBody()
-    data: {
-      userId: string;
-      rideId: number;
-      location: { lat: number; lng: number };
-      message: string;
-    },
+    data: EmergencySOSDto,
   ) {
     const { userId, rideId, location, message } = data;
 
@@ -251,12 +244,7 @@ export class WebSocketGatewayClass
   @SubscribeMessage('ride:complete')
   async handleRideComplete(
     @MessageBody()
-    data: {
-      rideId: number;
-      driverId: number;
-      userId: string;
-      fare: number;
-    },
+    data: RideCompleteDto,
   ) {
     const { rideId, driverId, userId, fare } = data;
 

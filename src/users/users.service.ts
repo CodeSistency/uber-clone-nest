@@ -81,4 +81,56 @@ export class UsersService {
     });
     return orders;
   }
+
+  /**
+   * Crear usuario con Clerk ID obtenido del token
+   */
+  async createUserWithClerk(
+    clerkId: string,
+    userData: { name: string; email: string }
+  ): Promise<User> {
+    return this.prisma.user.create({
+      data: {
+        clerkId,
+        name: userData.name,
+        email: userData.email,
+      },
+    });
+  }
+
+  /**
+   * Obtener usuario actual basado en Clerk ID del token
+   */
+  async getCurrentUser(clerkId: string): Promise<User | null> {
+    return this.findUserByClerkId(clerkId);
+  }
+
+  /**
+   * Actualizar usuario actual basado en Clerk ID del token
+   */
+  async updateCurrentUser(
+    clerkId: string,
+    data: { name?: string; email?: string }
+  ): Promise<User> {
+    // Primero verificar que el usuario existe
+    const user = await this.findUserByClerkId(clerkId);
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    return this.prisma.user.update({
+      where: { clerkId },
+      data,
+    });
+  }
+
+  /**
+   * Verificar si un usuario existe por Clerk ID
+   */
+  async userExistsByClerkId(clerkId: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { clerkId },
+    });
+    return !!user;
+  }
 }

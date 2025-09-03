@@ -20,9 +20,35 @@ export class RidesController {
   constructor(private readonly ridesService: RidesService) {}
 
   @Post('create')
-  @ApiOperation({ summary: 'Create a new ride record' })
+  @ApiOperation({
+    summary: 'Create a new ride record',
+    description: 'Create a new ride request with origin and destination details'
+  })
   @ApiBody({ type: CreateRideDto })
-  @ApiResponse({ status: 201, description: 'Ride created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Ride created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        origin_address: { type: 'string', example: '123 Main St, New York, NY' },
+        destination_address: { type: 'string', example: '456 Broadway, New York, NY' },
+        origin_latitude: { type: 'number', example: 40.7128 },
+        origin_longitude: { type: 'number', example: -74.006 },
+        destination_latitude: { type: 'number', example: 40.7589 },
+        destination_longitude: { type: 'number', example: -73.9851 },
+        ride_time: { type: 'number', example: 25 },
+        fare_price: { type: 'number', example: 15.75 },
+        payment_status: { type: 'string', example: 'pending' },
+        status: { type: 'string', example: 'requested' },
+        user_id: { type: 'string', example: 'user_2abc123def456' },
+        tier_id: { type: 'number', example: 1 },
+        created_at: { type: 'string', format: 'date-time' },
+        updated_at: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
   @ApiResponse({ status: 400, description: 'Missing required fields' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async createRide(@Body() createRideDto: CreateRideDto): Promise<Ride> {
@@ -110,10 +136,36 @@ export class RidesController {
   @Post(':rideId/accept')
   @ApiOperation({
     summary: 'Allow a driver to accept an available ride request',
+    description: 'Driver accepts a ride request and becomes the assigned driver for that ride'
   })
-  @ApiParam({ name: 'rideId', description: 'The unique ID of the ride' })
-  @ApiBody({ type: AcceptRideDto })
-  @ApiResponse({ status: 200, description: 'Ride accepted successfully' })
+  @ApiParam({
+    name: 'rideId',
+    description: 'The unique ID of the ride',
+    example: '1',
+    type: Number
+  })
+  @ApiBody({
+    type: AcceptRideDto,
+    description: 'Driver information for accepting the ride'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Ride accepted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        origin_address: { type: 'string', example: '123 Main St, New York, NY' },
+        destination_address: { type: 'string', example: '456 Broadway, New York, NY' },
+        status: { type: 'string', example: 'accepted' },
+        driver_id: { type: 'number', example: 5 },
+        fare_price: { type: 'number', example: 15.75 },
+        payment_status: { type: 'string', example: 'pending' },
+        accepted_at: { type: 'string', format: 'date-time' },
+        updated_at: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
   @ApiResponse({ status: 400, description: 'Missing fields' })
   @ApiResponse({
     status: 404,
@@ -132,10 +184,36 @@ export class RidesController {
   }
 
   @Post(':rideId/rate')
-  @ApiOperation({ summary: 'Submit a rating for a completed ride' })
-  @ApiParam({ name: 'rideId', description: 'The unique ID of the ride' })
-  @ApiBody({ type: RateRideDto })
-  @ApiResponse({ status: 201, description: 'Rating submitted successfully' })
+  @ApiOperation({
+    summary: 'Submit a rating for a completed ride',
+    description: 'Allow users to rate their ride experience and provide feedback'
+  })
+  @ApiParam({
+    name: 'rideId',
+    description: 'The unique ID of the ride',
+    example: '1',
+    type: Number
+  })
+  @ApiBody({
+    type: RateRideDto,
+    description: 'Rating information including score and optional comment'
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Rating submitted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        ride_id: { type: 'number', example: 1 },
+        rated_by_clerk_id: { type: 'string', example: 'user_2abc123def456' },
+        rated_clerk_id: { type: 'string', example: 'driver_clerk_id_1' },
+        rating_value: { type: 'number', example: 5 },
+        comment: { type: 'string', example: 'Great ride! Driver was very professional.' },
+        created_at: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
   @ApiResponse({
     status: 400,
     description: 'Missing fields or invalid rating value',

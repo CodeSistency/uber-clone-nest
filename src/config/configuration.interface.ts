@@ -50,6 +50,17 @@ export interface JWTConfig {
   refreshExpiresIn: string;
 }
 
+export interface ClerkConfig {
+  secretKey: string;
+  publishableKey: string;
+  jwtPublicKey: string;
+  apiUrl: string;
+  frontendApi: string;
+  domain: string;
+  isConfigured: () => boolean;
+  getBaseUrl: () => string;
+}
+
 export interface NotificationConfig {
   rateLimitPerHour: number;
   rateLimitPerMinute: number;
@@ -81,5 +92,6 @@ export interface Config {
   redis: RedisConfig;
   stripe: StripeConfig;
   jwt: JWTConfig;
+  clerk: ClerkConfig;
   notification: NotificationConfig;
 }

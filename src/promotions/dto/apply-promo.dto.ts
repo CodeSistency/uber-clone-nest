@@ -3,12 +3,22 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class ApplyPromoDto {
-  @ApiProperty({ example: 'WELCOME10' })
+  @ApiProperty({
+    description: 'The promotional code to apply',
+    example: 'WELCOME10',
+    minLength: 3,
+    maxLength: 20
+  })
   @IsNotEmpty()
   @IsString()
   promoCode: string;
 
-  @ApiProperty({ example: 25.0 })
+  @ApiProperty({
+    description: 'The total amount of the ride before discount',
+    example: 25.0,
+    minimum: 0,
+    type: Number
+  })
   @IsNotEmpty()
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()

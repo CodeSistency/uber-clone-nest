@@ -1,9 +1,13 @@
 import { IsNotEmpty, IsEmail, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateUserDto {
+/**
+ * DTO para crear usuario usando autenticación de Clerk
+ * El clerkId se obtiene automáticamente del token JWT
+ */
+export class CreateUserClerkDto {
   @ApiProperty({
-    description: 'Full name of the user',
+    description: 'Full name of the user (obtained from Clerk token)',
     example: 'John Doe',
     minLength: 2,
     maxLength: 100
@@ -13,7 +17,7 @@ export class CreateUserDto {
   name: string;
 
   @ApiProperty({
-    description: 'Email address of the user',
+    description: 'Email address of the user (obtained from Clerk token)',
     example: 'john.doe@example.com',
     format: 'email'
   })
@@ -21,13 +25,5 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({
-    description: 'Clerk authentication user ID',
-    example: 'user_2abc123def456ghi789jkl012',
-    minLength: 10,
-    maxLength: 50
-  })
-  @IsNotEmpty()
-  @IsString()
-  clerkId: string;
+  // clerkId se obtiene del token, no se requiere en el body
 }

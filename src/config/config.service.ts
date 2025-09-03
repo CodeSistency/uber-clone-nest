@@ -127,6 +127,35 @@ export class AppConfigService {
   }
 
   // ===============================
+  // CLERK CONFIGURATION
+  // ===============================
+  get clerk() {
+    const secretKey = this.configService.get<string>('CLERK_SECRET_KEY');
+    const publishableKey = this.configService.get<string>('CLERK_PUBLISHABLE_KEY');
+    const jwtPublicKey = this.configService.get<string>('CLERK_JWT_PUBLIC_KEY');
+    const apiUrl = this.configService.get<string>('CLERK_API_URL', 'https://api.clerk.com/v1');
+    const frontendApi = this.configService.get<string>('CLERK_FRONTEND_API', 'clerk.your-domain.com');
+    const domain = this.configService.get<string>('CLERK_DOMAIN', 'your-domain.com');
+
+    return {
+      secretKey: secretKey || '',
+      publishableKey: publishableKey || '',
+      jwtPublicKey: jwtPublicKey || '',
+      apiUrl: apiUrl || 'https://api.clerk.com/v1',
+      frontendApi: frontendApi || 'clerk.your-domain.com',
+      domain: domain || 'your-domain.com',
+
+      // Helper methods
+      isConfigured: (): boolean => {
+        return !!(secretKey && publishableKey && jwtPublicKey);
+      },
+      getBaseUrl: (): string => {
+        return this.app.environment === 'production' ? `https://${domain}` : 'http://localhost:3000';
+      },
+    };
+  }
+
+  // ===============================
   // NOTIFICATION CONFIGURATION
   // ===============================
   get notification() {
@@ -162,6 +191,7 @@ export class AppConfigService {
       redis: this.redis,
       stripe: this.stripe,
       jwt: this.jwt,
+      clerk: this.clerk,
       notification: this.notification,
     };
   }

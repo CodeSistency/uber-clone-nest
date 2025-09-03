@@ -91,6 +91,30 @@ JWT_EXPIRES_IN=1h
 JWT_REFRESH_EXPIRES_IN=7d
 
 # =========================================
+# CLERK CONFIGURATION
+# =========================================
+
+# Clerk Secret Key (from Clerk Dashboard - API Keys)
+CLERK_SECRET_KEY=sk_test_your-clerk-secret-key-here
+
+# Clerk Publishable Key (from Clerk Dashboard - API Keys)
+CLERK_PUBLISHABLE_KEY=pk_test_your-clerk-publishable-key-here
+
+# Clerk JWT Public Key (for token verification in production)
+# You can get this from your Clerk Dashboard under "API Keys" > "JWT Public Key"
+CLERK_JWT_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\nYOUR_CLERK_JWT_PUBLIC_KEY_HERE\n-----END PUBLIC KEY-----
+
+# Clerk API URL (usually https://api.clerk.com/v1 for production)
+CLERK_API_URL=https://api.clerk.com/v1
+
+# Clerk Frontend API URL (your Clerk domain)
+# Example: clerk.your-domain.com
+CLERK_FRONTEND_API=clerk.your-domain.com
+
+# Your domain for production
+CLERK_DOMAIN=your-domain.com
+
+# =========================================
 # NOTIFICATION CONFIGURATION
 # =========================================
 

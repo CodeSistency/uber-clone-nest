@@ -75,7 +75,7 @@ export const validationSchema = Joi.object({
   // ===============================
   STRIPE_SECRET_KEY: Joi.string()
     .optional()
-    .pattern(/^(sk_test_|sk_live_)[a-zA-Z0-9]+$/)
+    .pattern(/^(sk_test_|sk_live_)[a-zA-Z0-9_-]+$/)
     .messages({
       'string.pattern.base': 'STRIPE_SECRET_KEY debe comenzar con sk_test_ o sk_live_'
     }),
@@ -138,6 +138,46 @@ export const validationSchema = Joi.object({
 
   SWAGGER_VERSION: Joi.string()
     .default('1.0'),
+
+  // ===============================
+  // CLERK CONFIGURATION (OPCIONAL)
+  // ===============================
+  CLERK_SECRET_KEY: Joi.string()
+    .optional()
+    .pattern(/^(sk_test_|sk_live_)[a-zA-Z0-9_-]+$/)
+    .messages({
+      'string.pattern.base': 'CLERK_SECRET_KEY debe comenzar con sk_test_ o sk_live_'
+    }),
+
+  CLERK_PUBLISHABLE_KEY: Joi.string()
+    .optional()
+    .pattern(/^(pk_test_|pk_live_)[a-zA-Z0-9_-]+$/)
+    .messages({
+      'string.pattern.base': 'CLERK_PUBLISHABLE_KEY debe comenzar con pk_test_ o pk_live_'
+    }),
+
+  CLERK_JWT_PUBLIC_KEY: Joi.string()
+    .optional()
+    .min(20) // Mínima longitud razonable para una clave
+    .messages({
+      'string.min': 'CLERK_JWT_PUBLIC_KEY debe tener al menos 20 caracteres'
+    }),
+
+  CLERK_API_URL: Joi.string()
+    .optional()
+    .default('https://api.clerk.com/v1')
+    .pattern(/^https:\/\/.+$/)
+    .messages({
+      'string.pattern.base': 'CLERK_API_URL debe ser una URL HTTPS válida'
+    }),
+
+  CLERK_FRONTEND_API: Joi.string()
+    .optional()
+    .default('clerk.your-domain.com'),
+
+  CLERK_DOMAIN: Joi.string()
+    .optional()
+    .default('your-domain.com'),
 
   // ===============================
   // NOTIFICATION CONFIGURATION
