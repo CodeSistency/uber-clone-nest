@@ -99,6 +99,23 @@ export class UsersService {
   }
 
   /**
+   * Actualizar el Clerk ID de un usuario existente
+   */
+  async linkUserWithClerk(
+    userId: number,
+    clerkId: string
+  ): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { clerkId },
+      include: {
+        wallet: true,
+        emergencyContacts: true,
+      },
+    });
+  }
+
+  /**
    * Obtener usuario actual basado en Clerk ID del token
    */
   async getCurrentUser(clerkId: string): Promise<User | null> {

@@ -35,7 +35,9 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Uber Clone API')
     .setDescription(
-      'Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features',
+      'Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features. ' +
+      'Use the "Authorize" button to set your JWT token for testing authenticated endpoints. ' +
+      'Note: Registration endpoint (POST /api/user) is public and does not require authentication.',
     )
     .setVersion('1.0.0')
     .addTag('users', 'User management endpoints')
@@ -47,9 +49,24 @@ async function bootstrap() {
     .addTag('chat', 'Chat and messaging endpoints')
     .addTag('stripe', 'Stripe payment endpoints')
     .addServer('http://localhost:3000', 'Development server')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token. For development testing, you can use: Bearer dev-test-token',
+        in: 'header',
+      },
+      'JWT-auth', // This name will be used in the security schemes
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+
+  // Note: Security is applied per endpoint using guards, not globally
+  // This allows public endpoints like registration to work without authentication
+
   SwaggerModule.setup('api', app, document);
 
   // Enable CORS

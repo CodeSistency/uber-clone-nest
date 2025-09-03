@@ -41,6 +41,33 @@ export class ClerkAuthGuard implements CanActivate {
       return true;
     } catch (error) {
       console.log('❌ ClerkAuthGuard - Error al verificar token:', error.message);
+
+      // En modo desarrollo, si el token falla, intentar crear un usuario de prueba
+      if (process.env.NODE_ENV === 'development' && token.startsWith('dev-test-token')) {
+        console.log('🧪 ClerkAuthGuard - Usando token de desarrollo para pruebas');
+
+        // Generar un ID único basado en el timestamp para permitir múltiples usuarios
+        const uniqueId = token === 'dev-test-token' ? 'user_dev_test_123' : `user_dev_test_${Date.now()}`;
+
+        // Crear información de usuario de prueba
+        const testUserInfo = {
+          sub: uniqueId,
+          userId: uniqueId,
+          email: `dev_${uniqueId}@test.com`,
+          name: 'Dev Test User',
+          firstName: 'Dev',
+          lastName: 'Test User',
+          exp: Math.floor(Date.now() / 1000) + 3600, // Expira en 1 hora
+          iat: Math.floor(Date.now() / 1000)
+        };
+
+        request.clerkUser = testUserInfo;
+        request.clerkId = testUserInfo.sub;
+
+        console.log('✅ ClerkAuthGuard - Token de desarrollo aceptado con ID:', uniqueId);
+        return true;
+      }
+
       throw new UnauthorizedException(`Token inválido o expirado: ${error.message}`);
     }
   }
