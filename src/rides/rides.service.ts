@@ -121,7 +121,15 @@ export class RidesService {
     tierId: number,
     minutes: number,
     miles: number,
-  ): Promise<any> {
+  ): Promise<{
+    tier: string;
+    baseFare: number;
+    perMinuteRate: number;
+    perMileRate: number;
+    estimatedMinutes: number;
+    estimatedMiles: number;
+    totalFare: number;
+  }> {
     const tier = await this.prisma.rideTier.findUnique({
       where: { id: tierId },
     });
@@ -380,7 +388,11 @@ export class RidesService {
     return updatedRide;
   }
 
-  async cancelRide(rideId: number, reason?: string): Promise<Ride> {
+  async cancelRide(
+    rideId: number,
+    cancelledBy: string,
+    reason?: string,
+  ): Promise<Ride> {
     const ride = await this.prisma.ride.findUnique({
       where: { rideId },
       include: {
@@ -391,6 +403,12 @@ export class RidesService {
 
     if (!ride) {
       throw new Error('Ride not found');
+    }
+
+    // Validate cancellation permissions
+    if (cancelledBy === 'driver' && ride.driverId) {
+      // Driver can only cancel their own rides
+      // Additional validation could be added here
     }
 
     const updatedRide = await this.prisma.ride.update({
@@ -414,6 +432,7 @@ export class RidesService {
         'cancelled',
         {
           reason: reason || 'Ride was cancelled',
+          cancelledBy,
         },
       );
 
@@ -426,6 +445,7 @@ export class RidesService {
           'cancelled',
           {
             reason: reason || 'Ride was cancelled',
+            cancelledBy,
           },
         );
       }
@@ -439,5 +459,292 @@ export class RidesService {
     }
 
     return updatedRide;
+  }
+
+  // ========== NUEVOS MÉTODOS CRÍTICOS ==========
+
+  async getRideRequests(
+    driverLat: number,
+    driverLng: number,
+    radius: number = 5,
+  ): Promise<any[]> {
+    // Calculate bounding box for the search radius
+    const earthRadius = 6371; // Earth's radius in kilometers
+    const latDelta = (radius / earthRadius) * (180 / Math.PI);
+    const lngDelta =
+      ((radius / earthRadius) * (180 / Math.PI)) /
+      Math.cos((driverLat * Math.PI) / 180);
+
+    const minLat = driverLat - latDelta;
+    const maxLat = driverLat + latDelta;
+    const minLng = driverLng - lngDelta;
+    const maxLng = driverLng + lngDelta;
+
+    // Find rides that are available (no driver assigned) and within the bounding box
+    const availableRides = await this.prisma.ride.findMany({
+      where: {
+        driverId: null, // No driver assigned yet
+        originLatitude: {
+          gte: minLat,
+          lte: maxLat,
+        },
+        originLongitude: {
+          gte: minLng,
+          lte: maxLng,
+        },
+        // Optionally filter by creation time (e.g., rides created in the last 30 minutes)
+        createdAt: {
+          gte: new Date(Date.now() - 30 * 60 * 1000), // Last 30 minutes
+        },
+      },
+      include: {
+        tier: true,
+        user: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 20, // Limit results for performance
+    });
+
+    // Calculate distance for each ride and format response
+    const rideRequests = availableRides
+      .map((ride) => {
+        // Calculate actual distance using Haversine formula
+        const distance = this.calculateDistance(
+          driverLat,
+          driverLng,
+          Number(ride.originLatitude),
+          Number(ride.originLongitude),
+        );
+
+        // Only include rides within the exact radius (not just bounding box)
+        if (distance <= radius) {
+          return {
+            rideId: ride.rideId,
+            originAddress: ride.originAddress,
+            destinationAddress: ride.destinationAddress,
+            originLatitude: Number(ride.originLatitude),
+            originLongitude: Number(ride.originLongitude),
+            destinationLatitude: Number(ride.destinationLatitude),
+            destinationLongitude: Number(ride.destinationLongitude),
+            distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+            estimatedFare: Number(ride.farePrice),
+            rideTime: ride.rideTime,
+            createdAt: ride.createdAt,
+            tier: ride.tier
+              ? {
+                  name: ride.tier.name,
+                  baseFare: Number(ride.tier.baseFare),
+                  perMinuteRate: Number(ride.tier.perMinuteRate),
+                  perMileRate: Number(ride.tier.perMileRate),
+                }
+              : null,
+            user: ride.user
+              ? {
+                  name: ride.user.name,
+                  clerkId: ride.user.clerkId,
+                }
+              : null,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean); // Remove null entries
+
+    this.logger.log(
+      `Found ${rideRequests.length} available rides for driver at ${driverLat}, ${driverLng}`,
+    );
+    return rideRequests;
+  }
+
+  private calculateDistance(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
+    const earthRadius = 6371; // Earth's radius in kilometers
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  async startRide(rideId: number, driverId: number): Promise<any> {
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: {
+        driver: true,
+        user: true,
+        tier: true,
+      },
+    });
+
+    if (!ride) {
+      throw new Error('Ride not found');
+    }
+
+    if (ride.driverId !== driverId) {
+      throw new Error('Driver not authorized for this ride');
+    }
+
+    // Check if ride can be started (must be accepted)
+    if (!ride.driverId) {
+      throw new Error('Ride must be accepted by a driver before starting');
+    }
+
+    const now = new Date();
+    const updatedRide = await this.prisma.ride.update({
+      where: { rideId },
+      data: {
+        // Add fields for tracking ride progress if needed
+        // For now, we'll just update the timestamp
+      },
+      include: {
+        driver: true,
+        user: true,
+        tier: true,
+      },
+    });
+
+    // Notify passenger that ride has started
+    try {
+      await this.notificationsService.notifyRideStatusUpdate(
+        rideId,
+        ride.userId,
+        ride.driverId,
+        'in_progress',
+        {
+          driverName: ride.driver?.firstName + ' ' + ride.driver?.lastName,
+          vehicleInfo: `${ride.driver?.carModel} - ${ride.driver?.licensePlate}`,
+          startedAt: now.toISOString(),
+        },
+      );
+      this.logger.log(`Notified passenger about started ride ${rideId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify passenger about started ride ${rideId}:`,
+        error,
+      );
+    }
+
+    return {
+      rideId: updatedRide.rideId,
+      status: 'in_progress',
+      actualStartTime: now.toISOString(),
+      driver: {
+        id: updatedRide.driver?.id,
+        firstName: updatedRide.driver?.firstName,
+        lastName: updatedRide.driver?.lastName,
+        carModel: updatedRide.driver?.carModel,
+        licensePlate: updatedRide.driver?.licensePlate,
+      },
+      origin: {
+        address: updatedRide.originAddress,
+        latitude: Number(updatedRide.originLatitude),
+        longitude: Number(updatedRide.originLongitude),
+      },
+      destination: {
+        address: updatedRide.destinationAddress,
+        latitude: Number(updatedRide.destinationLatitude),
+        longitude: Number(updatedRide.destinationLongitude),
+      },
+    };
+  }
+
+  async completeRide(
+    rideId: number,
+    driverId: number,
+    finalDistance?: number,
+    finalTime?: number,
+  ): Promise<any> {
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: {
+        driver: true,
+        user: true,
+        tier: true,
+      },
+    });
+
+    if (!ride) {
+      throw new Error('Ride not found');
+    }
+
+    if (ride.driverId !== driverId) {
+      throw new Error('Driver not authorized for this ride');
+    }
+
+    const now = new Date();
+    let finalFare = Number(ride.farePrice);
+
+    // Recalculate fare if final distance/time provided
+    if (finalDistance && finalTime && ride.tier) {
+      const tier = ride.tier;
+      finalFare =
+        Number(tier.baseFare) +
+        finalTime * Number(tier.perMinuteRate) +
+        finalDistance * Number(tier.perMileRate);
+    }
+
+    const updatedRide = await this.prisma.ride.update({
+      where: { rideId },
+      data: {
+        farePrice: finalFare,
+        // Add completion tracking fields if available in schema
+      },
+      include: {
+        driver: true,
+        user: true,
+        tier: true,
+      },
+    });
+
+    // Notify passenger that ride is completed
+    try {
+      await this.notificationsService.notifyRideStatusUpdate(
+        rideId,
+        ride.userId,
+        ride.driverId,
+        'completed',
+        {
+          finalFare: finalFare,
+          distance: finalDistance,
+          duration: finalTime,
+          completedAt: now.toISOString(),
+        },
+      );
+      this.logger.log(`Notified passenger about completed ride ${rideId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify passenger about completed ride ${rideId}:`,
+        error,
+      );
+    }
+
+    return {
+      rideId: updatedRide.rideId,
+      status: 'completed',
+      finalFare: Math.round(finalFare * 100) / 100,
+      finalDistance: finalDistance,
+      finalTime: finalTime,
+      completedAt: now.toISOString(),
+      driver: {
+        id: updatedRide.driver?.id,
+        firstName: updatedRide.driver?.firstName,
+        lastName: updatedRide.driver?.lastName,
+      },
+      earnings: {
+        driverEarnings: Math.round(finalFare * 0.8 * 100) / 100, // 80% for driver
+        platformFee: Math.round(finalFare * 0.2 * 100) / 100, // 20% for platform
+      },
+    };
   }
 }

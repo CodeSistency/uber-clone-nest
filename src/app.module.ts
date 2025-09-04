@@ -17,6 +17,9 @@ import { WebSocketModule } from './websocket/websocket.module';
 import { RedisModule } from './redis/redis.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { StoresModule } from './stores/stores.module';
+import { OrdersModule } from './orders/orders.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -37,6 +40,10 @@ import { NotificationsModule } from './notifications/notifications.module';
     RedisModule,
     RealtimeModule,
     NotificationsModule,
+    // Marketplace & Delivery modules
+    StoresModule,
+    OrdersModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

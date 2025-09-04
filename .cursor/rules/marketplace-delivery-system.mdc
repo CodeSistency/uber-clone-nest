@@ -1,0 +1,624 @@
+---
+globs: src/stores/**/*
+description: Sistema completo de marketplace y delivery con stores, orders y analytics
+---
+
+# 🛒 **Sistema de Marketplace & Delivery**
+
+## 📋 **Resumen**
+
+El sistema de marketplace permite gestionar **tiendas, productos y pedidos de delivery** con integración completa de drivers, pagos y notificaciones.
+
+## 🏗️ **Arquitectura de Módulos**
+
+### **Stores Module** - Gestión de Tiendas
+```typescript
+// src/stores/stores.module.ts
+@Module({
+  imports: [PrismaModule, AuthModule],
+  controllers: [StoresController],
+  providers: [StoresService],
+  exports: [StoresService],
+})
+export class StoresModule {}
+
+// src/stores/stores.controller.ts
+@Controller('stores')
+@UseGuards(JwtAuthGuard)
+export class StoresController {
+  @Get()
+  async getNearbyStores(@Query() query) {
+    return this.storesService.getNearbyStores(query);
+  }
+
+  @Get(':id')
+  async getStoreDetails(@Param('id') id: number) {
+    return this.storesService.getStoreWithProducts(id);
+  }
+
+  @Post()
+  @UseGuards(StoreOwnerGuard)
+  async createStore(@Body() dto: CreateStoreDto) {
+    return this.storesService.createStore(dto);
+  }
+}
+```
+
+### **Orders Module** - Gestión de Pedidos
+```typescript
+// src/orders/orders.module.ts
+@Module({
+  imports: [PrismaModule, NotificationsModule, WebSocketModule],
+  controllers: [OrdersController],
+  providers: [OrdersService],
+  exports: [OrdersService],
+})
+export class OrdersModule {}
+
+// src/orders/orders.controller.ts
+@Controller('orders')
+@UseGuards(JwtAuthGuard)
+export class OrdersController {
+  @Post()
+  async createOrder(@Body() dto: CreateOrderDto, @Req() req) {
+    return this.ordersService.createOrder(dto, req.user.clerkId);
+  }
+
+  @Get('available')
+  @UseGuards(DriverGuard)
+  async getAvailableOrders() {
+    return this.ordersService.getAvailableOrdersForDelivery();
+  }
+
+  @Post(':id/accept')
+  @UseGuards(DriverGuard)
+  async acceptOrder(@Param('id') id: number, @Req() req) {
+    return this.ordersService.acceptOrderForDelivery(id, req.driver.id);
+  }
+}
+```
+
+### **Analytics Module** - Reportes y Métricas
+```typescript
+// src/analytics/analytics.module.ts
+@Module({
+  imports: [PrismaModule],
+  controllers: [AnalyticsController],
+  providers: [AnalyticsService],
+  exports: [AnalyticsService],
+})
+export class AnalyticsModule {}
+
+// src/analytics/analytics.controller.ts
+@Controller('analytics')
+@UseGuards(JwtAuthGuard)
+export class AnalyticsController {
+  @Get('stores/:storeId/summary')
+  @UseGuards(StoreOwnerGuard)
+  async getStoreSummary(@Param('storeId') storeId: number) {
+    return this.analyticsService.getStoreAnalytics(storeId);
+  }
+
+  @Get('drivers/:driverId/summary')
+  @UseGuards(DriverGuard)
+  async getDriverSummary(@Param('driverId') driverId: number) {
+    return this.analyticsService.getDriverAnalytics(driverId);
+  }
+}
+```
+
+## 📊 **Modelos de Datos**
+
+### **Store Model**
+```typescript
+model Store {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(150)
+  address      String   @db.VarChar(255)
+  latitude     Decimal  @db.Decimal(9, 6)
+  longitude    Decimal  @db.Decimal(9, 6)
+  category     String?  @db.VarChar(50)        // 'restaurant', 'grocery'
+  cuisineType  String?  @map("cuisine_type")   // 'italian', 'mexican'
+  logoUrl      String?  @map("logo_url")
+  rating       Decimal  @default(0.00) @db.Decimal(3, 2)
+  isOpen       Boolean  @default(true) @map("is_open")
+  ownerClerkId String?  @map("owner_clerk_id") // Propietario
+  phone        String?  @db.VarChar(20)
+  email        String?  @db.VarChar(100)
+
+  // Relations
+  products       Product[]
+  deliveryOrders DeliveryOrder[]
+  ratings        Rating[]
+
+  @@map("stores")
+}
+```
+
+### **Product Model**
+```typescript
+model Product {
+  id          Int      @id @default(autoincrement())
+  storeId     Int      @map("store_id")
+  name        String   @db.VarChar(150)
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?  @map("image_url")
+  category    String?  @db.VarChar(50)        // 'main', 'drink', 'dessert'
+  isAvailable Boolean  @default(true) @map("is_available")
+  stock       Int?     @default(0)            // Para inventario
+  preparationTime Int? @map("preparation_time") // Minutos
+
+  // Relations
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+```
+
+### **DeliveryOrder Model**
+```typescript
+model DeliveryOrder {
+  orderId          Int      @id @default(autoincrement()) @map("order_id")
+  userClerkId      String   @map("user_clerk_id") @db.VarChar(50)
+  storeId          Int      @map("store_id")
+  courierId        Int?     @map("courier_id")
+  deliveryAddress  String   @map("delivery_address") @db.VarChar(255)
+  deliveryLatitude  Decimal  @map("delivery_latitude") @db.Decimal(9, 6)
+  deliveryLongitude Decimal @map("delivery_longitude") @db.Decimal(9, 6)
+  totalPrice       Decimal  @map("total_price") @db.Decimal(10, 2)
+  deliveryFee      Decimal  @map("delivery_fee") @db.Decimal(10, 2)
+  tip              Decimal  @default(0.00) @db.Decimal(10, 2)
+  status           String   @default("pending") @db.VarChar(50)
+  paymentStatus    String   @default("pending") @map("payment_status") @db.VarChar(20)
+  createdAt        DateTime @default(now()) @map("created_at")
+  estimatedDeliveryTime DateTime? @map("estimated_delivery_time")
+  actualDeliveryTime DateTime? @map("actual_delivery_time")
+  specialInstructions String? @map("special_instructions")
+
+  // Relations
+  user     User?      @relation(fields: [userClerkId], references: [clerkId])
+  store    Store      @relation(fields: [storeId], references: [id])
+  courier  Driver?    @relation(fields: [courierId], references: [id])
+  orderItems OrderItem[]
+  ratings   Rating[]
+  messages  ChatMessage[]
+
+  @@map("delivery_orders")
+}
+```
+
+## 🔄 **Flujos de Usuario**
+
+### **Flujo del Cliente**
+```typescript
+// 1. Buscar tiendas cercanas
+GET /api/stores?lat=40.7128&lng=-74.0060&radius=5&category=restaurant
+
+// 2. Ver detalles de tienda
+GET /api/stores/123
+
+// 3. Crear pedido
+POST /api/orders
+{
+  "storeId": 123,
+  "items": [
+    { "productId": 456, "quantity": 2, "price": 15.99 }
+  ],
+  "deliveryAddress": "123 Main St",
+  "deliveryLatitude": 40.7128,
+  "deliveryLongitude": -74.0060
+}
+
+// 4. Ver estado del pedido
+GET /api/orders/789
+
+// 5. Calificar pedido
+POST /api/orders/789/rate
+{
+  "rating": 5,
+  "comment": "Excelente servicio!"
+}
+```
+
+### **Flujo del Conductor**
+```typescript
+// 1. Ver pedidos disponibles
+GET /api/orders/available
+
+// 2. Aceptar pedido
+POST /api/orders/789/accept
+
+// 3. Marcar como recogido
+POST /api/orders/789/pickup
+
+// 4. Marcar como entregado
+POST /api/orders/789/deliver
+```
+
+### **Flujo del Propietario de Tienda**
+```typescript
+// 1. Crear tienda
+POST /api/stores
+{
+  "name": "Mi Restaurante",
+  "address": "456 Oak St",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "category": "restaurant",
+  "cuisineType": "italian"
+}
+
+// 2. Agregar productos
+POST /api/stores/123/products
+{
+  "name": "Pizza Margherita",
+  "description": "Pizza clásica con tomate y mozzarella",
+  "price": 18.99,
+  "category": "main",
+  "preparationTime": 15
+}
+
+// 3. Ver pedidos
+GET /api/analytics/stores/123/orders
+
+// 4. Ver métricas
+GET /api/analytics/stores/123/summary
+```
+
+## 💳 **Sistema de Pagos**
+
+### **Split Payment Flow**
+```typescript
+// Cliente paga total
+POST /api/stripe/create-payment-intent
+{
+  "amount": 34.98, // productos + delivery + propina
+  "metadata": {
+    "orderId": "789",
+    "type": "delivery_order"
+  }
+}
+
+// Webhook procesa pago completado
+// 1. Transferir a tienda (subtotal - comisión)
+await stripe.transfers.create({
+  amount: 2699, // $26.99 (90% de $29.99)
+  currency: 'usd',
+  destination: storeStripeAccountId,
+});
+
+// 2. Transferir a conductor (delivery + propina)
+await stripe.transfers.create({
+  amount: 599, // $5.99 (delivery $4.99 + tip $1.00)
+  currency: 'usd',
+  destination: driverStripeAccountId,
+});
+```
+
+### **Estados de Pago**
+```typescript
+enum PaymentStatus {
+  PENDING = 'pending',     // Esperando pago
+  PAID = 'paid',          // Pago completado
+  PROCESSING = 'processing', // Procesando transferencias
+  TRANSFERRED = 'transferred', // Transferencias completadas
+  FAILED = 'failed',      // Pago fallido
+  REFUNDED = 'refunded'   // Reembolsado
+}
+```
+
+## 🔔 **Notificaciones**
+
+### **Eventos de Notificación**
+```typescript
+// Para clientes
+'order_confirmed'     // Pedido confirmado
+'order_preparing'     // En preparación
+'courier_assigned'    // Conductor asignado
+'order_picked_up'     // Pedido recogido
+'order_delivered'     // Pedido entregado
+
+// Para conductores
+'delivery_available'  // Nuevo delivery disponible
+'delivery_assigned'   // Delivery asignado
+'store_ready'        // Tienda lista
+
+// Para tiendas
+'new_order'          // Nuevo pedido
+'courier_arrived'    // Conductor llegó
+'order_delivered'    // Pedido entregado
+```
+
+### **WebSocket Events**
+```typescript
+// Estado del pedido en tiempo real
+'order:status:updated'     // Cambios de estado
+'order:courier:location'   // Ubicación del conductor
+'order:chat:message'       // Mensajes de chat
+
+// Para conductores
+'delivery:new'            // Nuevo delivery
+'delivery:status:updated' // Actualización de estado
+```
+
+## 📊 **Analytics y Reportes**
+
+### **Métricas de Tienda**
+```typescript
+interface StoreAnalytics {
+  // Ventas
+  totalRevenue: number;
+  ordersCount: number;
+  averageOrderValue: number;
+
+  // Productos
+  topProducts: { productId: number; name: string; sold: number }[];
+  lowStockProducts: Product[];
+
+  // Rendimiento
+  averagePreparationTime: number;
+  customerSatisfaction: number;
+
+  // Tendencias
+  revenueByDay: { date: string; amount: number }[];
+  peakHours: { hour: number; orders: number }[];
+}
+```
+
+### **Métricas de Conductor**
+```typescript
+interface DriverAnalytics {
+  // Deliveries
+  totalDeliveries: number;
+  completedDeliveries: number;
+  acceptanceRate: number;
+  averageDeliveryTime: number;
+
+  // Ingresos
+  totalEarnings: number;
+  averageTip: number;
+  earningsByDay: { date: string; amount: number }[];
+
+  // Calificaciones
+  averageRating: number;
+  ratingDistribution: { stars: number; count: number }[];
+}
+```
+
+## 🔐 **Guards y Seguridad**
+
+### **StoreOwnerGuard**
+```typescript
+@Injectable()
+export class StoreOwnerGuard implements CanActivate {
+  constructor(private storesService: StoresService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const storeId = +request.params.id || +request.params.storeId;
+    const userId = request.user.clerkId;
+
+    return this.storesService.isStoreOwner(storeId, userId);
+  }
+}
+```
+
+### **DriverGuard**
+```typescript
+@Injectable()
+export class DriverGuard implements CanActivate {
+  constructor(private driversService: DriversService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    // Verificar que sea conductor y esté activo
+    const driver = await this.driversService.findDriverByUserId(user.id);
+    return driver && driver.verificationStatus === 'approved';
+  }
+}
+```
+
+## 📝 **DTOs Principales**
+
+### **CreateOrderDto**
+```typescript
+export class CreateOrderDto {
+  @IsNumber()
+  storeId: number;
+
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  items: OrderItemDto[];
+
+  @IsNotEmpty()
+  @IsString()
+  deliveryAddress: string;
+
+  @IsNumber()
+  deliveryLatitude: number;
+
+  @IsNumber()
+  deliveryLongitude: number;
+
+  @IsOptional()
+  @IsString()
+  specialInstructions?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['card', 'cash', 'wallet'])
+  paymentMethod?: string;
+}
+```
+
+### **CreateStoreDto**
+```typescript
+export class CreateStoreDto {
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(150)
+  name: string;
+
+  @IsNotEmpty()
+  @IsString()
+  address: string;
+
+  @IsNumber()
+  latitude: number;
+
+  @IsNumber()
+  longitude: number;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  cuisineType?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+```
+
+### **CreateProductDto**
+```typescript
+export class CreateProductDto {
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(150)
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  stock?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  preparationTime?: number;
+}
+```
+
+## 🚀 **Servicios a Implementar**
+
+### **StoresService**
+```typescript
+@Injectable()
+export class StoresService {
+  constructor(private prisma: PrismaService) {}
+
+  async getNearbyStores(query: GetNearbyStoresQuery): Promise<Store[]> {
+    // Implementar búsqueda geográfica
+  }
+
+  async getStoreWithProducts(storeId: number): Promise<Store> {
+    // Obtener tienda con productos
+  }
+
+  async createStore(dto: CreateStoreDto): Promise<Store> {
+    // Crear nueva tienda
+  }
+
+  async addProduct(storeId: number, dto: CreateProductDto): Promise<Product> {
+    // Agregar producto a tienda
+  }
+
+  async isStoreOwner(storeId: number, userId: string): Promise<boolean> {
+    // Verificar propiedad de tienda
+  }
+}
+```
+
+### **OrdersService**
+```typescript
+@Injectable()
+export class OrdersService {
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
+
+  async createOrder(dto: CreateOrderDto, userId: string): Promise<DeliveryOrder> {
+    // Crear nuevo pedido
+  }
+
+  async getUserOrders(userId: string, status?: string): Promise<DeliveryOrder[]> {
+    // Obtener pedidos del usuario
+  }
+
+  async getAvailableOrdersForDelivery(): Promise<DeliveryOrder[]> {
+    // Obtener pedidos disponibles para conductores
+  }
+
+  async acceptOrderForDelivery(orderId: number, driverId: number): Promise<DeliveryOrder> {
+    // Conductor acepta pedido
+  }
+
+  async markOrderPickedUp(orderId: number, driverId: number): Promise<DeliveryOrder> {
+    // Marcar pedido como recogido
+  }
+
+  async markOrderDelivered(orderId: number, driverId: number): Promise<DeliveryOrder> {
+    // Marcar pedido como entregado
+  }
+}
+```
+
+## 📈 **Próximos Pasos**
+
+### **Fase 1: Core Infrastructure**
+- ✅ Modelos ya definidos en Prisma
+- 🔄 Crear StoresController y StoresService
+- 🔄 Crear OrdersController y OrdersService
+- 🔄 Implementar DTOs y validaciones
+
+### **Fase 2: Business Logic**
+- 🔄 Lógica de creación de órdenes
+- 🔄 Sistema de asignación automática de conductores
+- 🔄 Cálculos de delivery fee
+- 🔄 Gestión de estados de órdenes
+
+### **Fase 3: Real-time Features**
+- 🔄 WebSocket events para orders
+- 🔄 Seguimiento en tiempo real
+- 🔄 Chat entre cliente y conductor
+
+### **Fase 4: Payment Integration**
+- 🔄 Integración con Stripe para órdenes
+- 🔄 Split payments
+- 🔄 Manejo de propinas
+
+### **Fase 5: Analytics**
+- 🔄 Dashboard para tiendas
+- 🔄 Analytics para conductores
+- 🔄 Reportes de plataforma
+
+¿Te gustaría que implemente alguno de estos módulos específicos?
