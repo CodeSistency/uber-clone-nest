@@ -1,0 +1,825 @@
+---
+globs: src/rides/**/*
+description: Módulos de negocio principales (rides, users, drivers)
+---
+
+# 🚗 Módulos de Negocio Principales
+
+## 📋 Resumen
+
+Los módulos principales manejan la lógica de negocio core: usuarios, conductores, viajes, pagos y notificaciones.
+
+## 👥 Users Module
+
+### UsersService
+```typescript
+// src/users/users.service.ts
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaService) {}
+
+  async createUser(data: Prisma.UserCreateInput): Promise<User> {
+    return this.prisma.user.create({ data });
+  }
+
+  async findUserById(id: number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        wallet: true,
+        emergencyContacts: true,
+      },
+    });
+  }
+
+  async findUserByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true, name: true, email: true,
+        clerkId: true, password: true,
+        isActive: true, lastLogin: true,
+        wallet: true, emergencyContacts: true,
+      },
+    });
+  }
+
+  async getUserRides(userId: string): Promise<any[]> {
+    const rides = await this.prisma.ride.findMany({
+      where: { userId },
+      include: {
+        driver: true,
+        tier: true,
+        ratings: true,
+        messages: true,
+      },
+    });
+    return rides;
+  }
+
+  async getUserDeliveryOrders(userClerkId: string): Promise<any[]> {
+    const orders = await this.prisma.deliveryOrder.findMany({
+      where: { userClerkId },
+      include: {
+        store: true,
+        courier: true,
+        orderItems: { include: { product: true } },
+        ratings: true,
+        messages: true,
+      },
+    });
+    return orders;
+  }
+}
+```
+
+### UsersController
+```typescript
+// src/users/users.controller.ts
+@Controller('users')
+@UseGuards(JwtAuthGuard)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get('profile')
+  getProfile(@Req() req) {
+    return this.usersService.findUserById(req.user.id);
+  }
+
+  @Put('profile')
+  updateProfile(@Req() req, @Body() updateData) {
+    return this.usersService.updateUser(req.user.id, updateData);
+  }
+
+  @Get('rides')
+  getUserRides(@Req() req) {
+    return this.usersService.getUserRides(req.user.id.toString());
+  }
+
+  @Get('orders')
+  getUserDeliveryOrders(@Req() req) {
+    return this.usersService.getUserDeliveryOrders(req.user.clerkId);
+  }
+
+  @Post('emergency-contacts')
+  addEmergencyContact(@Req() req, @Body() contactData) {
+    return this.usersService.addEmergencyContact(req.user.clerkId, contactData);
+  }
+}
+```
+
+## 🚗 Rides Module
+
+### RidesService
+```typescript
+// src/rides/rides.service.ts
+@Injectable()
+export class RidesService {
+  private readonly logger = new Logger(RidesService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
+
+  async createRide(createRideDto: CreateRideDto): Promise<Ride> {
+    const ride = await this.prisma.ride.create({
+      data: {
+        originAddress: createRideDto.origin_address,
+        destinationAddress: createRideDto.destination_address,
+        originLatitude: createRideDto.origin_latitude,
+        originLongitude: createRideDto.origin_longitude,
+        destinationLatitude: createRideDto.destination_latitude,
+        destinationLongitude: createRideDto.destination_longitude,
+        rideTime: createRideDto.ride_time,
+        farePrice: createRideDto.fare_price,
+        paymentStatus: createRideDto.payment_status,
+        driverId: createRideDto.driver_id,
+        userId: createRideDto.user_id,
+        tierId: createRideDto.tier_id,
+      },
+      include: { tier: true, user: true },
+    });
+
+    // Notify nearby drivers
+    try {
+      await this.notificationsService.notifyNearbyDrivers(ride.rideId, {
+        lat: createRideDto.origin_latitude,
+        lng: createRideDto.origin_longitude,
+      });
+      this.logger.log(`Notified drivers about new ride ${ride.rideId}`);
+    } catch (error) {
+      this.logger.error(`Failed to notify drivers:`, error);
+    }
+
+    return ride;
+  }
+
+  async getUserRidesHistory(userId: string): Promise<Ride[]> {
+    return this.prisma.ride.findMany({
+      where: { userId },
+      include: {
+        driver: true,
+        tier: true,
+        ratings: true,
+        messages: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async scheduleRide(scheduleRideDto: ScheduleRideDto): Promise<Ride> {
+    return this.prisma.ride.create({
+      data: {
+        originAddress: scheduleRideDto.origin_address,
+        destinationAddress: scheduleRideDto.destination_address,
+        originLatitude: scheduleRideDto.origin_latitude,
+        originLongitude: scheduleRideDto.origin_longitude,
+        destinationLatitude: scheduleRideDto.destination_latitude,
+        destinationLongitude: scheduleRideDto.destination_longitude,
+        rideTime: scheduleRideDto.ride_time,
+        farePrice: 0, // Calculated later
+        paymentStatus: 'pending',
+        userId: scheduleRideDto.user_id,
+        tierId: scheduleRideDto.tier_id,
+        scheduledFor: new Date(scheduleRideDto.scheduled_for),
+      },
+    });
+  }
+
+  async getFareEstimate(
+    tierId: number,
+    minutes: number,
+    miles: number,
+  ): Promise<any> {
+    const tier = await this.prisma.rideTier.findUnique({
+      where: { id: tierId },
+    });
+
+    if (!tier) throw new Error('Ride tier not found');
+
+    const baseFare = Number(tier.baseFare);
+    const perMinuteRate = Number(tier.perMinuteRate);
+    const perMileRate = Number(tier.perMileRate);
+
+    const totalFare = baseFare + minutes * perMinuteRate + miles * perMileRate;
+
+    return {
+      tier: tier.name,
+      baseFare,
+      perMinuteRate,
+      perMileRate,
+      estimatedMinutes: minutes,
+      estimatedMiles: miles,
+      totalFare: Math.round(totalFare * 100) / 100,
+    };
+  }
+
+  async acceptRide(rideId: number, acceptRideDto: AcceptRideDto): Promise<Ride> {
+    const { driverId } = acceptRideDto;
+
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: { driver: true, tier: true, user: true },
+    });
+
+    if (!ride) throw new Error('Ride not found');
+    if (ride.driverId) throw new Error('Ride already accepted');
+
+    const updatedRide = await this.prisma.ride.update({
+      where: { rideId },
+      data: { driverId },
+      include: { driver: true, tier: true, user: true },
+    });
+
+    // Notify passenger
+    try {
+      await this.notificationsService.notifyRideStatusUpdate(
+        rideId, ride.userId, driverId, 'accepted', {
+          driverName: `${updatedRide.driver?.firstName} ${updatedRide.driver?.lastName}`,
+          vehicleInfo: `${updatedRide.driver?.carModel} - ${updatedRide.driver?.licensePlate}`,
+        }
+      );
+      this.logger.log(`Notified passenger about accepted ride ${rideId}`);
+    } catch (error) {
+      this.logger.error(`Failed to send notification:`, error);
+    }
+
+    return updatedRide;
+  }
+
+  async rateRide(rideId: number, ratingData: RateRideDto): Promise<Rating> {
+    const { rating, comment, userId } = ratingData;
+
+    return this.prisma.rating.create({
+      data: {
+        rideId,
+        ratedByClerkId: userId,
+        ratingValue: rating,
+        comment,
+        createdAt: new Date(),
+      },
+    });
+  }
+}
+```
+
+### DTOs para Rides
+```typescript
+// src/rides/dto/create-ride.dto.ts
+export class CreateRideDto {
+  @IsNotEmpty()
+  @IsString()
+  origin_address: string;
+
+  @IsNotEmpty()
+  @IsString()
+  destination_address: string;
+
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  origin_latitude: number;
+
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  origin_longitude: number;
+
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  destination_latitude: number;
+
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  destination_longitude: number;
+
+  @IsNumber()
+  @Min(1)
+  ride_time: number;
+
+  @IsNumber()
+  @Min(0)
+  fare_price: number;
+
+  @IsIn(['pending', 'paid', 'failed'])
+  payment_status: string;
+
+  @IsOptional()
+  @IsNumber()
+  driver_id?: number;
+
+  @IsNotEmpty()
+  @IsString()
+  user_id: string;
+
+  @IsOptional()
+  @IsNumber()
+  tier_id?: number;
+}
+
+// src/rides/dto/schedule-ride.dto.ts
+export class ScheduleRideDto {
+  @IsNotEmpty()
+  @IsString()
+  origin_address: string;
+
+  @IsNotEmpty()
+  @IsString()
+  destination_address: string;
+
+  @IsNumber()
+  origin_latitude: number;
+
+  @IsNumber()
+  origin_longitude: number;
+
+  @IsNumber()
+  destination_latitude: number;
+
+  @IsNumber()
+  destination_longitude: number;
+
+  @IsNumber()
+  @Min(1)
+  ride_time: number;
+
+  @IsNumber()
+  tier_id: number;
+
+  @IsNotEmpty()
+  @IsString()
+  scheduled_for: string;
+
+  @IsNotEmpty()
+  @IsString()
+  user_id: string;
+}
+```
+
+## 🚙 Drivers Module
+
+### DriversService
+```typescript
+// src/drivers/drivers.service.ts
+@Injectable()
+export class DriversService {
+  constructor(private prisma: PrismaService) {}
+
+  async createDriver(driverData: CreateDriverDto): Promise<Driver> {
+    return this.prisma.driver.create({
+      data: {
+        firstName: driverData.first_name,
+        lastName: driverData.last_name,
+        profileImageUrl: driverData.profile_image_url,
+        carImageUrl: driverData.car_image_url,
+        carModel: driverData.car_model,
+        licensePlate: driverData.license_plate,
+        carSeats: driverData.car_seats,
+        canDoDeliveries: driverData.can_do_deliveries,
+      },
+    });
+  }
+
+  async findDriverById(id: number): Promise<Driver | null> {
+    return this.prisma.driver.findUnique({
+      where: { id },
+      include: {
+        documents: true,
+        rides: true,
+        deliveryOrders: true,
+      },
+    });
+  }
+
+  async updateDriverStatus(id: number, status: string): Promise<Driver> {
+    return this.prisma.driver.update({
+      where: { id },
+      data: { status },
+    });
+  }
+
+  async getNearbyDrivers(
+    latitude: number,
+    longitude: number,
+    radiusKm: number = 5
+  ): Promise<Driver[]> {
+    // Note: This would require PostGIS or similar for accurate distance calculation
+    // For now, return all online drivers
+    return this.prisma.driver.findMany({
+      where: {
+        status: 'online',
+        verificationStatus: 'approved',
+      },
+      include: {
+        documents: true,
+      },
+    });
+  }
+
+  async uploadDriverDocument(
+    driverId: number,
+    documentType: string,
+    documentUrl: string
+  ): Promise<DriverDocument> {
+    return this.prisma.driverDocument.create({
+      data: {
+        driverId,
+        documentType,
+        documentUrl,
+      },
+    });
+  }
+
+  async verifyDriver(driverId: number, verificationStatus: string): Promise<Driver> {
+    return this.prisma.driver.update({
+      where: { id: driverId },
+      data: { verificationStatus },
+    });
+  }
+
+  async getDriverEarnings(driverId: number): Promise<any> {
+    const rides = await this.prisma.ride.findMany({
+      where: {
+        driverId,
+        paymentStatus: 'paid',
+      },
+      select: {
+        farePrice: true,
+        createdAt: true,
+      },
+    });
+
+    const totalEarnings = rides.reduce((sum, ride) => sum + Number(ride.farePrice), 0);
+    const rideCount = rides.length;
+
+    return {
+      totalEarnings,
+      rideCount,
+      averageFare: rideCount > 0 ? totalEarnings / rideCount : 0,
+      rides: rides,
+    };
+  }
+}
+```
+
+## 💰 Wallet Module
+
+### WalletService
+```typescript
+// src/wallet/wallet.service.ts
+@Injectable()
+export class WalletService {
+  constructor(private prisma: PrismaService) {}
+
+  async getWallet(userClerkId: string): Promise<Wallet | null> {
+    return this.prisma.wallet.findUnique({
+      where: { userClerkId },
+      include: {
+        walletTransactions: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    });
+  }
+
+  async createWallet(userClerkId: string): Promise<Wallet> {
+    return this.prisma.wallet.create({
+      data: { userClerkId },
+    });
+  }
+
+  async addFunds(userClerkId: string, amount: number, description?: string): Promise<Wallet> {
+    const wallet = await this.getWallet(userClerkId);
+    if (!wallet) {
+      throw new Error('Wallet not found');
+    }
+
+    // Create transaction
+    await this.prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        amount,
+        transactionType: 'credit',
+        description: description || 'Funds added',
+      },
+    });
+
+    // Update balance
+    return this.prisma.wallet.update({
+      where: { userClerkId },
+      data: {
+        balance: { increment: amount },
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async deductFunds(userClerkId: string, amount: number, description?: string): Promise<Wallet> {
+    const wallet = await this.getWallet(userClerkId);
+    if (!wallet) {
+      throw new Error('Wallet not found');
+    }
+
+    if (wallet.balance < amount) {
+      throw new Error('Insufficient funds');
+    }
+
+    // Create transaction
+    await this.prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        amount: -amount,
+        transactionType: 'debit',
+        description: description || 'Funds deducted',
+      },
+    });
+
+    // Update balance
+    return this.prisma.wallet.update({
+      where: { userClerkId },
+      data: {
+        balance: { decrement: amount },
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async getTransactionHistory(userClerkId: string, limit: number = 50): Promise<WalletTransaction[]> {
+    const wallet = await this.getWallet(userClerkId);
+    if (!wallet) {
+      throw new Error('Wallet not found');
+    }
+
+    return this.prisma.walletTransaction.findMany({
+      where: { walletId: wallet.id },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  async transferFunds(
+    fromUserClerkId: string,
+    toUserClerkId: string,
+    amount: number,
+    description?: string
+  ): Promise<{ fromWallet: Wallet; toWallet: Wallet }> {
+    // Use transaction to ensure atomicity
+    return this.prisma.$transaction(async (tx) => {
+      const fromWallet = await tx.wallet.findUnique({
+        where: { userClerkId: fromUserClerkId },
+      });
+
+      const toWallet = await tx.wallet.findUnique({
+        where: { userClerkId: toUserClerkId },
+      });
+
+      if (!fromWallet || !toWallet) {
+        throw new Error('Wallet not found');
+      }
+
+      if (fromWallet.balance < amount) {
+        throw new Error('Insufficient funds');
+      }
+
+      // Deduct from sender
+      await tx.wallet.update({
+        where: { userClerkId: fromUserClerkId },
+        data: { balance: { decrement: amount } },
+      });
+
+      // Add to receiver
+      await tx.wallet.update({
+        where: { userClerkId: toUserClerkId },
+        data: { balance: { increment: amount } },
+      });
+
+      // Create transactions
+      await tx.walletTransaction.create({
+        data: {
+          walletId: fromWallet.id,
+          amount: -amount,
+          transactionType: 'transfer_out',
+          description: description || `Transfer to ${toUserClerkId}`,
+        },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          walletId: toWallet.id,
+          amount,
+          transactionType: 'transfer_in',
+          description: description || `Transfer from ${fromUserClerkId}`,
+        },
+      });
+
+      return {
+        fromWallet: await tx.wallet.findUnique({ where: { userClerkId: fromUserClerkId } }),
+        toWallet: await tx.wallet.findUnique({ where: { userClerkId: toUserClerkId } }),
+      };
+    });
+  }
+}
+```
+
+## 🔔 Notifications Module
+
+### NotificationsService
+```typescript
+// src/notifications/notifications.service.ts
+@Injectable()
+export class NotificationsService {
+  constructor(private prisma: PrismaService) {}
+
+  async sendNotification(notificationData: CreateNotificationDto): Promise<Notification> {
+    const { userId, type, title, message, data, channels } = notificationData;
+
+    // Create notification record
+    const notification = await this.prisma.notification.create({
+      data: {
+        userClerkId: userId,
+        type,
+        title,
+        message,
+        data,
+      },
+    });
+
+    // Send through specified channels
+    if (channels.includes(NotificationChannel.PUSH)) {
+      await this.sendPushNotification(notification);
+    }
+
+    if (channels.includes(NotificationChannel.SMS)) {
+      await this.sendSMSNotification(notification);
+    }
+
+    if (channels.includes(NotificationChannel.EMAIL)) {
+      await this.sendEmailNotification(notification);
+    }
+
+    return notification;
+  }
+
+  private async sendPushNotification(notification: Notification): Promise<void> {
+    // Get user's push tokens
+    const pushTokens = await this.prisma.pushToken.findMany({
+      where: {
+        userClerkId: notification.userClerkId,
+        isActive: true,
+      },
+    });
+
+    // Send to each token (would integrate with FCM/APNs)
+    for (const token of pushTokens) {
+      // Implementation would depend on push service (Firebase, etc.)
+      console.log(`Sending push to ${token.token}: ${notification.title}`);
+    }
+
+    // Mark as sent
+    await this.prisma.notification.update({
+      where: { id: notification.id },
+      data: {
+        pushSent: true,
+        pushSentAt: new Date(),
+      },
+    });
+  }
+
+  private async sendSMSNotification(notification: Notification): Promise<void> {
+    // Implementation would use Twilio or similar service
+    console.log(`Sending SMS: ${notification.message}`);
+
+    await this.prisma.notification.update({
+      where: { id: notification.id },
+      data: {
+        smsSent: true,
+        smsSentAt: new Date(),
+      },
+    });
+  }
+
+  private async sendEmailNotification(notification: Notification): Promise<void> {
+    // Implementation would use SendGrid, SES, etc.
+    console.log(`Sending email: ${notification.title}`);
+
+    await this.prisma.notification.update({
+      where: { id: notification.id },
+      data: {
+        emailSent: true,
+        emailSentAt: new Date(),
+      },
+    });
+  }
+
+  async notifyNearbyDrivers(rideId: number, location: { lat: number; lng: number }): Promise<void> {
+    // Get nearby drivers (simplified - would need geospatial query)
+    const nearbyDrivers = await this.prisma.driver.findMany({
+      where: {
+        status: 'online',
+        verificationStatus: 'approved',
+      },
+      take: 10, // Limit to prevent spam
+    });
+
+    // Send notification to each driver
+    for (const driver of nearbyDrivers) {
+      await this.sendNotification({
+        userId: driver.id.toString(), // Assuming driver ID maps to user
+        type: 'ride_available',
+        title: 'New Ride Available',
+        message: `A new ride is available near your location`,
+        data: { rideId, location },
+        channels: [NotificationChannel.PUSH],
+      });
+    }
+  }
+
+  async notifyRideStatusUpdate(
+    rideId: number,
+    userId: string,
+    driverId: number,
+    status: string,
+    additionalData?: any
+  ): Promise<void> {
+    await this.sendNotification({
+      userId,
+      type: `ride_${status}`,
+      title: `Ride ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: this.getRideStatusMessage(status, additionalData),
+      data: { rideId, driverId, ...additionalData },
+      channels: [NotificationChannel.PUSH, NotificationChannel.SMS],
+    });
+  }
+
+  private getRideStatusMessage(status: string, data?: any): string {
+    switch (status) {
+      case 'accepted':
+        return `Driver ${data?.driverName} accepted your ride. Vehicle: ${data?.vehicleInfo}`;
+      case 'arrived':
+        return 'Your driver has arrived at the pickup location';
+      case 'started':
+        return 'Your ride has started';
+      case 'completed':
+        return `Ride completed. Fare: $${data?.fare}`;
+      default:
+        return `Ride status: ${status}`;
+    }
+  }
+}
+```
+
+## 🎯 DTOs para Notifications
+```typescript
+// src/notifications/dto/create-notification.dto.ts
+export class CreateNotificationDto {
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  type: string;
+
+  @IsNotEmpty()
+  @IsString()
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  message?: string;
+
+  @IsOptional()
+  data?: any;
+
+  @IsArray()
+  @IsEnum(NotificationChannel, { each: true })
+  channels: NotificationChannel[];
+
+  @IsOptional()
+  @IsString()
+  priority?: 'low' | 'normal' | 'high' | 'critical';
+}
+
+// src/notifications/interfaces/notification.interface.ts
+export enum NotificationChannel {
+  PUSH = 'push',
+  SMS = 'sms',
+  EMAIL = 'email',
+}
+
+export enum NotificationType {
+  RIDE_REQUESTED = 'ride_requested',
+  RIDE_ACCEPTED = 'ride_accepted',
+  RIDE_ARRIVED = 'ride_arrived',
+  RIDE_STARTED = 'ride_started',
+  RIDE_COMPLETED = 'ride_completed',
+  RIDE_CANCELLED = 'ride_cancelled',
+  EMERGENCY_TRIGGERED = 'emergency_triggered',
+  PAYMENT_SUCCESS = 'payment_success',
+  PAYMENT_FAILED = 'payment_failed',
+}
+```

@@ -1,0 +1,268 @@
+---
+globs: src/auth/**/*
+description: Sistema de autenticación JWT y estrategias de Passport
+---
+
+# 🔐 Sistema de Autenticación
+
+## 📋 Resumen
+
+El sistema de autenticación está basado en **JWT (JSON Web Tokens)** con **Passport.js** y soporta tanto autenticación custom como integración con **Clerk**.
+
+## 🏗️ Arquitectura
+
+### Core Components
+
+#### **AuthModule**
+```typescript
+// src/auth/auth.module.ts
+imports: [
+  PassportModule.register({ defaultStrategy: 'jwt' }),
+  JwtModule.registerAsync({...}),
+  PrismaModule
+]
+```
+
+#### **AuthService**
+- **register()**: Registro con hash bcrypt
+- **login()**: Validación de credenciales
+- **refreshToken()**: Renovación de tokens
+- **generateTokens()**: Creación de access + refresh tokens
+
+#### **JWT Strategy**
+```typescript
+// src/auth/strategies/jwt.strategy.ts
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  async validate(payload: JwtPayload) {
+    // Busca usuario en BD y retorna para req.user
+  }
+}
+```
+
+## 🔑 JWT Token Structure
+
+### Access Token Payload
+```typescript
+interface JwtPayload {
+  sub: string;        // User ID
+  email: string;      // User email
+  iat?: number;       // Issued at
+  exp?: number;       // Expires at
+}
+```
+
+### Refresh Token Payload
+```typescript
+interface RefreshTokenPayload {
+  sub: string;        // User ID
+  tokenId: string;    // Unique token identifier
+  iat?: number;
+  exp?: number;
+}
+```
+
+## 🛡️ Guards y Protección
+
+### JwtAuthGuard
+```typescript
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  canActivate(context: ExecutionContext) {
+    // Validar header Authorization
+    // Log detallado para debugging
+    return super.canActivate(context);
+  }
+
+  handleRequest(err, user, info) {
+    // Manejar errores de validación
+    // Retornar usuario para req.user
+  }
+}
+```
+
+### Uso en Controladores
+```typescript
+@Controller('protected')
+export class ProtectedController {
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Req() req) {
+    return req.user; // Usuario del token JWT
+  }
+}
+```
+
+## 🔄 Flujo de Autenticación
+
+### 1. Registro
+```
+POST /auth/register
+↓
+Validar datos → Hash password → Crear usuario → Generar tokens → Retornar tokens
+```
+
+### 2. Login
+```
+POST /auth/login
+↓
+Buscar usuario → Validar password → Actualizar lastLogin → Generar tokens
+```
+
+### 3. Refresh Token
+```
+POST /auth/refresh
+↓
+Verificar refresh token → Buscar usuario → Generar nuevos tokens
+```
+
+### 4. Acceso Protegido
+```
+GET /protected/endpoint
+↓
+JwtAuthGuard → JwtStrategy.validate() → Controller
+```
+
+## 🔒 Seguridad
+
+### Password Hashing
+```typescript
+// bcrypt con 12 salt rounds
+private async hashPassword(password: string): Promise<string> {
+  const saltRounds = 12;
+  return bcrypt.hash(password, saltRounds);
+}
+```
+
+### Token Expiration
+```typescript
+// Configurable via environment
+JWT_EXPIRES_IN=1h          // Access token
+JWT_REFRESH_EXPIRES_IN=7d  // Refresh token
+```
+
+### Validación de Tokens
+- **Access Token**: Validado en cada request
+- **Refresh Token**: Solo para renovar access tokens
+- **Blacklist**: No implementada (tokens expiran naturalmente)
+
+## 🎯 DTOs de Autenticación
+
+### RegisterDto
+```typescript
+export class RegisterDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @MinLength(6)
+  password: string;
+
+  @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(100)
+  name: string;
+}
+```
+
+### LoginDto
+```typescript
+export class LoginDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  password: string;
+}
+```
+
+## 🔧 Configuración
+
+### Environment Variables
+```bash
+# JWT Configuration
+JWT_SECRET=your-super-secret-key-here
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Clerk (opcional - no usado actualmente)
+CLERK_SECRET_KEY=sk_test_...
+```
+
+### Guards Personalizados
+```typescript
+// Para rutas públicas
+@Get('public')
+publicEndpoint() { ... }
+
+// Para rutas protegidas
+@UseGuards(JwtAuthGuard)
+@Get('protected')
+protectedEndpoint(@Req() req) {
+  const user = req.user; // Usuario autenticado
+}
+```
+
+## 🚨 Manejo de Errores
+
+### Errores Comunes
+```typescript
+// Token expirado
+throw new UnauthorizedException('Token expirado');
+
+// Token inválido
+throw new UnauthorizedException('Token inválido o expirado');
+
+// Usuario no encontrado
+throw new UnauthorizedException('Usuario no encontrado');
+
+// Credenciales inválidas
+throw new UnauthorizedException('Credenciales inválidas');
+```
+
+## 🔗 Integración con Clerk
+
+### Estado Actual
+- ✅ **Preparado** pero **no usado**
+- 📝 Código preparado para migración futura
+- 🔄 **JwtStrategy** busca usuario por `clerkId`
+- 🎯 Compatible con autenticación dual
+
+### Migración Futura
+```typescript
+// En AuthService
+async createUserWithClerk(clerkId: string, userData) {
+  // Crear usuario con Clerk ID
+}
+
+async linkUserWithClerk(userId: number, clerkId: string) {
+  // Vincular cuenta existente con Clerk
+}
+```
+
+## 🧪 Testing
+
+### Mock de Tokens
+```typescript
+// Para desarrollo/testing
+Authorization: Bearer dev-test-token
+Authorization: Bearer dev-test-token-user1
+Authorization: Bearer dev-test-token-admin
+```
+
+### Estrategia de Testing
+```typescript
+describe('AuthService', () => {
+  it('should hash password correctly', async () => {
+    const hashed = await service.hashPassword('password');
+    expect(hashed).toBeDefined();
+  });
+
+  it('should validate password correctly', async () => {
+    const isValid = await service.validatePassword('password', hashed);
+    expect(isValid).toBe(true);
+  });
+});
+```

@@ -1,0 +1,509 @@
+---
+globs: src/websocket/**/*
+description: Sistema de WebSockets para comunicación en tiempo real
+---
+
+# ⚡ WebSocket System - Comunicación en Tiempo Real
+
+## 📋 Resumen
+
+El sistema de WebSockets está construido con **Socket.IO** y maneja comunicación en tiempo real para viajes, chat, ubicaciones y emergencias.
+
+## 🏗️ Arquitectura
+
+### WebSocket Gateway
+```typescript
+// src/websocket/websocket.gateway.ts
+@WebSocketGateway({
+  cors: { origin: '*', methods: ['GET', 'POST'], credentials: true },
+  namespace: '/uber-realtime',
+})
+export class WebSocketGatewayClass implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer() server: Server;
+
+  afterInit(server: Server) {
+    this.logger.log('WebSocket Gateway initialized');
+  }
+
+  handleConnection(client: Socket) {
+    this.logger.log(`Client connected: ${client.id}`);
+    this.realTimeService.addClient(client);
+  }
+
+  handleDisconnect(client: Socket) {
+    this.logger.log(`Client disconnected: ${client.id}`);
+    this.realTimeService.removeClient(client);
+  }
+}
+```
+
+### Real Time Service
+```typescript
+// src/websocket/real-time.service.ts
+@Injectable()
+export class RealTimeService {
+  private clients = new Map<string, Socket>();
+  private driverLocations = new Map<number, Location>();
+  private rideAssignments = new Map<number, number>();
+
+  addClient(client: Socket) {
+    this.clients.set(client.id, client);
+  }
+
+  updateDriverLocation(driverId: number, location: Location) {
+    this.driverLocations.set(driverId, location);
+  }
+
+  getDriverLocationForRide(rideId: number): Location | null {
+    const driverId = this.rideAssignments.get(rideId);
+    return driverId ? this.driverLocations.get(driverId) || null : null;
+  }
+}
+```
+
+## 🔌 Eventos WebSocket
+
+### Ride Events
+
+#### Join Ride Tracking
+```typescript
+@SubscribeMessage('ride:join')
+handleJoinRide(@MessageBody() data: RideJoinDto) {
+  const { rideId, userId } = data;
+
+  // Join ride room
+  this.realTimeService.addUserToRide(userId, rideId);
+
+  this.logger.log(`User ${userId} joined ride ${rideId}`);
+  return { status: 'success', message: 'Joined ride tracking' };
+}
+```
+
+#### Driver Location Updates
+```typescript
+@SubscribeMessage('driver:location:update')
+handleDriverLocationUpdate(@MessageBody() data: DriverLocationUpdateDto) {
+  const { driverId, location, rideId } = data;
+
+  // Update driver location
+  this.realTimeService.updateDriverLocation(driverId, location);
+
+  // Notify passengers if active ride
+  if (rideId) {
+    this.server.to(`ride-${rideId}`).emit('driver:location:updated', {
+      driverId,
+      location,
+      timestamp: new Date(),
+    });
+  }
+
+  return { status: 'success', message: 'Location updated' };
+}
+```
+
+#### Ride Acceptance
+```typescript
+@SubscribeMessage('ride:accept')
+async handleRideAccept(@MessageBody() data: RideAcceptDto) {
+  const { rideId, driverId, userId } = data;
+
+  // Update ride status
+  this.realTimeService.assignDriverToRide(rideId, driverId);
+
+  // Send push/SMS notification
+  await this.notificationsService.notifyRideStatusUpdate(
+    rideId, userId, driverId, 'accepted', {
+      driverName: 'Driver',
+      vehicleInfo: 'Vehicle info',
+    }
+  );
+
+  // Broadcast to ride room
+  this.server.to(`ride-${rideId}`).emit('ride:accepted', {
+    rideId, driverId, timestamp: new Date(),
+  });
+
+  return { status: 'success', message: 'Ride accepted' };
+}
+```
+
+### Chat Events
+
+#### Send Message
+```typescript
+@SubscribeMessage('chat:message')
+handleChatMessage(@MessageBody() data: ChatMessageDto) {
+  const { rideId, orderId, senderId, message } = data;
+
+  const roomId = rideId ? `ride-${rideId}` : `order-${orderId}`;
+
+  // Broadcast to room
+  this.server.to(roomId).emit('chat:new-message', {
+    senderId,
+    message,
+    timestamp: new Date(),
+    type: rideId ? 'ride' : 'order',
+  });
+
+  return { status: 'success', message: 'Message sent' };
+}
+```
+
+### Emergency Events
+
+#### SOS Alert
+```typescript
+@SubscribeMessage('emergency:sos')
+async handleEmergencySOS(@MessageBody() data: EmergencySOSDto) {
+  const { userId, rideId, location, message } = data;
+
+  const driverId = this.realTimeService.getDriverForRide(rideId);
+
+  // Send emergency notification
+  await this.notificationsService.sendNotification({
+    userId: driverId ? driverId.toString() : userId,
+    type: NotificationType.EMERGENCY_TRIGGERED,
+    title: '🚨 Emergency Alert!',
+    message: `Emergency: ${message}`,
+    data: { rideId, location, emergencyType: 'sos' },
+    channels: [NotificationChannel.PUSH, NotificationChannel.SMS],
+    priority: 'critical',
+  });
+
+  // Broadcast SOS
+  this.server.to(`ride-${rideId}`).emit('emergency:sos-triggered', {
+    userId, rideId, location, message, timestamp: new Date(),
+  });
+
+  // Broadcast to emergency services
+  this.server.to('emergency-services').emit('emergency:sos-alert', {
+    userId, rideId, driverId, location, message, timestamp: new Date(),
+  });
+
+  return { status: 'success', message: 'SOS alert sent' };
+}
+```
+
+### Driver Status Events
+
+#### Status Update
+```typescript
+@SubscribeMessage('driver:status:update')
+handleDriverStatusUpdate(@MessageBody() data: DriverStatusUpdateDto) {
+  const { driverId, status } = data;
+
+  // Update driver status
+  this.realTimeService.updateDriverStatus(driverId, status);
+
+  // Broadcast to all clients
+  this.server.emit('driver:status:changed', {
+    driverId, status, timestamp: new Date(),
+  });
+
+  return { status: 'success', message: 'Status updated' };
+}
+```
+
+## 📡 DTOs para WebSocket
+
+### Ride DTOs
+```typescript
+// Ride tracking
+export class RideJoinDto {
+  @IsNumber()
+  rideId: number;
+
+  @IsNumber()
+  userId: number;
+}
+
+// Location updates
+export class DriverLocationUpdateDto {
+  @IsNumber()
+  driverId: number;
+
+  @ValidateNested()
+  location: LocationDto;
+
+  @IsOptional()
+  @IsNumber()
+  rideId?: number;
+}
+
+// Ride acceptance
+export class RideAcceptDto {
+  @IsNumber()
+  rideId: number;
+
+  @IsNumber()
+  driverId: number;
+
+  @IsNumber()
+  userId: number;
+}
+```
+
+### Chat DTOs
+```typescript
+export class ChatMessageDto {
+  @IsOptional()
+  @IsNumber()
+  rideId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  orderId?: number;
+
+  @IsNumber()
+  senderId: number;
+
+  @IsNotEmpty()
+  @IsString()
+  message: string;
+}
+```
+
+### Emergency DTOs
+```typescript
+export class EmergencySOSDto {
+  @IsNumber()
+  userId: number;
+
+  @IsNumber()
+  rideId: number;
+
+  @ValidateNested()
+  location: LocationDto;
+
+  @IsNotEmpty()
+  @IsString()
+  message: string;
+}
+```
+
+## 🏘️ Room Management
+
+### Ride Rooms
+```typescript
+// Users join ride-specific rooms
+const rideRoom = `ride-${rideId}`;
+client.join(rideRoom);
+
+// Broadcast to ride participants
+this.server.to(rideRoom).emit('event', data);
+```
+
+### Order Rooms
+```typescript
+// Delivery orders have their own rooms
+const orderRoom = `order-${orderId}`;
+client.join(orderRoom);
+```
+
+### Emergency Room
+```typescript
+// Emergency services room
+const emergencyRoom = 'emergency-services';
+this.server.to(emergencyRoom).emit('emergency:sos-alert', data);
+```
+
+## 🔄 Integration con Redis
+
+### Pub/Sub para Escalabilidad
+```typescript
+// src/redis/redis-pubsub.service.ts
+@Injectable()
+export class RedisPubSubService {
+  constructor(private readonly redis: Redis) {}
+
+  async publish(channel: string, message: any) {
+    await this.redis.publish(channel, JSON.stringify(message));
+  }
+
+  async subscribe(channel: string, callback: (message: any) => void) {
+    const subscriber = this.redis.duplicate();
+    await subscriber.subscribe(channel);
+
+    subscriber.on('message', (channel, message) => {
+      callback(JSON.parse(message));
+    });
+  }
+}
+```
+
+### Location Tracking con Redis
+```typescript
+// Store driver locations in Redis
+await this.redis.set(
+  `driver:${driverId}:location`,
+  JSON.stringify(location),
+  'EX', 300 // Expire in 5 minutes
+);
+
+// Get driver location
+const location = await this.redis.get(`driver:${driverId}:location`);
+```
+
+## 🔔 Integration con Notifications
+
+### Push Notifications
+```typescript
+// Send push notification on ride events
+await this.notificationsService.sendNotification({
+  userId: userId.toString(),
+  type: NotificationType.RIDE_ACCEPTED,
+  title: 'Ride Accepted!',
+  message: `Driver ${driverName} accepted your ride`,
+  data: { rideId, driverId },
+  channels: [NotificationChannel.PUSH],
+});
+```
+
+### SMS Notifications
+```typescript
+// Send SMS for critical events
+await this.notificationsService.sendNotification({
+  userId: userId.toString(),
+  type: NotificationType.EMERGENCY_TRIGGERED,
+  title: 'Emergency Alert',
+  message: 'Emergency services have been notified',
+  channels: [NotificationChannel.SMS],
+  priority: 'critical',
+});
+```
+
+## 📊 Monitoring y Logging
+
+### Connection Logging
+```typescript
+handleConnection(client: Socket) {
+  this.logger.log(`Client connected: ${client.id}`);
+  // Track connection metrics
+}
+
+handleDisconnect(client: Socket) {
+  this.logger.log(`Client disconnected: ${client.id}`);
+  // Clean up resources
+}
+```
+
+### Event Logging
+```typescript
+@SubscribeMessage('driver:location:update')
+handleDriverLocationUpdate(@MessageBody() data: DriverLocationUpdateDto) {
+  this.logger.log(`Location update from driver ${data.driverId}`);
+
+  // Process location update
+  // ...
+
+  return { status: 'success' };
+}
+```
+
+## 🧪 Testing WebSocket
+
+### Client Connection Test
+```typescript
+// Test connection
+const socket = io('http://localhost:3000/uber-realtime');
+
+socket.on('connect', () => {
+  console.log('Connected to WebSocket');
+});
+
+// Test ride join
+socket.emit('ride:join', { rideId: 1, userId: 123 });
+
+// Listen for events
+socket.on('driver:location:updated', (data) => {
+  console.log('Driver location:', data);
+});
+```
+
+### Unit Tests
+```typescript
+describe('WebSocketGateway', () => {
+  let gateway: WebSocketGatewayClass;
+  let mockRealTimeService: RealTimeService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        WebSocketGatewayClass,
+        { provide: RealTimeService, useValue: mockRealTimeService },
+      ],
+    }).compile();
+
+    gateway = module.get<WebSocketGatewayClass>(WebSocketGatewayClass);
+  });
+
+  it('should handle ride join', () => {
+    const data = { rideId: 1, userId: 123 };
+    const result = gateway.handleJoinRide(data);
+
+    expect(result.status).toBe('success');
+  });
+});
+```
+
+## 🚀 Escalabilidad
+
+### Multiple Gateway Instances
+```typescript
+// Use Redis adapter for multiple instances
+import { RedisAdapter } from '@socket.io/redis-adapter';
+
+const pubClient = createClient({ host: 'localhost', port: 6379 });
+const subClient = pubClient.duplicate();
+
+io.adapter(new RedisAdapter(pubClient, subClient));
+```
+
+### Load Balancing
+```typescript
+// Sticky sessions for WebSocket connections
+// Configure load balancer to maintain session affinity
+// Use Redis to share session data across instances
+```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### Connection Issues
+```typescript
+// Check CORS configuration
+@WebSocketGateway({
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+})
+```
+
+#### Event Not Received
+```typescript
+// Ensure client is in correct room
+socket.emit('ride:join', { rideId, userId });
+
+// Check room name format
+const roomName = `ride-${rideId}`;
+this.server.to(roomName).emit('event', data);
+```
+
+#### Memory Leaks
+```typescript
+// Clean up on disconnect
+handleDisconnect(client: Socket) {
+  // Remove from all rooms
+  client.rooms.forEach(room => {
+    if (room !== client.id) {
+      client.leave(room);
+    }
+  });
+
+  // Clean up service data
+  this.realTimeService.removeClient(client);
+}
+```

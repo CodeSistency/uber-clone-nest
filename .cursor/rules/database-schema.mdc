@@ -1,0 +1,444 @@
+---
+globs: prisma/**/*
+description: Esquema de base de datos PostgreSQL con Prisma ORM
+---
+
+# 🗄️ Base de Datos - Prisma Schema
+
+## 📋 Resumen
+
+El proyecto usa **PostgreSQL** como base de datos principal con **Prisma ORM** para el mapeo objeto-relacional. El esquema está dividido en secciones lógicas.
+
+## 🏗️ Estructura del Schema
+
+### Configuración Principal
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+## 👥 Usuarios y Conductores
+
+### User Model
+```prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(100)
+  clerkId   String?  @unique @map("clerk_id") @db.VarChar(50)
+  password  String?  @db.VarChar(255) // Hashed password
+  isActive  Boolean  @default(true) @map("is_active")
+  lastLogin DateTime? @map("last_login")
+
+  // Relations
+  rides            Ride[]
+  deliveryOrders   DeliveryOrder[]
+  wallet           Wallet?
+  ratings          Rating[]
+  emergencyContacts EmergencyContact[]
+  sentMessages     ChatMessage[] @relation("MessageSender")
+  receivedRatings  Rating[] @relation("RatedUser")
+  notificationPreferences NotificationPreferences?
+  pushTokens       PushToken[]
+  notifications    Notification[]
+
+  @@map("users")
+}
+```
+
+### Driver Model
+```prisma
+model Driver {
+  id                   Int      @id @default(autoincrement())
+  firstName            String   @map("first_name") @db.VarChar(50)
+  lastName             String   @map("last_name") @db.VarChar(50)
+  profileImageUrl      String?  @map("profile_image_url")
+  carImageUrl          String?  @map("car_image_url")
+  carModel             String?  @map("car_model") @db.VarChar(100)
+  licensePlate         String?  @unique @map("license_plate") @db.VarChar(20)
+  carSeats             Int      @map("car_seats")
+  status               String   @default("offline") @db.VarChar(20)
+  verificationStatus   String   @default("pending") @map("verification_status") @db.VarChar(20)
+  canDoDeliveries      Boolean  @default(false) @map("can_do_deliveries")
+
+  // Relations
+  documents       DriverDocument[]
+  rides           Ride[]
+  deliveryOrders  DeliveryOrder[]
+
+  @@map("drivers")
+}
+```
+
+## 🚗 Sistema de Viajes
+
+### Ride Model
+```prisma
+model Ride {
+  rideId              Int      @id @default(autoincrement()) @map("ride_id")
+  originAddress       String   @map("origin_address") @db.VarChar(255)
+  destinationAddress  String   @map("destination_address") @db.VarChar(255)
+  originLatitude      Decimal  @map("origin_latitude") @db.Decimal(9, 6)
+  originLongitude     Decimal  @map("origin_longitude") @db.Decimal(9, 6)
+  destinationLatitude Decimal  @map("destination_latitude") @db.Decimal(9, 6)
+  destinationLongitude Decimal @map("destination_longitude") @db.Decimal(9, 6)
+  rideTime            Int      @map("ride_time")
+  farePrice           Decimal  @map("fare_price") @db.Decimal(10, 2)
+  paymentStatus       String   @map("payment_status") @db.VarChar(20)
+  driverId            Int?     @map("driver_id")
+  userId              String   @map("user_id") @db.VarChar(100)
+  tierId              Int?     @map("tier_id")
+  scheduledFor        DateTime? @map("scheduled_for")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Relations
+  driver    Driver?    @relation(fields: [driverId], references: [id])
+  tier      RideTier?  @relation(fields: [tierId], references: [id])
+  user      User?      @relation(fields: [userId], references: [clerkId])
+  ratings   Rating[]
+  messages  ChatMessage[]
+
+  @@map("rides")
+}
+```
+
+### RideTier Model
+```prisma
+model RideTier {
+  id            Int     @id @default(autoincrement())
+  name          String  @db.VarChar(50)
+  baseFare      Decimal @map("base_fare") @db.Decimal(10, 2)
+  perMinuteRate Decimal @map("per_minute_rate") @db.Decimal(10, 2)
+  perMileRate   Decimal @map("per_mile_rate") @db.Decimal(10, 2)
+  imageUrl      String? @map("image_url")
+
+  // Relations
+  rides Ride[]
+
+  @@map("ride_tiers")
+}
+```
+
+## 🛒 Marketplace y Delivery
+
+### Store Model
+```prisma
+model Store {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(150)
+  address      String   @db.VarChar(255)
+  latitude     Decimal  @db.Decimal(9, 6)
+  longitude    Decimal  @db.Decimal(9, 6)
+  category     String?  @db.VarChar(50)
+  cuisineType  String?  @map("cuisine_type") @db.VarChar(50)
+  logoUrl      String?  @map("logo_url")
+  rating       Decimal  @default(0.00) @db.Decimal(3, 2)
+  isOpen       Boolean  @default(true) @map("is_open")
+  ownerClerkId String?  @map("owner_clerk_id") @db.VarChar(50)
+
+  // Relations
+  products       Product[]
+  deliveryOrders DeliveryOrder[]
+  ratings        Rating[]
+
+  @@map("stores")
+}
+```
+
+### DeliveryOrder Model
+```prisma
+model DeliveryOrder {
+  orderId          Int      @id @default(autoincrement()) @map("order_id")
+  userClerkId      String   @map("user_clerk_id") @db.VarChar(50)
+  storeId          Int      @map("store_id")
+  courierId        Int?     @map("courier_id")
+  deliveryAddress  String   @map("delivery_address") @db.VarChar(255)
+  deliveryLatitude  Decimal  @map("delivery_latitude") @db.Decimal(9, 6)
+  deliveryLongitude Decimal @map("delivery_longitude") @db.Decimal(9, 6)
+  totalPrice       Decimal  @map("total_price") @db.Decimal(10, 2)
+  deliveryFee      Decimal  @map("delivery_fee") @db.Decimal(10, 2)
+  tip              Decimal  @default(0.00) @db.Decimal(10, 2)
+  status           String   @default("pending") @db.VarChar(50)
+  paymentStatus    String   @default("pending") @map("payment_status") @db.VarChar(20)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User?      @relation(fields: [userClerkId], references: [clerkId])
+  store    Store      @relation(fields: [storeId], references: [id])
+  courier  Driver?    @relation(fields: [courierId], references: [id])
+  orderItems OrderItem[]
+  ratings   Rating[]
+  messages  ChatMessage[]
+
+  @@map("delivery_orders")
+}
+```
+
+## 💰 Sistema Financiero
+
+### Wallet Model
+```prisma
+model Wallet {
+  id         Int      @id @default(autoincrement())
+  userClerkId String   @unique @map("user_clerk_id") @db.VarChar(50)
+  balance    Decimal  @default(0.00) @db.Decimal(10, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user               User                @relation(fields: [userClerkId], references: [clerkId], onDelete: Cascade)
+  walletTransactions WalletTransaction[]
+
+  @@map("wallets")
+}
+```
+
+### WalletTransaction Model
+```prisma
+model WalletTransaction {
+  id               Int      @id @default(autoincrement())
+  walletId         Int      @map("wallet_id")
+  amount           Decimal  @db.Decimal(10, 2)
+  transactionType  String   @map("transaction_type") @db.VarChar(20)
+  description      String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+```
+
+## 💬 Comunicación y Ratings
+
+### ChatMessage Model
+```prisma
+model ChatMessage {
+  id            Int      @id @default(autoincrement())
+  rideId        Int?     @map("ride_id")
+  orderId       Int?     @map("order_id")
+  senderClerkId String   @map("sender_clerk_id") @db.VarChar(50)
+  messageText   String   @map("message_text")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  ride   Ride?          @relation(fields: [rideId], references: [rideId])
+  order  DeliveryOrder? @relation(fields: [orderId], references: [orderId])
+  sender User           @relation("MessageSender", fields: [senderClerkId], references: [clerkId])
+
+  @@map("chat_messages")
+}
+```
+
+### Rating Model
+```prisma
+model Rating {
+  id               Int      @id @default(autoincrement())
+  rideId           Int?     @map("ride_id")
+  orderId          Int?     @map("order_id")
+  storeId          Int?     @map("store_id")
+  ratedByClerkId   String   @map("rated_by_clerk_id") @db.VarChar(50)
+  ratedClerkId     String?  @map("rated_clerk_id") @db.VarChar(50)
+  ratingValue      Int      @map("rating_value")
+  comment          String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  ride     Ride?          @relation(fields: [rideId], references: [rideId])
+  order    DeliveryOrder? @relation(fields: [orderId], references: [orderId])
+  store    Store?         @relation(fields: [storeId], references: [id])
+  ratedBy  User           @relation(fields: [ratedByClerkId], references: [clerkId])
+  ratedUser User?         @relation("RatedUser", fields: [ratedClerkId], references: [clerkId])
+
+  @@map("ratings")
+}
+```
+
+## 🔔 Sistema de Notificaciones
+
+### Notification Model
+```prisma
+model Notification {
+  id               Int      @id @default(autoincrement())
+  userClerkId      String   @map("user_clerk_id") @db.VarChar(50)
+  type             String   @db.VarChar(50)
+  title            String   @db.VarChar(255)
+  message          String?
+  data             Json?
+  isRead           Boolean  @default(false) @map("is_read")
+  pushSent         Boolean  @default(false) @map("push_sent")
+  pushSentAt       DateTime? @map("push_sent_at")
+  smsSent          Boolean  @default(false) @map("sms_sent")
+  smsSentAt        DateTime? @map("sms_sent_at")
+  emailSent        Boolean  @default(false) @map("email_sent")
+  emailSentAt      DateTime? @map("email_sent_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  readAt           DateTime? @map("read_at")
+
+  // Relations
+  user User @relation(fields: [userClerkId], references: [clerkId], onDelete: Cascade)
+
+  @@index([userClerkId, createdAt])
+  @@index([type, createdAt])
+  @@map("notifications")
+}
+```
+
+## 🔧 Prisma Service
+
+### Configuración
+```typescript
+// src/prisma/prisma.service.ts
+@Injectable()
+export class PrismaService extends PrismaClient implements OnModuleInit {
+  async onModuleInit() {
+    await this.$connect();
+  }
+
+  async enableShutdownHooks(app: INestApplication) {
+    this.$on('beforeExit', async () => {
+      await app.close();
+    });
+  }
+}
+```
+
+### Uso en Servicios
+```typescript
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaService) {}
+
+  async findUserById(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        wallet: true,
+        emergencyContacts: true,
+      },
+    });
+  }
+}
+```
+
+## 📊 Consultas Comunes
+
+### Usuario con Relaciones
+```typescript
+const userWithRelations = await prisma.user.findUnique({
+  where: { id: userId },
+  include: {
+    wallet: true,
+    emergencyContacts: true,
+    rides: {
+      include: {
+        driver: true,
+        tier: true,
+        ratings: true,
+      },
+    },
+  },
+});
+```
+
+### Viajes Activos
+```typescript
+const activeRides = await prisma.ride.findMany({
+  where: {
+    paymentStatus: 'pending',
+    driverId: { not: null },
+  },
+  include: {
+    driver: true,
+    user: true,
+    tier: true,
+  },
+});
+```
+
+### Balance de Wallet
+```typescript
+const walletBalance = await prisma.wallet.findUnique({
+  where: { userClerkId },
+  include: {
+    walletTransactions: {
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    },
+  },
+});
+```
+
+## 🚀 Migraciones
+
+### Comandos Principales
+```bash
+# Generar cliente Prisma
+npx prisma generate
+
+# Crear migración
+npx prisma migrate dev --name migration-name
+
+# Aplicar migraciones
+npx prisma migrate deploy
+
+# Reset database
+npx prisma migrate reset
+
+# Ver estado
+npx prisma migrate status
+```
+
+### Seeds
+```typescript
+// prisma/seed.ts
+async function main() {
+  // Crear ride tiers
+  await prisma.rideTier.createMany({
+    data: [
+      { name: 'UberX', baseFare: 2.5, perMinuteRate: 0.25, perMileRate: 1.25 },
+      { name: 'UberXL', baseFare: 3.5, perMinuteRate: 0.35, perMileRate: 1.75 },
+    ],
+  });
+}
+```
+
+## 🔍 Optimizaciones
+
+### Índices
+```prisma
+// Índices automáticos en campos únicos
+@@unique([email])
+@@unique([clerkId])
+
+// Índices manuales para consultas frecuentes
+@@index([userClerkId, createdAt])
+@@index([type, createdAt])
+@@index([userClerkId, isActive]) // Para PushToken
+```
+
+### Relaciones Optimizadas
+```typescript
+// Include solo los campos necesarios
+const user = await prisma.user.findUnique({
+  where: { id },
+  select: {
+    id: true,
+    name: true,
+    email: true,
+    wallet: {
+      select: {
+        balance: true,
+      },
+    },
+  },
+});
+```

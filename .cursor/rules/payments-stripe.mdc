@@ -1,0 +1,653 @@
+---
+globs: src/stripe/**/*
+description: Sistema de pagos con Stripe integration
+---
+
+# 💳 Sistema de Pagos - Stripe Integration
+
+## 📋 Resumen
+
+El sistema de pagos está integrado con **Stripe** para manejar pagos de viajes, billetera digital y suscripciones.
+
+## 🏗️ Arquitectura
+
+### StripeModule
+```typescript
+// src/stripe/stripe.module.ts
+@Module({
+  imports: [PrismaModule, WalletModule],
+  controllers: [StripeController],
+  providers: [StripeService],
+  exports: [StripeService],
+})
+export class StripeModule {}
+```
+
+### StripeService
+```typescript
+// src/stripe/stripe.service.ts
+@Injectable()
+export class StripeService {
+  private stripe: Stripe;
+
+  constructor(
+    private configService: ConfigService,
+    private walletService: WalletService,
+  ) {
+    this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY'), {
+      apiVersion: '2023-10-16',
+    });
+  }
+
+  async createPaymentIntent(
+    amount: number,
+    currency: string = 'usd',
+    metadata?: Record<string, string>
+  ): Promise<Stripe.PaymentIntent> {
+    return this.stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency,
+      metadata,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+  }
+
+  async confirmPaymentIntent(
+    paymentIntentId: string,
+    paymentMethodId?: string
+  ): Promise<Stripe.PaymentIntent> {
+    const updateData: any = {
+      payment_method: paymentMethodId,
+    };
+
+    return this.stripe.paymentIntents.confirm(paymentIntentId, updateData);
+  }
+
+  async createCustomer(
+    email: string,
+    name: string,
+    metadata?: Record<string, string>
+  ): Promise<Stripe.Customer> {
+    return this.stripe.customers.create({
+      email,
+      name,
+      metadata,
+    });
+  }
+
+  async attachPaymentMethod(
+    customerId: string,
+    paymentMethodId: string
+  ): Promise<Stripe.PaymentMethod> {
+    // Attach payment method to customer
+    await this.stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customerId,
+    });
+
+    // Set as default payment method
+    await this.stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+
+    return this.stripe.paymentMethods.retrieve(paymentMethodId);
+  }
+
+  async createSubscription(
+    customerId: string,
+    priceId: string,
+    metadata?: Record<string, string>
+  ): Promise<Stripe.Subscription> {
+    return this.stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: priceId }],
+      metadata,
+    });
+  }
+
+  async processRidePayment(
+    rideId: number,
+    userId: string,
+    amount: number
+  ): Promise<any> {
+    try {
+      // Create payment intent for ride
+      const paymentIntent = await this.createPaymentIntent(amount, 'usd', {
+        rideId: rideId.toString(),
+        userId,
+        type: 'ride_payment',
+      });
+
+      // Here you would typically:
+      // 1. Confirm the payment on the frontend
+      // 2. Handle the payment_intent.succeeded webhook
+      // 3. Update ride status and wallet
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      };
+    } catch (error) {
+      console.error('Error processing ride payment:', error);
+      throw new Error('Payment processing failed');
+    }
+  }
+
+  async addFundsToWallet(
+    userId: string,
+    amount: number,
+    paymentMethodId?: string
+  ): Promise<any> {
+    try {
+      // Create payment intent for wallet top-up
+      const paymentIntent = await this.createPaymentIntent(amount, 'usd', {
+        userId,
+        type: 'wallet_topup',
+      });
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      };
+    } catch (error) {
+      console.error('Error adding funds to wallet:', error);
+      throw new Error('Wallet top-up failed');
+    }
+  }
+
+  async handleWebhook(rawBody: Buffer, signature: string): Promise<any> {
+    const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
+
+    try {
+      const event = this.stripe.webhooks.constructEvent(
+        rawBody,
+        signature,
+        endpointSecret
+      );
+
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          return this.handlePaymentIntentSucceeded(event.data.object);
+
+        case 'payment_intent.payment_failed':
+          return this.handlePaymentIntentFailed(event.data.object);
+
+        case 'customer.subscription.created':
+          return this.handleSubscriptionCreated(event.data.object);
+
+        case 'customer.subscription.updated':
+          return this.handleSubscriptionUpdated(event.data.object);
+
+        case 'customer.subscription.deleted':
+          return this.handleSubscriptionDeleted(event.data.object);
+
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+      }
+
+      return { received: true };
+    } catch (error) {
+      console.error('Webhook error:', error);
+      throw new Error('Webhook processing failed');
+    }
+  }
+
+  private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
+    const { metadata } = paymentIntent;
+
+    if (metadata.type === 'ride_payment') {
+      // Update ride payment status
+      await this.prisma.ride.update({
+        where: { rideId: parseInt(metadata.rideId) },
+        data: { paymentStatus: 'paid' },
+      });
+
+      // Transfer funds to driver (would implement driver wallet system)
+      console.log(`Ride ${metadata.rideId} payment completed`);
+    } else if (metadata.type === 'wallet_topup') {
+      // Add funds to user wallet
+      await this.walletService.addFunds(
+        metadata.userId,
+        paymentIntent.amount / 100, // Convert from cents
+        'Stripe wallet top-up'
+      );
+    }
+  }
+
+  private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent): Promise<void> {
+    const { metadata } = paymentIntent;
+
+    if (metadata.type === 'ride_payment') {
+      // Update ride payment status to failed
+      await this.prisma.ride.update({
+        where: { rideId: parseInt(metadata.rideId) },
+        data: { paymentStatus: 'failed' },
+      });
+
+      console.log(`Ride ${metadata.rideId} payment failed`);
+    }
+  }
+
+  private async handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
+    // Handle subscription creation
+    console.log('Subscription created:', subscription.id);
+  }
+
+  private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
+    // Handle subscription updates
+    console.log('Subscription updated:', subscription.id);
+  }
+
+  private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
+    // Handle subscription cancellation
+    console.log('Subscription deleted:', subscription.id);
+  }
+
+  async getPaymentMethods(customerId: string): Promise<Stripe.PaymentMethod[]> {
+    const paymentMethods = await this.stripe.paymentMethods.list({
+      customer: customerId,
+      type: 'card',
+    });
+
+    return paymentMethods.data;
+  }
+
+  async detachPaymentMethod(paymentMethodId: string): Promise<Stripe.PaymentMethod> {
+    return this.stripe.paymentMethods.detach(paymentMethodId);
+  }
+
+  async createRefund(
+    paymentIntentId: string,
+    amount?: number,
+    reason?: string
+  ): Promise<Stripe.Refund> {
+    const refundData: any = {
+      payment_intent: paymentIntentId,
+      reason: reason || 'requested_by_customer',
+    };
+
+    if (amount) {
+      refundData.amount = Math.round(amount * 100);
+    }
+
+    return this.stripe.refunds.create(refundData);
+  }
+
+  async getTransactionHistory(customerId: string): Promise<Stripe.Charge[]> {
+    const charges = await this.stripe.charges.list({
+      customer: customerId,
+      limit: 50,
+    });
+
+    return charges.data;
+  }
+}
+```
+
+## 🎯 StripeController
+```typescript
+// src/stripe/stripe.controller.ts
+@Controller('stripe')
+@UseGuards(JwtAuthGuard)
+export class StripeController {
+  constructor(private readonly stripeService: StripeService) {}
+
+  @Post('create-payment-intent')
+  async createPaymentIntent(@Body() body: CreatePaymentIntentDto) {
+    const { amount, currency, metadata } = body;
+    return this.stripeService.createPaymentIntent(amount, currency, metadata);
+  }
+
+  @Post('confirm-payment-intent')
+  async confirmPaymentIntent(@Body() body: ConfirmPaymentIntentDto) {
+    const { paymentIntentId, paymentMethodId } = body;
+    return this.stripeService.confirmPaymentIntent(paymentIntentId, paymentMethodId);
+  }
+
+  @Post('create-customer')
+  async createCustomer(@Body() body: CreateCustomerDto) {
+    const { email, name, metadata } = body;
+    return this.stripeService.createCustomer(email, name, metadata);
+  }
+
+  @Post('attach-payment-method')
+  async attachPaymentMethod(@Body() body: AttachPaymentMethodDto) {
+    const { customerId, paymentMethodId } = body;
+    return this.stripeService.attachPaymentMethod(customerId, paymentMethodId);
+  }
+
+  @Post('ride-payment')
+  async processRidePayment(@Body() body: ProcessRidePaymentDto, @Req() req) {
+    const { rideId, amount } = body;
+    return this.stripeService.processRidePayment(rideId, req.user.id.toString(), amount);
+  }
+
+  @Post('wallet/topup')
+  async addFundsToWallet(@Body() body: AddFundsDto, @Req() req) {
+    const { amount, paymentMethodId } = body;
+    return this.stripeService.addFundsToWallet(req.user.clerkId, amount, paymentMethodId);
+  }
+
+  @Post('webhook')
+  async handleWebhook(
+    @Body() rawBody: Buffer,
+    @Headers('stripe-signature') signature: string,
+  ) {
+    return this.stripeService.handleWebhook(rawBody, signature);
+  }
+
+  @Get('payment-methods/:customerId')
+  async getPaymentMethods(@Param('customerId') customerId: string) {
+    return this.stripeService.getPaymentMethods(customerId);
+  }
+
+  @Delete('payment-methods/:paymentMethodId')
+  async detachPaymentMethod(@Param('paymentMethodId') paymentMethodId: string) {
+    return this.stripeService.detachPaymentMethod(paymentMethodId);
+  }
+
+  @Post('refunds')
+  async createRefund(@Body() body: CreateRefundDto) {
+    const { paymentIntentId, amount, reason } = body;
+    return this.stripeService.createRefund(paymentIntentId, amount, reason);
+  }
+
+  @Get('transactions/:customerId')
+  async getTransactionHistory(@Param('customerId') customerId: string) {
+    return this.stripeService.getTransactionHistory(customerId);
+  }
+}
+```
+
+## 📝 DTOs para Stripe
+```typescript
+// src/stripe/dto/create-payment-intent.dto.ts
+export class CreatePaymentIntentDto {
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['usd', 'eur', 'gbp'])
+  currency?: string = 'usd';
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, string>;
+}
+
+// src/stripe/dto/process-ride-payment.dto.ts
+export class ProcessRidePaymentDto {
+  @IsNumber()
+  rideId: number;
+
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+}
+
+// src/stripe/dto/add-funds.dto.ts
+export class AddFundsDto {
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @IsOptional()
+  @IsString()
+  paymentMethodId?: string;
+}
+
+// src/stripe/dto/create-refund.dto.ts
+export class CreateRefundDto {
+  @IsNotEmpty()
+  @IsString()
+  paymentIntentId: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  amount?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['duplicate', 'fraudulent', 'requested_by_customer'])
+  reason?: string;
+}
+```
+
+## 🔧 Configuración
+
+### Environment Variables
+```bash
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Webhook endpoint
+STRIPE_WEBHOOK_URL=https://your-domain.com/stripe/webhook
+```
+
+### Webhook Setup
+```typescript
+// Configure webhook in Stripe Dashboard
+// URL: https://your-domain.com/stripe/webhook
+// Events to listen for:
+// - payment_intent.succeeded
+// - payment_intent.payment_failed
+// - customer.subscription.created
+// - customer.subscription.updated
+// - customer.subscription.deleted
+```
+
+## 💰 Flujo de Pago para Viajes
+
+### 1. Solicitar Viaje
+```typescript
+// User requests a ride
+const ride = await ridesService.createRide(rideData);
+
+// Create payment intent
+const paymentData = await stripeService.processRidePayment(
+  ride.rideId,
+  userId,
+  ride.farePrice
+);
+
+// Return client secret to frontend
+return {
+  ride,
+  paymentIntent: {
+    clientSecret: paymentData.clientSecret,
+    id: paymentData.paymentIntentId,
+  },
+};
+```
+
+### 2. Confirmar Pago (Frontend)
+```javascript
+// Frontend code
+const { error } = await stripe.confirmPayment({
+  elements,
+  confirmParams: {
+    return_url: 'https://your-app.com/ride-confirmation',
+  },
+});
+```
+
+### 3. Procesar Webhook
+```typescript
+// Webhook handler processes successful payment
+private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+  if (paymentIntent.metadata.type === 'ride_payment') {
+    // Update ride status
+    await this.prisma.ride.update({
+      where: { rideId: parseInt(paymentIntent.metadata.rideId) },
+      data: { paymentStatus: 'paid' },
+    });
+
+    // Notify driver and user
+    await this.notificationsService.sendNotification({
+      userId: paymentIntent.metadata.userId,
+      type: 'payment_success',
+      title: 'Payment Successful',
+      message: 'Your ride payment has been processed',
+    });
+  }
+}
+```
+
+## 🎁 Sistema de Promociones
+
+### PromotionsService Integration
+```typescript
+// src/promotions/promotions.service.ts
+@Injectable()
+export class PromotionsService {
+  constructor(private prisma: PrismaService) {}
+
+  async applyPromotion(code: string, rideId: number): Promise<any> {
+    const promotion = await this.prisma.promotion.findUnique({
+      where: { promoCode: code },
+    });
+
+    if (!promotion || !promotion.isActive) {
+      throw new Error('Invalid or expired promotion code');
+    }
+
+    if (promotion.expiryDate && promotion.expiryDate < new Date()) {
+      throw new Error('Promotion code has expired');
+    }
+
+    // Apply discount to ride
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+    });
+
+    let discountAmount = 0;
+    if (promotion.discountPercentage) {
+      discountAmount = (Number(ride.farePrice) * promotion.discountPercentage) / 100;
+    } else if (promotion.discountAmount) {
+      discountAmount = Number(promotion.discountAmount);
+    }
+
+    const finalAmount = Math.max(0, Number(ride.farePrice) - discountAmount);
+
+    return {
+      originalAmount: ride.farePrice,
+      discountAmount,
+      finalAmount,
+      promotion: promotion.promoCode,
+    };
+  }
+
+  async createPromotion(data: CreatePromotionDto): Promise<Promotion> {
+    return this.prisma.promotion.create({
+      data: {
+        promoCode: data.promoCode,
+        discountPercentage: data.discountPercentage,
+        discountAmount: data.discountAmount,
+        expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        isActive: data.isActive ?? true,
+      },
+    });
+  }
+}
+```
+
+## 🔐 Seguridad y Validación
+
+### Validación de Webhooks
+```typescript
+// Ensure webhook signature is valid
+const event = this.stripe.webhooks.constructEvent(
+  rawBody,
+  signature,
+  endpointSecret
+);
+
+// Only process events we expect
+const allowedEvents = [
+  'payment_intent.succeeded',
+  'payment_intent.payment_failed',
+  'customer.subscription.created',
+  // ... other events
+];
+
+if (!allowedEvents.includes(event.type)) {
+  throw new Error(`Unexpected event type: ${event.type}`);
+}
+```
+
+### Rate Limiting
+```typescript
+// Implement rate limiting for payment endpoints
+@Post('create-payment-intent')
+@Throttle(10, 60) // 10 requests per minute
+async createPaymentIntent(@Body() body: CreatePaymentIntentDto) {
+  // Implementation
+}
+```
+
+## 🧪 Testing
+
+### Stripe CLI para Desarrollo
+```bash
+# Install Stripe CLI
+npm install -g stripe
+
+# Login to your account
+stripe login
+
+# Forward webhooks to local development
+stripe listen --forward-to localhost:3000/stripe/webhook
+```
+
+### Test Cards
+```javascript
+// Test card numbers for development
+const testCards = {
+  success: '4242 4242 4242 4242',
+  decline: '4000 0000 0000 0002',
+  insufficientFunds: '4000 0000 0000 9995',
+};
+```
+
+### Unit Tests
+```typescript
+describe('StripeService', () => {
+  let service: StripeService;
+  let mockStripe: jest.Mocked<Stripe>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        StripeService,
+        { provide: ConfigService, useValue: mockConfig },
+        { provide: WalletService, useValue: mockWallet },
+      ],
+    }).compile();
+
+    service = module.get<StripeService>(StripeService);
+    // Mock Stripe client
+    (service as any).stripe = mockStripe;
+  });
+
+  it('should create payment intent', async () => {
+    mockStripe.paymentIntents.create.mockResolvedValue(mockPaymentIntent);
+
+    const result = await service.createPaymentIntent(100, 'usd');
+
+    expect(result).toEqual(mockPaymentIntent);
+    expect(mockStripe.paymentIntents.create).toHaveBeenCalledWith({
+      amount: 10000, // 100 * 100
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+    });
+  });
+});
+```

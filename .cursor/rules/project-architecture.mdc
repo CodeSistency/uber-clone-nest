@@ -1,0 +1,214 @@
+---
+alwaysApply: true
+description: Guía general de arquitectura y estructura del proyecto Uber Clone
+---
+
+# 🏗️ Arquitectura del Proyecto Uber Clone
+
+## 📋 Estructura General
+
+Este es un **sistema completo de ride-sharing y delivery** construido con **NestJS**, **PostgreSQL**, **WebSockets** y múltiples servicios de terceros.
+
+### 🏛️ Arquitectura Principal
+
+- **Framework**: NestJS con TypeScript
+- **Base de datos**: PostgreSQL con Prisma ORM
+- **Autenticación**: JWT (preparado para Clerk)
+- **Tiempo real**: Socket.IO para WebSockets
+- **Pagos**: Stripe integration
+- **Notificaciones**: Push, SMS (Twilio), Email (Firebase)
+- **Cache**: Redis para pub/sub y cache
+- **Validación**: class-validator + class-transformer
+
+## 📁 Estructura de Módulos
+
+### Core Modules
+- **`auth/`**: Autenticación JWT con guards y estrategias
+- **`users/`**: Gestión de usuarios y perfiles
+- **`drivers/`**: Gestión de conductores y verificación
+- **`rides/`**: Sistema de viajes con tiers de precio
+- **`chat/`**: Mensajería entre usuarios y conductores
+
+### Business Modules
+- **`promotions/`**: Códigos de descuento y promociones
+- **`wallet/`**: Billetera digital y transacciones
+- **`stripe/`**: Procesamiento de pagos con Stripe
+- **`emergency-contacts/`**: Contactos de emergencia
+- **`safety/`**: Funcionalidades de seguridad
+
+### Infrastructure Modules
+- **`prisma/`**: Configuración de base de datos
+- **`redis/`**: Cache y comunicación pub/sub
+- **`websocket/`**: Comunicación en tiempo real
+- **`realtime/`**: Seguimiento en tiempo real de viajes
+- **`notifications/`**: Sistema de notificaciones completo
+
+## 🔄 Flujo de Datos Típico
+
+### 1. Ride Request Flow
+```
+Usuario → API Gateway → Auth Guard → Rides Service → Prisma → WebSocket Broadcast → Drivers
+```
+
+### 2. Payment Flow
+```
+Ride Complete → Stripe Service → Wallet Update → Notification → User Email/Push
+```
+
+### 3. Real-time Tracking
+```
+Driver Location → Redis Pub/Sub → WebSocket → User App → Map Update
+```
+
+## 🗄️ Base de Datos - Entidades Principales
+
+### Users & Authentication
+- **User**: Perfiles de usuario con wallet integrada
+- **EmergencyContact**: Contactos de emergencia por usuario
+
+### Ride Sharing
+- **Driver**: Conductores con verificación y documentos
+- **Ride**: Viajes con ubicación, precio y estado
+- **RideTier**: Niveles de servicio (UberX, UberXL, etc.)
+
+### Marketplace & Delivery
+- **Store**: Comercios en la plataforma
+- **Product**: Productos de los comercios
+- **DeliveryOrder**: Órdenes de delivery
+
+### Financial
+- **Wallet**: Billetera digital de usuarios
+- **WalletTransaction**: Historial de transacciones
+- **Promotion**: Códigos de descuento
+
+### Communication
+- **ChatMessage**: Mensajes entre usuarios/conductores
+- **Rating**: Calificaciones para viajes y deliveries
+
+### Notifications
+- **NotificationPreferences**: Preferencias de notificación
+- **PushToken**: Tokens para notificaciones push
+- **Notification**: Historial de notificaciones enviadas
+
+## 🔐 Sistema de Autenticación
+
+### JWT Authentication
+- **Access Token**: 1 hora de expiración
+- **Refresh Token**: 7 días de expiración
+- **Guards**: Protección de rutas con roles
+- **Strategies**: Validación de tokens JWT
+
+### Dual Auth System
+- **Custom JWT**: Implementado y funcional
+- **Clerk**: Preparado pero no usado actualmente
+
+## ⚡ WebSocket Events
+
+### Ride Events
+- `ride:join` - Usuario se une al seguimiento
+- `ride:accept` - Conductor acepta viaje
+- `ride:complete` - Viaje completado
+- `driver:location:update` - Actualización de ubicación
+
+### Emergency Events
+- `emergency:sos` - Alerta de emergencia
+- `emergency:sos-triggered` - SOS enviado
+
+### Chat Events
+- `chat:message` - Nuevo mensaje
+- `chat:new-message` - Broadcast de mensaje
+
+## 📊 Patrones de Diseño Usados
+
+### Repository Pattern
+- **PrismaService**: Acceso unificado a base de datos
+- **Services**: Lógica de negocio por módulo
+
+### Observer Pattern
+- **WebSocket Gateway**: Eventos en tiempo real
+- **Notification System**: Múltiples canales
+
+### Strategy Pattern
+- **Auth Strategies**: JWT vs Clerk
+- **Notification Channels**: Push, SMS, Email
+
+### Factory Pattern
+- **DTOs**: Creación de objetos de transferencia
+- **Interceptors**: Transformación de respuestas
+
+## 🚀 Endpoints Principales
+
+### Authentication
+- `POST /auth/register` - Registro de usuarios
+- `POST /auth/login` - Login de usuarios
+- `POST /auth/refresh` - Refresh de tokens
+
+### Users
+- `GET /users/profile` - Perfil de usuario
+- `PUT /users/profile` - Actualizar perfil
+- `GET /users/rides` - Historial de viajes
+
+### Rides
+- `POST /rides` - Crear viaje
+- `GET /rides/:id` - Detalles del viaje
+- `POST /rides/:id/accept` - Aceptar viaje (driver)
+- `POST /rides/:id/rate` - Calificar viaje
+
+### Wallet
+- `GET /wallet/balance` - Balance de wallet
+- `POST /wallet/add-funds` - Agregar fondos
+- `GET /wallet/transactions` - Historial de transacciones
+
+## 🧪 Testing Strategy
+
+### Unit Tests
+- Servicios individuales
+- Utilidades y helpers
+- Validaciones de DTOs
+
+### Integration Tests
+- Endpoints completos
+- Base de datos interactions
+- Servicios externos
+
+### E2E Tests
+- Flujos completos de usuario
+- WebSocket connections
+- Payment flows
+
+## 🔧 Configuración
+
+### Environment Variables
+```bash
+# Database
+DATABASE_URL=postgresql://...
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Clerk (opcional)
+CLERK_SECRET_KEY=sk_test_...
+
+# Twilio (SMS)
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_PHONE_NUMBER=...
+```
+
+### Scripts Disponibles
+```bash
+npm run start:dev      # Desarrollo con hot reload
+npm run build         # Build de producción
+npm run test          # Ejecutar tests
+npm run db:seed       # Poblar base de datos
+npm run db:reset      # Reset completo de BD
+```

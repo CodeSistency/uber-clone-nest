@@ -1,0 +1,642 @@
+---
+globs: *.json,*.js,*.ts
+description: Guía de desarrollo, configuración y deployment
+---
+
+# 🚀 Desarrollo y Deployment
+
+## 📋 Resumen
+
+Guía completa para desarrollo, configuración y deployment del proyecto Uber Clone.
+
+## 🛠️ Configuración del Entorno
+
+### Prerequisites
+```bash
+# Node.js (versión recomendada)
+node --version  # v18.17.0 o superior
+npm --version   # v9.0.0 o superior
+
+# PostgreSQL
+psql --version  # v14 o superior
+
+# Redis (opcional pero recomendado)
+redis-server --version  # v6.0 o superior
+
+# Stripe CLI (para desarrollo)
+npm install -g stripe
+```
+
+### Instalación
+```bash
+# Clonar repositorio
+git clone <repository-url>
+cd uber-clone-nest
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+cp env-config-template.txt .env
+
+# Configurar base de datos
+npm run db:setup
+
+# Ejecutar seeds
+npm run db:seed
+
+# Iniciar desarrollo
+npm run start:dev
+```
+
+## ⚙️ Variables de Entorno
+
+### Archivo .env
+```bash
+# Base de datos
+DATABASE_URL="postgresql://username:password@localhost:5432/uber_clone_db"
+
+# JWT
+JWT_SECRET="your-super-secret-jwt-key-here"
+JWT_EXPIRES_IN="1h"
+JWT_REFRESH_EXPIRES_IN="7d"
+
+# Stripe
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_PUBLISHABLE_KEY="pk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+
+# Redis (opcional)
+REDIS_URL="redis://localhost:6379"
+
+# Twilio (para SMS)
+TWILIO_ACCOUNT_SID="..."
+TWILIO_AUTH_TOKEN="..."
+TWILIO_PHONE_NUMBER="+1234567890"
+
+# Firebase (para notificaciones push)
+FIREBASE_PROJECT_ID="..."
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
+FIREBASE_CLIENT_EMAIL="..."
+
+# Puerto de aplicación
+PORT=3000
+
+# Entorno
+NODE_ENV="development"
+```
+
+### Validación de Configuración
+```bash
+# Ejecutar script de validación
+node validate-config.js
+```
+
+## 🗄️ Base de Datos
+
+### Configuración PostgreSQL
+```sql
+-- Crear base de datos
+CREATE DATABASE uber_clone_db;
+
+-- Crear usuario (opcional)
+CREATE USER uber_user WITH ENCRYPTED PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE uber_clone_db TO uber_user;
+```
+
+### Prisma Commands
+```bash
+# Generar cliente Prisma
+npx prisma generate
+
+# Crear migración
+npx prisma migrate dev --name add_new_feature
+
+# Aplicar migraciones
+npx prisma migrate deploy
+
+# Ver estado
+npx prisma migrate status
+
+# Reset database
+npx prisma migrate reset --force
+
+# Abrir Prisma Studio
+npx prisma studio
+```
+
+### Seeds
+```bash
+# Ejecutar seeds
+npm run db:seed
+
+# Reset y seed
+npm run db:reset
+```
+
+## 🚀 Scripts de Desarrollo
+
+### Package.json Scripts
+```json
+{
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --no-deprecation --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node --no-deprecation dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:reset": "npx prisma migrate reset --force",
+    "db:seed:fresh": "npm run db:reset && npm run db:seed",
+    "db:setup": "npx prisma generate && npx prisma migrate dev --name init && npm run db:seed",
+    "db:dev": "npx prisma generate && npm run db:seed",
+    "config:validate": "node validate-config.js",
+    "config:setup": "node setup-notifications.js",
+    "test:notifications": "node test-notifications.js",
+    "env:setup": "cp .env.template .env 2>/dev/null || echo 'Archivo .env ya existe'",
+    "test:full": "npm run test:setup && npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:cleanup",
+    "test:endpoints": "npm run test:setup && jest --config test/jest.endpoints.config.js --verbose",
+    "test:endpoints:watch": "npm run test:setup && jest --config test/jest.endpoints.config.js --watch",
+    "test:setup": "npm run db:test:setup && npm run test:env:setup",
+    "test:unit": "jest --config jest.unit.config.js",
+    "test:integration": "jest --config jest.integration.config.js",
+    "test:cleanup": "npm run db:test:cleanup",
+    "test:report": "npm run test:cov && npm run test:performance && npm run test:security",
+    "test:performance": "npm run test:load && npm run test:stress",
+    "test:load": "artillery run test/load-test.yml",
+    "test:stress": "artillery run test/stress-test.yml",
+    "test:security": "npm audit && npx audit-ci --config audit-ci.json",
+    "db:test:setup": "npx prisma migrate deploy && npx prisma db seed",
+    "db:test:cleanup": "npx prisma migrate reset --force --skip-generate",
+    "test:env:setup": "cp .env.test .env",
+    "test:ci": "npm run lint && npm run build && npm run test:full && npm run test:report"
+  }
+}
+```
+
+## 🧪 Testing
+
+### Estructura de Tests
+```
+test/
+├── app.e2e-spec.ts              # Tests E2E generales
+├── fixtures/                    # Datos de prueba
+├── jest-e2e.json               # Config Jest E2E
+├── jest.endpoints.config.js    # Config endpoints testing
+├── load-test.yml               # Tests de carga
+├── stress-test.yml             # Tests de estrés
+├── mocks/                      # Mocks para tests
+├── setup/                      # Setup de tests
+└── utils/                      # Utilidades de testing
+```
+
+### Ejecutar Tests
+```bash
+# Tests unitarios
+npm run test:unit
+
+# Tests de integración
+npm run test:integration
+
+# Tests E2E
+npm run test:e2e
+
+# Tests de endpoints
+npm run test:endpoints
+
+# Tests completos
+npm run test:full
+
+# Cobertura
+npm run test:cov
+```
+
+### Tests de Performance
+```bash
+# Tests de carga
+npm run test:load
+
+# Tests de estrés
+npm run test:stress
+```
+
+## 📖 Documentación
+
+### Swagger API Documentation
+```typescript
+// Acceder a documentación
+// Desarrollo: http://localhost:3000/api
+// Producción: https://your-domain.com/api
+```
+
+### Estructura de Documentación
+```
+docs/
+├── api-documentation.md         # Documentación API completa
+├── API-ENDPOINTS-GUIDE.md      # Guía de endpoints
+├── AUTHENTICATION-GUIDE.md     # Guía de autenticación
+├── implementation-guide.md     # Guía de implementación
+├── schema.md                   # Esquema de base de datos
+├── TESTING-PLAN.md            # Plan de testing
+└── realtime-tracking-guide.md # Guía de tracking en tiempo real
+```
+
+## 🚀 Deployment
+
+### Docker
+
+#### Dockerfile
+```dockerfile
+FROM node:18-alpine AS base
+
+# Instalar dependencias solo para producción
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+
+# Build the app
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+RUN npm run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+USER nestjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+
+CMD ["npm", "run", "start:prod"]
+```
+
+#### Docker Compose
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/uber_clone_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-secret-key
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./.env:/app/.env
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=uber_clone_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+```
+
+### Deploy en Railway
+
+#### railway.json
+```json
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "npm run start:prod",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
+```
+
+### Deploy en Vercel
+
+#### vercel.json
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/main.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/main.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+```
+
+### Deploy en Heroku
+
+#### Procfile
+```
+web: npm run start:prod
+```
+
+## 🔧 Monitoreo y Logging
+
+### Winston Logger
+```typescript
+// src/common/logger/winston.logger.ts
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
+
+export const winstonConfig = WinstonModule.forRoot({
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json(),
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple(),
+      ),
+    }),
+  ],
+});
+```
+
+### Health Checks
+```typescript
+// src/health/health.controller.ts
+@Controller('health')
+export class HealthController {
+  constructor(
+    private health: HealthCheckService,
+    private db: PrismaHealthIndicator,
+    private redis: RedisHealthIndicator,
+  ) {}
+
+  @Get()
+  @HealthCheck()
+  check() {
+    return this.health.check([
+      () => this.db.pingCheck('database'),
+      () => this.redis.pingCheck('redis'),
+    ]);
+  }
+}
+```
+
+## 🔒 Seguridad
+
+### Rate Limiting
+```typescript
+// src/common/guards/rate-limit.guard.ts
+@Injectable()
+export class RateLimitGuard implements CanActivate {
+  private cache = new Map<string, { count: number; resetTime: number }>();
+
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+    const ip = request.ip;
+    const now = Date.now();
+
+    const key = `${ip}:${request.path}`;
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    const maxRequests = 100;
+
+    const current = this.cache.get(key);
+
+    if (!current || now > current.resetTime) {
+      this.cache.set(key, { count: 1, resetTime: now + windowMs });
+      return true;
+    }
+
+    if (current.count >= maxRequests) {
+      return false;
+    }
+
+    current.count++;
+    return true;
+  }
+}
+```
+
+### CORS Configuration
+```typescript
+// main.ts
+app.enableCors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://your-frontend-domain.com']
+    : ['http://localhost:3000', 'http://localhost:4200'],
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+});
+```
+
+### Helmet Security
+```typescript
+// main.ts
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+}));
+```
+
+## 📊 CI/CD
+
+### GitHub Actions
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:ci
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-key
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+```
+
+## 🚨 Troubleshooting
+
+### Problemas Comunes
+
+#### Error de Conexión a Base de Datos
+```bash
+# Verificar conexión
+psql $DATABASE_URL -c "SELECT 1"
+
+# Verificar migraciones
+npx prisma migrate status
+
+# Reset database
+npm run db:reset
+```
+
+#### Problemas con WebSockets
+```typescript
+// Verificar configuración CORS
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+```
+
+#### Errores de Stripe
+```bash
+# Verificar claves
+node -e "console.log(process.env.STRIPE_SECRET_KEY)"
+
+# Verificar webhooks
+stripe listen --forward-to localhost:3000/stripe/webhook
+```
+
+### Logs y Debugging
+```bash
+# Ver logs de aplicación
+tail -f logs/combined.log
+
+# Ver logs de base de datos
+tail -f /var/log/postgresql/postgresql-*.log
+
+# Debug mode
+DEBUG=* npm run start:dev
+```
+
+## 📈 Optimización
+
+### Performance Tips
+```typescript
+// Connection pooling
+export const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
+
+// Caching con Redis
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-redis-store';
+
+@Module({
+  imports: [
+    CacheModule.register({
+      store: redisStore,
+      host: 'localhost',
+      port: 6379,
+      ttl: 300, // 5 minutes
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Scaling Considerations
+```typescript
+// Horizontal scaling con Redis adapter
+import { RedisAdapter } from '@socket.io/redis-adapter';
+
+// Cluster mode para múltiples instancias
+import * as cluster from 'cluster';
+import * as os from 'os';
+
+if (cluster.isMaster) {
+  const numCPUs = os.cpus().length;
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+} else {
+  // Worker code
+}
+```
