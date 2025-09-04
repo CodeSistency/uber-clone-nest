@@ -14,17 +14,27 @@ datasource db {
 // SECTION 1: CORE USER & DRIVER TABLES
 // =========================================
 
-// Stores basic user information with support for both Clerk and custom authentication
+// Stores user information with support for regular users and administrators
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
-  email     String   @unique @db.VarChar(100)
-  clerkId   String?  @unique @map("clerk_id") @db.VarChar(50)
-  password  String?  @db.VarChar(255) // Hashed password for custom authentication
-  isActive  Boolean  @default(true) @map("is_active")
-  lastLogin DateTime? @map("last_login")
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  email       String    @unique @db.VarChar(100)
+  clerkId     String?   @unique @map("clerk_id") @db.VarChar(50)
+  password    String?   @db.VarChar(255) // Hashed password for custom authentication
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLogin   DateTime? @map("last_login")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  // Relations
+  // Admin-specific fields (optional - only populated for admin users)
+  userType          String?   @default("user") @map("user_type") // 'user' or 'admin'
+  adminRole         String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support'
+  adminPermissions  String[]  @default([]) @map("admin_permissions") // Array of permission strings
+  lastAdminLogin    DateTime? @map("last_admin_login")
+  adminCreatedAt    DateTime? @map("admin_created_at")
+  adminUpdatedAt    DateTime? @updatedAt @map("admin_updated_at")
+
+  // Relations (available for both regular users and admins)
   rides            Ride[]
   deliveryOrders   DeliveryOrder[]
   wallet           Wallet?
@@ -35,6 +45,9 @@ model User {
   notificationPreferences NotificationPreferences?
   pushTokens       PushToken[]
   notifications    Notification[]
+
+  // Admin-specific relations
+  adminAuditLogs   AdminAuditLog[]
 
   @@map("users")
 }
@@ -52,6 +65,8 @@ model Driver {
   status               String   @default("offline") @db.VarChar(20)
   verificationStatus   String   @default("pending") @map("verification_status") @db.VarChar(20)
   canDoDeliveries      Boolean  @default(false) @map("can_do_deliveries")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   documents       DriverDocument[]
@@ -140,6 +155,8 @@ model Store {
   rating       Decimal  @default(0.00) @db.Decimal(3, 2)
   isOpen       Boolean  @default(true) @map("is_open")
   ownerClerkId String?  @map("owner_clerk_id") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   products       Product[]
@@ -158,6 +175,7 @@ model Product {
   price       Decimal  @db.Decimal(10, 2)
   imageUrl    String?  @map("image_url")
   category    String?  @db.VarChar(50)
+  stock       Int      @default(0)
   isAvailable Boolean  @default(true) @map("is_available")
 
   // Relations
@@ -169,19 +187,21 @@ model Product {
 
 // Tracks a delivery order from creation to completion
 model DeliveryOrder {
-  orderId          Int      @id @default(autoincrement()) @map("order_id")
-  userClerkId      String   @map("user_clerk_id") @db.VarChar(50)
-  storeId          Int      @map("store_id")
-  courierId        Int?     @map("courier_id")
-  deliveryAddress  String   @map("delivery_address") @db.VarChar(255)
-  deliveryLatitude  Decimal  @map("delivery_latitude") @db.Decimal(9, 6)
-  deliveryLongitude Decimal @map("delivery_longitude") @db.Decimal(9, 6)
-  totalPrice       Decimal  @map("total_price") @db.Decimal(10, 2)
-  deliveryFee      Decimal  @map("delivery_fee") @db.Decimal(10, 2)
-  tip              Decimal  @default(0.00) @db.Decimal(10, 2)
-  status           String   @default("pending") @db.VarChar(50)
-  paymentStatus    String   @default("pending") @map("payment_status") @db.VarChar(20)
-  createdAt        DateTime @default(now()) @map("created_at")
+  orderId              Int      @id @default(autoincrement()) @map("order_id")
+  userClerkId          String   @map("user_clerk_id") @db.VarChar(50)
+  storeId              Int      @map("store_id")
+  courierId            Int?     @map("courier_id")
+  deliveryAddress      String   @map("delivery_address") @db.VarChar(255)
+  deliveryLatitude     Decimal  @map("delivery_latitude") @db.Decimal(9, 6)
+  deliveryLongitude    Decimal @map("delivery_longitude") @db.Decimal(9, 6)
+  totalPrice           Decimal  @map("total_price") @db.Decimal(10, 2)
+  deliveryFee          Decimal  @map("delivery_fee") @db.Decimal(10, 2)
+  tip                  Decimal  @default(0.00) @db.Decimal(10, 2)
+  status               String   @default("pending") @db.VarChar(50)
+  paymentStatus        String   @default("pending") @map("payment_status") @db.VarChar(20)
+  estimatedDeliveryTime DateTime? @map("estimated_delivery_time")
+  actualDeliveryTime   DateTime? @map("actual_delivery_time")
+  createdAt            DateTime @default(now()) @map("created_at")
 
   // Relations
   user     User?      @relation(fields: [userClerkId], references: [clerkId])
@@ -374,6 +394,30 @@ model Notification {
   @@index([userClerkId, createdAt])
   @@index([type, createdAt])
   @@map("notifications")
+}
+
+// =========================================
+// ADMIN AUDIT SYSTEM TABLES
+// =========================================
+
+// Stores audit logs for admin actions
+model AdminAuditLog {
+  id        Int      @id @default(autoincrement())
+  adminId   Int      @map("admin_id") // References User.id for admin users
+  action    String   @db.VarChar(100) // 'create', 'update', 'delete', 'login', etc.
+  resource  String   @db.VarChar(50) // 'user', 'driver', 'ride', etc.
+  resourceId String? @map("resource_id") @db.VarChar(50)
+  oldValue  Json?    @map("old_value")
+  newValue  Json?    @map("new_value")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relation to admin user
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_audit_logs")
 }
 
 // =========================================

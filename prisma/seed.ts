@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -639,6 +640,101 @@ async function main() {
     }),
   ]);
 
+  // =========================================
+  // SECTION 16: ADMIN SYSTEM
+  // =========================================
+  console.log('👑 Seeding admin system...');
+
+  // Crear contraseña hasheada para el super admin
+  const superAdminPassword = await bcrypt.hash('SuperAdmin123!', 12);
+
+  const superAdmin = await prisma.user.create({
+    data: {
+      name: 'Super Admin',
+      email: 'superadmin@uberclone.com',
+      password: superAdminPassword,
+      userType: 'admin',
+      adminRole: 'super_admin',
+      adminPermissions: [
+        'user:read', 'user:write', 'user:delete',
+        'driver:approve', 'driver:suspend', 'driver:read', 'driver:write',
+        'ride:monitor', 'ride:intervene', 'ride:read', 'ride:write',
+        'delivery:read', 'delivery:write', 'delivery:monitor',
+        'payment:refund', 'wallet:manage', 'financial:read',
+        'system:config', 'reports:view', 'logs:view',
+        'store:read', 'store:write', 'store:approve',
+        'product:read', 'product:write',
+        'notification:send', 'notification:read',
+      ],
+      isActive: true,
+      adminCreatedAt: new Date(),
+    },
+  });
+
+  // Crear admin regular
+  const adminPassword = await bcrypt.hash('Admin123!', 12);
+
+  const regularAdmin = await prisma.user.create({
+    data: {
+      name: 'System Admin',
+      email: 'admin@uberclone.com',
+      password: adminPassword,
+      userType: 'admin',
+      adminRole: 'admin',
+      adminPermissions: [
+        'user:read', 'user:write',
+        'driver:approve', 'driver:read', 'driver:write',
+        'ride:monitor', 'ride:read', 'ride:write',
+        'delivery:read', 'delivery:write', 'delivery:monitor',
+        'financial:read', 'reports:view',
+        'store:read', 'store:write', 'store:approve',
+        'product:read', 'product:write',
+        'notification:send', 'notification:read',
+      ],
+      isActive: true,
+      adminCreatedAt: new Date(),
+    },
+  });
+
+  // Crear moderador
+  const moderatorPassword = await bcrypt.hash('Moderator123!', 12);
+
+  const moderator = await prisma.user.create({
+    data: {
+      name: 'Content Moderator',
+      email: 'moderator@uberclone.com',
+      password: moderatorPassword,
+      userType: 'admin',
+      adminRole: 'moderator',
+      adminPermissions: [
+        'user:read', 'driver:read', 'ride:monitor', 'ride:read',
+        'delivery:read', 'delivery:monitor', 'reports:view',
+        'store:read', 'product:read', 'notification:read',
+      ],
+      isActive: true,
+      adminCreatedAt: new Date(),
+    },
+  });
+
+  // Crear soporte
+  const supportPassword = await bcrypt.hash('Support123!', 12);
+
+  const support = await prisma.user.create({
+    data: {
+      name: 'Customer Support',
+      email: 'support@uberclone.com',
+      password: supportPassword,
+      userType: 'admin',
+      adminRole: 'support',
+      adminPermissions: [
+        'user:read', 'driver:read', 'ride:read', 'delivery:read',
+        'notification:send', 'notification:read',
+      ],
+      isActive: true,
+      adminCreatedAt: new Date(),
+    },
+  });
+
   console.log('✅ Database seeded successfully!');
   console.log('📊 Summary:');
   console.log(`   👥 ${users.length} users created`);
@@ -656,6 +752,7 @@ async function main() {
   console.log(`   ⭐ ${5} ratings created`);
   console.log(`   🚨 ${3} emergency contacts created`);
   console.log(`   💬 ${5} chat messages created`);
+  console.log(`   👑 ${4} admins created (super_admin, admin, moderator, support)`);
 }
 
 main()

@@ -13,13 +13,25 @@ export class UsersService {
   }
 
   async findUserById(id: number): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
         wallet: true,
         emergencyContacts: true,
       },
     });
+
+    if (!user) return null;
+
+    return {
+      ...user,
+      userType: user.userType || 'user',
+      adminRole: user.adminRole || null,
+      adminPermissions: user.adminPermissions || [],
+      lastAdminLogin: user.lastAdminLogin || null,
+      adminCreatedAt: user.adminCreatedAt || null,
+      adminUpdatedAt: user.adminUpdatedAt || null,
+    };
   }
 
   async findUserByClerkId(clerkId: string): Promise<User | null> {
@@ -43,8 +55,25 @@ export class UsersService {
         password: true,
         isActive: true,
         lastLogin: true,
+        createdAt: true,
+        updatedAt: true,
+        userType: true,
+        adminRole: true,
+        adminPermissions: true,
+        lastAdminLogin: true,
+        adminCreatedAt: true,
+        adminUpdatedAt: true,
         wallet: true,
         emergencyContacts: true,
+        rides: true,
+        deliveryOrders: true,
+        ratings: true,
+        sentMessages: true,
+        receivedRatings: true,
+        notificationPreferences: true,
+        pushTokens: true,
+        notifications: true,
+        adminAuditLogs: true,
       },
     });
   }

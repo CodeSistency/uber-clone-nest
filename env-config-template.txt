@@ -125,3 +125,14 @@ NOTIFICATION_RATE_LIMIT_PER_MINUTE=10
 # Analytics settings
 NOTIFICATION_ANALYTICS_ENABLED=true
 NOTIFICATION_ANALYTICS_RETENTION_DAYS=30
+
+# =========================================
+# ADMIN SYSTEM CONFIGURATION
+# =========================================
+
+# JWT Secret for admin authentication (separate from user JWT)
+ADMIN_JWT_SECRET=your-admin-jwt-secret-key-that-is-at-least-32-characters-long
+
+# Admin JWT expiration times
+ADMIN_JWT_EXPIRES_IN=1h
+ADMIN_JWT_REFRESH_EXPIRES_IN=7d

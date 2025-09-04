@@ -181,8 +181,8 @@ export class DriversService {
       completedAt: Date | null;
       distance: number | null;
       duration: number;
-      user: { name: string; clerkId: string } | null;
-      ratings: { ratingValue: number; comment: string; createdAt: Date }[];
+      user: { name: string; clerkId: string | null } | null;
+      ratings: { ratingValue: number; comment: string | null; createdAt: Date }[];
     }[];
     summary: {
       totalRides: number;
@@ -204,7 +204,7 @@ export class DriversService {
 
     // Apply status filter
     if (filters?.status) {
-      whereClause.status = filters.status;
+      whereClause.paymentStatus = filters.status;
     }
 
     // Apply date filters

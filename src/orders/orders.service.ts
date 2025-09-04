@@ -2,7 +2,8 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RealTimeService } from '../websocket/real-time.service';
-import { DeliveryOrder, OrderItem, Rating, NotificationType, NotificationChannel } from '@prisma/client';
+import { DeliveryOrder, OrderItem, Rating } from '@prisma/client';
+import { NotificationType, NotificationChannel } from '../notifications/interfaces/notification.interface';
 import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
 import { RateOrderDto } from './dto/rate-order.dto';
 
@@ -39,8 +40,8 @@ export class OrdersService {
 
     // Calcular delivery fee basado en distancia
     const deliveryFee = await this.calculateDeliveryFee(
-      store.latitude,
-      store.longitude,
+      Number(store.latitude),
+      Number(store.longitude),
       orderData.deliveryLatitude,
       orderData.deliveryLongitude,
     );
@@ -138,6 +139,10 @@ export class OrdersService {
         userClerkId,
         status: { in: ['pending', 'confirmed'] },
       },
+      include: {
+        store: true,
+        courier: true,
+      },
     });
 
     if (!order) {
@@ -159,7 +164,7 @@ export class OrdersService {
     // Notificar tienda y conductor
     await this.notificationsService.sendNotification({
       userId: order.store.ownerClerkId!,
-      type: 'order_cancelled',
+      type: NotificationType.ORDER_CANCELLED,
       title: 'Order Cancelled',
       message: `Order #${orderId} has been cancelled by the customer`,
       data: { orderId },
@@ -169,7 +174,7 @@ export class OrdersService {
     if (order.courierId) {
       await this.notificationsService.sendNotification({
         userId: order.courierId.toString(),
-        type: 'order_cancelled',
+        type: NotificationType.ORDER_CANCELLED,
         title: 'Order Cancelled',
         message: `Order #${orderId} has been cancelled`,
         data: { orderId },
@@ -240,7 +245,7 @@ export class OrdersService {
     // Notificar usuario
     await this.notificationsService.sendNotification({
       userId: order.userClerkId,
-      type: 'order_accepted',
+      type: NotificationType.ORDER_ACCEPTED,
       title: 'Order Accepted!',
       message: `Your order from ${order.store.name} is being prepared`,
       data: { orderId: order.orderId },
@@ -250,7 +255,7 @@ export class OrdersService {
     // Notificar tienda
     await this.notificationsService.sendNotification({
       userId: order.store.ownerClerkId!,
-      type: 'order_assigned',
+      type: NotificationType.ORDER_ASSIGNED,
       title: 'New Order Assigned',
       message: `Order #${order.orderId} has been assigned to a courier`,
       data: { orderId: order.orderId },
@@ -285,7 +290,7 @@ export class OrdersService {
     // Notificar usuario
     await this.notificationsService.sendNotification({
       userId: order.userClerkId,
-      type: 'order_picked_up',
+      type: NotificationType.ORDER_PICKED_UP,
       title: 'Order Picked Up!',
       message: `Your order from ${order.store.name} is on the way`,
       data: { orderId: order.orderId },
@@ -321,7 +326,7 @@ export class OrdersService {
     // Notificar usuario
     await this.notificationsService.sendNotification({
       userId: order.userClerkId,
-      type: 'order_delivered',
+      type: NotificationType.ORDER_DELIVERED,
       title: 'Order Delivered!',
       message: `Your order from ${order.store.name} has been delivered`,
       data: { orderId: order.orderId },
@@ -331,7 +336,7 @@ export class OrdersService {
     // Notificar tienda
     await this.notificationsService.sendNotification({
       userId: order.store.ownerClerkId!,
-      type: 'order_delivered',
+      type: NotificationType.ORDER_DELIVERED,
       title: 'Order Delivered',
       message: `Order #${order.orderId} has been successfully delivered`,
       data: { orderId: order.orderId },
@@ -460,10 +465,10 @@ export class OrdersService {
     return degrees * (Math.PI / 180);
   }
 
-  private async notifyStoreNewOrder(order: DeliveryOrder): Promise<void> {
+  private async notifyStoreNewOrder(order: DeliveryOrder & { store: { ownerClerkId: string | null; name: string } }): Promise<void> {
     await this.notificationsService.sendNotification({
       userId: order.store.ownerClerkId!,
-      type: 'new_order',
+      type: NotificationType.ORDER_CREATED,
       title: 'New Order Received',
       message: `New order #${order.orderId} for $${order.totalPrice}`,
       data: { orderId: order.orderId },
@@ -471,7 +476,7 @@ export class OrdersService {
     });
   }
 
-  private async notifyNearbyCouriers(order: DeliveryOrder): Promise<void> {
+  private async notifyNearbyCouriers(order: DeliveryOrder & { store: { name: string } }): Promise<void> {
     // Buscar conductores cercanos que puedan hacer deliveries
     const nearbyCouriers = await this.prisma.driver.findMany({
       where: {
@@ -486,7 +491,7 @@ export class OrdersService {
     for (const courier of nearbyCouriers) {
       await this.notificationsService.sendNotification({
         userId: courier.id.toString(),
-        type: 'delivery_available',
+        type: NotificationType.DELIVERY_AVAILABLE,
         title: 'New Delivery Available',
         message: `Delivery order from ${order.store.name}`,
         data: { orderId: order.orderId },

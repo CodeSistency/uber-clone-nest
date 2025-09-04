@@ -243,56 +243,6 @@ export class RidesService {
 
   // New methods for ride status management with notifications
 
-  async startRide(rideId: number): Promise<Ride> {
-    const ride = await this.prisma.ride.findUnique({
-      where: { rideId },
-      include: {
-        driver: true,
-        user: true,
-      },
-    });
-
-    if (!ride) {
-      throw new Error('Ride not found');
-    }
-
-    if (!ride.driverId) {
-      throw new Error('Ride must be accepted by a driver before starting');
-    }
-
-    const updatedRide = await this.prisma.ride.update({
-      where: { rideId },
-      data: {
-        // You might want to add a status field or use existing fields
-      },
-      include: {
-        driver: true,
-        user: true,
-      },
-    });
-
-    // Notify passenger that ride has started
-    try {
-      await this.notificationsService.notifyRideStatusUpdate(
-        rideId,
-        ride.userId,
-        ride.driverId,
-        'in_progress',
-        {
-          destination: ride.destinationAddress,
-        },
-      );
-      this.logger.log(`Notified passenger about started ride ${rideId}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to notify passenger about started ride ${rideId}:`,
-        error,
-      );
-    }
-
-    return updatedRide;
-  }
-
   async driverArrived(rideId: number): Promise<Ride> {
     const ride = await this.prisma.ride.findUnique({
       where: { rideId },
@@ -342,51 +292,6 @@ export class RidesService {
     return updatedRide;
   }
 
-  async completeRide(rideId: number): Promise<Ride> {
-    const ride = await this.prisma.ride.findUnique({
-      where: { rideId },
-      include: {
-        driver: true,
-        user: true,
-      },
-    });
-
-    if (!ride) {
-      throw new Error('Ride not found');
-    }
-
-    const updatedRide = await this.prisma.ride.update({
-      where: { rideId },
-      data: {
-        // You might want to add completion fields
-      },
-      include: {
-        driver: true,
-        user: true,
-      },
-    });
-
-    // Notify passenger that ride is completed
-    try {
-      await this.notificationsService.notifyRideStatusUpdate(
-        rideId,
-        ride.userId,
-        ride.driverId,
-        'completed',
-        {
-          fare: ride.farePrice,
-        },
-      );
-      this.logger.log(`Notified passenger about completed ride ${rideId}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to notify passenger about completed ride ${rideId}:`,
-        error,
-      );
-    }
-
-    return updatedRide;
-  }
 
   async cancelRide(
     rideId: number,

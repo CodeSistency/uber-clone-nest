@@ -234,7 +234,6 @@ export class StoresService {
       isOpen: true,
       OR: [
         { name: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
         { category: { contains: query, mode: 'insensitive' } },
         { cuisineType: { contains: query, mode: 'insensitive' } },
       ],

@@ -59,9 +59,9 @@ export class OrdersController {
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Maximum number of orders to return', example: 20 })
   @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
   async getUserOrders(
+    @Req() req,
     @Query('status') status?: string,
     @Query('limit') limit: number = 20,
-    @Req() req,
   ) {
     const orders = await this.ordersService.getUserOrders(req.user.clerkId, status, limit);
     return { data: orders };

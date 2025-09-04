@@ -20,6 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { StoresModule } from './stores/stores.module';
 import { OrdersModule } from './orders/orders.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -44,6 +45,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
     StoresModule,
     OrdersModule,
     AnalyticsModule,
+    // Admin System
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

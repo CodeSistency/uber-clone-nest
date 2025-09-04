@@ -26,6 +26,7 @@
     "config:validate": "node validate-config.js",
     "config:setup": "node setup-notifications.js",
     "test:notifications": "node test-notifications.js",
+    "test:admin": "node test-admin.js",
     "env:setup": "cp .env.template .env 2>/dev/null || echo 'Archivo .env ya existe'",
     "test:full": "npm run test:setup && npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:cleanup",
     "test:endpoints": "npm run test:setup && jest --config test/jest.endpoints.config.js --verbose",
