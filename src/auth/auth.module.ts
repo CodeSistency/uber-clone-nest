@@ -15,9 +15,14 @@ import { AppConfigModule } from '../config/config.module';
     PrismaModule, // Importar Prisma directamente
     AppConfigModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      // La configuración se inyectará dinámicamente en el servicio
-      global: true,
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: process.env.JWT_SECRET || 'fallback-secret-key',
+        signOptions: {
+          expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+        },
+        global: true,
+      }),
     }),
   ],
   controllers: [AuthController],
