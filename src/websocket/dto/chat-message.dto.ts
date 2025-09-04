@@ -38,3 +38,6 @@ export class ChatMessageDto {
   @IsString()
   message: string;
 }
+
+
+

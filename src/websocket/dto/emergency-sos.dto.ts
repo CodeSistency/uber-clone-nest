@@ -55,3 +55,6 @@ export class EmergencySOSDto {
   @IsString()
   message: string;
 }
+
+
+

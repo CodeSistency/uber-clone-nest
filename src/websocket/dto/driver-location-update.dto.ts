@@ -46,3 +46,6 @@ export class DriverLocationUpdateDto {
   @IsNumber()
   rideId?: number;
 }
+
+
+

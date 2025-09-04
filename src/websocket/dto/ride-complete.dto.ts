@@ -38,3 +38,6 @@ export class RideCompleteDto {
   @IsNumber()
   fare: number;
 }
+
+
+

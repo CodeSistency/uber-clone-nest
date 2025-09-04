@@ -14,12 +14,15 @@ datasource db {
 // SECTION 1: CORE USER & DRIVER TABLES
 // =========================================
 
-// Stores basic user information linked to Clerk ID
+// Stores basic user information with support for both Clerk and custom authentication
 model User {
   id        Int      @id @default(autoincrement())
   name      String   @db.VarChar(100)
   email     String   @unique @db.VarChar(100)
-  clerkId   String   @unique @map("clerk_id") @db.VarChar(50)
+  clerkId   String?  @unique @map("clerk_id") @db.VarChar(50)
+  password  String?  @db.VarChar(255) // Hashed password for custom authentication
+  isActive  Boolean  @default(true) @map("is_active")
+  lastLogin DateTime? @map("last_login")
 
   // Relations
   rides            Ride[]

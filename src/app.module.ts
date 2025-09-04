@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppConfigModule } from './config/config.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { DriversModule } from './drivers/drivers.module';
 import { RidesModule } from './rides/rides.module';
@@ -22,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     // Configuración tipada y validada
     AppConfigModule,
     PrismaModule,
+    AuthModule,
     UsersModule,
     DriversModule,
     RidesModule,

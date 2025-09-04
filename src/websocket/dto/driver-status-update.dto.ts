@@ -21,3 +21,6 @@ export class DriverStatusUpdateDto {
   @IsIn(['online', 'offline', 'busy', 'away'])
   status: string;
 }
+
+
+

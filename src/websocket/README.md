@@ -240,3 +240,6 @@ socket.on('ride:accepted', (data) => {
   updateRideStatus('accepted', data);
 });
 ```
+
+
+

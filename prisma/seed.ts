@@ -178,7 +178,7 @@ async function main() {
         farePrice: 12.50,
         paymentStatus: 'completed',
         driverId: drivers[0].id,
-        userId: users[0].clerkId,
+        userId: users[0].clerkId!,
         tierId: rideTiers[0].id,
       },
     }),
@@ -194,7 +194,7 @@ async function main() {
         farePrice: 18.75,
         paymentStatus: 'completed',
         driverId: drivers[1].id,
-        userId: users[1].clerkId,
+        userId: users[1].clerkId!,
         tierId: rideTiers[1].id,
       },
     }),
@@ -209,7 +209,7 @@ async function main() {
         rideTime: 30,
         farePrice: 25.00,
         paymentStatus: 'pending',
-        userId: users[2].clerkId,
+        userId: users[2].clerkId!,
         tierId: rideTiers[2].id,
         scheduledFor: new Date(Date.now() + 3600000), // 1 hour from now
       },
@@ -232,7 +232,7 @@ async function main() {
         logoUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100',
         rating: 4.5,
         isOpen: true,
-        ownerClerkId: users[0].clerkId,
+        ownerClerkId: users[0].clerkId!,
       },
     }),
     prisma.store.create({
@@ -246,7 +246,7 @@ async function main() {
         logoUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100',
         rating: 4.2,
         isOpen: true,
-        ownerClerkId: users[1].clerkId,
+        ownerClerkId: users[1].clerkId!,
       },
     }),
     prisma.store.create({
@@ -260,7 +260,7 @@ async function main() {
         logoUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=100',
         rating: 4.7,
         isOpen: true,
-        ownerClerkId: users[2].clerkId,
+        ownerClerkId: users[2].clerkId!,
       },
     }),
   ]);
@@ -348,7 +348,7 @@ async function main() {
   const deliveryOrders = await Promise.all([
     prisma.deliveryOrder.create({
       data: {
-        userClerkId: users[0].clerkId,
+        userClerkId: users[0].clerkId!,
         storeId: stores[0].id,
         courierId: drivers[0].id,
         deliveryAddress: '123 Main St, New York, NY 10001',
@@ -363,7 +363,7 @@ async function main() {
     }),
     prisma.deliveryOrder.create({
       data: {
-        userClerkId: users[1].clerkId,
+        userClerkId: users[1].clerkId!,
         storeId: stores[1].id,
         courierId: drivers[2].id,
         deliveryAddress: '456 Broadway, New York, NY 10002',
@@ -457,19 +457,19 @@ async function main() {
   const wallets = await Promise.all([
     prisma.wallet.create({
       data: {
-        userClerkId: users[0].clerkId,
+        userClerkId: users[0].clerkId!,
         balance: 150.00,
       },
     }),
     prisma.wallet.create({
       data: {
-        userClerkId: users[1].clerkId,
+        userClerkId: users[1].clerkId!,
         balance: 75.50,
       },
     }),
     prisma.wallet.create({
       data: {
-        userClerkId: users[2].clerkId,
+        userClerkId: users[2].clerkId!,
         balance: 200.25,
       },
     }),
@@ -523,7 +523,7 @@ async function main() {
     prisma.rating.create({
       data: {
         rideId: rides[0].rideId,
-        ratedByClerkId: users[0].clerkId,
+        ratedByClerkId: users[0].clerkId!,
         ratedClerkId: users.find(u => u.clerkId === rides[0].userId)?.clerkId,
         ratingValue: 5,
         comment: 'Great driver, very friendly!',
@@ -532,7 +532,7 @@ async function main() {
     prisma.rating.create({
       data: {
         rideId: rides[1].rideId,
-        ratedByClerkId: users[1].clerkId,
+        ratedByClerkId: users[1].clerkId!,
         ratedClerkId: users.find(u => u.clerkId === rides[1].userId)?.clerkId,
         ratingValue: 4,
         comment: 'Good service, arrived on time',
@@ -542,7 +542,7 @@ async function main() {
     prisma.rating.create({
       data: {
         storeId: stores[0].id,
-        ratedByClerkId: users[0].clerkId,
+        ratedByClerkId: users[0].clerkId!,
         ratingValue: 5,
         comment: 'Amazing pizza, will order again!',
       },
@@ -550,7 +550,7 @@ async function main() {
     prisma.rating.create({
       data: {
         storeId: stores[1].id,
-        ratedByClerkId: users[1].clerkId,
+        ratedByClerkId: users[1].clerkId!,
         ratingValue: 4,
         comment: 'Great burgers, fast delivery',
       },
@@ -559,8 +559,8 @@ async function main() {
     prisma.rating.create({
       data: {
         orderId: deliveryOrders[0].orderId,
-        ratedByClerkId: users[0].clerkId,
-        ratedClerkId: users.find(u => u.clerkId === deliveryOrders[0].userClerkId)?.clerkId,
+        ratedByClerkId: users[0].clerkId!,
+        ratedClerkId: users.find(u => u.clerkId === deliveryOrders[0].userClerkId)?.clerkId!,
         ratingValue: 5,
         comment: 'Fast delivery, food was hot!',
       },
@@ -574,21 +574,21 @@ async function main() {
   await Promise.all([
     prisma.emergencyContact.create({
       data: {
-        userClerkId: users[0].clerkId,
+        userClerkId: users[0].clerkId!,
         contactName: 'Mom',
         contactPhone: '+1-555-0123',
       },
     }),
     prisma.emergencyContact.create({
       data: {
-        userClerkId: users[0].clerkId,
+        userClerkId: users[0].clerkId!,
         contactName: 'Dad',
         contactPhone: '+1-555-0124',
       },
     }),
     prisma.emergencyContact.create({
       data: {
-        userClerkId: users[1].clerkId,
+        userClerkId: users[1].clerkId!,
         contactName: 'Sister',
         contactPhone: '+1-555-0125',
       },
@@ -604,21 +604,21 @@ async function main() {
     prisma.chatMessage.create({
       data: {
         rideId: rides[0].rideId,
-        senderClerkId: users[0].clerkId,
+        senderClerkId: users[0].clerkId!,
         messageText: 'Hi Carlos, I\'m waiting at the entrance',
       },
     }),
     prisma.chatMessage.create({
       data: {
         rideId: rides[0].rideId,
-        senderClerkId: users.find(u => u.clerkId === rides[0].userId)?.clerkId || users[0].clerkId,
+        senderClerkId: users.find(u => u.clerkId === rides[0].userId)?.clerkId! || users[0].clerkId!,
         messageText: 'Sure, I\'ll be there in 2 minutes!',
       },
     }),
     prisma.chatMessage.create({
       data: {
         rideId: rides[1].rideId,
-        senderClerkId: users[1].clerkId,
+        senderClerkId: users[1].clerkId!,
         messageText: 'Please wait, I\'m coming down',
       },
     }),
@@ -626,14 +626,14 @@ async function main() {
     prisma.chatMessage.create({
       data: {
         orderId: deliveryOrders[0].orderId,
-        senderClerkId: users[0].clerkId,
+        senderClerkId: users[0].clerkId!,
         messageText: 'Pizza looks amazing! Thank you!',
       },
     }),
     prisma.chatMessage.create({
       data: {
         orderId: deliveryOrders[0].orderId,
-        senderClerkId: users.find(u => u.clerkId === deliveryOrders[0].userClerkId)?.clerkId || users[0].clerkId,
+        senderClerkId: users.find(u => u.clerkId === deliveryOrders[0].userClerkId)?.clerkId! || users[0].clerkId!,
         messageText: 'Enjoy your meal! Rate us 5 stars please 😊',
       },
     }),

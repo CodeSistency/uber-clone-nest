@@ -19,3 +19,6 @@ export class RideJoinDto {
   @IsString()
   userId: string;
 }
+
+
+
