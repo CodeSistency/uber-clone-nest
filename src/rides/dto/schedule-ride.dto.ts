@@ -54,8 +54,9 @@ export class ScheduleRideDto {
   @IsDateString()
   scheduled_for: string;
 
-  @ApiProperty({ example: 'user_2ghi789jkl012' })
+  @ApiProperty({ example: 1 })
   @IsNotEmpty()
-  @IsString()
-  user_id: string;
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  user_id: number;
 }

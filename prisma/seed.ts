@@ -179,7 +179,7 @@ async function main() {
         farePrice: 12.50,
         paymentStatus: 'completed',
         driverId: drivers[0].id,
-        userId: users[0].clerkId!,
+        userId: users[0].id,
         tierId: rideTiers[0].id,
       },
     }),
@@ -195,7 +195,7 @@ async function main() {
         farePrice: 18.75,
         paymentStatus: 'completed',
         driverId: drivers[1].id,
-        userId: users[1].clerkId!,
+        userId: users[1].id,
         tierId: rideTiers[1].id,
       },
     }),
@@ -210,7 +210,7 @@ async function main() {
         rideTime: 30,
         farePrice: 25.00,
         paymentStatus: 'pending',
-        userId: users[2].clerkId!,
+        userId: users[2].id,
         tierId: rideTiers[2].id,
         scheduledFor: new Date(Date.now() + 3600000), // 1 hour from now
       },
@@ -525,7 +525,7 @@ async function main() {
       data: {
         rideId: rides[0].rideId,
         ratedByClerkId: users[0].clerkId!,
-        ratedClerkId: users.find(u => u.clerkId === rides[0].userId)?.clerkId,
+        ratedClerkId: users[rides[0].userId - 1]?.clerkId,
         ratingValue: 5,
         comment: 'Great driver, very friendly!',
       },
@@ -534,7 +534,7 @@ async function main() {
       data: {
         rideId: rides[1].rideId,
         ratedByClerkId: users[1].clerkId!,
-        ratedClerkId: users.find(u => u.clerkId === rides[1].userId)?.clerkId,
+        ratedClerkId: users[rides[1].userId - 1]?.clerkId,
         ratingValue: 4,
         comment: 'Good service, arrived on time',
       },
@@ -612,7 +612,7 @@ async function main() {
     prisma.chatMessage.create({
       data: {
         rideId: rides[0].rideId,
-        senderClerkId: users.find(u => u.clerkId === rides[0].userId)?.clerkId! || users[0].clerkId!,
+        senderClerkId: users[rides[0].userId - 1]?.clerkId || users[0].clerkId!,
         messageText: 'Sure, I\'ll be there in 2 minutes!',
       },
     }),

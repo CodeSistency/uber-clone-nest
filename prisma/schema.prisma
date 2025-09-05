@@ -123,7 +123,7 @@ model Ride {
   farePrice           Decimal  @map("fare_price") @db.Decimal(10, 2)
   paymentStatus       String   @map("payment_status") @db.VarChar(20)
   driverId            Int?     @map("driver_id")
-  userId              String   @map("user_id") @db.VarChar(100)
+  userId              Int      @map("user_id")
   tierId              Int?     @map("tier_id")
   scheduledFor        DateTime? @map("scheduled_for")
   createdAt           DateTime @default(now()) @map("created_at")
@@ -131,7 +131,7 @@ model Ride {
   // Relations
   driver    Driver?    @relation(fields: [driverId], references: [id])
   tier      RideTier?  @relation(fields: [tierId], references: [id])
-  user      User?      @relation(fields: [userId], references: [clerkId])
+  user      User?      @relation(fields: [userId], references: [id])
   ratings   Rating[]
   messages  ChatMessage[]
 

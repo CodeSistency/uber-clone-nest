@@ -49,7 +49,7 @@ export class RidesController {
         fare_price: { type: 'number', example: 15.75 },
         payment_status: { type: 'string', example: 'pending' },
         status: { type: 'string', example: 'requested' },
-        user_id: { type: 'string', example: 'user_2abc123def456' },
+        user_id: { type: 'number', example: 1 },
         tier_id: { type: 'number', example: 1 },
         created_at: { type: 'string', format: 'date-time' },
         updated_at: { type: 'string', format: 'date-time' },

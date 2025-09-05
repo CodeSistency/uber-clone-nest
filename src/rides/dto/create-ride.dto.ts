@@ -59,10 +59,11 @@ export class CreateRideDto {
   @IsNumber()
   driver_id?: number;
 
-  @ApiProperty({ example: 'user_2abc123def456' })
+  @ApiProperty({ example: 1 })
   @IsNotEmpty()
-  @IsString()
-  user_id: string;
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  user_id: number;
 
   @ApiProperty({ example: 1, required: false })
   @Transform(({ value }) => (value ? parseInt(value) : null))
