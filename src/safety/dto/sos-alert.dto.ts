@@ -11,7 +11,7 @@ export class SOSAlertDto {
   })
   @IsNotEmpty()
   @IsString()
-  userClerkId: string;
+  userId: string;
 
   @ApiProperty({
     description: 'ID of the ride where the emergency occurred',

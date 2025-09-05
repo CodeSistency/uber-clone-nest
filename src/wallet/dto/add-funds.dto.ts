@@ -3,10 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class AddFundsDto {
-  @ApiProperty({ example: 'user_2abc123def456' })
+  @ApiProperty({ example: 1 })
   @IsNotEmpty()
-  @IsString()
-  userClerkId: string;
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  userId: number;
 
   @ApiProperty({ example: 50.0 })
   @IsNotEmpty()

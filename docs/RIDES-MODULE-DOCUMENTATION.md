@@ -41,6 +41,12 @@ Uber Clone NestJS/
 - **Notificaciones**: Twilio + Firebase
 - **Testing**: Jest + Supertest
 
+### **🚗 NUEVA FUNCIONALIDAD: Tipos de Vehículo**
+- ✅ **Selección de vehículo**: Usuario puede elegir carro, moto, bicicleta, camión
+- ✅ **Asignación inteligente**: Sistema asigna conductores según tipo solicitado
+- ✅ **Compatibilidad**: Integración completa con el sistema existente
+- ✅ **API Endpoints**: Nuevos endpoints para gestión de tipos de vehículo
+
 ---
 
 ## 🚕 **Módulo de Rides - Arquitectura**
@@ -76,8 +82,27 @@ CREATE TABLE rides (
   driver_id INTEGER REFERENCES drivers(id),
   user_id VARCHAR(100) REFERENCES users(clerk_id),
   tier_id INTEGER REFERENCES ride_tiers(id),
+  requested_vehicle_type_id INTEGER REFERENCES vehicle_types(id), -- NUEVO
   scheduled_for TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- NUEVA Tabla de Tipos de Vehículo
+CREATE TABLE vehicle_types (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE, -- 'car', 'motorcycle', 'bicycle', 'truck'
+  display_name VARCHAR(50), -- 'Carro', 'Moto', 'Bicicleta', 'Camión'
+  icon VARCHAR(10), -- Emojis: 🚗, 🏍️, 🚲, 🚚
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabla Drivers actualizada
+CREATE TABLE drivers (
+  -- ... campos existentes
+  vehicle_type_id INTEGER REFERENCES vehicle_types(id), -- NUEVO
+  -- ... resto de campos
 );
 
 -- Tablas relacionadas
@@ -102,10 +127,13 @@ CREATE TABLE chat_messages (...);
 ```mermaid
 graph TD
     A[Usuario abre app] --> B[Ingresa origen/destino]
-    B --> C[App calcula ruta]
-    C --> D[POST /api/ride/create]
-    D --> E[Sistema notifica conductores]
-    E --> F[Conductor acepta ride]
+    B --> C[GET /api/ride/vehicle-types]
+    C --> D[Usuario selecciona tipo de vehículo]
+    D --> E[App calcula ruta]
+    E --> F[POST /api/ride/create con vehicle_type_id]
+    F --> G[Sistema filtra conductores por tipo]
+    G --> H[Sistema notifica conductores compatibles]
+    H --> I[Conductor acepta ride]
 ```
 
 #### **Request Body:**
@@ -121,7 +149,8 @@ graph TD
   "fare_price": 15.75,
   "payment_status": "pending",
   "user_id": "user_2abc123def456",
-  "tier_id": 1
+  "tier_id": 1,
+  "vehicle_type_id": 1
 }
 ```
 
@@ -145,6 +174,7 @@ graph TD
 - ✅ `origin_latitude/longitude`: Requeridos, números decimales
 - ✅ `ride_time`: Requerido, entero positivo
 - ✅ `user_id`: Requerido, formato Clerk ID
+- ✅ `vehicle_type_id`: Opcional, entero positivo (1=Carro, 2=Moto, 3=Bicicleta, 4=Camión)
 
 #### **Funcionalidad Automática:**
 - 🔄 **Notificación a conductores**: Se ejecuta automáticamente
@@ -240,6 +270,7 @@ graph TD
   "destination_longitude": -73.9653,
   "ride_time": 30,
   "tier_id": 2,
+  "vehicle_type_id": 2,
   "scheduled_for": "2024-12-25T14:00:00Z",
   "user_id": "user_2ghi789jkl012"
 }
@@ -427,6 +458,86 @@ POST /api/ride/123/rate
 
 ---
 
+### **7. GET `/api/ride/vehicle-types` - Obtener Tipos de Vehículo Disponibles**
+**Estado:** ✅ Implementado | **Autenticación:** No requerida
+
+#### **¿Cuándo usar?**
+- Para mostrar opciones de vehículo al usuario al crear un ride
+- En la interfaz de selección de tipo de transporte
+- Para configurar filtros de búsqueda de conductores
+
+#### **Flujo de uso:**
+```
+Usuario abre app → Selecciona tipo de viaje
+                        ↓
+        GET /api/ride/vehicle-types
+                        ↓
+            Muestra opciones:
+            🚗 Carro
+            🏍️ Moto
+            🚲 Bicicleta
+            🚚 Camión
+                        ↓
+        Usuario selecciona
+```
+
+#### **Request:**
+```bash
+GET /api/ride/vehicle-types
+```
+
+#### **Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "car",
+      "displayName": "Carro",
+      "icon": "🚗",
+      "isActive": true,
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "motorcycle",
+      "displayName": "Moto",
+      "icon": "🏍️",
+      "isActive": true,
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "bicycle",
+      "displayName": "Bicicleta",
+      "icon": "🚲",
+      "isActive": true,
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "name": "truck",
+      "displayName": "Camión",
+      "icon": "🚚",
+      "isActive": true,
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### **Características:**
+- 🔄 **Cacheable**: Los tipos de vehículo cambian raramente
+- 🔄 **Ordenado**: Por displayName alfabéticamente
+- 🔄 **Activos**: Solo muestra tipos activos (`isActive: true`)
+- 🔄 **Emojis**: Incluye íconos para mejor UX
+
+---
+
 ## 🔄 **Flujo Completo de Negocio**
 
 ### **Diagrama de Estados del Ride:**
@@ -511,43 +622,48 @@ cancelRide(rideId, reason): Cancela ride con motivo
 ```mermaid
 graph TD
     A[Usuario abre app] --> B[Ingresa origen/destino]
-    B --> C[GET /api/ride/estimate - Calcula precio]
-    C --> D[Usuario confirma precio]
-    D --> E[POST /api/ride/create - Crea ride]
-    E --> F[Sistema busca conductores]
-    F --> G[Conductor acepta - POST /api/ride/:id/accept]
-    G --> H[Notificación a usuario]
-    H --> I[Conductor llega - startRide()]
-    I --> J[Viaje en progreso]
-    J --> K[Llegada a destino - completeRide()]
-    K --> L[Usuario califica - POST /api/ride/:id/rate]
+    B --> C[GET /api/ride/vehicle-types - Carga tipos de vehículo]
+    C --> D[Usuario selecciona tipo 🚗/🏍️/🚲/🚚]
+    D --> E[GET /api/ride/estimate - Calcula precio]
+    E --> F[Usuario confirma precio y tipo]
+    F --> G[POST /api/ride/create con vehicle_type_id]
+    G --> H[Sistema busca conductores del tipo solicitado]
+    H --> I[Conductor acepta - POST /api/ride/:id/accept]
+    I --> J[Notificación incluye info del vehículo]
+    J --> K[Conductor llega - startRide()]
+    K --> L[Viaje en progreso]
+    L --> M[Llegada a destino - completeRide()]
+    M --> N[Usuario califica - POST /api/ride/:id/rate]
 ```
 
 ### **Caso 2: Ride Programado**
 ```mermaid
 graph TD
-    A[Usuario selecciona fecha/hora futura] --> B[POST /api/ride/schedule]
-    B --> C[Sistema guarda ride programado]
-    C --> D[En fecha programada...]
-    D --> E[Sistema activa ride]
-    E --> F[Busca conductores disponibles]
-    F --> G[Conductor acepta]
-    G --> H[Flujo normal continúa]
+    A[Usuario selecciona fecha/hora futura] --> B[GET /api/ride/vehicle-types]
+    B --> C[Usuario selecciona tipo de vehículo]
+    C --> D[POST /api/ride/schedule con vehicle_type_id]
+    D --> E[Sistema guarda ride programado]
+    E --> F[En fecha programada...]
+    F --> G[Sistema activa ride]
+    G --> H[Busca conductores del tipo solicitado]
+    H --> I[Conductor acepta]
+    I --> J[Flujo normal continúa]
 ```
 
 ### **Caso 3: Sistema de Matching de Conductores**
 ```mermaid
 graph TD
-    A[Ride creado] --> B[Sistema calcula ubicación]
+    A[Ride creado con vehicle_type_id] --> B[Sistema calcula ubicación]
     B --> C[Busca conductores en radio de 5km]
     C --> D[Filtro: estado = 'online']
     D --> E[Filtro: verificación = 'approved']
-    E --> F[Ordena por distancia]
-    F --> G[Envía notificación push]
-    G --> H[Espera respuesta por 30s]
-    H --> I{Tiempo agotado?}
-    I -->|Sí| J[Busca siguiente conductor]
-    I -->|No| K[Conductor acepta]
+    E --> F[Filtro: vehicle_type_id coincide] ⭐ NUEVO
+    F --> G[Ordena por distancia]
+    G --> H[Envía notificación push]
+    H --> I[Espera respuesta por 30s]
+    I --> J{Tiempo agotado?}
+    J -->|Sí| K[Busca siguiente conductor del mismo tipo]
+    J -->|No| L[Conductor acepta - mismo tipo de vehículo]
 ```
 
 ---
@@ -570,6 +686,16 @@ origin_address: string;
 origin_latitude: number;
 
 // ... validaciones similares para otros campos
+
+@ApiProperty({
+  example: 1,
+  description: 'Tipo de vehículo solicitado (1=Carro, 2=Moto, 3=Bicicleta, 4=Camión)',
+  required: false
+})
+@IsOptional()
+@Transform(({ value }) => (value ? parseInt(value) : null))
+@IsNumber()
+vehicle_type_id?: number;
 ```
 
 #### **RateRideDto:**
@@ -671,7 +797,12 @@ if (rateRideDto.ratedByClerkId !== ride.userId) {
 # Test exitoso
 curl -X POST http://localhost:3000/api/ride/create \
   -H "Content-Type: application/json" \
-  -d '{"origin_address":"Test","destination_address":"Test","origin_latitude":40.7128,"origin_longitude":-74.006,"destination_latitude":40.7589,"destination_longitude":-73.9851,"ride_time":25,"fare_price":15.75,"payment_status":"pending","user_id":"user_test","tier_id":1}'
+  -d '{"origin_address":"Test","destination_address":"Test","origin_latitude":40.7128,"origin_longitude":-74.006,"destination_latitude":40.7589,"destination_longitude":-73.9851,"ride_time":25,"fare_price":15.75,"payment_status":"pending","user_id":"user_test","tier_id":1,"vehicle_type_id":1}'
+
+# Test con tipo de vehículo específico (moto)
+curl -X POST http://localhost:3000/api/ride/create \
+  -H "Content-Type: application/json" \
+  -d '{"origin_address":"Test","destination_address":"Test","origin_latitude":40.7128,"origin_longitude":-74.006,"destination_latitude":40.7589,"destination_longitude":-73.9851,"ride_time":25,"fare_price":15.75,"payment_status":"pending","user_id":"user_test","tier_id":1,"vehicle_type_id":2}'
 
 # Test validación
 curl -X POST http://localhost:3000/api/ride/create \
@@ -693,6 +824,17 @@ curl -X POST http://localhost:3000/api/ride/123/accept \
 # Test cálculo correcto
 curl "http://localhost:3000/api/ride/estimate?tierId=1&minutes=30&miles=10"
 # Verificar: totalFare = baseFare + (30 * perMinuteRate) + (10 * perMileRate)
+
+#### **4. Obtener Tipos de Vehículo:**
+```bash
+# Test obtener tipos de vehículo
+curl -X GET http://localhost:3000/api/ride/vehicle-types
+# Esperado: Array con 4 tipos de vehículo (car, motorcycle, bicycle, truck)
+
+# Verificar respuesta incluye campos requeridos
+curl -X GET http://localhost:3000/api/ride/vehicle-types | jq '.data[0] | has("id", "name", "displayName", "icon")'
+# Debe retornar true
+```
 ```
 
 ### **Casos de Error Comunes:**
@@ -737,5 +879,29 @@ El módulo de **rides** es el corazón del sistema Uber Clone, manejando el fluj
 - ✅ **Notificaciones automáticas**
 
 La arquitectura es **escalable**, **bien estructurada** y **completamente funcional**, lista para producción con todas las validaciones, manejo de errores y logging apropiado.
+
+## 🚗 **NUEVA FUNCIONALIDAD: Sistema de Tipos de Vehículo**
+
+### **Características Implementadas:**
+- ✅ **Selección de vehículo**: Usuario puede elegir entre 4 tipos (🚗 Carro, 🏍️ Moto, 🚲 Bicicleta, 🚚 Camión)
+- ✅ **Asignación inteligente**: Sistema filtra conductores por tipo de vehículo solicitado
+- ✅ **API completa**: 7 endpoints incluyendo nuevo endpoint `/api/ride/vehicle-types`
+- ✅ **Base de datos**: Tabla `vehicle_types` con 4 tipos pre-cargados
+- ✅ **Validaciones**: Campo opcional `vehicle_type_id` en DTOs
+- ✅ **Notificaciones**: Información del tipo de vehículo en mensajes push
+- ✅ **Historial**: Registra tipo solicitado y asignado en cada ride
+
+### **Flujo Actualizado:**
+1. **Usuario selecciona tipo de vehículo** → `GET /api/ride/vehicle-types`
+2. **Crea ride con tipo específico** → `POST /api/ride/create` (con `vehicle_type_id`)
+3. **Sistema filtra conductores** → Solo notifica conductores del tipo solicitado
+4. **Conductor acepta** → Notificación incluye info del tipo de vehículo
+5. **Historial completo** → Registra tipo solicitado y asignado
+
+### **Beneficios:**
+- 🎯 **Mejor matching**: Conductores correctos para cada solicitud
+- 📱 **Mejor UX**: Usuario elige transporte ideal
+- 🚀 **Escalable**: Fácil agregar nuevos tipos de vehículo
+- 📊 **Analytics**: Datos para optimizar flota por tipo
 
 **Documentación completa y actualizada al 100%** ✅

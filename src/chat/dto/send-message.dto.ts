@@ -10,7 +10,7 @@ export class SendMessageDto {
   })
   @IsNotEmpty()
   @IsString()
-  senderClerkId: string;
+  senderId: string;
 
   @ApiProperty({
     description: 'The content of the chat message',

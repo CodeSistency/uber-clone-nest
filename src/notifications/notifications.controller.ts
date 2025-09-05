@@ -252,7 +252,7 @@ export class NotificationsController {
             type: 'object',
             properties: {
               id: { type: 'number', example: 1 },
-              userClerkId: {
+              userId: {
                 type: 'string',
                 example: 'user_2abc123def456ghi789jkl012',
               },

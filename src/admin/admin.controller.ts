@@ -218,7 +218,6 @@ export class AdminController {
           id: true,
           name: true,
           email: true,
-          clerkId: true,
           userType: true,
           adminRole: true,
           adminPermissions: true,
@@ -629,14 +628,8 @@ export class AdminController {
       }
 
       if (userId) {
-        // Find user by clerkId and get their ID
-        const user = await this.prisma.user.findUnique({
-          where: { clerkId: userId },
-          select: { id: true },
-        });
-        if (user) {
-          where.userId = userId;
-        }
+        // Use userId directly
+        where.userId = userId;
       }
 
       const [rides, total] = await Promise.all([
@@ -815,7 +808,7 @@ export class AdminController {
             cuisineType: true,
             rating: true,
             isOpen: true,
-            ownerClerkId: true,
+            ownerId: true,
             createdAt: true,
             _count: {
               select: {
@@ -869,7 +862,7 @@ export class AdminController {
           logoUrl: true,
           rating: true,
           isOpen: true,
-          ownerClerkId: true,
+          ownerId: true,
           createdAt: true,
           products: {
             select: {

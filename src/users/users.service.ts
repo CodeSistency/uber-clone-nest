@@ -7,8 +7,16 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
+    // Ensure required fields have defaults
+    const userData = {
+      ...data,
+      preferredLanguage: data.preferredLanguage || 'es',
+      timezone: data.timezone || 'America/Caracas',
+      currency: data.currency || 'USD',
+    };
+
     return this.prisma.user.create({
-      data,
+      data: userData,
     });
   }
 
@@ -34,9 +42,9 @@ export class UsersService {
     };
   }
 
-  async findUserByClerkId(clerkId: string): Promise<User | null> {
+  async findUserByIdWithRelations(id: number): Promise<User | null> {
     return this.prisma.user.findUnique({
-      where: { clerkId },
+      where: { id },
       include: {
         wallet: true,
         emergencyContacts: true,
@@ -44,14 +52,13 @@ export class UsersService {
     });
   }
 
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserByEmail(email: string): Promise<any> {
     return this.prisma.user.findUnique({
       where: { email },
       select: {
         id: true,
         name: true,
         email: true,
-        clerkId: true,
         password: true,
         isActive: true,
         lastLogin: true,
@@ -104,9 +111,9 @@ export class UsersService {
     return rides;
   }
 
-  async getUserDeliveryOrders(userClerkId: string): Promise<any[]> {
+  async getUserDeliveryOrders(userId: number): Promise<any[]> {
     const orders = await this.prisma.deliveryOrder.findMany({
-      where: { userClerkId },
+      where: { userId },
       include: {
         store: true,
         courier: true,
@@ -123,70 +130,37 @@ export class UsersService {
   }
 
   /**
-   * Crear usuario con Clerk ID obtenido del token
+   * Obtener usuario actual basado en ID del token JWT
    */
-  async createUserWithClerk(
-    clerkId: string,
-    userData: { name: string; email: string }
-  ): Promise<User> {
-    return this.prisma.user.create({
-      data: {
-        clerkId,
-        name: userData.name,
-        email: userData.email,
-      },
-    });
+  async getCurrentUser(userId: number): Promise<User | null> {
+    return this.findUserByIdWithRelations(userId);
   }
 
   /**
-   * Actualizar el Clerk ID de un usuario existente
-   */
-  async linkUserWithClerk(
-    userId: number,
-    clerkId: string
-  ): Promise<User> {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { clerkId },
-      include: {
-        wallet: true,
-        emergencyContacts: true,
-      },
-    });
-  }
-
-  /**
-   * Obtener usuario actual basado en Clerk ID del token
-   */
-  async getCurrentUser(clerkId: string): Promise<User | null> {
-    return this.findUserByClerkId(clerkId);
-  }
-
-  /**
-   * Actualizar usuario actual basado en Clerk ID del token
+   * Actualizar usuario actual basado en ID del token JWT
    */
   async updateCurrentUser(
-    clerkId: string,
-    data: { name?: string; email?: string }
+    userId: number,
+    data: any
   ): Promise<User> {
-    // Primero verificar que el usuario existe
-    const user = await this.findUserByClerkId(clerkId);
-    if (!user) {
-      throw new Error('Usuario no encontrado');
+    // Convertir campos de fecha si existen
+    const updateData = { ...data };
+    if (updateData.dateOfBirth) {
+      updateData.dateOfBirth = new Date(updateData.dateOfBirth);
     }
 
     return this.prisma.user.update({
-      where: { clerkId },
-      data,
+      where: { id: userId },
+      data: updateData,
     });
   }
 
   /**
-   * Verificar si un usuario existe por Clerk ID
+   * Verificar si un usuario existe por ID
    */
-  async userExistsByClerkId(clerkId: string): Promise<boolean> {
+  async userExistsById(userId: number): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+      where: { id: userId },
     });
     return !!user;
   }

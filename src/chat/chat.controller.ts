@@ -36,7 +36,7 @@ export class ChatController {
         properties: {
           id: { type: 'number', example: 1 },
           rideId: { type: 'number', example: 1 },
-          senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+          senderId: { type: 'string', example: 'user_2abc123def456' },
           messageText: { type: 'string', example: "I'll be there in 2 minutes." },
           created_at: { type: 'string', format: 'date-time' },
           updated_at: { type: 'string', format: 'date-time' }
@@ -78,7 +78,7 @@ export class ChatController {
         properties: {
           id: { type: 'number', example: 1 },
           orderId: { type: 'number', example: 1 },
-          senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+          senderId: { type: 'string', example: 'user_2abc123def456' },
           messageText: { type: 'string', example: 'Package delivered successfully.' },
           created_at: { type: 'string', format: 'date-time' },
           updated_at: { type: 'string', format: 'date-time' }
@@ -122,7 +122,7 @@ export class ChatController {
       properties: {
         id: { type: 'number', example: 1 },
         rideId: { type: 'number', example: 1 },
-        senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+        senderId: { type: 'string', example: 'user_2abc123def456' },
         messageText: { type: 'string', example: "I'll be there in 2 minutes." },
         created_at: { type: 'string', format: 'date-time' },
         updated_at: { type: 'string', format: 'date-time' }
@@ -166,7 +166,7 @@ export class ChatController {
       properties: {
         id: { type: 'number', example: 1 },
         orderId: { type: 'number', example: 1 },
-        senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+        senderId: { type: 'string', example: 'user_2abc123def456' },
         messageText: { type: 'string', example: 'Package is on the way.' },
         created_at: { type: 'string', format: 'date-time' },
         updated_at: { type: 'string', format: 'date-time' }
@@ -208,7 +208,7 @@ export class ChatController {
           id: { type: 'number', example: 1 },
           rideId: { type: 'number', example: 1, nullable: true },
           orderId: { type: 'number', example: null, nullable: true },
-          senderClerkId: { type: 'string', example: 'user_2abc123def456' },
+          senderId: { type: 'string', example: 'user_2abc123def456' },
           messageText: { type: 'string', example: 'Thank you for the ride!' },
           created_at: { type: 'string', format: 'date-time' },
           updated_at: { type: 'string', format: 'date-time' }

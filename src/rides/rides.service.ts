@@ -30,6 +30,7 @@ export class RidesService {
       driver_id,
       user_id,
       tier_id,
+      vehicle_type_id,
     } = createRideDto;
 
     const ride = await this.prisma.ride.create({
@@ -46,10 +47,12 @@ export class RidesService {
         driverId: driver_id,
         userId: user_id,
         tierId: tier_id,
+        requestedVehicleTypeId: vehicle_type_id,
       },
       include: {
         tier: true,
         user: true,
+        requestedVehicleType: true,
       },
     });
 
@@ -74,14 +77,27 @@ export class RidesService {
     return this.prisma.ride.findMany({
       where: { userId },
       include: {
-        driver: true,
+        driver: {
+          include: {
+            vehicleType: true,
+          },
+        },
         tier: true,
+        requestedVehicleType: true,
         ratings: true,
         messages: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
+    });
+  }
+
+  // Nuevo método para obtener tipos de vehículo disponibles
+  async getAvailableVehicleTypes() {
+    return this.prisma.vehicleType.findMany({
+      where: { isActive: true },
+      orderBy: { displayName: 'asc' },
     });
   }
 
@@ -95,6 +111,7 @@ export class RidesService {
       destination_longitude,
       ride_time,
       tier_id,
+      vehicle_type_id,
       scheduled_for,
       user_id,
     } = scheduleRideDto;
@@ -112,6 +129,7 @@ export class RidesService {
         paymentStatus: 'pending',
         userId: user_id,
         tierId: tier_id,
+        requestedVehicleTypeId: vehicle_type_id,
         scheduledFor: new Date(scheduled_for),
       },
     });
@@ -185,9 +203,14 @@ export class RidesService {
         driverId,
       },
       include: {
-        driver: true,
+        driver: {
+          include: {
+            vehicleType: true,
+          },
+        },
         tier: true,
         user: true,
+        requestedVehicleType: true,
       },
     });
 
@@ -202,6 +225,7 @@ export class RidesService {
           driverName:
             updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
           vehicleInfo: `${updatedRide.driver?.carModel} - ${updatedRide.driver?.licensePlate}`,
+          vehicleType: updatedRide.driver?.vehicleType?.displayName || 'Vehículo',
         },
       );
       this.logger.log(`Notified passenger about accepted ride ${rideId}`);
@@ -216,13 +240,13 @@ export class RidesService {
   }
 
   async rateRide(rideId: number, rateRideDto: RateRideDto): Promise<Rating> {
-    const { ratedByClerkId, ratedClerkId, ratingValue, comment } = rateRideDto;
+    const { ratedByUserId, ratedUserId: ratedUserIdValue, ratingValue, comment } = rateRideDto;
 
     return this.prisma.rating.create({
       data: {
         rideId,
-        ratedByClerkId,
-        ratedClerkId,
+        ratedByUserId,
+        ratedUserId: ratedUserIdValue,
         ratingValue,
         comment,
       },
@@ -448,7 +472,7 @@ export class RidesService {
             user: ride.user
               ? {
                   name: ride.user.name,
-                  clerkId: ride.user.clerkId,
+                  userId: ride.user.id,
                 }
               : null,
           };

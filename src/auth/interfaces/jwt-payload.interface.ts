@@ -25,7 +25,6 @@ export interface AuthenticatedUser {
   id: number;
   email: string;
   name: string;
-  clerkId: null; // Siempre null ya que no usamos Clerk
 }
 
 /**

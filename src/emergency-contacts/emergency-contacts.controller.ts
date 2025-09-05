@@ -47,7 +47,7 @@ export class EmergencyContactsController {
         type: 'object',
         properties: {
           id: { type: 'number', example: 1 },
-          userClerkId: { type: 'string', example: 'user_2abc123def456' },
+          userId: { type: 'string', example: 'user_2abc123def456' },
           contactName: { type: 'string', example: 'Jane Doe' },
           contactPhone: { type: 'string', example: '+15551234567' },
           created_at: { type: 'string', format: 'date-time' },
@@ -65,7 +65,7 @@ export class EmergencyContactsController {
   async getUserEmergencyContacts(
     @Query('userId') userId: string,
   ): Promise<EmergencyContact[]> {
-    return this.emergencyContactsService.getUserEmergencyContacts(userId);
+    return this.emergencyContactsService.getUserEmergencyContacts(parseInt(userId));
   }
 
   @Post()
@@ -84,7 +84,7 @@ export class EmergencyContactsController {
       type: 'object',
       properties: {
         id: { type: 'number', example: 1 },
-        userClerkId: { type: 'string', example: 'user_2abc123def456' },
+        userId: { type: 'string', example: 'user_2abc123def456' },
         contactName: { type: 'string', example: 'Jane Doe' },
         contactPhone: { type: 'string', example: '+15551234567' },
         created_at: { type: 'string', format: 'date-time' },
@@ -138,7 +138,7 @@ export class EmergencyContactsController {
       type: 'object',
       properties: {
         id: { type: 'number', example: 1 },
-        userClerkId: { type: 'string', example: 'user_2abc123def456' },
+        userId: { type: 'string', example: 'user_2abc123def456' },
         contactName: { type: 'string', example: 'Jane Smith' },
         contactPhone: { type: 'string', example: '+15559876543' },
         created_at: { type: 'string', format: 'date-time' },
@@ -181,7 +181,7 @@ export class EmergencyContactsController {
       type: 'object',
       properties: {
         id: { type: 'number', example: 1 },
-        userClerkId: { type: 'string', example: 'user_2abc123def456' },
+        userId: { type: 'string', example: 'user_2abc123def456' },
         contactName: { type: 'string', example: 'Jane Doe' },
         contactPhone: { type: 'string', example: '+15551234567' },
         created_at: { type: 'string', format: 'date-time' },

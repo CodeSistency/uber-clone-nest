@@ -1,59 +1,75 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Store, Product, Prisma } from '@prisma/client';
 import { CreateStoreDto } from './dto/create-store.dto';
-import { UpdateStoreDto } from './dto/update-store.dto';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-
-interface GetNearbyStoresQuery {
-  lat: number;
-  lng: number;
-  radius?: number;
-  category?: string;
-  limit?: number;
-}
+import { GetNearbyStoresDto } from './dto/get-nearby-stores.dto';
 
 @Injectable()
 export class StoresService {
   constructor(private prisma: PrismaService) {}
 
-  async getNearbyStores(query: GetNearbyStoresQuery): Promise<Store[]> {
-    const { lat, lng, radius = 5, category, limit = 50 } = query;
+  async getNearbyStores(query: GetNearbyStoresDto) {
+    const { lat, lng, radius = 5, category, search } = query;
 
-    // Calcular bounding box para búsqueda eficiente
-    const earthRadius = 6371; // km
-    const latDelta = (radius / earthRadius) * (180 / Math.PI);
-    const lngDelta = (radius / earthRadius) * (180 / Math.PI) / Math.cos((lat * Math.PI) / 180);
+    let whereClause: any = {
+      isOpen: true,
+    };
 
-    const minLat = lat - latDelta;
-    const maxLat = lat + latDelta;
-    const minLng = lng - lngDelta;
-    const maxLng = lng + lngDelta;
+    // Add category filter
+    if (category) {
+      whereClause.category = category;
+    }
 
-    return this.prisma.store.findMany({
-      where: {
-        latitude: { gte: minLat, lte: maxLat },
-        longitude: { gte: minLng, lte: maxLng },
-        isOpen: true,
-        ...(category && { category }),
-      },
+    // Add search filter
+    if (search) {
+      whereClause.name = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+
+    // Add location filter if coordinates provided
+    if (lat && lng) {
+      // Using PostGIS ST_DWithin for distance calculation
+      whereClause = {
+        ...whereClause,
+        AND: [
+          {
+            latitude: {
+              gte: lat - (radius / 111.32), // Rough conversion km to degrees
+              lte: lat + (radius / 111.32),
+            },
+          },
+          {
+            longitude: {
+              gte: lng - (radius / (111.32 * Math.cos(lat * Math.PI / 180))),
+              lte: lng + (radius / (111.32 * Math.cos(lat * Math.PI / 180))),
+            },
+          },
+        ],
+      };
+    }
+
+    const stores = await this.prisma.store.findMany({
+      where: whereClause,
       include: {
-        _count: {
-          select: { products: true, deliveryOrders: true }
-        },
         products: {
           where: { isAvailable: true },
-          take: 3, // Preview de productos
-          orderBy: { price: 'asc' }
+          take: 5, // Limit products for performance
+        },
+        _count: {
+          select: { products: true },
         },
       },
-      orderBy: { rating: 'desc' },
-      take: limit,
+      orderBy: {
+        rating: 'desc',
+      },
     });
+
+    return stores;
   }
 
-  async getStoreDetails(storeId: number): Promise<Store> {
+  async getStoreWithProducts(storeId: number) {
     const store = await this.prisma.store.findUnique({
       where: { id: storeId },
       include: {
@@ -68,203 +84,127 @@ export class StoresService {
         _count: {
           select: {
             products: true,
-            deliveryOrders: true
-          }
-        }
+            ratings: true,
+          },
+        },
       },
     });
 
     if (!store) {
-      throw new NotFoundException('Tienda no encontrada');
+      throw new NotFoundException('Store not found');
     }
 
     return store;
   }
 
-  async getStoreProducts(storeId: number, category?: string): Promise<Product[]> {
-    return this.prisma.product.findMany({
-      where: {
-        storeId,
-        isAvailable: true,
-        ...(category && { category }),
-      },
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' }
-      ],
-    });
-  }
-
-  async createStore(createStoreDto: CreateStoreDto, ownerClerkId: string): Promise<Store> {
-    return this.prisma.store.create({
+  async createStore(createStoreDto: CreateStoreDto, ownerId: number) {
+    const store = await this.prisma.store.create({
       data: {
         ...createStoreDto,
-        ownerClerkId,
+        ownerId,
+      },
+      include: {
+        products: true,
       },
     });
+
+    return store;
   }
 
-  async updateStore(storeId: number, updateStoreDto: UpdateStoreDto): Promise<Store> {
-    const store = await this.prisma.store.findUnique({
-      where: { id: storeId },
-    });
+  async addProduct(storeId: number, createProductDto: CreateProductDto, ownerId: number) {
+    // Verify store ownership
+    await this.isStoreOwner(storeId, ownerId);
 
-    if (!store) {
-      throw new NotFoundException('Tienda no encontrada');
-    }
-
-    return this.prisma.store.update({
-      where: { id: storeId },
-      data: updateStoreDto,
-    });
-  }
-
-  async deleteStore(storeId: number): Promise<Store> {
-    const store = await this.prisma.store.findUnique({
-      where: { id: storeId },
-    });
-
-    if (!store) {
-      throw new NotFoundException('Tienda no encontrada');
-    }
-
-    return this.prisma.store.delete({
-      where: { id: storeId },
-    });
-  }
-
-  async addProduct(storeId: number, createProductDto: CreateProductDto): Promise<Product> {
-    const store = await this.prisma.store.findUnique({
-      where: { id: storeId },
-    });
-
-    if (!store) {
-      throw new NotFoundException('Tienda no encontrada');
-    }
-
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: {
         ...createProductDto,
         storeId,
       },
     });
+
+    return product;
   }
 
-  async updateProduct(productId: number, updateProductDto: UpdateProductDto): Promise<Product> {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-      include: { store: true },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Producto no encontrado');
-    }
-
-    return this.prisma.product.update({
-      where: { id: productId },
-      data: updateProductDto,
-    });
-  }
-
-  async deleteProduct(productId: number): Promise<Product> {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Producto no encontrado');
-    }
-
-    return this.prisma.product.delete({
-      where: { id: productId },
-    });
-  }
-
-  async isStoreOwner(storeId: number, userClerkId: string): Promise<boolean> {
-    const store = await this.prisma.store.findUnique({
-      where: { id: storeId },
-      select: { ownerClerkId: true },
-    });
-
-    return store?.ownerClerkId === userClerkId;
-  }
-
-  async getStoreById(storeId: number): Promise<Store | null> {
-    return this.prisma.store.findUnique({
-      where: { id: storeId },
-    });
-  }
-
-  async getStoresByOwner(ownerClerkId: string): Promise<Store[]> {
-    return this.prisma.store.findMany({
-      where: { ownerClerkId },
+  async getStoresByOwner(ownerId: number) {
+    const stores = await this.prisma.store.findMany({
+      where: { ownerId },
       include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            isAvailable: true,
+          },
+        },
         _count: {
           select: {
             products: true,
-            deliveryOrders: true
-          }
-        }
+            deliveryOrders: true,
+          },
+        },
       },
     });
+
+    return stores;
   }
 
-  async updateStoreRating(storeId: number): Promise<void> {
-    const ratings = await this.prisma.rating.findMany({
-      where: { storeId },
-      select: { ratingValue: true },
-    });
-
-    if (ratings.length === 0) {
-      return;
-    }
-
-    const averageRating = ratings.reduce((sum, rating) => sum + rating.ratingValue, 0) / ratings.length;
-
-    await this.prisma.store.update({
+  async isStoreOwner(storeId: number, userId: number): Promise<boolean> {
+    const store = await this.prisma.store.findUnique({
       where: { id: storeId },
-      data: {
-        rating: Math.round(averageRating * 100) / 100, // Redondear a 2 decimales
-      },
+      select: { ownerId: true },
     });
-  }
 
-  async searchStores(query: string, lat?: number, lng?: number, radius: number = 10): Promise<Store[]> {
-    let whereClause: Prisma.StoreWhereInput = {
-      isOpen: true,
-      OR: [
-        { name: { contains: query, mode: 'insensitive' } },
-        { category: { contains: query, mode: 'insensitive' } },
-        { cuisineType: { contains: query, mode: 'insensitive' } },
-      ],
-    };
-
-    // Agregar filtro geográfico si se proporcionan coordenadas
-    if (lat !== undefined && lng !== undefined) {
-      const earthRadius = 6371; // km
-      const latDelta = (radius / earthRadius) * (180 / Math.PI);
-      const lngDelta = (radius / earthRadius) * (180 / Math.PI) / Math.cos((lat * Math.PI) / 180);
-
-      whereClause = {
-        ...whereClause,
-        latitude: { gte: lat - latDelta, lte: lat + latDelta },
-        longitude: { gte: lng - lngDelta, lte: lng + lngDelta },
-      };
+    if (!store) {
+      throw new NotFoundException('Store not found');
     }
 
-    return this.prisma.store.findMany({
-      where: whereClause,
-      include: {
-        _count: {
-          select: { products: true }
-        },
-        products: {
-          where: { isAvailable: true },
-          take: 2,
-        },
-      },
-      orderBy: { rating: 'desc' },
-      take: 20,
+    if (store.ownerId !== userId) {
+      throw new ForbiddenException('You do not own this store');
+    }
+
+    return true;
+  }
+
+  async updateStore(storeId: number, updateData: Partial<CreateStoreDto>, ownerId: number) {
+    await this.isStoreOwner(storeId, ownerId);
+
+    const store = await this.prisma.store.update({
+      where: { id: storeId },
+      data: updateData,
     });
+
+    return store;
+  }
+
+  async deleteStore(storeId: number, ownerId: number) {
+    await this.isStoreOwner(storeId, ownerId);
+
+    await this.prisma.store.delete({
+      where: { id: storeId },
+    });
+
+    return { message: 'Store deleted successfully' };
+  }
+
+  async updateProduct(storeId: number, productId: number, updateData: Partial<CreateProductDto>, ownerId: number) {
+    await this.isStoreOwner(storeId, ownerId);
+
+    const product = await this.prisma.product.update({
+      where: { id: productId },
+      data: updateData,
+    });
+
+    return product;
+  }
+
+  async deleteProduct(storeId: number, productId: number, ownerId: number) {
+    await this.isStoreOwner(storeId, ownerId);
+
+    await this.prisma.product.delete({
+      where: { id: productId },
+    });
+
+    return { message: 'Product deleted successfully' };
   }
 }

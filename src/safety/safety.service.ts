@@ -7,12 +7,12 @@ export class SafetyService {
   constructor(private prisma: PrismaService) {}
 
   async triggerSOS(sosAlertDto: SOSAlertDto): Promise<any> {
-    const { userClerkId, rideId, location, emergencyType, message } =
+    const { userId, rideId, location, emergencyType, message } =
       sosAlertDto;
 
     // Get user information
     const user = await this.prisma.user.findUnique({
-      where: { clerkId: userClerkId },
+      where: { id: parseInt(userId) },
     });
 
     if (!user) {
@@ -32,12 +32,12 @@ export class SafetyService {
 
     // Get emergency contacts
     const emergencyContacts = await this.prisma.emergencyContact.findMany({
-      where: { userClerkId },
+      where: { userId: parseInt(userId) },
     });
 
     // Log the SOS alert (in a real app, this would trigger notifications)
     const sosRecord = {
-      userId: userClerkId,
+      userId: userId,
       rideId,
       location,
       emergencyType,

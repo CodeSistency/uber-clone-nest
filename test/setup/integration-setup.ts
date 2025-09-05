@@ -54,7 +54,6 @@ export class TestDatabaseManager {
       data: {
         name: 'Test User',
         email: 'test@example.com',
-        clerkId: 'user_test123',
       },
     });
 

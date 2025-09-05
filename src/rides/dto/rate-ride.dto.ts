@@ -3,15 +3,17 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class RateRideDto {
-  @ApiProperty({ example: 'user_2abc123def456' })
+  @ApiProperty({ example: 1, description: 'ID del usuario que califica' })
   @IsNotEmpty()
-  @IsString()
-  ratedByClerkId: string;
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  ratedByUserId: number;
 
-  @ApiProperty({ example: 'driver_clerk_id_1' })
+  @ApiProperty({ example: 2, description: 'ID del usuario calificado' })
   @IsNotEmpty()
-  @IsString()
-  ratedClerkId: string;
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  ratedUserId: number;
 
   @ApiProperty({ example: 5, minimum: 1, maximum: 5 })
   @IsNotEmpty()

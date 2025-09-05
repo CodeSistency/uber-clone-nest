@@ -1,5 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsPhoneNumber, IsIn, IsDateString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
   @ApiProperty({
@@ -27,4 +27,71 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'La contraseña es requerida' })
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password: string;
+
+  // Campos opcionales para configuración inicial
+  @ApiPropertyOptional({
+    description: 'Número de teléfono',
+    example: '+584141234567',
+  })
+  @IsOptional()
+  @IsString({ message: 'El teléfono debe ser una cadena de texto' })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'País de residencia',
+    example: 'Venezuela',
+  })
+  @IsOptional()
+  @IsString({ message: 'El país debe ser una cadena de texto' })
+  country?: string;
+
+  @ApiPropertyOptional({
+    description: 'Estado o provincia',
+    example: 'Miranda',
+  })
+  @IsOptional()
+  @IsString({ message: 'El estado debe ser una cadena de texto' })
+  state?: string;
+
+  @ApiPropertyOptional({
+    description: 'Ciudad',
+    example: 'Caracas',
+  })
+  @IsOptional()
+  @IsString({ message: 'La ciudad debe ser una cadena de texto' })
+  city?: string;
+
+  @ApiPropertyOptional({
+    description: 'Fecha de nacimiento (YYYY-MM-DD)',
+    example: '1990-05-15',
+  })
+  @IsOptional()
+  @IsDateString({}, { message: 'La fecha de nacimiento debe tener formato YYYY-MM-DD' })
+  dateOfBirth?: string;
+
+  @ApiPropertyOptional({
+    description: 'Género',
+    example: 'male',
+    enum: ['male', 'female', 'other', 'prefer_not_to_say'],
+  })
+  @IsOptional()
+  @IsIn(['male', 'female', 'other', 'prefer_not_to_say'], { message: 'Género inválido' })
+  gender?: string;
+
+  @ApiPropertyOptional({
+    description: 'Idioma preferido',
+    example: 'es',
+    enum: ['es', 'en'],
+  })
+  @IsOptional()
+  @IsIn(['es', 'en'], { message: 'Idioma inválido' })
+  preferredLanguage?: string;
+
+  @ApiPropertyOptional({
+    description: 'Zona horaria',
+    example: 'America/Caracas',
+  })
+  @IsOptional()
+  @IsString({ message: 'La zona horaria debe ser una cadena de texto' })
+  timezone?: string;
 }

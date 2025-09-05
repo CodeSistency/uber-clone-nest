@@ -316,7 +316,7 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
       it('POST /api/ride/:rideId/rate - Rate ride', async () => {
         const rateRideDto = {
           ratedByClerkId: 'user_rater_123',
-          ratedClerkId: 'user_rated_123',
+          ratedUserId: 'user_rated_123',
           ratingValue: 5,
           comment: 'Excellent service!',
         };
@@ -351,7 +351,7 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
 
       it('POST /api/user/wallet - Add funds', async () => {
         const addFundsDto = {
-          userClerkId: 'user_test_123',
+          userId: 'user_test_123',
           amount: 50.0,
           description: 'Test wallet funding',
         };
@@ -401,7 +401,7 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
 
       it('POST /api/user/emergency-contacts - Add emergency contact', async () => {
         const createContactDto = {
-          userClerkId: 'user_test_123',
+          userId: 'user_test_123',
           contactName: 'Emergency Contact',
           contactPhone: '+1234567890',
         };
@@ -414,7 +414,7 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
           .expect(201);
 
         expect(response.body).toMatchObject({
-          userClerkId: createContactDto.userClerkId,
+          userId: createContactDto.userId,
           contactName: createContactDto.contactName,
           contactPhone: createContactDto.contactPhone,
         });
@@ -431,7 +431,7 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
 
       it('POST /api/chat/:rideId/messages - Send ride message', async () => {
         const sendMessageDto = {
-          senderClerkId: 'user_sender_123',
+          senderId: 'user_sender_123',
           messageText: 'Test message from integration test',
         };
 
@@ -444,14 +444,14 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
 
         expect(response.body).toMatchObject({
           rideId: testRideId,
-          senderClerkId: sendMessageDto.senderClerkId,
+          senderId: sendMessageDto.senderId,
           messageText: sendMessageDto.messageText,
         });
       });
 
       it('POST /api/safety/sos - Trigger SOS', async () => {
         const sosAlertDto = {
-          userClerkId: 'user_test_123',
+          userId: 'user_test_123',
           rideId: testRideId,
           location: {
             latitude: 40.7128,

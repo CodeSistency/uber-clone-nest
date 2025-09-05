@@ -18,7 +18,19 @@ export class AuthService {
    * Registra un nuevo usuario
    */
   async register(registerDto: RegisterDto): Promise<RegisterResult> {
-    const { email, password, name } = registerDto;
+    const {
+      email,
+      password,
+      name,
+      phone,
+      country,
+      state,
+      city,
+      dateOfBirth,
+      gender,
+      preferredLanguage,
+      timezone
+    } = registerDto;
 
     // Verificar si el usuario ya existe
     const existingUser = await this.prisma.user.findUnique({
@@ -31,12 +43,20 @@ export class AuthService {
     // Hash de la contraseña
     const hashedPassword = await this.hashPassword(password);
 
-    // Crear usuario
+    // Crear usuario con campos opcionales
     const user = await this.prisma.user.create({
       data: {
         email,
         name,
         password: hashedPassword,
+        phone,
+        country,
+        state,
+        city,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        gender,
+        preferredLanguage: preferredLanguage || 'es',
+        timezone: timezone || 'America/Caracas',
       },
     });
 
@@ -50,7 +70,6 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        clerkId: null, // Para compatibilidad, pero será null ya que no usamos Clerk
       },
     };
   }
@@ -100,7 +119,6 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        clerkId: null, // Para compatibilidad, pero será null ya que no usamos Clerk
       },
     };
   }

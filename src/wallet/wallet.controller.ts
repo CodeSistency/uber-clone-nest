@@ -69,7 +69,7 @@ export class WalletController {
   @ApiResponse({ status: 404, description: 'Wallet not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getUserWallet(@Query('userId') userId: string): Promise<{ data: any }> {
-    const result = await this.walletService.getUserWallet(userId);
+    const result = await this.walletService.getUserWallet(parseInt(userId));
     return { data: result };
   }
 

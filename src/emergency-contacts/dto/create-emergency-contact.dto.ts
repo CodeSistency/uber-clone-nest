@@ -1,16 +1,16 @@
-import { IsNotEmpty, IsString, IsPhoneNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsPhoneNumber, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class CreateEmergencyContactDto {
   @ApiProperty({
-    description: 'Clerk ID of the user adding the emergency contact',
-    example: 'user_2abc123def456',
-    minLength: 10,
-    maxLength: 50
+    description: 'User ID of the user adding the emergency contact',
+    example: 1
   })
   @IsNotEmpty()
-  @IsString()
-  userClerkId: string;
+  @Transform(({ value }) => parseInt(value))
+  @IsNumber()
+  userId: number;
 
   @ApiProperty({
     description: 'Full name of the emergency contact person',

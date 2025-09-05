@@ -15,41 +15,75 @@ async function main() {
       data: {
         name: 'John Doe',
         email: 'john.doe@example.com',
-        clerkId: 'user_2abc123def456ghi789jkl012',
       },
     }),
     prisma.user.create({
       data: {
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
-        clerkId: 'user_2bcd234efg567hij890klm123',
       },
     }),
     prisma.user.create({
       data: {
         name: 'Mike Johnson',
         email: 'mike.johnson@example.com',
-        clerkId: 'user_2cde345fgh678ijk901lmn234',
       },
     }),
     prisma.user.create({
       data: {
         name: 'Sarah Wilson',
         email: 'sarah.wilson@example.com',
-        clerkId: 'user_2def456ghi789jkl012mno345',
       },
     }),
     prisma.user.create({
       data: {
         name: 'David Brown',
         email: 'david.brown@example.com',
-        clerkId: 'user_2efg567hij890klm123nop456',
       },
     }),
   ]);
 
   // =========================================
-  // SECTION 2: DRIVERS
+  // SECTION 2: VEHICLE TYPES
+  // =========================================
+  console.log('🚗 Seeding vehicle types...');
+  const vehicleTypes = await Promise.all([
+    prisma.vehicleType.create({
+      data: {
+        name: 'car',
+        displayName: 'Carro',
+        icon: '🚗',
+        isActive: true,
+      },
+    }),
+    prisma.vehicleType.create({
+      data: {
+        name: 'motorcycle',
+        displayName: 'Moto',
+        icon: '🏍️',
+        isActive: true,
+      },
+    }),
+    prisma.vehicleType.create({
+      data: {
+        name: 'bicycle',
+        displayName: 'Bicicleta',
+        icon: '🚲',
+        isActive: true,
+      },
+    }),
+    prisma.vehicleType.create({
+      data: {
+        name: 'truck',
+        displayName: 'Camión',
+        icon: '🚚',
+        isActive: true,
+      },
+    }),
+  ]);
+
+  // =========================================
+  // SECTION 3: DRIVERS
   // =========================================
   console.log('🚗 Seeding drivers...');
   const drivers = await Promise.all([
@@ -62,6 +96,7 @@ async function main() {
         carModel: 'Toyota Camry',
         licensePlate: 'ABC123',
         carSeats: 4,
+        vehicleTypeId: vehicleTypes[0].id, // Carro
         status: 'online',
         verificationStatus: 'verified',
         canDoDeliveries: true,
@@ -76,6 +111,7 @@ async function main() {
         carModel: 'Honda Civic',
         licensePlate: 'XYZ789',
         carSeats: 4,
+        vehicleTypeId: vehicleTypes[0].id, // Carro
         status: 'online',
         verificationStatus: 'verified',
         canDoDeliveries: false,
@@ -87,9 +123,10 @@ async function main() {
         lastName: 'Martinez',
         profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=luis',
         carImageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
-        carModel: 'Ford Focus',
-        licensePlate: 'DEF456',
-        carSeats: 4,
+        carModel: 'Yamaha MT-07',
+        licensePlate: 'MOT789',
+        carSeats: 2,
+        vehicleTypeId: vehicleTypes[1].id, // Moto
         status: 'offline',
         verificationStatus: 'verified',
         canDoDeliveries: true,
@@ -98,7 +135,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 3: DRIVER DOCUMENTS
+  // SECTION 4: DRIVER DOCUMENTS
   // =========================================
   console.log('📄 Seeding driver documents...');
   await Promise.all([
@@ -129,7 +166,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 4: RIDE TIERS
+  // SECTION 5: RIDE TIERS
   // =========================================
   console.log('⭐ Seeding ride tiers...');
   const rideTiers = await Promise.all([
@@ -181,6 +218,7 @@ async function main() {
         driverId: drivers[0].id,
         userId: users[0].id,
         tierId: rideTiers[0].id,
+        requestedVehicleTypeId: vehicleTypes[0].id, // Solicitó carro
       },
     }),
     prisma.ride.create({
@@ -197,6 +235,7 @@ async function main() {
         driverId: drivers[1].id,
         userId: users[1].id,
         tierId: rideTiers[1].id,
+        requestedVehicleTypeId: vehicleTypes[1].id, // Solicitó moto
       },
     }),
     prisma.ride.create({
@@ -233,7 +272,7 @@ async function main() {
         logoUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100',
         rating: 4.5,
         isOpen: true,
-        ownerClerkId: users[0].clerkId!,
+        ownerId: users[0].id,
       },
     }),
     prisma.store.create({
@@ -247,7 +286,7 @@ async function main() {
         logoUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100',
         rating: 4.2,
         isOpen: true,
-        ownerClerkId: users[1].clerkId!,
+        ownerId: users[1].id,
       },
     }),
     prisma.store.create({
@@ -261,7 +300,7 @@ async function main() {
         logoUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=100',
         rating: 4.7,
         isOpen: true,
-        ownerClerkId: users[2].clerkId!,
+        ownerId: users[2].id,
       },
     }),
   ]);
@@ -349,7 +388,7 @@ async function main() {
   const deliveryOrders = await Promise.all([
     prisma.deliveryOrder.create({
       data: {
-        userClerkId: users[0].clerkId!,
+        userId: users[0].id,
         storeId: stores[0].id,
         courierId: drivers[0].id,
         deliveryAddress: '123 Main St, New York, NY 10001',
@@ -364,7 +403,7 @@ async function main() {
     }),
     prisma.deliveryOrder.create({
       data: {
-        userClerkId: users[1].clerkId!,
+        userId: users[1].id,
         storeId: stores[1].id,
         courierId: drivers[2].id,
         deliveryAddress: '456 Broadway, New York, NY 10002',
@@ -458,19 +497,19 @@ async function main() {
   const wallets = await Promise.all([
     prisma.wallet.create({
       data: {
-        userClerkId: users[0].clerkId!,
+        userId: users[0].id,
         balance: 150.00,
       },
     }),
     prisma.wallet.create({
       data: {
-        userClerkId: users[1].clerkId!,
+        userId: users[1].id,
         balance: 75.50,
       },
     }),
     prisma.wallet.create({
       data: {
-        userClerkId: users[2].clerkId!,
+        userId: users[2].id,
         balance: 200.25,
       },
     }),
@@ -524,8 +563,8 @@ async function main() {
     prisma.rating.create({
       data: {
         rideId: rides[0].rideId,
-        ratedByClerkId: users[0].clerkId!,
-        ratedClerkId: users[rides[0].userId - 1]?.clerkId,
+        ratedByUserId: users[0].id,
+        ratedUserId: users[rides[0].userId - 1]?.id,
         ratingValue: 5,
         comment: 'Great driver, very friendly!',
       },
@@ -533,8 +572,8 @@ async function main() {
     prisma.rating.create({
       data: {
         rideId: rides[1].rideId,
-        ratedByClerkId: users[1].clerkId!,
-        ratedClerkId: users[rides[1].userId - 1]?.clerkId,
+        ratedByUserId: users[1].id,
+        ratedUserId: users[rides[1].userId - 1]?.id,
         ratingValue: 4,
         comment: 'Good service, arrived on time',
       },
@@ -543,7 +582,7 @@ async function main() {
     prisma.rating.create({
       data: {
         storeId: stores[0].id,
-        ratedByClerkId: users[0].clerkId!,
+        ratedByUserId: users[0].id,
         ratingValue: 5,
         comment: 'Amazing pizza, will order again!',
       },
@@ -551,7 +590,7 @@ async function main() {
     prisma.rating.create({
       data: {
         storeId: stores[1].id,
-        ratedByClerkId: users[1].clerkId!,
+        ratedByUserId: users[1].id,
         ratingValue: 4,
         comment: 'Great burgers, fast delivery',
       },
@@ -560,8 +599,8 @@ async function main() {
     prisma.rating.create({
       data: {
         orderId: deliveryOrders[0].orderId,
-        ratedByClerkId: users[0].clerkId!,
-        ratedClerkId: users.find(u => u.clerkId === deliveryOrders[0].userClerkId)?.clerkId!,
+        ratedByUserId: users[0].id,
+        ratedUserId: users.find(u => u.id === deliveryOrders[0].userId)?.id,
         ratingValue: 5,
         comment: 'Fast delivery, food was hot!',
       },
@@ -575,21 +614,21 @@ async function main() {
   await Promise.all([
     prisma.emergencyContact.create({
       data: {
-        userClerkId: users[0].clerkId!,
+        userId: users[0].id,
         contactName: 'Mom',
         contactPhone: '+1-555-0123',
       },
     }),
     prisma.emergencyContact.create({
       data: {
-        userClerkId: users[0].clerkId!,
+        userId: users[0].id,
         contactName: 'Dad',
         contactPhone: '+1-555-0124',
       },
     }),
     prisma.emergencyContact.create({
       data: {
-        userClerkId: users[1].clerkId!,
+        userId: users[1].id,
         contactName: 'Sister',
         contactPhone: '+1-555-0125',
       },
@@ -605,21 +644,21 @@ async function main() {
     prisma.chatMessage.create({
       data: {
         rideId: rides[0].rideId,
-        senderClerkId: users[0].clerkId!,
+        senderId: users[0].id,
         messageText: 'Hi Carlos, I\'m waiting at the entrance',
       },
     }),
     prisma.chatMessage.create({
       data: {
         rideId: rides[0].rideId,
-        senderClerkId: users[rides[0].userId - 1]?.clerkId || users[0].clerkId!,
+        senderId: users[rides[0].userId - 1]?.id || users[0].id,
         messageText: 'Sure, I\'ll be there in 2 minutes!',
       },
     }),
     prisma.chatMessage.create({
       data: {
         rideId: rides[1].rideId,
-        senderClerkId: users[1].clerkId!,
+        senderId: users[1].id,
         messageText: 'Please wait, I\'m coming down',
       },
     }),
@@ -627,14 +666,14 @@ async function main() {
     prisma.chatMessage.create({
       data: {
         orderId: deliveryOrders[0].orderId,
-        senderClerkId: users[0].clerkId!,
+        senderId: users[0].id,
         messageText: 'Pizza looks amazing! Thank you!',
       },
     }),
     prisma.chatMessage.create({
       data: {
         orderId: deliveryOrders[0].orderId,
-        senderClerkId: users.find(u => u.clerkId === deliveryOrders[0].userClerkId)?.clerkId! || users[0].clerkId!,
+        senderId: users.find(u => u.id === deliveryOrders[0].userId)?.id || users[0].id,
         messageText: 'Enjoy your meal! Rate us 5 stars please 😊',
       },
     }),

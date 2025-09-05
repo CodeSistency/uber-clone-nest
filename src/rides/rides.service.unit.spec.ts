@@ -51,7 +51,7 @@ describe('RidesService (Unit)', () => {
         fare_price: 15.75,
         payment_status: 'pending',
         driver_id: 1,
-        user_id: 'user_test123',
+        user_id: 1,
         tier_id: 1,
       };
 
@@ -118,7 +118,7 @@ describe('RidesService (Unit)', () => {
         ride_time: 25,
         fare_price: 15.75,
         payment_status: 'pending',
-        user_id: 'user_test123',
+        user_id: 1,
         tier_id: 1,
       };
 
@@ -273,8 +273,8 @@ describe('RidesService (Unit)', () => {
     it('should rate ride successfully', async () => {
       const rideId = 1;
       const rateRideDto: RateRideDto = {
-        ratedByClerkId: 'user_rater123',
-        ratedClerkId: 'user_rated123',
+        ratedByUserId: 1,
+        ratedUserId: 2,
         ratingValue: 5,
         comment: 'Great ride!',
       };
@@ -294,8 +294,8 @@ describe('RidesService (Unit)', () => {
       expect(mockPrismaService.rating.create).toHaveBeenCalledWith({
         data: {
           rideId,
-          ratedByClerkId: rateRideDto.ratedByClerkId,
-          ratedClerkId: rateRideDto.ratedClerkId,
+          ratedByUserId: rateRideDto.ratedByUserId,
+          ratedUserId: rateRideDto.ratedUserId,
           ratingValue: rateRideDto.ratingValue,
           comment: rateRideDto.comment,
         },
@@ -305,7 +305,7 @@ describe('RidesService (Unit)', () => {
 
   describe('getUserRidesHistory', () => {
     it('should return user rides history', async () => {
-      const userId = 'user_test123';
+      const userId = 1;
       const mockRides = [
         testUtils.createMockRide({ rideId: 1 }),
         testUtils.createMockRide({ rideId: 2 }),

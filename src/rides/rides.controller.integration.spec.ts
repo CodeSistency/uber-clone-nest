@@ -263,7 +263,7 @@ describe('RidesController (Integration)', () => {
       const rideId = createResponse.body.data.rideId;
       const rateRideDto = {
         ratedByClerkId: 'user_rater123',
-        ratedClerkId: 'user_rated123',
+        ratedUserId: 'user_rated123',
         ratingValue: 5,
         comment: 'Excellent service!',
       };
@@ -276,7 +276,7 @@ describe('RidesController (Integration)', () => {
       expect(response.body.data).toMatchObject({
         rideId,
         ratedByClerkId: rateRideDto.ratedByClerkId,
-        ratedClerkId: rateRideDto.ratedClerkId,
+        ratedUserId: rateRideDto.ratedUserId,
         ratingValue: rateRideDto.ratingValue,
         comment: rateRideDto.comment,
       });
@@ -288,7 +288,7 @@ describe('RidesController (Integration)', () => {
       const rideId = 1;
       const invalidRateRideDto = {
         ratedByClerkId: 'user_rater123',
-        ratedClerkId: 'user_rated123',
+        ratedUserId: 'user_rated123',
         ratingValue: 6, // Invalid rating (should be 1-5)
         comment: 'Invalid rating',
       };

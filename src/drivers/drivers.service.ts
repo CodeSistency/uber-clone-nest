@@ -181,7 +181,7 @@ export class DriversService {
       completedAt: Date | null;
       distance: number | null;
       duration: number;
-      user: { name: string; clerkId: string | null } | null;
+      user: { name: string; userId: number } | null;
       ratings: { ratingValue: number; comment: string | null; createdAt: Date }[];
     }[];
     summary: {
@@ -282,7 +282,7 @@ export class DriversService {
       user: ride.user
         ? {
             name: ride.user.name,
-            clerkId: ride.user.clerkId,
+            userId: ride.user.id,
           }
         : null,
       ratings:

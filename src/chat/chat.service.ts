@@ -35,12 +35,12 @@ export class ChatService {
     rideId: number,
     sendMessageDto: SendMessageDto,
   ): Promise<ChatMessage> {
-    const { senderClerkId, messageText } = sendMessageDto;
+    const { senderId, messageText } = sendMessageDto;
 
     return this.prisma.chatMessage.create({
       data: {
         rideId,
-        senderClerkId,
+        senderId: Number(senderId),
         messageText,
       },
       include: {
@@ -53,12 +53,12 @@ export class ChatService {
     orderId: number,
     sendMessageDto: SendMessageDto,
   ): Promise<ChatMessage> {
-    const { senderClerkId, messageText } = sendMessageDto;
+    const { senderId, messageText } = sendMessageDto;
 
     return this.prisma.chatMessage.create({
       data: {
         orderId,
-        senderClerkId,
+        senderId: Number(senderId),
         messageText,
       },
       include: {
@@ -69,7 +69,7 @@ export class ChatService {
 
   async getUserMessages(userId: string): Promise<ChatMessage[]> {
     return this.prisma.chatMessage.findMany({
-      where: { senderClerkId: userId },
+      where: { senderId: Number(userId) },
       include: {
         sender: true,
       },

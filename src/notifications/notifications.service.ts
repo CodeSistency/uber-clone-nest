@@ -239,7 +239,7 @@ export class NotificationsService {
       const existingToken = await this.prisma.pushToken.findFirst({
         where: {
           token,
-          userClerkId: userId,
+          userId: parseInt(userId),
         },
       });
 
@@ -259,7 +259,7 @@ export class NotificationsService {
         // Create new token
         await this.prisma.pushToken.create({
           data: {
-            userClerkId: userId,
+            userId: parseInt(userId),
             token,
             deviceType,
             deviceId,
@@ -282,7 +282,7 @@ export class NotificationsService {
     try {
       await this.prisma.pushToken.updateMany({
         where: {
-          userClerkId: userId,
+          userId: parseInt(userId),
           token,
         },
         data: {
@@ -315,13 +315,13 @@ export class NotificationsService {
   ): Promise<void> {
     try {
       await this.prisma.notificationPreferences.upsert({
-        where: { userClerkId: userId },
+        where: { userId: parseInt(userId) },
         update: {
           ...preferences,
           updatedAt: new Date(),
         },
         create: {
-          userClerkId: userId,
+          userId: parseInt(userId),
           ...preferences,
         },
       });
@@ -343,7 +343,7 @@ export class NotificationsService {
   ): Promise<any[]> {
     try {
       return await this.prisma.notification.findMany({
-        where: { userClerkId: userId },
+        where: { userId: parseInt(userId) },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset,
@@ -365,7 +365,7 @@ export class NotificationsService {
       await this.prisma.notification.updateMany({
         where: {
           id: notificationId,
-          userClerkId: userId,
+          userId: parseInt(userId),
         },
         data: {
           isRead: true,
@@ -384,7 +384,7 @@ export class NotificationsService {
   private async getUserNotificationPreferences(userId: string) {
     try {
       const preferences = await this.prisma.notificationPreferences.findUnique({
-        where: { userClerkId: userId },
+        where: { userId: parseInt(userId) },
       });
 
       return (
@@ -411,7 +411,7 @@ export class NotificationsService {
     try {
       const tokens = await this.prisma.pushToken.findMany({
         where: {
-          userClerkId: userId,
+          userId: parseInt(userId),
           isActive: true,
         },
         select: {
@@ -554,7 +554,7 @@ export class NotificationsService {
     try {
       await this.prisma.notification.create({
         data: {
-          userClerkId: data.userId,
+          userId: parseInt(data.userId),
           type: data.type,
           title: data.title,
           message: data.message,

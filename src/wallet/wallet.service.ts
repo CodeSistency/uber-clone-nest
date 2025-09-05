@@ -8,16 +8,16 @@ export class WalletService {
   constructor(private prisma: PrismaService) {}
 
   async getUserWallet(
-    userId: string,
+    userId: number,
   ): Promise<{ wallet: Wallet; transactions: WalletTransaction[] } | null> {
     // Find or create wallet for user
     let wallet = await this.prisma.wallet.findUnique({
-      where: { userClerkId: userId },
+      where: { userId: userId },
     });
 
     if (!wallet) {
       wallet = await this.prisma.wallet.create({
-        data: { userClerkId: userId },
+        data: { userId: userId },
       });
     }
 
@@ -31,16 +31,16 @@ export class WalletService {
   }
 
   async addFunds(addFundsDto: AddFundsDto): Promise<Wallet> {
-    const { userClerkId, amount, description } = addFundsDto;
+    const { userId, amount, description } = addFundsDto;
 
     // Find or create wallet
     let wallet = await this.prisma.wallet.findUnique({
-      where: { userClerkId },
+      where: { userId },
     });
 
     if (!wallet) {
       wallet = await this.prisma.wallet.create({
-        data: { userClerkId },
+        data: { userId },
       });
     }
 
@@ -68,12 +68,12 @@ export class WalletService {
   }
 
   async deductFunds(
-    userClerkId: string,
+    userId: number,
     amount: number,
     description: string,
   ): Promise<Wallet> {
     const wallet = await this.prisma.wallet.findUnique({
-      where: { userClerkId },
+      where: { userId },
     });
 
     if (!wallet) {

@@ -7,20 +7,20 @@ import { CreateEmergencyContactDto } from './dto/create-emergency-contact.dto';
 export class EmergencyContactsService {
   constructor(private prisma: PrismaService) {}
 
-  async getUserEmergencyContacts(userId: string): Promise<EmergencyContact[]> {
+  async getUserEmergencyContacts(userId: number): Promise<EmergencyContact[]> {
     return this.prisma.emergencyContact.findMany({
-      where: { userClerkId: userId },
+      where: { userId: userId },
     });
   }
 
   async createEmergencyContact(
     createContactDto: CreateEmergencyContactDto,
   ): Promise<EmergencyContact> {
-    const { userClerkId, contactName, contactPhone } = createContactDto;
+    const { userId, contactName, contactPhone } = createContactDto;
 
     return this.prisma.emergencyContact.create({
       data: {
-        userClerkId,
+        userId,
         contactName,
         contactPhone,
       },

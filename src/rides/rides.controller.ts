@@ -64,7 +64,7 @@ export class RidesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get ride history for a specific user' })
-  @ApiParam({ name: 'id', description: 'The Clerk ID of the user' })
+  @ApiParam({ name: 'id', description: 'The User ID of the user' })
   @ApiResponse({
     status: 200,
     description: "Returns an array of the user's past rides",
@@ -231,8 +231,8 @@ export class RidesController {
       properties: {
         id: { type: 'number', example: 1 },
         ride_id: { type: 'number', example: 1 },
-        rated_by_clerk_id: { type: 'string', example: 'user_2abc123def456' },
-        rated_clerk_id: { type: 'string', example: 'driver_clerk_id_1' },
+        rated_by_user_id: { type: 'string', example: 'user_2abc123def456' },
+        rated_user_id: { type: 'string', example: 'driver_user_id_1' },
         rating_value: { type: 'number', example: 5 },
         comment: {
           type: 'string',
@@ -469,5 +469,42 @@ export class RidesController {
       body.cancelledBy,
       body.reason,
     );
+  }
+
+  // ========== NUEVO ENDPOINT PARA TIPOS DE VEHÍCULO ==========
+
+  @Get('vehicle-types')
+  @ApiOperation({
+    summary: 'Get available vehicle types',
+    description: 'Retrieve all available vehicle types that users can request for their rides',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns available vehicle types',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'car' },
+              displayName: { type: 'string', example: 'Carro' },
+              icon: { type: 'string', example: '🚗' },
+              isActive: { type: 'boolean', example: true },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 500, description: 'Database error' })
+  async getVehicleTypes(): Promise<{ data: any[] }> {
+    const vehicleTypes = await this.ridesService.getAvailableVehicleTypes();
+    return { data: vehicleTypes };
   }
 }
