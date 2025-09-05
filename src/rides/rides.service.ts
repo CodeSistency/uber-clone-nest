@@ -70,7 +70,7 @@ export class RidesService {
     return ride;
   }
 
-  async getUserRidesHistory(userId: string): Promise<Ride[]> {
+  async getUserRidesHistory(userId: number): Promise<Ride[]> {
     return this.prisma.ride.findMany({
       where: { userId },
       include: {
@@ -195,7 +195,7 @@ export class RidesService {
     try {
       await this.notificationsService.notifyRideStatusUpdate(
         rideId,
-        ride.userId,
+        ride.userId.toString(),
         driverId,
         'accepted',
         {
@@ -271,7 +271,7 @@ export class RidesService {
     try {
       await this.notificationsService.notifyRideStatusUpdate(
         rideId,
-        ride.userId,
+        ride.userId.toString(),
         ride.driverId,
         'arrived',
         {
@@ -332,7 +332,7 @@ export class RidesService {
       // Notify passenger
       await this.notificationsService.notifyRideStatusUpdate(
         rideId,
-        ride.userId,
+        ride.userId.toString(),
         ride.driverId,
         'cancelled',
         {
@@ -342,7 +342,7 @@ export class RidesService {
       );
 
       // If there was a driver assigned, notify them too
-      if (ride.driverId && ride.driverId.toString() !== ride.userId) {
+      if (ride.driverId && ride.driverId.toString() !== ride.userId.toString()) {
         await this.notificationsService.notifyRideStatusUpdate(
           rideId,
           ride.driverId.toString(),
@@ -523,7 +523,7 @@ export class RidesService {
     try {
       await this.notificationsService.notifyRideStatusUpdate(
         rideId,
-        ride.userId,
+        ride.userId.toString(),
         ride.driverId,
         'in_progress',
         {
@@ -616,7 +616,7 @@ export class RidesService {
     try {
       await this.notificationsService.notifyRideStatusUpdate(
         rideId,
-        ride.userId,
+        ride.userId.toString(),
         ride.driverId,
         'completed',
         {

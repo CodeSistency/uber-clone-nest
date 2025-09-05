@@ -157,15 +157,15 @@ export class UsersController {
     return this.usersService.deleteUser(Number(id));
   }
 
-  @Get(':clerkId/rides')
+  @Get(':id/rides')
   @ApiOperation({ summary: 'Get user rides' })
-  @ApiParam({ name: 'clerkId', description: 'Clerk user ID' })
+  @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({
     status: 200,
     description: 'User rides retrieved successfully',
   })
-  async getUserRides(@Param('clerkId') clerkId: string): Promise<any[]> {
-    return this.usersService.getUserRides(clerkId);
+  async getUserRides(@Param('id') userId: string): Promise<any[]> {
+    return this.usersService.getUserRides(parseInt(userId));
   }
 
   @Get(':clerkId/orders')
@@ -405,7 +405,11 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid Clerk token' })
   async getMyRides(@ClerkUser() clerkId: string): Promise<any[]> {
-    return this.usersService.getUserRides(clerkId);
+    const user = await this.usersService.findUserByClerkId(clerkId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return this.usersService.getUserRides(user.id);
   }
 
   @Get('clerk/me/orders')

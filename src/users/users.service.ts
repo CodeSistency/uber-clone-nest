@@ -91,7 +91,7 @@ export class UsersService {
     });
   }
 
-  async getUserRides(userId: string): Promise<any[]> {
+  async getUserRides(userId: number): Promise<any[]> {
     const rides = await this.prisma.ride.findMany({
       where: { userId },
       include: {

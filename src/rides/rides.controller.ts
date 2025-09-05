@@ -81,7 +81,7 @@ export class RidesController {
   @ApiResponse({ status: 400, description: 'User ID is missing' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getUserRides(@Param('id') userId: string): Promise<Ride[]> {
-    return this.ridesService.getUserRidesHistory(userId);
+    return this.ridesService.getUserRidesHistory(parseInt(userId));
   }
 
   @Post('schedule')
