@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { User } from '@prisma/client';
@@ -12,6 +13,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -29,7 +31,10 @@ export class AuthService {
       dateOfBirth,
       gender,
       preferredLanguage,
-      timezone
+      timezone,
+      firebaseToken,
+      deviceType,
+      deviceId
     } = registerDto;
 
     // Verificar si el usuario ya existe
@@ -63,6 +68,21 @@ export class AuthService {
     // Generar tokens
     const tokens = await this.generateTokens(user);
 
+    // Registrar token de Firebase si se proporcionó
+    if (firebaseToken) {
+      try {
+        await this.notificationsService.registerPushToken(
+          user.id.toString(),
+          firebaseToken,
+          deviceType,
+          deviceId
+        );
+      } catch (error) {
+        // Log error pero no fallar el registro por esto
+        console.warn('Error registering Firebase token during registration:', error.message);
+      }
+    }
+
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -78,7 +98,7 @@ export class AuthService {
    * Inicia sesión de un usuario
    */
   async login(loginDto: LoginDto): Promise<LoginResult> {
-    const { email, password } = loginDto;
+    const { email, password, firebaseToken, deviceType, deviceId } = loginDto;
 
     // Buscar usuario por email
     const user = await this.prisma.user.findUnique({
@@ -111,6 +131,21 @@ export class AuthService {
 
     // Generar tokens
     const tokens = await this.generateTokens(user);
+
+    // Registrar token de Firebase si se proporcionó
+    if (firebaseToken) {
+      try {
+        await this.notificationsService.registerPushToken(
+          user.id.toString(),
+          firebaseToken,
+          deviceType,
+          deviceId
+        );
+      } catch (error) {
+        // Log error pero no fallar el login por esto
+        console.warn('Error registering Firebase token during login:', error.message);
+      }
+    }
 
     return {
       accessToken: tokens.accessToken,

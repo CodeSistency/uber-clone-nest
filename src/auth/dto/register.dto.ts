@@ -94,4 +94,29 @@ export class RegisterDto {
   @IsOptional()
   @IsString({ message: 'La zona horaria debe ser una cadena de texto' })
   timezone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Firebase Cloud Messaging token para notificaciones push',
+    example: 'fcm_token_here_123456789',
+  })
+  @IsOptional()
+  @IsString({ message: 'El token de Firebase debe ser una cadena de texto' })
+  firebaseToken?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tipo de dispositivo para notificaciones',
+    enum: ['ios', 'android', 'web'],
+    example: 'android',
+  })
+  @IsOptional()
+  @IsIn(['ios', 'android', 'web'], { message: 'Tipo de dispositivo inválido' })
+  deviceType?: 'ios' | 'android' | 'web';
+
+  @ApiPropertyOptional({
+    description: 'ID único del dispositivo',
+    example: 'device-uuid-12345',
+  })
+  @IsOptional()
+  @IsString({ message: 'El ID del dispositivo debe ser una cadena de texto' })
+  deviceId?: string;
 }

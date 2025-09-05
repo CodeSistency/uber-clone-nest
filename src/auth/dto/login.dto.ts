@@ -1,5 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsIn } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiProperty({
@@ -19,4 +19,23 @@ export class LoginDto {
   @IsNotEmpty({ message: 'La contraseña es requerida' })
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password: string;
+
+  @ApiPropertyOptional({
+    description: 'Firebase Cloud Messaging token para notificaciones push',
+    example: 'fcm_token_here_123456789',
+  })
+  firebaseToken?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tipo de dispositivo para notificaciones',
+    enum: ['ios', 'android', 'web'],
+    example: 'android',
+  })
+  deviceType?: 'ios' | 'android' | 'web';
+
+  @ApiPropertyOptional({
+    description: 'ID único del dispositivo',
+    example: 'device-uuid-12345',
+  })
+  deviceId?: string;
 }
