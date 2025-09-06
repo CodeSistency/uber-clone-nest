@@ -24,6 +24,8 @@ export class LoginDto {
     description: 'Firebase Cloud Messaging token para notificaciones push',
     example: 'fcm_token_here_123456789',
   })
+  @IsOptional()
+  @IsString({ message: 'El token de Firebase debe ser una cadena de texto' })
   firebaseToken?: string;
 
   @ApiPropertyOptional({
@@ -31,11 +33,15 @@ export class LoginDto {
     enum: ['ios', 'android', 'web'],
     example: 'android',
   })
+  @IsOptional()
+  @IsIn(['ios', 'android', 'web'], { message: 'Tipo de dispositivo inválido' })
   deviceType?: 'ios' | 'android' | 'web';
 
   @ApiPropertyOptional({
     description: 'ID único del dispositivo',
     example: 'device-uuid-12345',
   })
+  @IsOptional()
+  @IsString({ message: 'El ID del dispositivo debe ser una cadena de texto' })
   deviceId?: string;
 }
