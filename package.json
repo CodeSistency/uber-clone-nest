@@ -43,7 +43,8 @@
     "db:test:setup": "npx prisma migrate deploy && npx prisma db seed",
     "db:test:cleanup": "npx prisma migrate reset --force --skip-generate",
     "test:env:setup": "cp .env.test .env",
-    "test:ci": "npm run lint && npm run build && npm run test:full && npm run test:report"
+    "test:ci": "npm run lint && npm run build && npm run test:full && npm run test:report",
+    "test:flows": "node test-flows.js"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
