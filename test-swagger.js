@@ -6,6 +6,12 @@
  */
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
+// Para probar en VPS
+if (process.argv.includes('--vps')) {
+  process.env.BASE_URL = 'http://72.60.119.19:3000';
+  console.log('🔧 Probando configuración VPS...');
+}
 const SWAGGER_PATH = process.env.SWAGGER_PATH || 'api';
 
 async function testSwagger() {
@@ -101,7 +107,9 @@ console.log('🚀 Swagger Test Script for Uber Clone API');
 console.log('==========================================');
 console.log('');
 console.log('Usage:');
-console.log('  node test-swagger.js');
+console.log('  node test-swagger.js                    # Test localhost');
+console.log('  node test-swagger.js --vps             # Test VPS configuration');
+console.log('  BASE_URL=http://tu-ip:puerto node test-swagger.js  # Custom URL');
 console.log('');
 console.log('Environment variables:');
 console.log('  BASE_URL - Application base URL (default: http://localhost:3000)');

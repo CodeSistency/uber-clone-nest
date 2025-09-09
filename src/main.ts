@@ -39,11 +39,20 @@ async function bootstrap() {
   const swaggerConfig = configService.get('app.swagger');
 
   // Determine base URL for Swagger
-  const protocol = environment === 'production' ? 'https' : 'http';
   const host = process.env.HOST || process.env.DOMAIN || 'localhost';
-  const baseUrl = environment === 'production'
-    ? `${protocol}://${host}`
-    : `${protocol}://${host}:${port}`;
+
+  // Detect if host is an IP address (VPS scenario)
+  const isIPAddress = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
+
+  // For IP addresses (VPS), use HTTP. For domains, use HTTPS in production
+  const protocol = (environment === 'production' && !isIPAddress) ? 'https' : 'http';
+
+  // Include port for IP addresses or when explicitly different from default
+  const needsPort = isIPAddress || (environment === 'production' && port !== 80 && port !== 443);
+
+  const baseUrl = needsPort
+    ? `${protocol}://${host}:${port}`
+    : `${protocol}://${host}`;
 
   // Configure Swagger
   const config = new DocumentBuilder()
