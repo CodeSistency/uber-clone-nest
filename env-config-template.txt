@@ -8,15 +8,23 @@ NODE_ENV=development
 # Server port
 PORT=3000
 
+# Host and domain for production (required for Swagger to work correctly in production)
+# For production: set HOST to your domain (e.g., api.yourdomain.com)
+# For development: leave as localhost
+HOST=localhost
+DOMAIN=yourdomain.com
+
 # CORS configuration
 CORS_ORIGIN=*
 CORS_CREDENTIALS=true
 
 # Swagger documentation
+# Note: In production, Swagger automatically detects the correct server URL
+# based on HOST, DOMAIN, and NODE_ENV environment variables
 SWAGGER_ENABLED=true
 SWAGGER_PATH=api
 SWAGGER_TITLE="Uber Clone API"
-SWAGGER_DESCRIPTION="API para aplicación de transporte compartido"
+SWAGGER_DESCRIPTION="Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features"
 SWAGGER_VERSION=1.0
 
 # =========================================

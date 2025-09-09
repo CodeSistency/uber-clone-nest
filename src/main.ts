@@ -6,9 +6,11 @@ import { AllExceptionsFilter } from './common/exceptions/all-exceptions.filter';
 import { PrismaExceptionFilter } from './common/exceptions/prisma-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { AppConfigService } from './config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(AppConfigService);
 
   // Enable global validation pipes
   app.useGlobalPipes(
@@ -31,15 +33,28 @@ async function bootstrap() {
     new TransformInterceptor(),
   );
 
+  // Get configuration values
+  const port = configService.get('app.port');
+  const environment = configService.get('app.environment');
+  const swaggerConfig = configService.get('app.swagger');
+
+  // Determine base URL for Swagger
+  const protocol = environment === 'production' ? 'https' : 'http';
+  const host = process.env.HOST || process.env.DOMAIN || 'localhost';
+  const baseUrl = environment === 'production'
+    ? `${protocol}://${host}`
+    : `${protocol}://${host}:${port}`;
+
   // Configure Swagger
   const config = new DocumentBuilder()
-    .setTitle('Uber Clone API')
+    .setTitle(swaggerConfig.title || 'Uber Clone API')
     .setDescription(
+      swaggerConfig.description ||
       'Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features. ' +
       'Use the "Authorize" button to set your JWT token for testing authenticated endpoints. ' +
       'Note: Registration endpoint (POST /api/user) is public and does not require authentication.',
     )
-    .setVersion('1.0.0')
+    .setVersion(swaggerConfig.version || '1.0.0')
     .addTag('users', 'User management endpoints')
     .addTag('drivers', 'Driver management endpoints')
     .addTag('rides', 'Ride management endpoints')
@@ -48,7 +63,13 @@ async function bootstrap() {
     .addTag('safety', 'Safety and emergency endpoints')
     .addTag('chat', 'Chat and messaging endpoints')
     .addTag('stripe', 'Stripe payment endpoints')
-    .addServer('http://localhost:3000', 'Development server')
+    .addTag('admin', 'Admin management endpoints')
+    .addTag('analytics', 'Analytics and reporting endpoints')
+    .addTag('notifications', 'Notification management endpoints')
+    .addTag('stores', 'Store management endpoints')
+    .addTag('orders', 'Order management endpoints')
+    .addServer(baseUrl, `${environment} server`)
+    .addServer('http://localhost:3000', 'Local development server')
     .addBearerAuth(
       {
         type: 'http',
@@ -67,7 +88,7 @@ async function bootstrap() {
   // Note: Security is applied per endpoint using guards, not globally
   // This allows public endpoints like registration to work without authentication
 
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup(swaggerConfig.path || 'api', app, document);
 
   // Enable CORS
   app.enableCors({
@@ -76,13 +97,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(
-    `🚀 Application is running on: http://localhost:${process.env.PORT ?? 3000}`,
-  );
-  console.log(
-    `📖 Swagger documentation: http://localhost:${process.env.PORT ?? 3000}/api`,
-  );
-  console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  await app.listen(port);
+  console.log(`🚀 Application is running on: ${baseUrl}`);
+  console.log(`📖 Swagger documentation: ${baseUrl}/${swaggerConfig.path || 'api'}`);
+  console.log(`🔧 Environment: ${environment}`);
+  console.log(`🌐 Host: ${host}`);
+  console.log(`📡 Port: ${port}`);
 }
 void bootstrap();
