@@ -12,7 +12,55 @@ export class TransportClientController {
   constructor(private readonly flow: RidesFlowService) {}
 
   @Post('define-ride')
-  @ApiOperation({ summary: 'Define transport ride (origin/destination) and create ride' })
+  @ApiOperation({
+    summary: 'Define transport ride (origin/destination) and create ride',
+    description: `
+    Creates a new transport ride request with origin and destination details.
+
+    **Flow:**
+    1. Validates ride parameters and user authentication
+    2. Creates ride in database with 'pending' status
+    3. Notifies nearby drivers via WebSocket
+    4. Returns ride ID for real-time tracking
+
+    **Real-time Events:**
+    - \`ride:requested\` - Broadcast to nearby drivers
+    - \`ride:accepted\` - When driver accepts the ride
+    - \`ride:location\` - Live driver location updates
+    `
+  })
+  @ApiBody({
+    type: DefineRideDto,
+    examples: {
+      'city_ride': {
+        summary: 'Basic city ride',
+        value: {
+          originAddress: 'Calle 123 #45-67, Bogotá, Colombia',
+          originLat: 4.6097,
+          originLng: -74.0817,
+          destinationAddress: 'Carrera 7 #23-45, Medellín, Colombia',
+          destinationLat: 6.2518,
+          destinationLng: -75.5636,
+          minutes: 25,
+          tierId: 1
+        }
+      },
+      'airport_pickup': {
+        summary: 'Airport pickup with vehicle type',
+        value: {
+          originAddress: 'Aeropuerto El Dorado, Bogotá',
+          originLat: 4.7016,
+          originLng: -74.1469,
+          destinationAddress: 'Hotel Casa Deco, Zona Rosa',
+          destinationLat: 4.6584,
+          destinationLng: -74.0548,
+          minutes: 45,
+          tierId: 2,
+          vehicleTypeId: 1
+        }
+      }
+    }
+  })
   async defineRide(@Body() body: DefineRideDto, @Req() req: any) {
     const ride = await this.flow.defineTransportRide({
       userId: Number(req.user.id),
