@@ -84,6 +84,9 @@ model User {
   notifications    Notification[]
   ownedStores      Store[]
 
+  // Group-based permission system relations
+  userGroups       UserGroup[]
+
   // Admin-specific relations
   adminAuditLogs   AdminAuditLog[]
 
@@ -437,6 +440,80 @@ model Notification {
   @@index([userId, createdAt])
   @@index([type, createdAt])
   @@map("notifications")
+}
+
+// =========================================
+// SECTION 6: GROUP-BASED PERMISSION SYSTEM
+// =========================================
+
+// Stores individual permissions that can be assigned to groups
+model Permission {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(100) // e.g., "users:read", "rides:create"
+  name        String   @db.VarChar(150) // Human-readable name
+  description String?  @db.Text
+  module      String   @db.VarChar(50) // "users", "rides", "deliveries", "finance", etc.
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  groups GroupPermission[]
+
+  @@map("permissions")
+}
+
+// Stores user groups that can have multiple permissions assigned
+model Group {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  color       String?  @db.VarChar(7) // Hex color for UI representation
+  isSystem    Boolean  @default(false) @map("is_system") // System groups cannot be deleted
+  isActive    Boolean  @default(true) @map("is_active")
+  priority    Int      @default(0) // Higher priority groups override lower ones
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  permissions GroupPermission[]
+  users       UserGroup[]
+
+  @@map("groups")
+}
+
+// Junction table for many-to-many relationship between groups and permissions
+model GroupPermission {
+  id           Int        @id @default(autoincrement())
+  groupId      Int        @map("group_id")
+  permissionId Int        @map("permission_id")
+  grantedAt    DateTime   @default(now()) @map("granted_at")
+  grantedBy    Int?       @map("granted_by") // User ID who granted the permission
+
+  // Relations
+  group      Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, permissionId])
+  @@map("group_permissions")
+}
+
+// Junction table for many-to-many relationship between users and groups
+model UserGroup {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  groupId   Int      @map("group_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy Int?    @map("assigned_by") // User ID who assigned the group
+  expiresAt DateTime? @map("expires_at") // Optional expiration date
+  isActive  Boolean  @default(true) @map("is_active")
+
+  // Relations
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("user_groups")
 }
 
 // =========================================

@@ -21,6 +21,7 @@ import { StoresModule } from './stores/stores.module';
 import { OrdersModule } from './orders/orders.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminModule } from './admin/admin.module';
+import { GroupPermissionsModule } from './group-permissions/group-permissions.module';
 import { RidesFlowModule } from './rides/flow/rides-flow.module';
 
 @Module({
@@ -48,6 +49,8 @@ import { RidesFlowModule } from './rides/flow/rides-flow.module';
     AnalyticsModule,
     // Admin System
     AdminModule,
+    // Group Permissions System
+    GroupPermissionsModule,
     // Flow orchestrator
     RidesFlowModule,
   ],

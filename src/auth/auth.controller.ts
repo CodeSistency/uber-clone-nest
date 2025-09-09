@@ -52,7 +52,22 @@ export class AuthController {
             id: { type: 'number', example: 1 },
             email: { type: 'string', example: 'usuario@example.com' },
             name: { type: 'string', example: 'Juan Pérez' },
-            clerkId: { type: 'null', example: null },
+            permissions: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['users:read', 'users:read:own']
+            },
+            groups: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 4 },
+                  name: { type: 'string', example: 'Usuario Estándar' },
+                  priority: { type: 'number', example: 0 }
+                }
+              }
+            }
           },
         },
       },
@@ -88,7 +103,22 @@ export class AuthController {
             id: { type: 'number', example: 1 },
             email: { type: 'string', example: 'usuario@example.com' },
             name: { type: 'string', example: 'Juan Pérez' },
-            clerkId: { type: 'null', example: null },
+            permissions: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['users:read', 'users:read:own', 'rides:create']
+            },
+            groups: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 4 },
+                  name: { type: 'string', example: 'Usuario Estándar' },
+                  priority: { type: 'number', example: 0 }
+                }
+              }
+            }
           },
         },
       },
@@ -119,11 +149,35 @@ export class AuthController {
       properties: {
         accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
         refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            email: { type: 'string', example: 'usuario@example.com' },
+            name: { type: 'string', example: 'Juan Pérez' },
+            permissions: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['users:read', 'users:read:own']
+            },
+            groups: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 4 },
+                  name: { type: 'string', example: 'Usuario Estándar' },
+                  priority: { type: 'number', example: 0 }
+                }
+              }
+            }
+          },
+        },
       },
     },
   })
   @ApiResponse({ status: 401, description: 'Refresh token inválido' })
-  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<{ accessToken: string; refreshToken: string; user: { id: number; email: string; name: string; permissions: string[]; groups: { id: number; name: string; priority: number; }[] } }> {
     return this.authService.refreshToken(refreshTokenDto.refreshToken);
   }
 
@@ -146,6 +200,39 @@ export class AuthController {
         clerkId: { type: 'string', nullable: true, example: null },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
+        permissions: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['users:read', 'users:read:own', 'rides:create', 'analytics:read']
+        },
+        groups: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 4 },
+              name: { type: 'string', example: 'Usuario Estándar' },
+              priority: { type: 'number', example: 0 }
+            }
+          }
+        },
+        wallet: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            balance: { type: 'number', example: 50.00 }
+          }
+        },
+        emergencyContacts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', example: 'María García' },
+              phone: { type: 'string', example: '+584241234567' }
+            }
+          }
+        }
       },
     },
   })

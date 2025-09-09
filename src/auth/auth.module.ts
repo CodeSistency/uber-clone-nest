@@ -10,12 +10,14 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AppConfigModule } from '../config/config.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { GroupPermissionsModule } from '../group-permissions/group-permissions.module';
 
 @Module({
   imports: [
     PrismaModule, // Importar Prisma directamente
     AppConfigModule,
     NotificationsModule,
+    GroupPermissionsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: () => ({

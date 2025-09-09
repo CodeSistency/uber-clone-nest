@@ -21,6 +21,8 @@ import { Driver, DriverDocument } from '@prisma/client';
 import { RegisterDriverDto } from './dto/register-driver.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpdateDriverStatusDto } from './dto/update-status.dto';
+import { SearchDriversDto } from './dto/search-drivers.dto';
+import { PaginatedDriversResponseDto } from './dto/paginated-drivers-response.dto';
 
 @ApiTags('drivers')
 @Controller('api/driver')
@@ -29,45 +31,33 @@ export class DriversController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get all drivers with advanced filtering',
-    description:
-      'Retrieve drivers with optional filters for status, location, and verification',
+    summary: 'Buscar conductores con filtros avanzados y paginación',
+    description: `
+    Endpoint flexible para buscar conductores con múltiples filtros y paginación.
+    Si no se proporcionan parámetros de búsqueda, devuelve todos los conductores paginados.
+
+    Filtros disponibles:
+    - firstName/lastName: Búsqueda parcial por nombre/apellido
+    - carModel: Búsqueda por modelo de carro
+    - licensePlate: Búsqueda por placa
+    - status: Estado del conductor ('online', 'offline', 'busy', 'unavailable')
+    - verificationStatus: Estado de verificación ('pending', 'approved', 'rejected', 'under_review')
+    - canDoDeliveries: Puede hacer entregas (true/false)
+    - carSeats: Número de asientos
+    - vehicleTypeId: ID del tipo de vehículo
+    - createdFrom/createdTo: Rango de fechas de creación
+    - updatedFrom/updatedTo: Rango de fechas de actualización
+    - sortBy/sortOrder: Ordenamiento personalizado
+    - page/limit: Paginación
+    `
   })
   @ApiQuery({
-    name: 'status',
-    description: 'Filter by driver status',
-    required: false,
-    example: 'online',
-  })
-  @ApiQuery({
-    name: 'verified',
-    description: 'Filter by verification status',
-    required: false,
-    type: Boolean,
-    example: true,
-  })
-  @ApiQuery({
-    name: 'lat',
-    description: 'Filter by latitude (for location-based queries)',
-    required: false,
-    type: Number,
-  })
-  @ApiQuery({
-    name: 'lng',
-    description: 'Filter by longitude (for location-based queries)',
-    required: false,
-    type: Number,
-  })
-  @ApiQuery({
-    name: 'radius',
-    description: 'Search radius in kilometers',
-    required: false,
-    type: Number,
-    example: 5,
+    type: SearchDriversDto,
+    description: 'Parámetros de búsqueda y paginación'
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns an array of driver objects',
+    description: 'Conductores encontrados exitosamente',
     schema: {
       type: 'object',
       properties: {
@@ -79,48 +69,113 @@ export class DriversController {
               id: { type: 'number' },
               firstName: { type: 'string' },
               lastName: { type: 'string' },
-              status: { type: 'string' },
-              verificationStatus: { type: 'string' },
+              profileImageUrl: { type: 'string' },
               carModel: { type: 'string' },
               licensePlate: { type: 'string' },
               carSeats: { type: 'number' },
-              currentLat: { type: 'number' },
-              currentLng: { type: 'number' },
-              lastLocationUpdate: { type: 'string', format: 'date-time' },
-            },
-          },
-        },
-        total: { type: 'number' },
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Invalid query parameters' })
-  @ApiResponse({ status: 500, description: 'Database error' })
-  async getAllDrivers(
-    @Query('status') status?: string,
-    @Query('verified') verified?: string,
-    @Query('lat') lat?: string,
-    @Query('lng') lng?: string,
-    @Query('radius') radius?: string,
-  ): Promise<{ data: Driver[]; total: number }> {
-    const filters = {
-      status,
-      verified: verified ? verified === 'true' : undefined,
-      location:
-        lat && lng
-          ? {
-              lat: Number(lat),
-              lng: Number(lng),
-              radius: Number(radius) || 5,
+              status: { type: 'string' },
+              verificationStatus: { type: 'string' },
+              canDoDeliveries: { type: 'boolean' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+              vehicleType: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number' },
+                  name: { type: 'string' },
+                  displayName: { type: 'string' },
+                }
+              },
+              documents: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number' },
+                    documentType: { type: 'string' },
+                    verificationStatus: { type: 'string' },
+                    uploadedAt: { type: 'string', format: 'date-time' },
+                  }
+                }
+              },
+              _count: {
+                type: 'object',
+                properties: {
+                  rides: { type: 'number' },
+                  deliveryOrders: { type: 'number' },
+                }
+              }
             }
-          : undefined,
-    };
+          }
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number' },
+            limit: { type: 'number' },
+            total: { type: 'number' },
+            totalPages: { type: 'number' },
+            hasNext: { type: 'boolean' },
+            hasPrev: { type: 'boolean' }
+          }
+        },
+        filters: {
+          type: 'object',
+          properties: {
+            applied: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            searchTerm: { type: 'string' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Parámetros de búsqueda inválidos' })
+  @ApiResponse({ status: 500, description: 'Error interno del servidor' })
+  async searchDrivers(@Query() searchDto: SearchDriversDto): Promise<PaginatedDriversResponseDto> {
+    return this.driversService.searchDrivers(searchDto);
+  }
 
-    const drivers = await this.driversService.findAllDrivers(filters);
-    return {
-      data: drivers,
-      total: drivers.length,
-    };
+  @Get('id/:id')
+  @ApiOperation({
+    summary: 'Buscar conductor específico por ID',
+    description: 'Busca un conductor específico por su ID único'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del conductor',
+    example: 1,
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Conductor encontrado',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number' },
+        firstName: { type: 'string' },
+        lastName: { type: 'string' },
+        profileImageUrl: { type: 'string' },
+        carModel: { type: 'string' },
+        licensePlate: { type: 'string' },
+        carSeats: { type: 'number' },
+        status: { type: 'string' },
+        verificationStatus: { type: 'string' },
+        canDoDeliveries: { type: 'boolean' },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+        vehicleType: { type: 'object' },
+        documents: { type: 'array' },
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
+  @ApiResponse({ status: 500, description: 'Error interno del servidor' })
+  async findDriverById(@Param('id') id: string): Promise<Driver | null> {
+    return this.driversService.findDriverById(Number(id));
   }
 
   @Post('register')
@@ -222,48 +277,6 @@ export class DriversController {
   }
 
   // Legacy endpoints for backward compatibility
-  @Post()
-  @ApiOperation({
-    summary: 'Create driver (Legacy)',
-    description:
-      'Legacy endpoint for driver creation. Consider using /register instead.',
-    deprecated: true,
-  })
-  @ApiResponse({ status: 201, description: 'Driver created successfully' })
-  @ApiResponse({ status: 400, description: 'Missing required fields' })
-  async createDriver(@Body() data: any): Promise<Driver> {
-    return this.driversService.createDriver(data);
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get driver by ID (Legacy)' })
-  @ApiParam({ name: 'id', description: 'Driver ID', type: Number })
-  @ApiResponse({ status: 200, description: 'Driver found' })
-  @ApiResponse({ status: 404, description: 'Driver not found' })
-  async findDriverById(@Param('id') id: string): Promise<Driver | null> {
-    return this.driversService.findDriverById(Number(id));
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: 'Update driver (Legacy)' })
-  @ApiParam({ name: 'id', description: 'Driver ID', type: Number })
-  @ApiResponse({ status: 200, description: 'Driver updated successfully' })
-  @ApiResponse({ status: 404, description: 'Driver not found' })
-  async updateDriver(
-    @Param('id') id: string,
-    @Body() data: any,
-  ): Promise<Driver> {
-    return this.driversService.updateDriver(Number(id), data);
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete driver (Legacy)' })
-  @ApiParam({ name: 'id', description: 'Driver ID', type: Number })
-  @ApiResponse({ status: 200, description: 'Driver deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Driver not found' })
-  async deleteDriver(@Param('id') id: string): Promise<Driver> {
-    return this.driversService.deleteDriver(Number(id));
-  }
 
   @Get(':driverId/rides')
   @ApiOperation({

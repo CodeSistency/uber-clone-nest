@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { GroupPermissionsService } from '../group-permissions/group-permissions.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { User } from '@prisma/client';
@@ -14,6 +15,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private notificationsService: NotificationsService,
+    private groupPermissionsService: GroupPermissionsService,
   ) {}
 
   /**
@@ -68,6 +70,9 @@ export class AuthService {
     // Generar tokens
     const tokens = await this.generateTokens(user);
 
+    // Obtener permisos y grupos del usuario
+    const { permissions, groups } = await this.getUserPermissionsAndGroups(user.id);
+
     // Registrar token de Firebase si se proporcionó
     if (firebaseToken) {
       try {
@@ -90,6 +95,8 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        permissions,
+        groups,
       },
     };
   }
@@ -132,6 +139,9 @@ export class AuthService {
     // Generar tokens
     const tokens = await this.generateTokens(user);
 
+    // Obtener permisos y grupos del usuario
+    const { permissions, groups } = await this.getUserPermissionsAndGroups(user.id);
+
     // Registrar token de Firebase si se proporcionó
     if (firebaseToken) {
       try {
@@ -154,6 +164,8 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        permissions,
+        groups,
       },
     };
   }
@@ -161,7 +173,7 @@ export class AuthService {
   /**
    * Refresca el access token usando el refresh token
    */
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; user: { id: number; email: string; name: string; permissions: string[]; groups: { id: number; name: string; priority: number; }[] } }> {
     try {
       // Verificar el refresh token
       const payload = this.jwtService.verify<RefreshTokenPayload>(refreshToken, {
@@ -177,7 +189,22 @@ export class AuthService {
       }
 
       // Generar nuevos tokens
-      return this.generateTokens(user);
+      const tokens = await this.generateTokens(user);
+
+      // Obtener permisos y grupos del usuario
+      const { permissions, groups } = await this.getUserPermissionsAndGroups(user.id);
+
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          permissions,
+          groups,
+        },
+      };
     } catch (error) {
       throw new UnauthorizedException('Refresh token inválido');
     }
@@ -212,6 +239,22 @@ export class AuthService {
     };
   }
 
+  private async getUserPermissionsAndGroups(userId: number): Promise<{ permissions: string[]; groups: { id: number; name: string; priority: number; }[] }> {
+    try {
+      const userPermissions = await this.groupPermissionsService.getUserPermissions(userId);
+      return {
+        permissions: userPermissions.permissions,
+        groups: userPermissions.groups,
+      };
+    } catch (error) {
+      console.warn(`Error getting permissions for user ${userId}:`, error.message);
+      return {
+        permissions: [],
+        groups: [],
+      };
+    }
+  }
+
   /**
    * Hashea una contraseña
    */
@@ -235,15 +278,26 @@ export class AuthService {
   }
 
   /**
-   * Obtiene el perfil del usuario actual
+   * Obtiene el perfil del usuario actual con permisos
    */
-  async getProfile(userId: number): Promise<User | null> {
-    return this.prisma.user.findUnique({
+  async getProfile(userId: number): Promise<User & { permissions: string[]; groups: { id: number; name: string; priority: number; }[] } | null> {
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
         wallet: true,
         emergencyContacts: true,
       },
     });
+
+    if (!user) return null;
+
+    // Obtener permisos y grupos del usuario
+    const { permissions, groups } = await this.getUserPermissionsAndGroups(userId);
+
+    return {
+      ...user,
+      permissions,
+      groups,
+    };
   }
 }

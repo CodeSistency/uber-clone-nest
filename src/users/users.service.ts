@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, Prisma } from '@prisma/client';
+import { SearchUsersDto } from './dto/search-users.dto';
+import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -163,5 +165,219 @@ export class UsersService {
       where: { id: userId },
     });
     return !!user;
+  }
+
+  /**
+   * Buscar usuarios con filtros dinámicos y paginación
+   */
+  async searchUsers(searchDto: SearchUsersDto): Promise<PaginatedUsersResponseDto> {
+    const {
+      page = 1,
+      limit = 10,
+      name,
+      email,
+      phone,
+      city,
+      state,
+      country,
+      userType,
+      adminRole,
+      isActive,
+      emailVerified,
+      phoneVerified,
+      identityVerified,
+      gender,
+      preferredLanguage,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      createdFrom,
+      createdTo,
+      lastLoginFrom,
+      lastLoginTo,
+    } = searchDto;
+
+    // Construir filtros dinámicamente
+    const where: Prisma.UserWhereInput = {};
+
+    // Filtros de texto (búsqueda parcial case-insensitive)
+    if (name) {
+      where.name = {
+        contains: name,
+        mode: 'insensitive',
+      };
+    }
+
+    if (email) {
+      where.email = {
+        contains: email,
+        mode: 'insensitive',
+      };
+    }
+
+    if (phone) {
+      where.phone = {
+        contains: phone,
+      };
+    }
+
+    if (city) {
+      where.city = {
+        contains: city,
+        mode: 'insensitive',
+      };
+    }
+
+    if (state) {
+      where.state = {
+        contains: state,
+        mode: 'insensitive',
+      };
+    }
+
+    if (country) {
+      where.country = {
+        contains: country,
+        mode: 'insensitive',
+      };
+    }
+
+    // Filtros exactos
+    if (userType !== undefined) {
+      where.userType = userType;
+    }
+
+    if (adminRole !== undefined) {
+      where.adminRole = adminRole;
+    }
+
+    if (isActive !== undefined) {
+      where.isActive = isActive;
+    }
+
+    if (emailVerified !== undefined) {
+      where.emailVerified = emailVerified;
+    }
+
+    if (phoneVerified !== undefined) {
+      where.phoneVerified = phoneVerified;
+    }
+
+    if (identityVerified !== undefined) {
+      where.identityVerified = identityVerified;
+    }
+
+    if (gender !== undefined) {
+      where.gender = gender;
+    }
+
+    if (preferredLanguage) {
+      where.preferredLanguage = preferredLanguage;
+    }
+
+    // Filtros de fecha
+    if (createdFrom || createdTo) {
+      where.createdAt = {};
+      if (createdFrom) {
+        where.createdAt.gte = new Date(createdFrom);
+      }
+      if (createdTo) {
+        where.createdAt.lte = new Date(createdTo);
+      }
+    }
+
+    if (lastLoginFrom || lastLoginTo) {
+      where.lastLogin = {};
+      if (lastLoginFrom) {
+        where.lastLogin.gte = new Date(lastLoginFrom);
+      }
+      if (lastLoginTo) {
+        where.lastLogin.lte = new Date(lastLoginTo);
+      }
+    }
+
+    // Calcular offset para paginación
+    const offset = (page - 1) * limit;
+
+    // Ejecutar consulta de conteo y búsqueda en paralelo
+    const [total, users] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip: offset,
+        take: limit,
+        include: {
+          wallet: {
+            select: {
+              balance: true,
+            },
+          },
+          emergencyContacts: true,
+          _count: {
+            select: {
+              rides: true,
+              deliveryOrders: true,
+              ratings: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Calcular información de paginación
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    // Construir lista de filtros aplicados
+    const appliedFilters: string[] = [];
+    const filters: any = {};
+
+    if (name) {
+      appliedFilters.push('name');
+      filters.searchTerm = name;
+    }
+    if (email) appliedFilters.push('email');
+    if (phone) appliedFilters.push('phone');
+    if (city) appliedFilters.push('city');
+    if (state) appliedFilters.push('state');
+    if (country) appliedFilters.push('country');
+    if (userType) appliedFilters.push('userType');
+    if (adminRole) appliedFilters.push('adminRole');
+    if (isActive !== undefined) appliedFilters.push('isActive');
+    if (emailVerified !== undefined) appliedFilters.push('emailVerified');
+    if (phoneVerified !== undefined) appliedFilters.push('phoneVerified');
+    if (identityVerified !== undefined) appliedFilters.push('identityVerified');
+    if (gender) appliedFilters.push('gender');
+    if (preferredLanguage) appliedFilters.push('preferredLanguage');
+    if (createdFrom || createdTo) appliedFilters.push('createdDateRange');
+    if (lastLoginFrom || lastLoginTo) appliedFilters.push('lastLoginDateRange');
+
+    // Convert Decimal values to numbers for JSON serialization
+    const processedUsers = users.map(user => ({
+      ...user,
+      wallet: user.wallet ? {
+        ...user.wallet,
+        balance: Number(user.wallet.balance)
+      } : user.wallet,
+    }));
+
+    return {
+      data: processedUsers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      },
+      filters: appliedFilters.length > 0 ? {
+        applied: appliedFilters,
+        ...filters,
+      } : undefined,
+    };
   }
 }

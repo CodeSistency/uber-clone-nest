@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Driver, DriverDocument, Prisma } from '@prisma/client';
 import { RegisterDriverDto } from './dto/register-driver.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
+import { SearchDriversDto } from './dto/search-drivers.dto';
+import { PaginatedDriversResponseDto } from './dto/paginated-drivers-response.dto';
 
 @Injectable()
 export class DriversService {
@@ -326,5 +328,177 @@ export class DriversService {
       },
     });
     return orders;
+  }
+
+  /**
+   * Buscar conductores con filtros dinámicos y paginación
+   */
+  async searchDrivers(searchDto: SearchDriversDto): Promise<PaginatedDriversResponseDto> {
+    const {
+      page = 1,
+      limit = 10,
+      firstName,
+      lastName,
+      carModel,
+      licensePlate,
+      status,
+      verificationStatus,
+      canDoDeliveries,
+      carSeats,
+      vehicleTypeId,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      createdFrom,
+      createdTo,
+      updatedFrom,
+      updatedTo,
+    } = searchDto;
+
+    // Construir filtros dinámicamente
+    const where: Prisma.DriverWhereInput = {};
+
+    // Filtros de texto (búsqueda parcial case-insensitive)
+    if (firstName) {
+      where.firstName = {
+        contains: firstName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (lastName) {
+      where.lastName = {
+        contains: lastName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (carModel) {
+      where.carModel = {
+        contains: carModel,
+        mode: 'insensitive',
+      };
+    }
+
+    if (licensePlate) {
+      where.licensePlate = {
+        contains: licensePlate,
+        mode: 'insensitive',
+      };
+    }
+
+    // Filtros exactos
+    if (status !== undefined) {
+      where.status = status;
+    }
+
+    if (verificationStatus !== undefined) {
+      where.verificationStatus = verificationStatus;
+    }
+
+    if (canDoDeliveries !== undefined) {
+      where.canDoDeliveries = canDoDeliveries;
+    }
+
+    if (carSeats !== undefined) {
+      where.carSeats = carSeats;
+    }
+
+    if (vehicleTypeId !== undefined) {
+      where.vehicleTypeId = vehicleTypeId;
+    }
+
+    // Filtros de fecha
+    if (createdFrom || createdTo) {
+      where.createdAt = {};
+      if (createdFrom) {
+        where.createdAt.gte = new Date(createdFrom);
+      }
+      if (createdTo) {
+        where.createdAt.lte = new Date(createdTo);
+      }
+    }
+
+    if (updatedFrom || updatedTo) {
+      where.updatedAt = {};
+      if (updatedFrom) {
+        where.updatedAt.gte = new Date(updatedFrom);
+      }
+      if (updatedTo) {
+        where.updatedAt.lte = new Date(updatedTo);
+      }
+    }
+
+    // Calcular offset para paginación
+    const offset = (page - 1) * limit;
+
+    // Ejecutar consulta de conteo y búsqueda en paralelo
+    const [total, drivers] = await Promise.all([
+      this.prisma.driver.count({ where }),
+      this.prisma.driver.findMany({
+        where,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip: offset,
+        take: limit,
+        include: {
+          vehicleType: true,
+          documents: {
+            select: {
+              id: true,
+              documentType: true,
+              verificationStatus: true,
+              uploadedAt: true,
+            },
+          },
+          _count: {
+            select: {
+              rides: true,
+              deliveryOrders: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Calcular información de paginación
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    // Construir lista de filtros aplicados
+    const appliedFilters: string[] = [];
+    const filters: any = {};
+
+    if (firstName) {
+      appliedFilters.push('firstName');
+      filters.searchTerm = firstName;
+    }
+    if (lastName) appliedFilters.push('lastName');
+    if (carModel) appliedFilters.push('carModel');
+    if (licensePlate) appliedFilters.push('licensePlate');
+    if (status) appliedFilters.push('status');
+    if (verificationStatus) appliedFilters.push('verificationStatus');
+    if (canDoDeliveries !== undefined) appliedFilters.push('canDoDeliveries');
+    if (carSeats !== undefined) appliedFilters.push('carSeats');
+    if (vehicleTypeId !== undefined) appliedFilters.push('vehicleTypeId');
+    if (createdFrom || createdTo) appliedFilters.push('createdDateRange');
+    if (updatedFrom || updatedTo) appliedFilters.push('updatedDateRange');
+
+    return {
+      data: drivers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      },
+      filters: appliedFilters.length > 0 ? {
+        applied: appliedFilters,
+        ...filters,
+      } : undefined,
+    };
   }
 }

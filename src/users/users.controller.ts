@@ -22,6 +22,8 @@ import { UsersService } from './users.service';
 import { User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SearchUsersDto } from './dto/search-users.dto';
+import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
@@ -96,11 +98,135 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get user by email' })
-  @ApiQuery({ name: 'email', description: 'User email' })
-  @ApiResponse({ status: 200, description: 'User found' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async findUserByEmail(@Query('email') email: string): Promise<User | null> {
+  @ApiOperation({
+    summary: 'Buscar usuarios con filtros avanzados y paginación',
+    description: `
+    Endpoint flexible para buscar usuarios con múltiples filtros y paginación.
+    Si no se proporcionan parámetros de búsqueda, devuelve todos los usuarios paginados.
+
+    Filtros disponibles:
+    - name: Búsqueda parcial por nombre
+    - email: Búsqueda parcial por email
+    - phone: Búsqueda por teléfono
+    - city/state/country: Filtros por ubicación
+    - userType: 'user' o 'admin'
+    - adminRole: roles de administrador
+    - isActive: estado activo/inactivo
+    - emailVerified/phoneVerified/identityVerified: estados de verificación
+    - gender: género del usuario
+    - preferredLanguage: idioma preferido
+    - createdFrom/createdTo: rango de fechas de creación
+    - lastLoginFrom/lastLoginTo: rango de fechas de último login
+    - sortBy/sortOrder: ordenamiento personalizado
+    - page/limit: paginación
+    `
+  })
+  @ApiQuery({
+    type: SearchUsersDto,
+    description: 'Parámetros de búsqueda y paginación'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuarios encontrados exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              name: { type: 'string' },
+              email: { type: 'string' },
+              phone: { type: 'string' },
+              city: { type: 'string' },
+              state: { type: 'string' },
+              country: { type: 'string' },
+              isActive: { type: 'boolean' },
+              userType: { type: 'string' },
+              adminRole: { type: 'string' },
+              createdAt: { type: 'string', format: 'date-time' },
+              wallet: {
+                type: 'object',
+                properties: {
+                  balance: { type: 'number' }
+                }
+              },
+              _count: {
+                type: 'object',
+                properties: {
+                  rides: { type: 'number' },
+                  deliveryOrders: { type: 'number' },
+                  ratings: { type: 'number' }
+                }
+              }
+            }
+          }
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number' },
+            limit: { type: 'number' },
+            total: { type: 'number' },
+            totalPages: { type: 'number' },
+            hasNext: { type: 'boolean' },
+            hasPrev: { type: 'boolean' }
+          }
+        },
+        filters: {
+          type: 'object',
+          properties: {
+            applied: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            searchTerm: { type: 'string' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Parámetros de búsqueda inválidos' })
+  @ApiResponse({ status: 500, description: 'Error interno del servidor' })
+  async searchUsers(@Query() searchDto: SearchUsersDto): Promise<PaginatedUsersResponseDto> {
+    return this.usersService.searchUsers(searchDto);
+  }
+
+  @Get('email/:email')
+  @ApiOperation({
+    summary: 'Buscar usuario específico por email',
+    description: 'Busca un usuario específico por su dirección de email completa'
+  })
+  @ApiParam({
+    name: 'email',
+    description: 'Dirección de email del usuario',
+    example: 'usuario@example.com'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuario encontrado',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number' },
+        name: { type: 'string' },
+        email: { type: 'string' },
+        phone: { type: 'string' },
+        city: { type: 'string' },
+        state: { type: 'string' },
+        country: { type: 'string' },
+        isActive: { type: 'boolean' },
+        userType: { type: 'string' },
+        adminRole: { type: 'string' },
+        createdAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  @ApiResponse({ status: 500, description: 'Error interno del servidor' })
+  async findUserByEmail(@Param('email') email: string): Promise<any> {
     return this.usersService.findUserByEmail(email);
   }
 

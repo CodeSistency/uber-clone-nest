@@ -19,16 +19,22 @@ export interface RefreshTokenPayload {
 }
 
 /**
- * Información del usuario autenticado
+ * Información del usuario autenticado con permisos
  */
 export interface AuthenticatedUser {
   id: number;
   email: string;
   name: string;
+  permissions: string[];
+  groups: {
+    id: number;
+    name: string;
+    priority: number;
+  }[];
 }
 
 /**
- * Resultado del login
+ * Resultado del login con información de permisos
  */
 export interface LoginResult {
   accessToken: string;
@@ -37,7 +43,7 @@ export interface LoginResult {
 }
 
 /**
- * Resultado del registro
+ * Resultado del registro con información de permisos
  */
 export interface RegisterResult {
   accessToken: string;
