@@ -42,7 +42,7 @@ export class DefineRideDto {
   vehicleTypeId?: number;
 }
 
-export class ConfirmPaymentDto {
+export class ConfirmRidePaymentDto {
   @IsIn(['cash', 'card'])
   method: 'cash' | 'card';
 

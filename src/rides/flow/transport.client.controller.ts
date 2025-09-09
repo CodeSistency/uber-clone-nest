@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/comm
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
-import { ConfirmPaymentDto, DefineRideDto, RateRideFlowDto } from './dto/transport-flow.dtos';
+import { ConfirmRidePaymentDto, DefineRideDto, RateRideFlowDto } from './dto/transport-flow.dtos';
 
 @ApiTags('rides-flow-client')
 @ApiBearerAuth('JWT-auth')
@@ -43,10 +43,10 @@ export class TransportClientController {
 
   @Post(':rideId/confirm-payment')
   @ApiOperation({ summary: 'Confirm payment method for ride' })
-  @ApiBody({ type: ConfirmPaymentDto })
+  @ApiBody({ type: ConfirmRidePaymentDto })
   async confirmPayment(
     @Param('rideId') rideId: string,
-    @Body() body: ConfirmPaymentDto,
+    @Body() body: ConfirmRidePaymentDto,
   ) {
     const ride = await this.flow.confirmTransportPayment(Number(rideId), body.method, body.clientSecret);
     return { data: ride };

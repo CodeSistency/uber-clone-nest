@@ -6,6 +6,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [NotificationsModule],
   providers: [WebSocketGatewayClass, RealTimeService],
-  exports: [RealTimeService],
+  exports: [WebSocketGatewayClass, RealTimeService],
 })
 export class WebSocketModule {}
