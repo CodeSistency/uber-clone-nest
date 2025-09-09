@@ -9,7 +9,7 @@ export class DriverGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user || !user.clerkId) {
+    if (!user || typeof user.id !== 'number') {
       throw new ForbiddenException('User not authenticated');
     }
 

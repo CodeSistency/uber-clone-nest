@@ -246,3 +246,4 @@ socket.on('ride:accepted', (data) => {
 
 
 
+

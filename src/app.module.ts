@@ -21,6 +21,7 @@ import { StoresModule } from './stores/stores.module';
 import { OrdersModule } from './orders/orders.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminModule } from './admin/admin.module';
+import { RidesFlowModule } from './rides/flow/rides-flow.module';
 
 @Module({
   imports: [
@@ -47,6 +48,8 @@ import { AdminModule } from './admin/admin.module';
     AnalyticsModule,
     // Admin System
     AdminModule,
+    // Flow orchestrator
+    RidesFlowModule,
   ],
   controllers: [AppController],
   providers: [AppService],

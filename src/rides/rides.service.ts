@@ -93,6 +93,23 @@ export class RidesService {
     });
   }
 
+  async getAvailableRides() {
+    return this.prisma.ride.findMany({
+      where: {
+        driverId: null,
+      },
+      include: {
+        tier: true,
+        requestedVehicleType: true,
+        user: {
+          select: { id: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 50,
+    });
+  }
+
   // Nuevo método para obtener tipos de vehículo disponibles
   async getAvailableVehicleTypes() {
     return this.prisma.vehicleType.findMany({
