@@ -376,18 +376,33 @@ export class AdminController {
         message: { type: 'string', example: 'Admin module is working!' },
         timestamp: { type: 'string', format: 'date-time' },
         module: { type: 'string', example: 'AdminModule' },
-        status: { type: 'string', example: 'active' }
+        status: { type: 'string', example: 'active' },
+        database: { type: 'string', example: 'connected' },
+        jwt: { type: 'string', example: 'configured' }
       }
     }
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async testAdminModule() {
     this.logger.log('Testing admin module functionality');
+
+    // Verificar conexión a base de datos
+    let dbStatus = 'unknown';
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      dbStatus = 'connected';
+    } catch (error) {
+      dbStatus = 'disconnected';
+      this.logger.error('Database connection test failed:', error);
+    }
+
     return {
       message: 'Admin module is working!',
       timestamp: new Date(),
       module: 'AdminModule',
-      status: 'active'
+      status: 'active',
+      database: dbStatus,
+      jwt: process.env.JWT_SECRET ? 'configured' : 'not_configured'
     };
   }
 

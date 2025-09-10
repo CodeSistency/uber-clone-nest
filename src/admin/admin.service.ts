@@ -72,7 +72,9 @@ export class AdminService {
     };
 
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+    });
 
     this.logger.log(`Admin ${email} logged in successfully`);
 
@@ -90,6 +92,16 @@ export class AdminService {
       },
       expiresIn: 3600, // 1 hour
     };
+  }
+
+  // Método de prueba para verificar que JWT esté funcionando
+  async generateTestToken(payload: any): Promise<string> {
+    try {
+      return this.jwtService.sign(payload, { expiresIn: '1m' }); // Token de 1 minuto para testing
+    } catch (error) {
+      this.logger.error('Error generating test token:', error);
+      throw error;
+    }
   }
 
   // ===============================

@@ -258,15 +258,44 @@ export class AdminAuthController {
   })
   async testLogin(@Body() loginDto: any) {
     this.logger.log('Test login attempt');
-    return {
-      message: 'Test login endpoint - use regular login endpoint',
-      credentials: {
-        superadmin: 'superadmin@uberclone.com / SuperAdmin123!',
-        admin: 'admin@uberclone.com / Admin123!',
-        moderator: 'moderator@uberclone.com / Moderator123!',
-        support: 'support@uberclone.com / Support123!',
-      }
-    };
+
+    // Verificar que el servicio esté funcionando
+    try {
+      // Crear un token de prueba para verificar que JWT esté funcionando
+      const testPayload = { test: true, timestamp: Date.now() };
+      const testToken = await this.adminService.generateTestToken(testPayload);
+
+      return {
+        message: 'Test login endpoint - use regular login endpoint',
+        credentials: {
+          superadmin: 'superadmin@uberclone.com / SuperAdmin123!',
+          admin: 'admin@uberclone.com / Admin123!',
+          moderator: 'moderator@uberclone.com / Moderator123!',
+          support: 'support@uberclone.com / Support123!',
+        },
+        jwtConfig: {
+          secret: process.env.JWT_SECRET ? 'CONFIGURED' : 'NOT_CONFIGURED',
+          expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+          refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+        },
+        testToken: {
+          generated: !!testToken,
+          length: testToken ? testToken.length : 0,
+          preview: testToken ? testToken.substring(0, 30) + '...' : 'N/A'
+        }
+      };
+    } catch (error) {
+      return {
+        message: 'Error generating test token',
+        error: error.message,
+        credentials: {
+          superadmin: 'superadmin@uberclone.com / SuperAdmin123!',
+          admin: 'admin@uberclone.com / Admin123!',
+          moderator: 'moderator@uberclone.com / Moderator123!',
+          support: 'support@uberclone.com / Support123!',
+        }
+      };
+    }
   }
 
 }
