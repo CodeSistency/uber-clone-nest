@@ -10,7 +10,22 @@ import {
   UseGuards,
   Logger,
   ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
+} from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
@@ -22,6 +37,8 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Controller('admin')
 @UseGuards(AdminAuthGuard, PermissionsGuard)
+@ApiTags('admin')
+@ApiBearerAuth('JWT-auth')
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
 
@@ -36,6 +53,30 @@ export class AdminController {
 
   @Get('dashboard/metrics')
   @RequirePermissions(Permission.REPORTS_VIEW)
+  @ApiOperation({
+    summary: 'Get dashboard metrics',
+    description: 'Retrieve comprehensive dashboard metrics including users, drivers, rides, deliveries, and financial data'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard metrics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        totalUsers: { type: 'number', example: 150 },
+        activeUsers: { type: 'number', example: 120 },
+        newUsersToday: { type: 'number', example: 5 },
+        totalDrivers: { type: 'number', example: 45 },
+        onlineDrivers: { type: 'number', example: 32 },
+        activeRides: { type: 'number', example: 8 },
+        completedRidesToday: { type: 'number', example: 127 },
+        totalRevenue: { type: 'number', example: 15420.50 },
+        revenueToday: { type: 'number', example: 2340.75 }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getDashboardMetrics() {
     this.logger.log('Fetching dashboard metrics');
     return this.adminService.getDashboardMetrics();
@@ -47,6 +88,38 @@ export class AdminController {
 
   @Post('admins')
   @RequirePermissions(Permission.SYSTEM_CONFIG)
+  @ApiOperation({
+    summary: 'Create new admin',
+    description: 'Create a new administrator account with specified role and permissions'
+  })
+  @ApiBody({
+    type: CreateAdminDto,
+    description: 'Admin creation data including name, email, password, role and permissions'
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Admin created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        name: { type: 'string', example: 'John Doe' },
+        email: { type: 'string', example: 'admin@uberclone.com' },
+        userType: { type: 'string', example: 'admin' },
+        adminRole: { type: 'string', example: 'admin' },
+        adminPermissions: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['user:read', 'user:write']
+        },
+        isActive: { type: 'boolean', example: true },
+        adminCreatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Bad request - Invalid data or validation error' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async createAdmin(@Body() createAdminDto: CreateAdminDto) {
     this.logger.log(`Creating new admin: ${createAdminDto.email}`);
     return this.adminService.createAdmin(createAdminDto);
@@ -54,6 +127,35 @@ export class AdminController {
 
   @Get('admins')
   @RequirePermissions(Permission.SYSTEM_CONFIG)
+  @ApiOperation({
+    summary: 'Get all admins',
+    description: 'Retrieve a list of all administrator accounts with their roles and permissions'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admins list retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1 },
+          name: { type: 'string', example: 'John Doe' },
+          email: { type: 'string', example: 'admin@uberclone.com' },
+          adminRole: { type: 'string', example: 'admin' },
+          adminPermissions: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['user:read', 'user:write']
+          },
+          isActive: { type: 'boolean', example: true },
+          lastAdminLogin: { type: 'string', format: 'date-time' }
+        }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getAllAdmins() {
     this.logger.log('Fetching all admins');
     return this.adminService.getAllAdmins();
@@ -61,6 +163,40 @@ export class AdminController {
 
   @Get('admins/:id')
   @RequirePermissions(Permission.SYSTEM_CONFIG)
+  @ApiOperation({
+    summary: 'Get admin by ID',
+    description: 'Retrieve detailed information about a specific administrator account'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Admin ID to retrieve',
+    example: 1
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin details retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        name: { type: 'string', example: 'John Doe' },
+        email: { type: 'string', example: 'admin@uberclone.com' },
+        adminRole: { type: 'string', example: 'admin' },
+        adminPermissions: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['user:read', 'user:write']
+        },
+        isActive: { type: 'boolean', example: true },
+        lastAdminLogin: { type: 'string', format: 'date-time' },
+        adminCreatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Admin not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getAdminById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching admin by ID: ${id}`);
     const admin = await this.adminService.findAdminById(id);
@@ -72,6 +208,44 @@ export class AdminController {
 
   @Put('admins/:id')
   @RequirePermissions(Permission.SYSTEM_CONFIG)
+  @ApiOperation({
+    summary: 'Update admin',
+    description: 'Update an administrator account information, role, or permissions'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Admin ID to update',
+    example: 1
+  })
+  @ApiBody({
+    type: UpdateAdminDto,
+    description: 'Admin update data'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        name: { type: 'string', example: 'John Doe Updated' },
+        email: { type: 'string', example: 'admin@uberclone.com' },
+        adminRole: { type: 'string', example: 'admin' },
+        adminPermissions: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['user:read', 'user:write', 'user:delete']
+        },
+        isActive: { type: 'boolean', example: true },
+        adminUpdatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Admin not found' })
+  @ApiBadRequestResponse({ description: 'Bad request - Invalid data or validation error' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateAdmin(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateAdminDto: UpdateAdminDto,
@@ -82,6 +256,29 @@ export class AdminController {
 
   @Delete('admins/:id')
   @RequirePermissions(Permission.SYSTEM_CONFIG)
+  @ApiOperation({
+    summary: 'Delete admin',
+    description: 'Convert an administrator account to a regular user account (soft delete)'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Admin ID to delete',
+    example: 1
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin converted to regular user successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Admin deleted successfully' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Admin not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async deleteAdmin(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Deleting admin ID: ${id}`);
     await this.adminService.deleteAdmin(id);
@@ -93,6 +290,31 @@ export class AdminController {
   // ===============================
 
   @Get('profile')
+  @ApiOperation({
+    summary: 'Get admin profile',
+    description: 'Retrieve the current authenticated admin profile information'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin profile retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        name: { type: 'string', example: 'John Doe' },
+        email: { type: 'string', example: 'admin@uberclone.com' },
+        adminRole: { type: 'string', example: 'admin' },
+        adminPermissions: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['user:read', 'user:write']
+        },
+        lastAdminLogin: { type: 'string', format: 'date-time' },
+        adminCreatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async getProfile() {
     // El admin ya está disponible en el request gracias al guard
     // TODO: Implementar lógica para obtener perfil completo
@@ -103,6 +325,31 @@ export class AdminController {
   }
 
   @Put('profile')
+  @ApiOperation({
+    summary: 'Update admin profile',
+    description: 'Update the current authenticated admin profile information'
+  })
+  @ApiBody({
+    description: 'Profile update data',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'John Doe Updated' },
+        email: { type: 'string', example: 'newemail@uberclone.com' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile update endpoint - to be implemented',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Profile update endpoint - to be implemented' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async updateProfile(@Body() updateProfileDto: any) {
     // TODO: Implementar actualización de perfil
     this.logger.log('Updating admin profile');
@@ -116,6 +363,24 @@ export class AdminController {
   // ===============================
 
   @Get('test')
+  @ApiOperation({
+    summary: 'Test admin module',
+    description: 'Test endpoint to verify admin module functionality'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin module test successful',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Admin module is working!' },
+        timestamp: { type: 'string', format: 'date-time' },
+        module: { type: 'string', example: 'AdminModule' },
+        status: { type: 'string', example: 'active' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async testAdminModule() {
     this.logger.log('Testing admin module functionality');
     return {
@@ -128,6 +393,81 @@ export class AdminController {
 
   @Get('users')
   @RequirePermissions(Permission.USER_READ)
+  @ApiOperation({
+    summary: 'Get users with filters',
+    description: 'Retrieve a paginated list of users with advanced filtering and search capabilities'
+  })
+  @ApiQuery({
+    name: 'page',
+    type: 'number',
+    required: false,
+    description: 'Page number for pagination',
+    example: 1
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: 'number',
+    required: false,
+    description: 'Number of users per page',
+    example: 10
+  })
+  @ApiQuery({
+    name: 'search',
+    type: 'string',
+    required: false,
+    description: 'Search term for name or email',
+    example: 'john'
+  })
+  @ApiQuery({
+    name: 'status',
+    type: 'string',
+    required: false,
+    description: 'User status filter',
+    example: 'active'
+  })
+  @ApiQuery({
+    name: 'userType',
+    type: 'string',
+    required: false,
+    description: 'User type filter',
+    example: 'user'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Users retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'John Doe' },
+              email: { type: 'string', example: 'john@example.com' },
+              userType: { type: 'string', example: 'user' },
+              isActive: { type: 'boolean', example: true },
+              lastLogin: { type: 'string', format: 'date-time' },
+              createdAt: { type: 'string', format: 'date-time' }
+            }
+          }
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+            total: { type: 'number', example: 150 },
+            pages: { type: 'number', example: 15 }
+          }
+        }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getUsers(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -208,6 +548,53 @@ export class AdminController {
 
   @Get('users/:id')
   @RequirePermissions(Permission.USER_READ)
+  @ApiOperation({
+    summary: 'Get user by ID',
+    description: 'Retrieve detailed information about a specific user including wallet balance and activity counts'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'User ID to retrieve',
+    example: 1
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User details retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'John Doe' },
+            email: { type: 'string', example: 'john@example.com' },
+            userType: { type: 'string', example: 'user' },
+            isActive: { type: 'boolean', example: true },
+            wallet: {
+              type: 'object',
+              properties: {
+                balance: { type: 'number', example: 50.00 }
+              }
+            },
+            _count: {
+              type: 'object',
+              properties: {
+                rides: { type: 'number', example: 15 },
+                deliveryOrders: { type: 'number', example: 5 },
+                ratings: { type: 'number', example: 12 }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getUserById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching user by ID: ${id}`);
 
@@ -267,6 +654,49 @@ export class AdminController {
 
   @Put('users/:id/status')
   @RequirePermissions(Permission.USER_WRITE)
+  @ApiOperation({
+    summary: 'Update user status',
+    description: 'Activate or deactivate a user account'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'User ID to update',
+    example: 1
+  })
+  @ApiBody({
+    description: 'User status update data',
+    schema: {
+      type: 'object',
+      properties: {
+        isActive: { type: 'boolean', example: false, description: 'Whether the user account should be active' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User status updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'User deactivated successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'John Doe' },
+            isActive: { type: 'boolean', example: false },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiBadRequestResponse({ description: 'Bad request - Invalid data or validation error' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateUserStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('isActive') isActive: boolean,
@@ -314,6 +744,30 @@ export class AdminController {
 
   @Delete('users/:id')
   @RequirePermissions(Permission.USER_DELETE)
+  @ApiOperation({
+    summary: 'Delete user',
+    description: 'Soft delete a user account by deactivating it'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'User ID to delete',
+    example: 1
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User deactivated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'User deactivated successfully' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async deleteUser(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Deleting user: ${id}`);
 
@@ -351,6 +805,84 @@ export class AdminController {
 
   @Get('drivers')
   @RequirePermissions(Permission.DRIVER_READ)
+  @ApiOperation({
+    summary: 'Get drivers with filters',
+    description: 'Retrieve a paginated list of drivers with advanced filtering and search capabilities'
+  })
+  @ApiQuery({
+    name: 'page',
+    type: 'number',
+    required: false,
+    description: 'Page number for pagination',
+    example: 1
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: 'number',
+    required: false,
+    description: 'Number of drivers per page',
+    example: 10
+  })
+  @ApiQuery({
+    name: 'search',
+    type: 'string',
+    required: false,
+    description: 'Search term for name, email, or license plate',
+    example: 'john'
+  })
+  @ApiQuery({
+    name: 'status',
+    type: 'string',
+    required: false,
+    description: 'Driver status filter',
+    example: 'online'
+  })
+  @ApiQuery({
+    name: 'verificationStatus',
+    type: 'string',
+    required: false,
+    description: 'Driver verification status filter',
+    example: 'approved'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Drivers retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              firstName: { type: 'string', example: 'John' },
+              lastName: { type: 'string', example: 'Doe' },
+              email: { type: 'string', example: 'john@example.com' },
+              status: { type: 'string', example: 'online' },
+              verificationStatus: { type: 'string', example: 'approved' },
+              carModel: { type: 'string', example: 'Toyota Camry' },
+              licensePlate: { type: 'string', example: 'ABC123' },
+              carSeats: { type: 'number', example: 4 },
+              canDoDeliveries: { type: 'boolean', example: true }
+            }
+          }
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+            total: { type: 'number', example: 45 },
+            pages: { type: 'number', example: 5 }
+          }
+        }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getDrivers(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -435,6 +967,63 @@ export class AdminController {
 
   @Get('drivers/:id')
   @RequirePermissions(Permission.DRIVER_READ)
+  @ApiOperation({
+    summary: 'Get driver by ID',
+    description: 'Retrieve detailed information about a specific driver including vehicle details and documents'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Driver ID to retrieve',
+    example: 1
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Driver details retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
+            email: { type: 'string', example: 'john@example.com' },
+            status: { type: 'string', example: 'online' },
+            verificationStatus: { type: 'string', example: 'approved' },
+            carModel: { type: 'string', example: 'Toyota Camry' },
+            licensePlate: { type: 'string', example: 'ABC123' },
+            carSeats: { type: 'number', example: 4 },
+            canDoDeliveries: { type: 'boolean', example: true },
+            documents: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  documentType: { type: 'string', example: 'license' },
+                  documentUrl: { type: 'string', example: 'https://example.com/doc1.jpg' },
+                  verificationStatus: { type: 'string', example: 'approved' }
+                }
+              }
+            },
+            _count: {
+              type: 'object',
+              properties: {
+                rides: { type: 'number', example: 25 },
+                deliveryOrders: { type: 'number', example: 8 }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Driver not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getDriverById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching driver by ID: ${id}`);
 
@@ -495,6 +1084,55 @@ export class AdminController {
 
   @Put('drivers/:id/status')
   @RequirePermissions(Permission.DRIVER_WRITE)
+  @ApiOperation({
+    summary: 'Update driver status',
+    description: 'Update the operational status of a driver (online, offline, suspended, etc.)'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Driver ID to update',
+    example: 1
+  })
+  @ApiBody({
+    description: 'Driver status update data',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          example: 'suspended',
+          enum: ['online', 'offline', 'suspended', 'inactive'],
+          description: 'New status for the driver'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Driver status updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Driver status updated to suspended' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
+            status: { type: 'string', example: 'suspended' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Driver not found' })
+  @ApiBadRequestResponse({ description: 'Bad request - Invalid status value' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateDriverStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: string,
@@ -542,6 +1180,60 @@ export class AdminController {
 
   @Put('drivers/:id/verification')
   @RequirePermissions(Permission.DRIVER_APPROVE)
+  @ApiOperation({
+    summary: 'Update driver verification status',
+    description: 'Approve or reject driver verification with optional notes'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Driver ID to update verification',
+    example: 1
+  })
+  @ApiBody({
+    description: 'Driver verification update data',
+    schema: {
+      type: 'object',
+      properties: {
+        verificationStatus: {
+          type: 'string',
+          example: 'approved',
+          enum: ['pending', 'approved', 'rejected', 'needs_review'],
+          description: 'New verification status'
+        },
+        notes: {
+          type: 'string',
+          example: 'Documents verified successfully',
+          description: 'Optional notes about the verification decision'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Driver verification updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Driver verification updated to approved' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
+            verificationStatus: { type: 'string', example: 'approved' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Driver not found' })
+  @ApiBadRequestResponse({ description: 'Bad request - Invalid verification status' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateDriverVerification(
     @Param('id', ParseIntPipe) id: number,
     @Body('verificationStatus') verificationStatus: string,
@@ -590,6 +1282,111 @@ export class AdminController {
 
   @Get('rides')
   @RequirePermissions(Permission.RIDE_READ)
+  @ApiOperation({
+    summary: 'Get rides with filters',
+    description: 'Retrieve a paginated list of rides with advanced filtering and search capabilities'
+  })
+  @ApiQuery({
+    name: 'page',
+    type: 'number',
+    required: false,
+    description: 'Page number for pagination',
+    example: 1
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: 'number',
+    required: false,
+    description: 'Number of rides per page',
+    example: 10
+  })
+  @ApiQuery({
+    name: 'search',
+    type: 'string',
+    required: false,
+    description: 'Search term for addresses',
+    example: 'downtown'
+  })
+  @ApiQuery({
+    name: 'status',
+    type: 'string',
+    required: false,
+    description: 'Payment status filter',
+    example: 'completed'
+  })
+  @ApiQuery({
+    name: 'paymentStatus',
+    type: 'string',
+    required: false,
+    description: 'Payment status filter',
+    example: 'completed'
+  })
+  @ApiQuery({
+    name: 'driverId',
+    type: 'number',
+    required: false,
+    description: 'Filter by driver ID',
+    example: 5
+  })
+  @ApiQuery({
+    name: 'userId',
+    type: 'string',
+    required: false,
+    description: 'Filter by user ID',
+    example: 'user123'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Rides retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              rideId: { type: 'number', example: 1001 },
+              originAddress: { type: 'string', example: '123 Main St' },
+              destinationAddress: { type: 'string', example: '456 Oak Ave' },
+              farePrice: { type: 'number', example: 25.50 },
+              paymentStatus: { type: 'string', example: 'completed' },
+              driverId: { type: 'number', example: 5 },
+              userId: { type: 'string', example: 'user123' },
+              createdAt: { type: 'string', format: 'date-time' },
+              driver: {
+                type: 'object',
+                properties: {
+                  firstName: { type: 'string', example: 'John' },
+                  lastName: { type: 'string', example: 'Doe' },
+                  status: { type: 'string', example: 'online' }
+                }
+              },
+              tier: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', example: 'UberX' },
+                  baseFare: { type: 'number', example: 2.50 }
+                }
+              }
+            }
+          }
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+            total: { type: 'number', example: 150 },
+            pages: { type: 'number', example: 15 }
+          }
+        }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getRides(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -688,6 +1485,81 @@ export class AdminController {
 
   @Get('rides/:id')
   @RequirePermissions(Permission.RIDE_READ)
+  @ApiOperation({
+    summary: 'Get ride by ID',
+    description: 'Retrieve detailed information about a specific ride including driver, user, and chat messages'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Ride ID to retrieve',
+    example: 1001
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Ride details retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            rideId: { type: 'number', example: 1001 },
+            originAddress: { type: 'string', example: '123 Main St' },
+            destinationAddress: { type: 'string', example: '456 Oak Ave' },
+            originLatitude: { type: 'number', example: 40.7128 },
+            originLongitude: { type: 'number', example: -74.0060 },
+            destinationLatitude: { type: 'number', example: 40.7589 },
+            destinationLongitude: { type: 'number', example: -73.9851 },
+            farePrice: { type: 'number', example: 25.50 },
+            paymentStatus: { type: 'string', example: 'completed' },
+            driverId: { type: 'number', example: 5 },
+            userId: { type: 'string', example: 'user123' },
+            createdAt: { type: 'string', format: 'date-time' },
+            driver: {
+              type: 'object',
+              properties: {
+                firstName: { type: 'string', example: 'John' },
+                lastName: { type: 'string', example: 'Doe' },
+                carModel: { type: 'string', example: 'Toyota Camry' },
+                licensePlate: { type: 'string', example: 'ABC123' },
+                status: { type: 'string', example: 'online' }
+              }
+            },
+            tier: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', example: 'UberX' },
+                baseFare: { type: 'number', example: 2.50 },
+                perMinuteRate: { type: 'number', example: 0.30 },
+                perMileRate: { type: 'number', example: 1.20 }
+              }
+            },
+            messages: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  messageText: { type: 'string', example: 'On my way!' },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  sender: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', example: 'John Doe' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Ride not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getRideById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching ride by ID: ${id}`);
 
@@ -765,6 +1637,83 @@ export class AdminController {
 
   @Get('stores')
   @RequirePermissions(Permission.STORE_READ)
+  @ApiOperation({
+    summary: 'Get stores with filters',
+    description: 'Retrieve a paginated list of stores with advanced filtering and search capabilities'
+  })
+  @ApiQuery({
+    name: 'page',
+    type: 'number',
+    required: false,
+    description: 'Page number for pagination',
+    example: 1
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: 'number',
+    required: false,
+    description: 'Number of stores per page',
+    example: 10
+  })
+  @ApiQuery({
+    name: 'search',
+    type: 'string',
+    required: false,
+    description: 'Search term for store name or address',
+    example: 'pizza'
+  })
+  @ApiQuery({
+    name: 'category',
+    type: 'string',
+    required: false,
+    description: 'Filter by store category',
+    example: 'restaurant'
+  })
+  @ApiQuery({
+    name: 'isOpen',
+    type: 'boolean',
+    required: false,
+    description: 'Filter by store status',
+    example: true
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stores retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Mario\'s Pizza' },
+              address: { type: 'string', example: '123 Main St' },
+              category: { type: 'string', example: 'restaurant' },
+              cuisineType: { type: 'string', example: 'Italian' },
+              rating: { type: 'number', example: 4.5 },
+              isOpen: { type: 'boolean', example: true },
+              ownerId: { type: 'string', example: 'owner123' },
+              createdAt: { type: 'string', format: 'date-time' }
+            }
+          }
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+            total: { type: 'number', example: 50 },
+            pages: { type: 'number', example: 5 }
+          }
+        }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getStores(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -845,6 +1794,66 @@ export class AdminController {
 
   @Get('stores/:id')
   @RequirePermissions(Permission.STORE_READ)
+  @ApiOperation({
+    summary: 'Get store by ID',
+    description: 'Retrieve detailed information about a specific store including products and statistics'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Store ID to retrieve',
+    example: 1
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Store details retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'Mario\'s Pizza' },
+            address: { type: 'string', example: '123 Main St' },
+            latitude: { type: 'number', example: 40.7128 },
+            longitude: { type: 'number', example: -74.0060 },
+            category: { type: 'string', example: 'restaurant' },
+            cuisineType: { type: 'string', example: 'Italian' },
+            logoUrl: { type: 'string', example: 'https://example.com/logo.jpg' },
+            rating: { type: 'number', example: 4.5 },
+            isOpen: { type: 'boolean', example: true },
+            ownerId: { type: 'string', example: 'owner123' },
+            createdAt: { type: 'string', format: 'date-time' },
+            products: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  name: { type: 'string', example: 'Margherita Pizza' },
+                  price: { type: 'number', example: 15.99 },
+                  isAvailable: { type: 'boolean', example: true }
+                }
+              }
+            },
+            _count: {
+              type: 'object',
+              properties: {
+                products: { type: 'number', example: 25 },
+                deliveryOrders: { type: 'number', example: 150 },
+                ratings: { type: 'number', example: 45 }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Store not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getStoreById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching store by ID: ${id}`);
 
@@ -906,6 +1915,49 @@ export class AdminController {
 
   @Put('stores/:id/status')
   @RequirePermissions(Permission.STORE_WRITE)
+  @ApiOperation({
+    summary: 'Update store status',
+    description: 'Open or close a store for business operations'
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Store ID to update',
+    example: 1
+  })
+  @ApiBody({
+    description: 'Store status update data',
+    schema: {
+      type: 'object',
+      properties: {
+        isOpen: { type: 'boolean', example: false, description: 'Whether the store should be open for business' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Store status updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Store closed successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'Mario\'s Pizza' },
+            isOpen: { type: 'boolean', example: false },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Store not found' })
+  @ApiBadRequestResponse({ description: 'Bad request - Invalid data or validation error' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateStoreStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('isOpen') isOpen: boolean,
@@ -952,6 +2004,125 @@ export class AdminController {
 
   @Get('reports/:type')
   @RequirePermissions(Permission.REPORTS_VIEW)
+  @ApiOperation({
+    summary: 'Get system reports',
+    description: 'Retrieve various system reports including users, rides, drivers, and financial data'
+  })
+  @ApiParam({
+    name: 'type',
+    type: 'string',
+    description: 'Type of report to generate',
+    example: 'users',
+    enum: ['users', 'rides', 'drivers', 'financial']
+  })
+  @ApiQuery({
+    name: 'startDate',
+    type: 'string',
+    required: false,
+    description: 'Start date for report (ISO format)',
+    example: '2024-01-01'
+  })
+  @ApiQuery({
+    name: 'endDate',
+    type: 'string',
+    required: false,
+    description: 'End date for report (ISO format)',
+    example: '2024-12-31'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Report generated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        reportType: { type: 'string', example: 'users' },
+        data: {
+          type: 'object',
+          oneOf: [
+            {
+              properties: {
+                totalUsers: { type: 'number', example: 150 },
+                totalAdmins: { type: 'number', example: 5 },
+                userGrowth: {
+                  type: 'object',
+                  properties: {
+                    weeklyGrowth: { type: 'number', example: 12 },
+                    monthlyGrowth: { type: 'number', example: 45 },
+                    growthRate: { type: 'number', example: 15.5 }
+                  }
+                }
+              }
+            },
+            {
+              properties: {
+                totalRides: { type: 'number', example: 1250 },
+                totalRevenue: { type: 'number', example: 15420.50 },
+                averageFare: { type: 'number', example: 12.34 },
+                rideTrends: {
+                  type: 'object',
+                  properties: {
+                    weeklyRides: { type: 'number', example: 180 },
+                    weeklyChange: { type: 'number', example: 25 },
+                    monthlyRides: { type: 'number', example: 750 },
+                    monthlyChange: { type: 'number', example: 120 }
+                  }
+                }
+              }
+            },
+            {
+              properties: {
+                totalDrivers: { type: 'number', example: 45 },
+                onlineDrivers: { type: 'number', example: 32 },
+                verifiedDrivers: { type: 'number', example: 40 },
+                driverPerformance: {
+                  type: 'object',
+                  properties: {
+                    topDrivers: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'number', example: 1 },
+                          firstName: { type: 'string', example: 'John' },
+                          lastName: { type: 'string', example: 'Doe' },
+                          _count: {
+                            type: 'object',
+                            properties: {
+                              rides: { type: 'number', example: 25 }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              properties: {
+                totalWalletBalance: { type: 'number', example: 50000.00 },
+                transactionVolume: { type: 'number', example: 75000.00 },
+                revenueByService: {
+                  type: 'object',
+                  properties: {
+                    rides: { type: 'number', example: 45000.00 },
+                    delivery: { type: 'number', example: 30000.00 },
+                    total: { type: 'number', example: 75000.00 }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        generatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Report type not found' })
+  @ApiBadRequestResponse({ description: 'Bad request - Invalid report type' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getReport(@Param('type') type: string, @Query() query: any) {
     this.logger.log(`Fetching report: ${type}`);
 
