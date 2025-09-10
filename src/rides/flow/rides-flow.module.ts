@@ -6,6 +6,7 @@ import { WebSocketModule } from '../../websocket/websocket.module';
 import { RidesModule } from '../rides.module';
 import { OrdersModule } from '../../orders/orders.module';
 import { StripeModule } from '../../stripe/stripe.module';
+import { PaymentsModule } from '../../payments/payments.module';
 import { RidesFlowService } from './rides-flow.service';
 import { TransportClientController } from './transport.client.controller';
 import { TransportDriverController } from './transport.driver.controller';
@@ -27,6 +28,7 @@ import { DriverAvailabilityController } from './driver.availability.controller';
     RidesModule,
     OrdersModule,
     StripeModule,
+    PaymentsModule,
   ],
   controllers: [
     TransportClientController,
