@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AdminJwtPayload, AuthenticatedAdmin } from '../interfaces/admin.interface';
@@ -7,6 +7,8 @@ import { AdminRole } from '../entities/admin.entity';
 
 @Injectable()
 export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
+  private readonly logger = new Logger(AdminJwtStrategy.name);
+
   constructor(private adminService: AdminService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -16,18 +18,36 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
   }
 
   async validate(payload: AdminJwtPayload): Promise<AuthenticatedAdmin> {
+    this.logger.debug('Validating admin JWT payload:', {
+      sub: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      permissionsCount: payload.permissions?.length || 0
+    });
+
     const { sub: adminId, email } = payload;
 
     // Buscar el admin en la base de datos
+    this.logger.debug(`Looking up admin by ID: ${adminId}`);
     const admin = await this.adminService.findAdminById(adminId);
 
     if (!admin) {
+      this.logger.error(`Admin not found in database:`, { adminId, email });
       throw new UnauthorizedException('Admin not found');
     }
 
     if (!admin.isActive) {
+      this.logger.warn(`Admin account is deactivated:`, { adminId, email });
       throw new UnauthorizedException('Admin account is deactivated');
     }
+
+    this.logger.debug(`Admin found and active:`, {
+      id: admin.id,
+      email: admin.email,
+      userType: admin.userType,
+      adminRole: admin.adminRole,
+      permissionsCount: admin.adminPermissions?.length || 0
+    });
 
     // Retornar la información del admin autenticado
     return {

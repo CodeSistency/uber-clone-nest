@@ -24,13 +24,31 @@ export class AdminAuthGuard extends AuthGuard('admin-jwt') {
   }
 
   handleRequest(err: any, admin: any, info: any) {
-    // Log errores de autenticación
-    if (err || !admin) {
-      this.logger.error(`Admin authentication failed: ${err?.message || info?.message}`);
-      throw err || new UnauthorizedException('Invalid admin token');
+    // Log detallado de errores de autenticación
+    if (err) {
+      this.logger.error(`Admin authentication error:`, {
+        error: err.message,
+        stack: err.stack,
+        info: info?.message
+      });
+      throw new UnauthorizedException(`Admin authentication failed: ${err.message}`);
     }
 
-    this.logger.debug(`Admin authenticated: ${admin.email} (${admin.role})`);
+    if (!admin) {
+      this.logger.error(`Admin authentication failed - no admin returned:`, {
+        info: info?.message,
+        jwtSecretConfigured: !!process.env.JWT_SECRET,
+        jwtSecretLength: process.env.JWT_SECRET?.length || 0
+      });
+      throw new UnauthorizedException('Admin not authenticated');
+    }
+
+    this.logger.debug(`Admin authenticated successfully:`, {
+      email: admin.email,
+      role: admin.adminRole,
+      permissions: admin.adminPermissions?.length || 0
+    });
+
     return admin;
   }
 
