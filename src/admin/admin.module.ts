@@ -18,9 +18,9 @@ import { AppConfigModule } from '../config/config.module';
     PassportModule.register({ defaultStrategy: 'admin-jwt' }),
     JwtModule.registerAsync({
       useFactory: () => ({
-        secret: process.env.ADMIN_JWT_SECRET || 'admin-jwt-secret-key',
+        secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-here',
         signOptions: {
-          expiresIn: process.env.ADMIN_JWT_EXPIRES_IN || '1h',
+          expiresIn: process.env.JWT_EXPIRES_IN || '1h',
         },
       }),
     }),
