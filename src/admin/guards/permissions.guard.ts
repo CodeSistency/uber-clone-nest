@@ -32,8 +32,16 @@ export class PermissionsGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const admin: AuthenticatedAdmin = request.admin;
 
+    this.logger.debug('PermissionsGuard - checking admin in request:', {
+      hasAdmin: !!admin,
+      adminEmail: admin?.email,
+      adminRole: admin?.adminRole,
+      permissionsCount: admin?.adminPermissions?.length || 0,
+      requestKeys: Object.keys(request)
+    });
+
     if (!admin) {
-      this.logger.warn('No admin found in request');
+      this.logger.warn('No admin found in request - available request properties:', Object.keys(request));
       throw new ForbiddenException('Admin not authenticated');
     }
 

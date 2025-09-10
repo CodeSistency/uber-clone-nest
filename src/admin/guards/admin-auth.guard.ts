@@ -23,7 +23,7 @@ export class AdminAuthGuard extends AuthGuard('admin-jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err: any, admin: any, info: any) {
+  handleRequest(err: any, admin: any, info: any, context: any) {
     // Log detallado de errores de autenticación
     if (err) {
       this.logger.error(`Admin authentication error:`, {
@@ -48,6 +48,10 @@ export class AdminAuthGuard extends AuthGuard('admin-jwt') {
       role: admin.adminRole,
       permissions: admin.adminPermissions?.length || 0
     });
+
+    // Configurar el admin en el request para que esté disponible en otros guards
+    const request = context.switchToHttp().getRequest();
+    request.admin = admin;
 
     return admin;
   }
