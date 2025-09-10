@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, Length } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -120,22 +120,68 @@ export class DefineRideDto {
 
 export class ConfirmRidePaymentDto {
   @ApiProperty({
-    description: 'Método de pago para el viaje',
-    example: 'card',
-    enum: ['cash', 'card'],
-    enumName: 'PaymentMethod'
+    description: 'Método de pago venezolano para el viaje',
+    example: 'transfer',
+    enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
+    enumName: 'VenezuelanPaymentMethod'
   })
-  @IsIn(['cash', 'card'])
-  method: 'cash' | 'card';
+  @IsIn(['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'])
+  method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin';
 
   @ApiPropertyOptional({
-    description: 'Client secret de Stripe para pagos con tarjeta. Requerido cuando method es "card"',
-    example: 'pi_1234567890_secret_abcdef123456',
-    type: 'string'
+    description: 'Código del banco venezolano (requerido para transfer y pago_movil)',
+    example: '0102',
+    minLength: 4,
+    maxLength: 4,
+    enum: ['0102', '0105', '0196', '0108'] // Banco Venezuela, Mercantil, BNC, Provincial
   })
   @IsOptional()
   @IsString()
-  clientSecret?: string;
+  @Length(4, 4)
+  bankCode?: string;
+}
+
+export class SelectVehicleDto {
+  @ApiPropertyOptional({
+    description: 'ID del nivel de servicio (tier) a seleccionar. Si no se especifica, mantiene el valor actual.',
+    example: 1,
+    minimum: 1,
+    type: 'number',
+    enum: [1, 2, 3],
+    required: false,
+    nullable: true
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  tierId?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'ID del tipo de vehículo a seleccionar. Si no se especifica, mantiene el valor actual.',
+    example: 1,
+    minimum: 1,
+    type: 'number',
+    enum: [1, 2, 3, 4],
+    required: false,
+    nullable: true
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  vehicleTypeId?: number | null;
+}
+
+export class SetDriverAvailabilityDto {
+  @ApiProperty({
+    description: 'Estado de disponibilidad del conductor',
+    example: 'online',
+    enum: ['online', 'offline', 'busy'],
+    type: 'string'
+  })
+  @IsIn(['online', 'offline', 'busy'])
+  status: 'online' | 'offline' | 'busy';
 }
 
 export class RateRideFlowDto {

@@ -47,8 +47,10 @@ async function bootstrap() {
   // For IP addresses (VPS), use HTTP. For domains, use HTTPS in production
   const protocol = (environment === 'production' && !isIPAddress) ? 'https' : 'http';
 
-  // Include port for IP addresses or when explicitly different from default
-  const needsPort = isIPAddress || (environment === 'production' && port !== 80 && port !== 443);
+  // Include port for IP addresses, development environment, or when explicitly different from default
+  const needsPort = isIPAddress ||
+                   (environment === 'development') ||
+                   (environment === 'production' && port !== 80 && port !== 443);
 
   const baseUrl = needsPort
     ? `${protocol}://${host}:${port}`

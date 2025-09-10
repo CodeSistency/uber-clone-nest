@@ -14,7 +14,21 @@ PASO_3_SELECCION_DE_VEHICULO:
 Descripción del Estado y UI: El bottomsheet se expande al 70% de la pantalla. La UI presenta dos pestañas (tabs) en la parte superior: "Carro" y "Moto". Debajo de las pestañas, se muestran tarjetas con los tipos de servicio (Carro XL, Premium, Básico, etc.), junto con el precio estimado y el tiempo de llegada.
 Comportamiento del bottomsheet: Se puede deslizar para cerrar o volver al paso anterior.
 PASO_4_ELECCION_DE_CONDUCTOR_Y_PAGO_PREVIO:
-Descripción del Estado y UI: El bottomsheet se despliega al 90% de la pantalla para mostrar la mayor cantidad de información. La UI muestra una lista de tarjetas de conductores disponibles, cada una con su foto, calificación, tipo de vehículo y precio. Debajo de la lista, se visualiza la sección de "Metodología de Pago" con opciones (Efectivo, Transferencia, Criptomoneda).
+Descripción del Estado y UI: El bottomsheet se despliega al 90% de la pantalla para mostrar la mayor cantidad de información. La UI muestra una lista de tarjetas de conductores disponibles, cada una con su foto, calificación, tipo de vehículo y precio. Debajo de la lista, se visualiza la sección de "Sistema de Pago Venezolano" con dos opciones principales:
+
+**A) Pago único tradicional:**
+- Efectivo, Transferencia bancaria, Pago móvil, Zelle, Bitcoin
+- Una sola referencia bancaria para todo el monto
+- Proceso simple y directo
+
+**B) Pagos múltiples (nuevo):**
+- Permite dividir el pago en diferentes métodos
+- Ejemplo: 40% transferencia + 30% pago móvil + 30% efectivo
+- Cada método genera su propia referencia (excepto efectivo)
+- Seguimiento de progreso en tiempo real
+- Ideal para montos grandes o usuarios con múltiples opciones
+
+Para pagos electrónicos, se genera una referencia bancaria de 20 dígitos que expira en 24 horas.
 Comportamiento del bottomsheet: Se puede deslizar para cerrar.
 PASO_5_GESTION_DE_CONFIRMACION_DEL_CONDUCTOR:
 Descripción del Estado y UI: El bottomsheet se minimiza al 30% de la pantalla. La UI principal es el mapa con un icono animado del conductor moviéndose en tiempo real hacia el punto de origen. El bottomsheet muestra los detalles del conductor y el estado del viaje.
@@ -30,7 +44,7 @@ PASO_3_ARMADO_DEL_PEDIDO:
 Descripción del Estado y UI: El bottomsheet es una vista de pantalla completa (modal). La UI muestra el menú del negocio con imágenes, precios y la opción de añadir al carrito. En la parte inferior, un botón CTA (Call-to-Action) para "Ver Carrito".
 Comportamiento del bottomsheet: No se puede deslizar.
 PASO_4_CHECKOUT_Y_CONFIRMACION:
-Descripción del Estado y UI: El bottomsheet permanece en pantalla completa. La UI es un formulario de checkout con campos para dirección de entrega, un resumen del pedido, la selección de método de pago y un campo para comentarios.
+Descripción del Estado y UI: El bottomsheet permanece en pantalla completa. La UI es un formulario de checkout con campos para dirección de entrega, un resumen del pedido, la selección de método de pago venezolano (Efectivo, Transferencia bancaria, Pago móvil, Zelle, Bitcoin) y un campo para comentarios. Para pagos electrónicos, se genera una referencia bancaria de 20 dígitos que expira en 24 horas.
 Comportamiento del bottomsheet: No se puede deslizar, para evitar que el usuario lo cierre accidentalmente antes de confirmar el pedido.
 PASO_5_SEGUIMIENTO_DEL_DELIVERY:
 Descripción del Estado y UI: El bottomsheet se minimiza al 30% de la pantalla. La UI es un mapa con el icono del conductor y un bottomsheet que muestra el estado del pedido: "En preparación", "Buscando conductor", "Conductor asignado", "En camino".
@@ -44,7 +58,7 @@ Un campo de texto para "Descripción del mandado" (ej. "Comprar una medicina en 
 Un campo para "Tipo de producto" (ej. perecedero, frágil, etc.).
 Comportamiento del bottomsheet: Se puede deslizar para cerrar.
 PASO_3_PRECIO_ESTIMADO_Y_PAGO:
-Descripción del Estado y UI: El bottomsheet permanece en pantalla completa. La UI muestra un resumen del precio estimado del servicio de mandado (excluyendo el costo de los productos) y la sección de "Metodología de Pago". El usuario debe confirmar.
+Descripción del Estado y UI: El bottomsheet permanece en pantalla completa. La UI muestra un resumen del precio estimado del servicio de mandado (excluyendo el costo de los productos) y la sección de "Sistema de Pago Venezolano" con opciones (Efectivo, Transferencia bancaria, Pago móvil, Zelle, Bitcoin). Para pagos electrónicos, se genera una referencia bancaria de 20 dígitos que expira en 24 horas. El usuario debe confirmar.
 Comportamiento del bottomsheet: Se puede deslizar para cerrar.
 PASO_4_BUSCANDO_Y_ASIGNANDO_CONDUCTOR:
 Descripción del Estado y UI: El bottomsheet se minimiza al 30% de la pantalla. La UI muestra el mapa y una animación de "Buscando conductor...".
@@ -66,7 +80,7 @@ Descripción del Estado y UI: El bottomsheet se despliega a pantalla completa. L
 "Descripción del paquete" y "Datos de contacto" de la persona que recibe.
 Comportamiento del bottomsheet: No se puede cerrar hasta que se confirmen los datos.
 PASO_3_CALCULAR_PRECIO_Y_PAGAR:
-Descripción del Estado y UI: El bottomsheet permanece en pantalla completa. La UI muestra el precio fijo del servicio, calculado según el tamaño y la distancia, y la sección de "Metodología de Pago".
+Descripción del Estado y UI: El bottomsheet permanece en pantalla completa. La UI muestra el precio fijo del servicio, calculado según el tamaño y la distancia, y la sección de "Sistema de Pago Venezolano" con opciones (Efectivo, Transferencia bancaria, Pago móvil, Zelle, Bitcoin). Para pagos electrónicos, se genera una referencia bancaria de 20 dígitos que expira en 24 horas.
 Comportamiento del bottomsheet: Se puede deslizar para cerrar.
 PASO_4_SEGUIMIENTO_DEL_PAQUETE:
 Descripción del Estado y UI: El bottomsheet se minimiza al 30% de la pantalla. La UI es un mapa con el icono del conductor y un pequeño panel que muestra los estados: "En camino a recoger", "Paquete recogido", "En ruta a destino".

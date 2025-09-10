@@ -83,12 +83,39 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 3: DRIVERS
+  // SECTION 3: DRIVERS (with associated users)
   // =========================================
   console.log('🚗 Seeding drivers...');
+
+  // Create users for drivers first
+  const driverUsers = await Promise.all([
+    prisma.user.create({
+      data: {
+        name: 'Carlos Rodriguez',
+        email: 'carlos.driver@example.com',
+        password: await bcrypt.hash('Driver123!', 12),
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: 'Maria Garcia',
+        email: 'maria.driver@example.com',
+        password: await bcrypt.hash('Driver123!', 12),
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: 'Luis Martinez',
+        email: 'luis.driver@example.com',
+        password: await bcrypt.hash('Driver123!', 12),
+      },
+    }),
+  ]);
+
   const drivers = await Promise.all([
     prisma.driver.create({
       data: {
+        id: driverUsers[0].id, // Associate with user
         firstName: 'Carlos',
         lastName: 'Rodriguez',
         profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=carlos',
@@ -104,6 +131,7 @@ async function main() {
     }),
     prisma.driver.create({
       data: {
+        id: driverUsers[1].id, // Associate with user
         firstName: 'Maria',
         lastName: 'Garcia',
         profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=maria',
@@ -119,6 +147,7 @@ async function main() {
     }),
     prisma.driver.create({
       data: {
+        id: driverUsers[2].id, // Associate with user
         firstName: 'Luis',
         lastName: 'Martinez',
         profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=luis',
@@ -792,6 +821,100 @@ async function main() {
   console.log(`   🚨 ${3} emergency contacts created`);
   console.log(`   💬 ${5} chat messages created`);
   console.log(`   👑 ${4} admins created (super_admin, admin, moderator, support)`);
+
+  // =========================================
+  // VENEZUELAN PAYMENT SYSTEM SEEDS
+  // =========================================
+
+  console.log('\n🌍 Creating Venezuelan Payment System data...');
+
+  // Create sample payment references for testing
+  const paymentReferences = [
+    {
+      referenceNumber: '12345678901234567890',
+      bankCode: '0102',
+      amount: 25.50,
+      userId: 1,
+      serviceType: 'ride',
+      serviceId: 1,
+      paymentMethod: 'transfer',
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+    },
+    {
+      referenceNumber: '09876543210987654321',
+      bankCode: '0105',
+      amount: 35.75,
+      userId: 2,
+      serviceType: 'delivery',
+      serviceId: 1,
+      paymentMethod: 'pago_movil',
+      status: 'confirmed',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      confirmedAt: new Date()
+    },
+    {
+      referenceNumber: '11111111111111111111',
+      bankCode: '0196',
+      amount: 15.00,
+      userId: 3,
+      serviceType: 'errand',
+      serviceId: 1,
+      paymentMethod: 'transfer',
+      status: 'expired',
+      expiresAt: new Date(Date.now() - 60 * 60 * 1000) // Expired 1 hour ago
+    },
+    {
+      referenceNumber: '22222222222222222222',
+      bankCode: '0108',
+      amount: 45.25,
+      userId: 4,
+      serviceType: 'parcel',
+      serviceId: 1,
+      paymentMethod: 'zelle',
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000) // 12 hours from now
+    }
+  ];
+
+  for (const ref of paymentReferences) {
+    await prisma.paymentReference.create({
+      data: ref
+    });
+  }
+
+  console.log(`   💳 ${paymentReferences.length} payment references created`);
+
+  // Create sample bank transactions for confirmed payments
+  const bankTransactions = [
+    {
+      paymentReferenceId: 2, // Confirmed delivery reference
+      bankTransactionId: 'MERC-1725979200000-abc123def',
+      confirmedAmount: 35.75,
+      bankResponse: {
+        confirmed: true,
+        transactionId: 'MERC-1725979200000-abc123def',
+        amount: 35.75,
+        timestamp: new Date(),
+        bankCode: '0105'
+      },
+      confirmationTimestamp: new Date()
+    }
+  ];
+
+  for (const tx of bankTransactions) {
+    await prisma.bankTransaction.create({
+      data: tx
+    });
+  }
+
+  console.log(`   🏦 ${bankTransactions.length} bank transactions created`);
+
+  console.log('\n✅ Venezuelan Payment System seeded successfully!');
+  console.log('📋 Test Payment References:');
+  paymentReferences.forEach((ref, index) => {
+    console.log(`   ${index + 1}. ${ref.referenceNumber} - ${ref.serviceType} - ${ref.amount} VES - ${ref.status}`);
+  });
 }
 
 main()

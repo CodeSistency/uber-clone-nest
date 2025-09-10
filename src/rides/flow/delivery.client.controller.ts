@@ -1,16 +1,20 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiBody } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
 import { ConfirmDeliveryPaymentDto } from './dto/delivery-flow.dtos';
 import { CreateOrderDto } from '../../orders/dto/create-order.dto';
+import { PaymentsService } from '../../payments/payments.service';
 
 @ApiTags('delivery-flow-client')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
 @Controller('rides/flow/client/delivery')
 export class DeliveryClientController {
-  constructor(private readonly flow: RidesFlowService) {}
+  constructor(
+    private readonly flow: RidesFlowService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @Post('create-order')
   @ApiOperation({
@@ -87,13 +91,94 @@ export class DeliveryClientController {
   }
 
   @Post(':orderId/confirm-payment')
-  @ApiOperation({ summary: 'Confirm delivery order payment method' })
+  @ApiOperation({
+    summary: 'Confirmar pago de orden de delivery (Sistema Venezolano)',
+    description: `
+    **SISTEMA DE PAGOS VENEZOLANO**
+
+    Este endpoint genera una referencia bancaria para el pago de la orden de delivery.
+    El usuario debe realizar el pago externamente usando esta referencia.
+
+    **Proceso:**
+    1. Se valida la orden de delivery
+    2. Se genera referencia bancaria única de 20 dígitos
+    3. Se registra en base de datos con expiración de 24 horas
+    4. Se notifica al usuario con instrucciones de pago
+
+    **Métodos de pago soportados:**
+    - \`transfer\`: Transferencia bancaria
+    - \`pago_movil\`: Pago móvil
+    - \`zelle\`: Zelle
+    - \`bitcoin\`: Bitcoin
+    - \`cash\`: Efectivo (sin referencia bancaria)
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Referencia bancaria generada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            orderId: { type: 'number', example: 123 },
+            paymentStatus: { type: 'string', example: 'pending_reference' },
+            reference: {
+              type: 'object',
+              properties: {
+                referenceNumber: { type: 'string', example: '12345678901234567890' },
+                bankCode: { type: 'string', example: '0102' },
+                amount: { type: 'number', example: 35.50 },
+                expiresAt: { type: 'string', format: 'date-time' },
+                instructions: { type: 'string', example: 'Realice la transferencia...' }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
   async confirmPayment(
     @Param('orderId') orderId: string,
     @Body() body: ConfirmDeliveryPaymentDto,
+    @Req() req: any,
   ) {
-    const order = await this.flow.confirmDeliveryPayment(Number(orderId), body.method);
-    return { data: order };
+    // Obtener información de la orden para calcular el monto
+    const order = await this.flow.getDeliveryStatus(Number(orderId));
+
+    if (!order) {
+      throw new Error('Orden no encontrada');
+    }
+
+    if (order.userId !== req.user.id) {
+      throw new Error('Esta orden no pertenece al usuario actual');
+    }
+
+    // Para pagos en efectivo, no necesitamos generar referencia
+    if (body.method === 'cash') {
+      const updated = await this.flow.confirmDeliveryPayment(Number(orderId), body.method);
+      return { data: { ...updated, paymentMethod: 'cash' } };
+    }
+
+    // Generar referencia bancaria usando el servicio de pagos venezolano
+    const reference = await this.paymentsService.generateBankReference({
+      serviceType: 'delivery',
+      serviceId: Number(orderId),
+      amount: Number(order.totalPrice || 0),
+      paymentMethod: body.method,
+      bankCode: body.bankCode,
+      userId: req.user.id
+    });
+
+    return {
+      data: {
+        orderId: Number(orderId),
+        paymentStatus: 'pending_reference',
+        reference: reference,
+        instructions: this.paymentsService.getPaymentInstructions(body.method, reference.referenceNumber)
+      }
+    };
   }
 
   @Post(':orderId/join')

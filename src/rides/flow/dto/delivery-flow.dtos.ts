@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, Length } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -60,22 +60,25 @@ export class CreateDeliveryOrderFlowDto {
 
 export class ConfirmDeliveryPaymentDto {
   @ApiProperty({
-    description: 'Método de pago para el pedido de delivery',
-    example: 'card',
-    enum: ['cash', 'card', 'wallet'],
-    enumName: 'DeliveryPaymentMethod'
+    description: 'Método de pago venezolano para el pedido de delivery',
+    example: 'transfer',
+    enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
+    enumName: 'VenezuelanDeliveryPaymentMethod'
   })
-  @IsIn(['cash', 'card', 'wallet'])
-  method: 'cash' | 'card' | 'wallet';
+  @IsIn(['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'])
+  method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin';
 
   @ApiPropertyOptional({
-    description: 'Client secret de Stripe para pagos con tarjeta. Requerido cuando method es "card"',
-    example: 'pi_1234567890_secret_abcdef123456',
-    type: 'string'
+    description: 'Código del banco venezolano (requerido para transfer y pago_movil)',
+    example: '0102',
+    minLength: 4,
+    maxLength: 4,
+    enum: ['0102', '0105', '0196', '0108'] // Banco Venezuela, Mercantil, BNC, Provincial
   })
   @IsOptional()
   @IsString()
-  clientSecret?: string;
+  @Length(4, 4)
+  bankCode?: string;
 }
 
 

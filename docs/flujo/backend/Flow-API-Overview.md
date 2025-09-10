@@ -21,9 +21,14 @@ Real-time (WebSocket)
 - Rooms: `ride-{rideId}`, `order-{orderId}`, `errand-{id}`, `parcel-{id}`
 - Eventos: ver cada documento específico (accepted, arrived, started, completed, picked_up, delivered, cancelled, driver:location:update)
 
-Pagos (Stripe)
-- Confirm-payment (method=card) retorna `clientSecret` y `paymentIntentId`.
-- Webhook (Stripe Controller) debe procesar updates a estados de pago.
+Sistema de Pagos Venezolano
+- **Pago único:** Confirm-payment genera referencias bancarias para pagos electrónicos
+- **Pagos múltiples:** POST /payments/initiate-multiple permite dividir pago en múltiples métodos
+- Referencias: 20 dígitos, expiran en 24 horas, válidas para bancos venezolanos (0102, 0105, 0196, 0108)
+- Métodos soportados: efectivo, transferencia, pago móvil, Zelle, Bitcoin
+- Grupos de pagos: UUID único para seguimiento de pagos múltiples
+- Estados: incomplete/complete/cancelled/expired para grupos de pagos
+- Confirmación manual: usuario confirma cada pago realizado después de efectuarlo externamente
 
 Errores Comunes
 - 400: Validación (DTOs), parámetros inválidos
@@ -37,6 +42,12 @@ Errores Comunes
 Buenas Prácticas
 - Enviar `Idempotency-Key` en acciones de aceptación, inicio, completado, pickup/deliver.
 - Unirse a rooms WS tras crear/aceptar para recibir updates en tiempo real.
-- Validar preferencia de pago (cash/card/wallet) antes de iniciar viaje/delivery.
+- Validar método de pago venezolano (cash/transfer/pago_movil/zelle/bitcoin) antes de iniciar viaje/delivery.
+- Para pagos electrónicos: proporcionar código de banco (bankCode) cuando se requiera.
+- Monitorear expiración de referencias bancarias (24 horas máximo).
+- **Pagos múltiples:** Usar cuando el monto sea alto (>50 USD) o usuario prefiera combinar métodos.
+- **Grupos de pagos:** Consultar estado regularmente para mostrar progreso al usuario.
+- **Confirmación parcial:** Confirmar cada pago inmediatamente después de realizarlo.
+- **Cancelación:** Cancelar grupo completo si usuario cambia de opinión antes de confirmar pagos.
 
 

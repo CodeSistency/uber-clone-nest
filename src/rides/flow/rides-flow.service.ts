@@ -52,22 +52,70 @@ export class RidesFlowService {
   }
 
   async selectTransportVehicle(rideId: number, tierId?: number, vehicleTypeId?: number) {
-    const ride = await this.prisma.ride.update({
-      where: { rideId },
-      data: {
-        tierId: tierId ?? undefined,
-        requestedVehicleTypeId: vehicleTypeId ?? undefined,
-      },
-      include: { tier: true, requestedVehicleType: true },
-    });
+    console.log(`🔍 selectTransportVehicle called with rideId: ${rideId}, tierId: ${tierId}, vehicleTypeId: ${vehicleTypeId}`);
 
-    this.gateway.server?.to(`ride-${rideId}`).emit('ride:updated', {
-      rideId,
-      tierId: ride.tierId,
-      vehicleTypeId: ride.requestedVehicleTypeId,
-    });
+    try {
+      // First check if ride exists
+      const existingRide = await this.prisma.ride.findUnique({
+        where: { rideId },
+      });
 
-    return ride;
+      console.log(`📊 Existing ride found:`, existingRide ? 'YES' : 'NO');
+
+      if (!existingRide) {
+        throw new Error(`Ride with id ${rideId} not found`);
+      }
+
+      // Prepare update data - only include fields that are provided
+      const updateData: any = {};
+      if (tierId !== undefined) {
+        updateData.tierId = tierId;
+      }
+      if (vehicleTypeId !== undefined) {
+        updateData.requestedVehicleTypeId = vehicleTypeId;
+      }
+
+      console.log(`📝 Update data prepared:`, updateData);
+
+      // Only update if there's something to update
+      if (Object.keys(updateData).length === 0) {
+        console.log(`🔄 No updates needed, fetching existing ride`);
+        const ride = await this.prisma.ride.findUnique({
+          where: { rideId },
+          include: { tier: true, requestedVehicleType: true },
+        });
+        console.log(`✅ Ride fetched successfully:`, ride ? 'YES' : 'NO');
+        return ride;
+      }
+
+      console.log(`🔄 Updating ride with data:`, updateData);
+      const ride = await this.prisma.ride.update({
+        where: { rideId },
+        data: updateData,
+        include: { tier: true, requestedVehicleType: true },
+      });
+
+      console.log(`✅ Ride updated successfully:`, ride ? 'YES' : 'NO');
+      console.log(`📊 Ride data:`, {
+        rideId: ride?.rideId,
+        tierId: ride?.tierId,
+        requestedVehicleTypeId: ride?.requestedVehicleTypeId
+      });
+
+      if (ride) {
+        this.gateway.server?.to(`ride-${rideId}`).emit('ride:updated', {
+          rideId,
+          tierId: ride.tierId,
+          vehicleTypeId: ride.requestedVehicleTypeId,
+        });
+        console.log(`📡 WebSocket event emitted`);
+      }
+
+      return ride;
+    } catch (error) {
+      console.error(`❌ Error in selectTransportVehicle:`, error);
+      throw error;
+    }
   }
 
   async requestTransportDriver(rideId: number) {
@@ -199,29 +247,14 @@ export class RidesFlowService {
   }
 
   async confirmDeliveryPayment(orderId: number, method: 'cash' | 'card' | 'wallet') {
-    let payment:
-      | { clientSecret?: string; paymentIntentId?: string }
-      | undefined;
     const order = await this.prisma.deliveryOrder.findUnique({
       where: { orderId },
       include: { user: true }
     });
     if (!order) throw new Error('Order not found');
 
-    if (method === 'card') {
-      try {
-        const pi = await this.stripeService.createPaymentIntent({
-          name: 'Delivery Payment',
-          email: order.user?.email || 'user@example.com',
-          amount: Number(order.totalPrice || 0) || 1,
-        } as any);
-        payment = {
-          clientSecret: pi.paymentIntent.client_secret,
-          paymentIntentId: pi.paymentIntent.id,
-        };
-      } catch (e) {}
-    }
-
+    // Para el sistema venezolano, solo marcamos como pendiente
+    // La referencia bancaria se generará desde el controlador
     const updated = await this.prisma.deliveryOrder.update({
       where: { orderId },
       data: { paymentStatus: 'pending' },
@@ -230,10 +263,10 @@ export class RidesFlowService {
     this.gateway.server?.to(`order-${orderId}`).emit('order:payment:initiated', {
       orderId,
       method,
-      paymentIntentId: payment?.paymentIntentId,
+      message: 'Esperando confirmación de pago venezolano'
     });
 
-    return { ...updated, ...payment };
+    return updated;
   }
 
   async getDeliveryStatus(orderId: number) {
@@ -356,6 +389,19 @@ export class RidesFlowService {
 
   async getErrandStatus(errandId: number) {
     return this.errands.get(errandId);
+  }
+
+  // Helper method to get transport ride status
+  async getTransportRideStatus(rideId: number) {
+    return this.prisma.ride.findUnique({
+      where: { rideId },
+      select: {
+        rideId: true,
+        userId: true,
+        farePrice: true,
+        paymentStatus: true
+      }
+    });
   }
 
   async cancelErrand(errandId: number, reason?: string) {

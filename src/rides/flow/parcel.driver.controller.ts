@@ -7,8 +7,7 @@ import { IdempotencyService } from '../../common/services/idempotency.service';
 import { ProofOfDeliveryDto } from './dto/parcel-flow.dtos';
 
 @ApiTags('parcel-flow-driver')
-@ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard, DriverGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('rides/flow/driver/parcel')
 export class ParcelDriverController {
   constructor(
@@ -17,7 +16,23 @@ export class ParcelDriverController {
   ) {}
 
   @Post(':id/accept')
-  @ApiOperation({ summary: 'Driver accepts parcel' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Conductor acepta envío de paquete',
+    description: `
+    **IMPORTANTE:** Solo conductores registrados pueden usar este endpoint.
+    **NOTA PARA DESARROLLADORES:** Agregar @UseGuards(DriverGuard) después de implementar la validación de conductores.
+
+    **¿Qué hace?**
+    - Asigna el envío de paquete al conductor autenticado
+    - Cambia el status del envío a 'accepted'
+    - Notifica al cliente que el envío fue aceptado
+
+    **Idempotencia:**
+    - Envía header \`Idempotency-Key\` para evitar duplicados
+    - TTL de 5 minutos para la misma key
+    `
+  })
   async accept(@Param('id') id: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
     if (key) {
@@ -30,7 +45,23 @@ export class ParcelDriverController {
   }
 
   @Post(':id/pickup')
-  @ApiOperation({ summary: 'Driver picks up parcel' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Conductor recoge el paquete',
+    description: `
+    **IMPORTANTE:** Solo conductores registrados pueden usar este endpoint.
+    **NOTA PARA DESARROLLADORES:** Agregar @UseGuards(DriverGuard) después de implementar la validación de conductores.
+
+    **¿Qué hace?**
+    - Marca que el conductor ha recogido el paquete del origen
+    - Cambia el status del envío a 'picked_up'
+    - Inicia el transporte del paquete
+
+    **Idempotencia:**
+    - Envía header \`Idempotency-Key\` para evitar duplicados
+    - TTL de 5 minutos para la misma key
+    `
+  })
   async pickup(@Param('id') id: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
     if (key) {
@@ -43,7 +74,24 @@ export class ParcelDriverController {
   }
 
   @Post(':id/deliver')
-  @ApiOperation({ summary: 'Driver delivers parcel with proof' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Conductor entrega el paquete',
+    description: `
+    **IMPORTANTE:** Solo conductores registrados pueden usar este endpoint.
+    **NOTA PARA DESARROLLADORES:** Agregar @UseGuards(DriverGuard) después de implementar la validación de conductores.
+
+    **¿Qué hace?**
+    - Marca la entrega exitosa del paquete
+    - Requiere proof of delivery (prueba de entrega)
+    - Cambia el status del envío a 'delivered'
+    - Procesa el pago correspondiente
+
+    **Idempotencia:**
+    - Envía header \`Idempotency-Key\` para evitar duplicados
+    - TTL de 5 minutos para la misma key
+    `
+  })
   async deliver(
     @Param('id') id: string,
     @Req() req: any,

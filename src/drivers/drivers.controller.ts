@@ -204,8 +204,21 @@ export class DriversController {
 
   @Put(':driverId/status')
   @ApiOperation({
-    summary: 'Update driver availability status',
-    description: 'Update the online/offline/busy status of a driver',
+    summary: '👑 Update driver availability status (Para administradores)',
+    description: `
+    **IMPORTANTE:** Este endpoint es para ADMINISTRADORES que quieren cambiar el status de CUALQUIER conductor.
+
+    **¿Para qué sirve?**
+    Permite a un administrador cambiar el estado de disponibilidad de cualquier conductor.
+
+    **¿Cómo funciona?**
+    - Requiere permisos de administrador
+    - El driverId debe especificarse en la URL
+    - Útil para soporte técnico o gestión de conductores
+
+    **⚠️ NOTA:** Si eres un CONDUCTOR y quieres cambiar TU PROPIO status, usa:
+    \`POST /rides/flow/driver/availability\`
+    `,
   })
   @ApiParam({
     name: 'driverId',

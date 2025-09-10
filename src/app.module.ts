@@ -13,6 +13,7 @@ import { EmergencyContactsModule } from './emergency-contacts/emergency-contacts
 import { ChatModule } from './chat/chat.module';
 import { SafetyModule } from './safety/safety.module';
 import { StripeModule } from './stripe/stripe.module';
+import { PaymentsModule } from './payments/payments.module';
 import { WebSocketModule } from './websocket/websocket.module';
 import { RedisModule } from './redis/redis.module';
 import { RealtimeModule } from './realtime/realtime.module';
@@ -39,6 +40,7 @@ import { RidesFlowModule } from './rides/flow/rides-flow.module';
     ChatModule,
     SafetyModule,
     StripeModule,
+    PaymentsModule,
     WebSocketModule,
     RedisModule,
     RealtimeModule,

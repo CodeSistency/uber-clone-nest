@@ -28,12 +28,19 @@ curl -X POST \
     "minutes":25,"tierId":1
   }'
 
-Confirm payment (card)
+Confirm payment (Venezuelan system)
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   http://localhost:3000/rides/flow/client/transport/123/confirm-payment \
-  -d '{"method":"card"}'
+  -d '{"method":"transfer","bankCode":"0102"}'
+
+# For cash payment (no reference needed)
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/transport/123/confirm-payment \
+  -d '{"method":"cash"}'
 
 cURL de ejemplo (Conductor)
 List available
@@ -134,37 +141,100 @@ Response 200
 Efectos
 - Notifica a conductores cercanos (`notifyNearbyDrivers`).
 
-4) Cliente - Confirmar pago
+4) Cliente - Confirmar pago (Sistema Venezolano)
 Endpoint
 POST rides/flow/client/transport/:rideId/confirm-payment
 
+**OPCIONES DE PAGO:**
+
+**A) Pago único (existente)**
 Body
 {
-  "method": "cash" | "card",
-  "clientSecret": "opcional-para-stripe"
+  "method": "cash" | "transfer" | "pago_movil" | "zelle" | "bitcoin",
+  "bankCode": "0102 | 0105 | 0196 | 0108" // Requerido para transfer/pago_movil
+}
+
+**B) Pagos múltiples (nuevo)**
+Usa: POST /payments/initiate-multiple
+Body
+{
+  "serviceType": "ride",
+  "serviceId": 123,
+  "totalAmount": 75.50,
+  "payments": [
+    { "method": "transfer", "amount": 25.00, "bankCode": "0102" },
+    { "method": "pago_movil", "amount": 30.50, "bankCode": "0105" },
+    { "method": "cash", "amount": 20.00 }
+  ]
 }
 
 Response 200 (cash)
 {
   "data": {
     "rideId": 123,
-    "paymentStatus": "pending"
+    "paymentStatus": "pending",
+    "paymentMethod": "cash"
   }
 }
 
-Response 200 (card)
+Response 200 (transfer/pago_movil/zelle/bitcoin)
 {
   "data": {
     "rideId": 123,
-    "paymentStatus": "pending",
-    "clientSecret": "pi_123_secret_...",
-    "paymentIntentId": "pi_123"
+    "paymentStatus": "pending_reference",
+    "reference": {
+      "referenceNumber": "12345678901234567890",
+      "bankCode": "0102",
+      "amount": 25.50,
+      "expiresAt": "2025-09-10T15:30:00.000Z",
+      "instructions": "Realice la transferencia al banco..."
+    }
   }
 }
 
 Efectos
-- Marca/inicia el flujo de pago. Para tarjeta, integrar con Stripe posteriormente.
-- Emite WS: `ride:payment:initiated`.
+- Para efectivo: marca como pendiente sin generar referencia
+- Para pagos electrónicos: genera referencia bancaria de 20 dígitos
+- Envía notificación con instrucciones de pago
+- Emite WS: `ride:payment:initiated`
+- Referencia expira en 24 horas
+
+**SISTEMA DE PAGOS MÚLTIPLES**
+
+**Ventajas:**
+- ✅ Flexibilidad para combinar métodos de pago
+- ✅ Mejor experiencia de usuario
+- ✅ Reducción de fricción en pagos grandes
+- ✅ Adaptable a diferentes situaciones económicas
+
+**Flujo de pagos múltiples:**
+1. Usuario selecciona "Pagos múltiples"
+2. Sistema valida que sumatoria = total del servicio
+3. Se genera grupo de pagos con UUID único
+4. Para cada método electrónico: se crea referencia bancaria
+5. Para efectivo: se registra monto (sin referencia)
+6. Usuario confirma cada pago individualmente
+7. Sistema actualiza progreso en tiempo real
+8. Cuando todos los pagos están confirmados → servicio se activa
+
+**Confirmación de pagos múltiples:**
+```
+POST /payments/confirm-partial
+{
+  "referenceNumber": "12345678901234567890",
+  "bankCode": "0102"
+}
+```
+
+**Estado del grupo:**
+```
+GET /payments/group-status/{groupId}
+```
+
+**Cancelación:**
+```
+POST /payments/cancel-group/{groupId}
+```
 
 5) Cliente - Unirse al tracking en tiempo real
 Endpoint
@@ -276,8 +346,12 @@ Eventos WebSocket Relacionados
 - ride:accept|arrived|started|completed|cancelled → broadcast de estado a room del ride.
 
 Notas de Integración
-- Pagos con Stripe: `confirm-payment` está preparado para integrar PaymentIntent (usar `clientSecret`).
-- Notificaciones: `NotificationsService.notifyRideStatusUpdate` envía push/SMS y persiste en BD.
-- Escalabilidad: usar adapter Redis del gateway para múltiples instancias.
+- Sistema de Pagos Venezolano: `confirm-payment` genera referencias bancarias para pagos electrónicos
+- Bancos soportados: Banco Venezuela (0102), Mercantil (0105), BNC (0196), Provincial (0108)
+- Métodos de pago: efectivo, transferencia, pago móvil, Zelle, Bitcoin
+- Referencias bancarias: 20 dígitos, expiran en 24 horas
+- Confirmación de pagos: usuario debe confirmar pago realizado después de efectuarlo
+- Notificaciones: `NotificationsService` envía instrucciones de pago y confirmaciones
+- Escalabilidad: usar adapter Redis del gateway para múltiples instancias
 
 

@@ -18,10 +18,15 @@ curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/jso
   http://localhost:3000/rides/flow/client/delivery/create-order \
   -d '{"storeId":1,"items":[{"productId":10,"quantity":2}],"deliveryAddress":"123 Main","deliveryLatitude":10.5,"deliveryLongitude":-66.9}'
 
-Confirm payment (card)
+Confirm payment (Venezuelan system)
 curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   http://localhost:3000/rides/flow/client/delivery/123/confirm-payment \
-  -d '{"method":"card"}'
+  -d '{"method":"transfer","bankCode":"0102"}'
+
+# For cash payment (no reference needed)
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/delivery/123/confirm-payment \
+  -d '{"method":"cash"}'
 
 cURL (Conductor)
 List available
@@ -44,12 +49,25 @@ Body: CreateOrderDto (ver src/orders/dto/create-order.dto.ts)
 Response 200: { data: { orderId, totalPrice, status: 'pending', ... } }
 Efectos: Crea registro, items, emite WS `order:created`.
 
-2) Confirmar pago
+2) Confirmar pago (Sistema Venezolano)
 POST rides/flow/client/delivery/:orderId/confirm-payment
-Body: { method: 'cash' | 'card' | 'wallet', clientSecret?: string }
-Response 200 (cash/wallet): { data: { orderId, paymentStatus: 'pending' } }
-Response 200 (card): { data: { orderId, paymentStatus: 'pending', clientSecret: 'pi_.._secret', paymentIntentId: 'pi_..' } }
-Efectos: Inicia pago; listo para integrar Stripe.
+Body: { method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin', bankCode?: string }
+Response 200 (cash): { data: { orderId, paymentStatus: 'pending', paymentMethod: 'cash' } }
+Response 200 (transfer/pago_movil/zelle/bitcoin):
+{
+  "data": {
+    "orderId": 123,
+    "paymentStatus": "pending_reference",
+    "reference": {
+      "referenceNumber": "12345678901234567890",
+      "bankCode": "0102",
+      "amount": 35.50,
+      "expiresAt": "2025-09-10T15:30:00.000Z",
+      "instructions": "Realice la transferencia al banco..."
+    }
+  }
+}
+Efectos: Para efectivo marca como pendiente. Para pagos electrónicos genera referencia bancaria de 20 dígitos que expira en 24 horas.
 
 3) Unirse al tracking
 POST rides/flow/client/delivery/:orderId/join

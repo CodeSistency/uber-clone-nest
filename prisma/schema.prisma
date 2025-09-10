@@ -87,6 +87,10 @@ model User {
   // Group-based permission system relations
   userGroups       UserGroup[]
 
+  // Venezuelan payment system relations
+  paymentReferences PaymentReference[]
+  paymentGroups     PaymentGroup[]
+
   // Admin-specific relations
   adminAuditLogs   AdminAuditLog[]
 
@@ -538,6 +542,87 @@ model AdminAuditLog {
   admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("admin_audit_logs")
+}
+
+// =========================================
+// VENEZUELAN PAYMENT SYSTEM TABLES
+// =========================================
+
+// Stores bank payment references for Venezuelan payment system
+model PaymentReference {
+  id             Int      @id @default(autoincrement())
+  referenceNumber String   @unique @db.VarChar(20) // 20-digit reference number
+  bankCode       String   @db.VarChar(10) // Bank code (0102, 0105, etc.)
+  amount         Decimal  @db.Decimal(10, 2) // Payment amount in VES
+  currency       String   @default("VES") @db.VarChar(3)
+  userId         Int      @map("user_id") // User who generated the reference
+  serviceType    String   @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
+  serviceId      Int      @map("service_id") // ID of the service (rideId, orderId, etc.)
+  paymentMethod  String   @db.VarChar(20) // 'transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'
+  status         String   @default("pending") @db.VarChar(20) // 'pending', 'confirmed', 'expired', 'failed'
+  isPartial      Boolean  @default(false) @map("is_partial") // True for partial payments
+  groupId        String?  @map("group_id") // UUID for grouping multiple payments
+  expiresAt      DateTime @map("expires_at") // Reference expiration time
+  confirmedAt    DateTime? @map("confirmed_at") // When payment was confirmed
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentGroup     PaymentGroup?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  bankTransactions BankTransaction[]
+
+  @@index([referenceNumber])
+  @@index([userId, status])
+  @@index([serviceType, serviceId])
+  @@index([serviceType, serviceId, isPartial])
+  @@index([groupId])
+  @@index([expiresAt])
+  @@map("payment_references")
+}
+
+// Tracks payment groups for multi-method payments
+model PaymentGroup {
+  id             String   @id @default(cuid()) // UUID for payment groups
+  userId         Int      @map("user_id")
+  serviceType    String   @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
+  serviceId      Int      @map("service_id") // ID of the service
+  totalAmount    Decimal  @map("total_amount") @db.Decimal(10, 2) // Total amount to pay
+  paidAmount     Decimal  @map("paid_amount") @default(0.00) @db.Decimal(10, 2) // Amount paid so far
+  remainingAmount Decimal @map("remaining_amount") @db.Decimal(10, 2) // Amount still needed
+  status         String   @default("incomplete") @db.VarChar(20) // 'incomplete', 'complete', 'cancelled', 'expired'
+  expiresAt      DateTime @map("expires_at") // Group expiration (24 hours from first payment)
+  completedAt    DateTime? @map("completed_at") // When payment was fully completed
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentReferences PaymentReference[]
+
+  @@index([userId])
+  @@index([serviceType, serviceId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("payment_groups")
+}
+
+// Stores confirmed bank transactions
+model BankTransaction {
+  id                   Int      @id @default(autoincrement())
+  paymentReferenceId   Int      @map("payment_reference_id")
+  bankTransactionId    String   @db.VarChar(100) // Transaction ID from bank
+  bankResponse         Json     @map("bank_response") // Full response from bank API
+  confirmedAmount      Decimal  @db.Decimal(10, 2) // Confirmed amount by bank
+  confirmationTimestamp DateTime @map("confirmation_timestamp")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  // Relations
+  paymentReference PaymentReference @relation(fields: [paymentReferenceId], references: [id], onDelete: Cascade)
+
+  @@index([paymentReferenceId])
+  @@index([bankTransactionId])
+  @@map("bank_transactions")
 }
 
 // =========================================
