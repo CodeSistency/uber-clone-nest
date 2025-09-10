@@ -11,6 +11,25 @@ curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/jso
   http://localhost:3000/rides/flow/client/errand/create \
   -d '{"description":"Comprar...","pickupAddress":"...","pickupLat":10.5,"pickupLng":-66.9,"dropoffAddress":"...","dropoffLat":10.49,"dropoffLng":-66.91}'
 
+# ERROR EXAMPLES - Edge Cases
+# Invalid address format
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/errand/create \
+  -d '{"description":"Buy groceries","pickupAddress":"","pickupLat":91,"pickupLng":-66.9,"dropoffAddress":"Home","dropoffLat":10.49,"dropoffLng":-66.91}'
+# Response: {"statusCode":400,"message":"Invalid latitude range"}
+
+# Missing required fields
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/errand/create \
+  -d '{"description":"Buy groceries"}'
+# Response: {"statusCode":400,"message":"pickupAddress is required"}
+
+# Duplicate errand creation (idempotency test)
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/errand/create \
+  -d '{"description":"Buy same items","pickupAddress":"Store A","pickupLat":10.5,"pickupLng":-66.9,"dropoffAddress":"Home","dropoffLat":10.49,"dropoffLng":-66.91}'
+
 Complete (idempotent)
 curl -X POST -H "Authorization: Bearer $DRIVER_TOKEN" -H "Idempotency-Key: $(uuidgen)" \
   http://localhost:3000/rides/flow/driver/errand/1/complete
@@ -102,8 +121,174 @@ Idempotencia (parcel)
 - TTL 5 minutos.
 
 WS & Notificaciones
-- Eventos WS: `errand:created|accepted|shopping_update|started|completed|cancelled`, `parcel:created|accepted|picked_up|delivered|cancelled`.
-- Notificaciones push en aceptación, actualizaciones y finalización.
+
+## WebSocket Events - Detailed Payloads
+
+### Errand Events
+
+#### Errand Status Events
+```javascript
+// Event: errand:created
+{
+  "id": 123,
+  "status": "requested",
+  "description": "Comprar víveres y medicamentos",
+  "pickupAddress": "Supermercado Éxito, Calle 123",
+  "dropoffAddress": "Casa del cliente, Calle 45",
+  "estimatedCost": 0,
+  "timestamp": "2025-09-10T15:30:00.000Z"
+}
+
+// Event: errand:accepted
+{
+  "id": 123,
+  "status": "accepted",
+  "driverId": 99,
+  "driverInfo": {
+    "firstName": "Carlos",
+    "lastName": "Martínez",
+    "rating": 4.7,
+    "vehicle": "Carro"
+  },
+  "estimatedArrival": "2025-09-10T15:45:00.000Z",
+  "timestamp": "2025-09-10T15:35:00.000Z"
+}
+
+// Event: errand:shopping_update
+{
+  "id": 123,
+  "status": "shopping_in_progress",
+  "shoppingUpdate": {
+    "itemsCost": 85.50,
+    "notes": "Encontré todos los productos solicitados. El paracetamol estaba en promoción.",
+    "photos": [
+      "https://storage.example.com/shopping-receipt-123.jpg"
+    ]
+  },
+  "timestamp": "2025-09-10T16:00:00.000Z"
+}
+
+// Event: errand:started
+{
+  "id": 123,
+  "status": "en_route",
+  "message": "Saliendo hacia su dirección con las compras",
+  "totalCost": 87.50,
+  "timestamp": "2025-09-10T16:05:00.000Z"
+}
+
+// Event: errand:completed
+{
+  "id": 123,
+  "status": "completed",
+  "finalCost": 87.50,
+  "serviceFee": 15.00,
+  "totalAmount": 102.50,
+  "timestamp": "2025-09-10T16:25:00.000Z"
+}
+```
+
+#### Errand Chat Events
+```javascript
+// Event: errand:chat:message
+{
+  "errandId": 123,
+  "senderId": 456,
+  "senderType": "customer",
+  "message": "¿Encontraste el medicamento específico que te mencioné?",
+  "timestamp": "2025-09-10T15:55:00.000Z"
+}
+
+// Broadcast: errand:chat:new-message
+{
+  "errandId": 123,
+  "senderId": 99,
+  "senderType": "driver",
+  "message": "Sí, conseguí la marca que especificaste. También estaba en oferta.",
+  "timestamp": "2025-09-10T15:55:30.000Z"
+}
+```
+
+### Parcel Events
+
+#### Parcel Status Events
+```javascript
+// Event: parcel:created
+{
+  "id": 456,
+  "status": "requested",
+  "pickupAddress": "Oficina Principal, Calle 100",
+  "dropoffAddress": "Sucursal Norte, Av. Principal",
+  "type": "documents",
+  "description": "Documentos legales urgentes",
+  "timestamp": "2025-09-10T14:30:00.000Z"
+}
+
+// Event: parcel:accepted
+{
+  "id": 456,
+  "status": "accepted",
+  "driverId": 88,
+  "driverInfo": {
+    "firstName": "Ana",
+    "lastName": "López",
+    "rating": 4.9,
+    "vehicle": "Moto"
+  },
+  "estimatedPickupTime": "2025-09-10T14:45:00.000Z",
+  "timestamp": "2025-09-10T14:35:00.000Z"
+}
+
+// Event: parcel:picked_up
+{
+  "id": 456,
+  "status": "picked_up",
+  "pickupTime": "2025-09-10T14:50:00.000Z",
+  "proofOfPickup": {
+    "photoUrl": "https://storage.example.com/pickup-proof-456.jpg",
+    "signature": null
+  },
+  "timestamp": "2025-09-10T14:50:00.000Z"
+}
+
+// Event: parcel:delivered
+{
+  "id": 456,
+  "status": "delivered",
+  "deliveryTime": "2025-09-10T15:15:00.000Z",
+  "proofOfDelivery": {
+    "photoUrl": "https://storage.example.com/delivery-proof-456.jpg",
+    "signatureUrl": "https://storage.example.com/signature-456.png",
+    "recipientName": "María González"
+  },
+  "finalPrice": 25.00,
+  "timestamp": "2025-09-10T15:15:00.000Z"
+}
+```
+
+#### Driver Location Updates
+```javascript
+// Event: driver:location:update (for both errand and parcel)
+{
+  "serviceId": 123,
+  "serviceType": "errand", // or "parcel"
+  "driverId": 99,
+  "location": {
+    "lat": 10.4980,
+    "lng": -66.9000,
+    "accuracy": 4.2,
+    "speed": 35.5,
+    "heading": 90.0,
+    "timestamp": "2025-09-10T16:10:00.000Z"
+  },
+  "status": "en_route",
+  "estimatedArrival": "2025-09-10T16:20:00.000Z",
+  "distance": 1.8 // km
+}
+```
+
+- Notificaciones push en aceptación, actualizaciones de compras, cambios de estado y finalización.
+- Templates específicos para cada tipo de evento (errand vs parcel).
 
 Notas
 - Estos flujos usan orquestación en memoria para prototipado; se puede persistir en Prisma con un modelo `ServiceRequest` en el futuro.

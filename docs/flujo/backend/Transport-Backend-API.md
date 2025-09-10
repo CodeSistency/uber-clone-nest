@@ -42,6 +42,31 @@ curl -X POST \
   http://localhost:3000/rides/flow/client/transport/123/confirm-payment \
   -d '{"method":"cash"}'
 
+# ERROR EXAMPLES - Edge Cases
+# Invalid bank code
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/transport/123/confirm-payment \
+  -d '{"method":"transfer","bankCode":"9999"}'
+# Response: {"statusCode":400,"message":"Código de banco inválido: 9999"}
+
+# Expired ride (already completed)
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/transport/999/confirm-payment \
+  -d '{"method":"cash"}'
+# Response: {"statusCode":404,"message":"Viaje no encontrado"}
+
+# Insufficient permissions (wrong user)
+curl -X POST \
+  -H "Authorization: Bearer $WRONG_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:3000/rides/flow/client/transport/123/confirm-payment \
+  -d '{"method":"cash"}'
+# Response: {"statusCode":403,"message":"Este viaje no pertenece al usuario actual"}
+
 cURL de ejemplo (Conductor)
 List available
 curl -H "Authorization: Bearer $DRIVER_TOKEN" \
@@ -156,7 +181,9 @@ Body
 
 **B) Pagos múltiples (nuevo)**
 Usa: POST /payments/initiate-multiple
-Body
+
+**ESCENARIO SIMPLE - 3 métodos**
+```json
 {
   "serviceType": "ride",
   "serviceId": 123,
@@ -167,6 +194,50 @@ Body
     { "method": "cash", "amount": 20.00 }
   ]
 }
+```
+
+**ESCENARIO COMPLEJO - 4 métodos con montos altos**
+```json
+{
+  "serviceType": "ride",
+  "serviceId": 456,
+  "totalAmount": 250.00,
+  "payments": [
+    { "method": "transfer", "amount": 100.00, "bankCode": "0102" },
+    { "method": "pago_movil", "amount": 75.00, "bankCode": "0105" },
+    { "method": "zelle", "amount": 50.00 },
+    { "method": "cash", "amount": 25.00 }
+  ]
+}
+```
+
+**ESCENARIO EMPRESARIAL - Pago completo con múltiples referencias**
+```json
+{
+  "serviceType": "delivery",
+  "serviceId": 789,
+  "totalAmount": 500.00,
+  "payments": [
+    { "method": "transfer", "amount": 200.00, "bankCode": "0102" },
+    { "method": "transfer", "amount": 150.00, "bankCode": "0105" },
+    { "method": "pago_movil", "amount": 100.00, "bankCode": "0196" },
+    { "method": "bitcoin", "amount": 50.00 }
+  ]
+}
+```
+
+**ESCENARIO DE EMERGENCIA - Pago mínimo requerido**
+```json
+{
+  "serviceType": "ride",
+  "serviceId": 101,
+  "totalAmount": 45.00,
+  "payments": [
+    { "method": "pago_movil", "amount": 15.00, "bankCode": "0108" },
+    { "method": "cash", "amount": 30.00 }
+  ]
+}
+```
 
 Response 200 (cash)
 {
@@ -341,9 +412,130 @@ Autorización y Seguridad
 - Ownership: el servicio utiliza `req.user.id`; se recomienda reforzar con validaciones adicionales en capa de servicio según reglas del negocio.
 
 Eventos WebSocket Relacionados
-- driver:location:update → broadcast a `ride-{rideId}` con ubicación del conductor.
-- ride:join → añade usuario al tracking.
-- ride:accept|arrived|started|completed|cancelled → broadcast de estado a room del ride.
+
+## WebSocket Events - Detailed Payloads
+
+### Driver Location Updates
+```javascript
+// Event: driver:location:update
+{
+  "driverId": 99,
+  "location": {
+    "lat": 10.4980,
+    "lng": -66.9000,
+    "accuracy": 5.2,
+    "timestamp": "2025-09-10T15:30:00.000Z"
+  },
+  "rideId": 123,
+  "speed": 45.5, // km/h
+  "heading": 180.0 // degrees
+}
+```
+
+### Ride Status Events
+```javascript
+// Event: ride:accepted
+{
+  "rideId": 123,
+  "driverId": 99,
+  "status": "accepted",
+  "driverInfo": {
+    "firstName": "Carlos",
+    "lastName": "Rodríguez",
+    "rating": 4.8,
+    "carModel": "Toyota Camry",
+    "licensePlate": "ABC-123"
+  },
+  "estimatedArrival": "2025-09-10T15:35:00.000Z",
+  "timestamp": "2025-09-10T15:30:00.000Z"
+}
+
+// Event: ride:arrived
+{
+  "rideId": 123,
+  "status": "arrived",
+  "message": "Conductor ha llegado al punto de recogida",
+  "timestamp": "2025-09-10T15:35:00.000Z"
+}
+
+// Event: ride:started
+{
+  "rideId": 123,
+  "status": "in_progress",
+  "message": "Viaje iniciado",
+  "timestamp": "2025-09-10T15:40:00.000Z"
+}
+
+// Event: ride:completed
+{
+  "rideId": 123,
+  "status": "completed",
+  "finalFare": 25.50,
+  "distance": 12.5, // km
+  "duration": 28, // minutes
+  "paymentStatus": "paid",
+  "timestamp": "2025-09-10T16:08:00.000Z"
+}
+```
+
+### Ride Join Event
+```javascript
+// Event: ride:join (sent by client)
+{
+  "rideId": 123,
+  "userId": 456,
+  "userType": "passenger"
+}
+
+// Response: ride:joined
+{
+  "ok": true,
+  "room": "ride-123",
+  "userId": 456,
+  "currentStatus": "accepted",
+  "driverLocation": {
+    "lat": 10.4980,
+    "lng": -66.9000
+  }
+}
+```
+
+### Emergency Events
+```javascript
+// Event: emergency:sos
+{
+  "userId": 456,
+  "rideId": 123,
+  "location": {
+    "lat": 10.4980,
+    "lng": -66.9000
+  },
+  "message": "Necesito ayuda, el conductor se comporta de manera extraña",
+  "emergencyType": "sos",
+  "timestamp": "2025-09-10T15:45:00.000Z"
+}
+```
+
+### Chat Events
+```javascript
+// Event: chat:message
+{
+  "rideId": 123,
+  "senderId": 456,
+  "senderType": "passenger",
+  "message": "¿Cuánto tiempo tardará en llegar?",
+  "timestamp": "2025-09-10T15:32:00.000Z"
+}
+
+// Broadcast: chat:new-message
+{
+  "rideId": 123,
+  "senderId": 99,
+  "senderType": "driver",
+  "message": "Estaré ahí en 5 minutos",
+  "timestamp": "2025-09-10T15:32:30.000Z"
+}
+```
 
 Notas de Integración
 - Sistema de Pagos Venezolano: `confirm-payment` genera referencias bancarias para pagos electrónicos
