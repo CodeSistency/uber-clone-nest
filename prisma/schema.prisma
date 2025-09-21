@@ -19,106 +19,103 @@ model VehicleType {
   id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(50) // "car", "motorcycle", "bicycle", "truck"
   displayName String   @db.VarChar(50) // "Carro", "Moto", "Bicicleta", "Camión"
-  icon        String?  // URL del ícono
+  icon        String? // URL del ícono
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  drivers     Driver[]
-  rides       Ride[]   @relation("RequestedVehicleType")
+  drivers Driver[]
+  rides   Ride[]   @relation("RequestedVehicleType")
 
   @@map("vehicle_types")
 }
 
 // Stores user information with support for regular users and administrators
 model User {
-  id          Int       @id @default(autoincrement())
-  name        String    @db.VarChar(100)
-  email       String    @unique @db.VarChar(100)
-  password    String?   @db.VarChar(255) // Hashed password for authentication
-  isActive    Boolean   @default(true) @map("is_active")
-  lastLogin   DateTime? @map("last_login")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(100)
+  email     String    @unique @db.VarChar(100)
+  password  String?   @db.VarChar(255) // Hashed password for authentication
+  isActive  Boolean   @default(true) @map("is_active")
+  lastLogin DateTime? @map("last_login")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Profile information
-  phone         String?   @db.VarChar(20)
-  dateOfBirth   DateTime? @map("date_of_birth")
-  gender        String?   @db.VarChar(20) // 'male', 'female', 'other', 'prefer_not_to_say'
-  profileImage  String?   @map("profile_image") // URL to profile image
-  address       String?   @db.VarChar(255)
-  city          String?   @db.VarChar(100)
-  state         String?   @db.VarChar(100)
-  country       String?   @db.VarChar(100)
-  postalCode    String?   @map("postal_code") @db.VarChar(20)
+  phone        String?   @db.VarChar(20)
+  dateOfBirth  DateTime? @map("date_of_birth")
+  gender       String?   @db.VarChar(20) // 'male', 'female', 'other', 'prefer_not_to_say'
+  profileImage String?   @map("profile_image") // URL to profile image
+  address      String?   @db.VarChar(255)
+  city         String?   @db.VarChar(100)
+  state        String?   @db.VarChar(100)
+  country      String?   @db.VarChar(100)
+  postalCode   String?   @map("postal_code") @db.VarChar(20)
 
   // Preferences
-  preferredLanguage String? @map("preferred_language") @db.VarChar(10) @default("es") // 'es', 'en', etc.
-  timezone          String? @db.VarChar(50) @default("America/Caracas")
-  currency          String? @db.VarChar(10) @default("USD") // 'USD', 'EUR', etc.
+  preferredLanguage String? @default("es") @map("preferred_language") @db.VarChar(10) // 'es', 'en', etc.
+  timezone          String? @default("America/Caracas") @db.VarChar(50)
+  currency          String? @default("USD") @db.VarChar(10) // 'USD', 'EUR', etc.
 
   // Verification status
-  emailVerified     Boolean @default(false) @map("email_verified")
-  phoneVerified     Boolean @default(false) @map("phone_verified")
-  identityVerified  Boolean @default(false) @map("identity_verified")
+  emailVerified    Boolean @default(false) @map("email_verified")
+  phoneVerified    Boolean @default(false) @map("phone_verified")
+  identityVerified Boolean @default(false) @map("identity_verified")
 
   // Admin-specific fields (optional - only populated for admin users)
-  userType          String?   @default("user") @map("user_type") // 'user' or 'admin'
-  adminRole         String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support'
-  adminPermissions  String[]  @default([]) @map("admin_permissions") // Array of permission strings
-  lastAdminLogin    DateTime? @map("last_admin_login")
-  adminCreatedAt    DateTime? @map("admin_created_at")
-  adminUpdatedAt    DateTime? @updatedAt @map("admin_updated_at")
+  userType         String?   @default("user") @map("user_type") // 'user' or 'admin'
+  adminRole        String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support'
+  adminPermissions String[]  @default([]) @map("admin_permissions") // Array of permission strings
+  lastAdminLogin   DateTime? @map("last_admin_login")
+  adminCreatedAt   DateTime? @map("admin_created_at")
+  adminUpdatedAt   DateTime? @updatedAt @map("admin_updated_at")
 
   // Relations (available for both regular users and admins)
-  rides            Ride[]
-  deliveryOrders   DeliveryOrder[]
-  wallet           Wallet?
-  ratings          Rating[]
-  emergencyContacts EmergencyContact[]
-  sentMessages     ChatMessage[] @relation("MessageSender")
-  receivedRatings  Rating[] @relation("RatedUser")
+  rides                   Ride[]
+  deliveryOrders          DeliveryOrder[]
+  wallet                  Wallet?
+  ratings                 Rating[]
+  emergencyContacts       EmergencyContact[]
+  sentMessages            ChatMessage[]            @relation("MessageSender")
+  receivedRatings         Rating[]                 @relation("RatedUser")
   notificationPreferences NotificationPreferences?
-  pushTokens       PushToken[]
-  notifications    Notification[]
-  ownedStores      Store[]
-
-  // Group-based permission system relations
-  userGroups       UserGroup[]
+  pushTokens              PushToken[]
+  notifications           Notification[]
+  ownedStores             Store[]
 
   // Venezuelan payment system relations
   paymentReferences PaymentReference[]
   paymentGroups     PaymentGroup[]
 
   // Admin-specific relations
-  adminAuditLogs   AdminAuditLog[]
+  adminAuditLogs AdminAuditLog[]
 
   @@map("users")
 }
 
 // Stores driver/courier information, their vehicle, and status
 model Driver {
-  id                   Int      @id @default(autoincrement())
-  firstName            String   @map("first_name") @db.VarChar(50)
-  lastName             String   @map("last_name") @db.VarChar(50)
-  profileImageUrl      String?  @map("profile_image_url")
-  carImageUrl          String?  @map("car_image_url")
-  carModel             String?  @map("car_model") @db.VarChar(100)
-  licensePlate         String?  @unique @map("license_plate") @db.VarChar(20)
-  carSeats             Int      @map("car_seats")
-  vehicleTypeId        Int?     @map("vehicle_type_id") // Nueva relación con tipo de vehículo
-  status               String   @default("offline") @db.VarChar(20)
-  verificationStatus   String   @default("pending") @map("verification_status") @db.VarChar(20)
-  canDoDeliveries      Boolean  @default(false) @map("can_do_deliveries")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+  id                 Int      @id @default(autoincrement())
+  firstName          String   @map("first_name") @db.VarChar(50)
+  lastName           String   @map("last_name") @db.VarChar(50)
+  profileImageUrl    String?  @map("profile_image_url")
+  carImageUrl        String?  @map("car_image_url")
+  carModel           String?  @map("car_model") @db.VarChar(100)
+  licensePlate       String?  @unique @map("license_plate") @db.VarChar(20)
+  carSeats           Int      @map("car_seats")
+  vehicleTypeId      Int?     @map("vehicle_type_id") // Nueva relación con tipo de vehículo
+  status             String   @default("offline") @db.VarChar(20)
+  verificationStatus String   @default("pending") @map("verification_status") @db.VarChar(20)
+  canDoDeliveries    Boolean  @default(false) @map("can_do_deliveries")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  vehicleType     VehicleType?    @relation(fields: [vehicleTypeId], references: [id])
-  documents       DriverDocument[]
-  rides           Ride[]
-  deliveryOrders  DeliveryOrder[]
+  vehicleType    VehicleType?     @relation(fields: [vehicleTypeId], references: [id])
+  documents      DriverDocument[]
+  rides          Ride[]
+  deliveryOrders DeliveryOrder[]
 
   @@map("drivers")
 }
@@ -159,22 +156,22 @@ model RideTier {
 
 // Stores information about each ride
 model Ride {
-  rideId                   Int      @id @default(autoincrement()) @map("ride_id")
-  originAddress            String   @map("origin_address") @db.VarChar(255)
-  destinationAddress       String   @map("destination_address") @db.VarChar(255)
-  originLatitude           Decimal  @map("origin_latitude") @db.Decimal(9, 6)
-  originLongitude          Decimal  @map("origin_longitude") @db.Decimal(9, 6)
-  destinationLatitude      Decimal  @map("destination_latitude") @db.Decimal(9, 6)
-  destinationLongitude     Decimal @map("destination_longitude") @db.Decimal(9, 6)
-  rideTime                 Int      @map("ride_time")
-  farePrice                Decimal  @map("fare_price") @db.Decimal(10, 2)
-  paymentStatus            String   @map("payment_status") @db.VarChar(20)
-  driverId                 Int?     @map("driver_id")
-  userId                   Int      @map("user_id")
-  tierId                   Int?     @map("tier_id")
-  requestedVehicleTypeId   Int?     @map("requested_vehicle_type_id") // Tipo de vehículo solicitado
-  scheduledFor             DateTime? @map("scheduled_for")
-  createdAt                DateTime @default(now()) @map("created_at")
+  rideId                 Int       @id @default(autoincrement()) @map("ride_id")
+  originAddress          String    @map("origin_address") @db.VarChar(255)
+  destinationAddress     String    @map("destination_address") @db.VarChar(255)
+  originLatitude         Decimal   @map("origin_latitude") @db.Decimal(9, 6)
+  originLongitude        Decimal   @map("origin_longitude") @db.Decimal(9, 6)
+  destinationLatitude    Decimal   @map("destination_latitude") @db.Decimal(9, 6)
+  destinationLongitude   Decimal   @map("destination_longitude") @db.Decimal(9, 6)
+  rideTime               Int       @map("ride_time")
+  farePrice              Decimal   @map("fare_price") @db.Decimal(10, 2)
+  paymentStatus          String    @map("payment_status") @db.VarChar(20)
+  driverId               Int?      @map("driver_id")
+  userId                 Int       @map("user_id")
+  tierId                 Int?      @map("tier_id")
+  requestedVehicleTypeId Int?      @map("requested_vehicle_type_id") // Tipo de vehículo solicitado
+  scheduledFor           DateTime? @map("scheduled_for")
+  createdAt              DateTime  @default(now()) @map("created_at")
 
   // Relations
   driver               Driver?       @relation(fields: [driverId], references: [id])
@@ -193,40 +190,40 @@ model Ride {
 
 // Represents businesses on the platform (restaurants, shops, etc.)
 model Store {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(150)
-  address      String   @db.VarChar(255)
-  latitude     Decimal  @db.Decimal(9, 6)
-  longitude    Decimal  @db.Decimal(9, 6)
-  category     String?  @db.VarChar(50)
-  cuisineType  String?  @map("cuisine_type") @db.VarChar(50)
-  logoUrl      String?  @map("logo_url")
-  rating       Decimal  @default(0.00) @db.Decimal(3, 2)
-  isOpen       Boolean  @default(true) @map("is_open")
-  ownerId      Int?     @map("owner_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(150)
+  address     String   @db.VarChar(255)
+  latitude    Decimal  @db.Decimal(9, 6)
+  longitude   Decimal  @db.Decimal(9, 6)
+  category    String?  @db.VarChar(50)
+  cuisineType String?  @map("cuisine_type") @db.VarChar(50)
+  logoUrl     String?  @map("logo_url")
+  rating      Decimal  @default(0.00) @db.Decimal(3, 2)
+  isOpen      Boolean  @default(true) @map("is_open")
+  ownerId     Int?     @map("owner_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   products       Product[]
   deliveryOrders DeliveryOrder[]
   ratings        Rating[]
-  owner          User?   @relation(fields: [ownerId], references: [id])
+  owner          User?           @relation(fields: [ownerId], references: [id])
 
   @@map("stores")
 }
 
 // Represents items sold by stores
 model Product {
-  id          Int      @id @default(autoincrement())
-  storeId     Int      @map("store_id")
-  name        String   @db.VarChar(150)
+  id          Int     @id @default(autoincrement())
+  storeId     Int     @map("store_id")
+  name        String  @db.VarChar(150)
   description String?
-  price       Decimal  @db.Decimal(10, 2)
-  imageUrl    String?  @map("image_url")
-  category    String?  @db.VarChar(50)
-  stock       Int      @default(0)
-  isAvailable Boolean  @default(true) @map("is_available")
+  price       Decimal @db.Decimal(10, 2)
+  imageUrl    String? @map("image_url")
+  category    String? @db.VarChar(50)
+  stock       Int     @default(0)
+  isAvailable Boolean @default(true) @map("is_available")
 
   // Relations
   store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -237,40 +234,40 @@ model Product {
 
 // Tracks a delivery order from creation to completion
 model DeliveryOrder {
-  orderId              Int      @id @default(autoincrement()) @map("order_id")
-  userId               Int      @map("user_id")
-  storeId              Int      @map("store_id")
-  courierId            Int?     @map("courier_id")
-  deliveryAddress      String   @map("delivery_address") @db.VarChar(255)
-  deliveryLatitude     Decimal  @map("delivery_latitude") @db.Decimal(9, 6)
-  deliveryLongitude    Decimal @map("delivery_longitude") @db.Decimal(9, 6)
-  totalPrice           Decimal  @map("total_price") @db.Decimal(10, 2)
-  deliveryFee          Decimal  @map("delivery_fee") @db.Decimal(10, 2)
-  tip                  Decimal  @default(0.00) @db.Decimal(10, 2)
-  status               String   @default("pending") @db.VarChar(50)
-  paymentStatus        String   @default("pending") @map("payment_status") @db.VarChar(20)
+  orderId               Int       @id @default(autoincrement()) @map("order_id")
+  userId                Int       @map("user_id")
+  storeId               Int       @map("store_id")
+  courierId             Int?      @map("courier_id")
+  deliveryAddress       String    @map("delivery_address") @db.VarChar(255)
+  deliveryLatitude      Decimal   @map("delivery_latitude") @db.Decimal(9, 6)
+  deliveryLongitude     Decimal   @map("delivery_longitude") @db.Decimal(9, 6)
+  totalPrice            Decimal   @map("total_price") @db.Decimal(10, 2)
+  deliveryFee           Decimal   @map("delivery_fee") @db.Decimal(10, 2)
+  tip                   Decimal   @default(0.00) @db.Decimal(10, 2)
+  status                String    @default("pending") @db.VarChar(50)
+  paymentStatus         String    @default("pending") @map("payment_status") @db.VarChar(20)
   estimatedDeliveryTime DateTime? @map("estimated_delivery_time")
-  actualDeliveryTime   DateTime? @map("actual_delivery_time")
-  createdAt            DateTime @default(now()) @map("created_at")
+  actualDeliveryTime    DateTime? @map("actual_delivery_time")
+  createdAt             DateTime  @default(now()) @map("created_at")
 
   // Relations
-  user     User?      @relation(fields: [userId], references: [id])
-  store    Store      @relation(fields: [storeId], references: [id])
-  courier  Driver?    @relation(fields: [courierId], references: [id])
+  user       User?         @relation(fields: [userId], references: [id])
+  store      Store         @relation(fields: [storeId], references: [id])
+  courier    Driver?       @relation(fields: [courierId], references: [id])
   orderItems OrderItem[]
-  ratings   Rating[]
-  messages  ChatMessage[]
+  ratings    Rating[]
+  messages   ChatMessage[]
 
   @@map("delivery_orders")
 }
 
 // Join table for products within a delivery order
 model OrderItem {
-  id               Int     @id @default(autoincrement())
-  orderId          Int     @map("order_id")
-  productId        Int     @map("product_id")
-  quantity         Int
-  priceAtPurchase  Decimal @map("price_at_purchase") @db.Decimal(10, 2)
+  id              Int     @id @default(autoincrement())
+  orderId         Int     @map("order_id")
+  productId       Int     @map("product_id")
+  quantity        Int
+  priceAtPurchase Decimal @map("price_at_purchase") @db.Decimal(10, 2)
 
   // Relations
   order   DeliveryOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
@@ -285,23 +282,23 @@ model OrderItem {
 
 // Manages promotional codes and discounts for rides or deliveries
 model Promotion {
-  id                  Int      @id @default(autoincrement())
-  promoCode           String   @unique @map("promo_code") @db.VarChar(50)
-  discountPercentage  Decimal? @map("discount_percentage") @db.Decimal(5, 2)
-  discountAmount      Decimal? @map("discount_amount") @db.Decimal(10, 2)
-  expiryDate          DateTime? @map("expiry_date")
-  isActive            Boolean  @default(true) @map("is_active")
+  id                 Int       @id @default(autoincrement())
+  promoCode          String    @unique @map("promo_code") @db.VarChar(50)
+  discountPercentage Decimal?  @map("discount_percentage") @db.Decimal(5, 2)
+  discountAmount     Decimal?  @map("discount_amount") @db.Decimal(10, 2)
+  expiryDate         DateTime? @map("expiry_date")
+  isActive           Boolean   @default(true) @map("is_active")
 
   @@map("promotions")
 }
 
 // Manages user wallet balances
 model Wallet {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @unique @map("user_id")
-  balance    Decimal  @default(0.00) @db.Decimal(10, 2)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  balance   Decimal  @default(0.00) @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -312,12 +309,12 @@ model Wallet {
 
 // Tracks all wallet transactions (credits and debits)
 model WalletTransaction {
-  id               Int      @id @default(autoincrement())
-  walletId         Int      @map("wallet_id")
-  amount           Decimal  @db.Decimal(10, 2)
-  transactionType  String   @map("transaction_type") @db.VarChar(20)
-  description      String?
-  createdAt        DateTime @default(now()) @map("created_at")
+  id              Int      @id @default(autoincrement())
+  walletId        Int      @map("wallet_id")
+  amount          Decimal  @db.Decimal(10, 2)
+  transactionType String   @map("transaction_type") @db.VarChar(20)
+  description     String?
+  createdAt       DateTime @default(now()) @map("created_at")
 
   // Relations
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
@@ -327,22 +324,22 @@ model WalletTransaction {
 
 // Stores ratings for rides, deliveries, or stores
 model Rating {
-  id               Int      @id @default(autoincrement())
-  rideId           Int?     @map("ride_id")
-  orderId          Int?     @map("order_id")
-  storeId          Int?     @map("store_id")
-  ratedByUserId    Int      @map("rated_by_user_id")
-  ratedUserId      Int?     @map("rated_user_id")
-  ratingValue      Int      @map("rating_value")
-  comment          String?
-  createdAt        DateTime @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement())
+  rideId        Int?     @map("ride_id")
+  orderId       Int?     @map("order_id")
+  storeId       Int?     @map("store_id")
+  ratedByUserId Int      @map("rated_by_user_id")
+  ratedUserId   Int?     @map("rated_user_id")
+  ratingValue   Int      @map("rating_value")
+  comment       String?
+  createdAt     DateTime @default(now()) @map("created_at")
 
   // Relations
-  ride     Ride?          @relation(fields: [rideId], references: [rideId])
-  order    DeliveryOrder? @relation(fields: [orderId], references: [orderId])
-  store    Store?         @relation(fields: [storeId], references: [id])
-  ratedBy  User           @relation(fields: [ratedByUserId], references: [id])
-  ratedUser User?         @relation("RatedUser", fields: [ratedUserId], references: [id])
+  ride      Ride?          @relation(fields: [rideId], references: [rideId])
+  order     DeliveryOrder? @relation(fields: [orderId], references: [orderId])
+  store     Store?         @relation(fields: [storeId], references: [id])
+  ratedBy   User           @relation(fields: [ratedByUserId], references: [id])
+  ratedUser User?          @relation("RatedUser", fields: [ratedUserId], references: [id])
 
   @@map("ratings")
 }
@@ -362,12 +359,12 @@ model EmergencyContact {
 
 // Stores chat messages for rides or deliveries
 model ChatMessage {
-  id            Int      @id @default(autoincrement())
-  rideId        Int?     @map("ride_id")
-  orderId       Int?     @map("order_id")
-  senderId      Int      @map("sender_id")
-  messageText   String   @map("message_text")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id          Int      @id @default(autoincrement())
+  rideId      Int?     @map("ride_id")
+  orderId     Int?     @map("order_id")
+  senderId    Int      @map("sender_id")
+  messageText String   @map("message_text")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
   ride   Ride?          @relation(fields: [rideId], references: [rideId])
@@ -383,17 +380,17 @@ model ChatMessage {
 
 // Stores user notification preferences
 model NotificationPreferences {
-  id                  Int      @id @default(autoincrement())
-  userId              Int      @unique @map("user_id")
-  pushEnabled         Boolean  @default(true) @map("push_enabled")
-  smsEnabled          Boolean  @default(false) @map("sms_enabled")
-  emailEnabled        Boolean  @default(false) @map("email_enabled")
-  rideUpdates         Boolean  @default(true) @map("ride_updates")
-  driverMessages      Boolean  @default(true) @map("driver_messages")
-  promotional         Boolean  @default(false) @map("promotional")
-  emergencyAlerts     Boolean  @default(true) @map("emergency_alerts")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique @map("user_id")
+  pushEnabled     Boolean  @default(true) @map("push_enabled")
+  smsEnabled      Boolean  @default(false) @map("sms_enabled")
+  emailEnabled    Boolean  @default(false) @map("email_enabled")
+  rideUpdates     Boolean  @default(true) @map("ride_updates")
+  driverMessages  Boolean  @default(true) @map("driver_messages")
+  promotional     Boolean  @default(false) @map("promotional")
+  emergencyAlerts Boolean  @default(true) @map("emergency_alerts")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -403,15 +400,15 @@ model NotificationPreferences {
 
 // Stores push notification tokens for devices
 model PushToken {
-  id                 Int      @id @default(autoincrement())
-  userId             Int      @map("user_id")
-  token              String   @unique @db.VarChar(255)
-  deviceType         String?  @map("device_type") @db.VarChar(20) // 'ios', 'android', 'web'
-  deviceId           String?  @map("device_id") @db.VarChar(255)
-  isActive           Boolean  @default(true) @map("is_active")
-  lastUsedAt         DateTime? @map("last_used_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  token      String    @unique @db.VarChar(255)
+  deviceType String?   @map("device_type") @db.VarChar(20) // 'ios', 'android', 'web'
+  deviceId   String?   @map("device_id") @db.VarChar(255)
+  isActive   Boolean   @default(true) @map("is_active")
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -422,21 +419,21 @@ model PushToken {
 
 // Stores notification history and delivery status
 model Notification {
-  id               Int      @id @default(autoincrement())
-  userId           Int      @map("user_id")
-  type             String   @db.VarChar(50) // 'ride_accepted', 'driver_arrived', etc.
-  title            String   @db.VarChar(255)
-  message          String?
-  data             Json?    // Additional data for the notification
-  isRead           Boolean  @default(false) @map("is_read")
-  pushSent         Boolean  @default(false) @map("push_sent")
-  pushSentAt       DateTime? @map("push_sent_at")
-  smsSent          Boolean  @default(false) @map("sms_sent")
-  smsSentAt        DateTime? @map("sms_sent_at")
-  emailSent        Boolean  @default(false) @map("email_sent")
-  emailSentAt      DateTime? @map("email_sent_at")
-  createdAt        DateTime @default(now()) @map("created_at")
-  readAt           DateTime? @map("read_at")
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  type        String    @db.VarChar(50) // 'ride_accepted', 'driver_arrived', etc.
+  title       String    @db.VarChar(255)
+  message     String?
+  data        Json? // Additional data for the notification
+  isRead      Boolean   @default(false) @map("is_read")
+  pushSent    Boolean   @default(false) @map("push_sent")
+  pushSentAt  DateTime? @map("push_sent_at")
+  smsSent     Boolean   @default(false) @map("sms_sent")
+  smsSentAt   DateTime? @map("sms_sent_at")
+  emailSent   Boolean   @default(false) @map("email_sent")
+  emailSentAt DateTime? @map("email_sent_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  readAt      DateTime? @map("read_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -447,99 +444,25 @@ model Notification {
 }
 
 // =========================================
-// SECTION 6: GROUP-BASED PERMISSION SYSTEM
-// =========================================
-
-// Stores individual permissions that can be assigned to groups
-model Permission {
-  id          Int      @id @default(autoincrement())
-  code        String   @unique @db.VarChar(100) // e.g., "users:read", "rides:create"
-  name        String   @db.VarChar(150) // Human-readable name
-  description String?  @db.Text
-  module      String   @db.VarChar(50) // "users", "rides", "deliveries", "finance", etc.
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  // Relations
-  groups GroupPermission[]
-
-  @@map("permissions")
-}
-
-// Stores user groups that can have multiple permissions assigned
-model Group {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(100)
-  description String?  @db.Text
-  color       String?  @db.VarChar(7) // Hex color for UI representation
-  isSystem    Boolean  @default(false) @map("is_system") // System groups cannot be deleted
-  isActive    Boolean  @default(true) @map("is_active")
-  priority    Int      @default(0) // Higher priority groups override lower ones
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  // Relations
-  permissions GroupPermission[]
-  users       UserGroup[]
-
-  @@map("groups")
-}
-
-// Junction table for many-to-many relationship between groups and permissions
-model GroupPermission {
-  id           Int        @id @default(autoincrement())
-  groupId      Int        @map("group_id")
-  permissionId Int        @map("permission_id")
-  grantedAt    DateTime   @default(now()) @map("granted_at")
-  grantedBy    Int?       @map("granted_by") // User ID who granted the permission
-
-  // Relations
-  group      Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@unique([groupId, permissionId])
-  @@map("group_permissions")
-}
-
-// Junction table for many-to-many relationship between users and groups
-model UserGroup {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  groupId   Int      @map("group_id")
-  assignedAt DateTime @default(now()) @map("assigned_at")
-  assignedBy Int?    @map("assigned_by") // User ID who assigned the group
-  expiresAt DateTime? @map("expires_at") // Optional expiration date
-  isActive  Boolean  @default(true) @map("is_active")
-
-  // Relations
-  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, groupId])
-  @@map("user_groups")
-}
-
-// =========================================
 // ADMIN AUDIT SYSTEM TABLES
 // =========================================
 
 // Stores audit logs for admin actions
 model AdminAuditLog {
-  id        Int      @id @default(autoincrement())
-  adminId   Int      @map("admin_id") // References User.id for admin users
-  action    String   @db.VarChar(100) // 'create', 'update', 'delete', 'login', etc.
-  resource  String   @db.VarChar(50) // 'user', 'driver', 'ride', etc.
-  resourceId String? @map("resource_id") @db.VarChar(50)
-  oldValue  Json?    @map("old_value")
-  newValue  Json?    @map("new_value")
-  ipAddress String?  @map("ip_address") @db.VarChar(45)
-  userAgent String?  @map("user_agent") @db.Text
-  timestamp DateTime @default(now())
-  createdAt DateTime @default(now()) @map("created_at")
+  id         Int      @id @default(autoincrement())
+  adminId    Int      @map("admin_id") // References User.id for admin users
+  action     String   @db.VarChar(100) // 'create', 'update', 'delete', 'login', etc.
+  resource   String   @db.VarChar(50) // 'user', 'driver', 'ride', etc.
+  resourceId String?  @map("resource_id") @db.VarChar(50)
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
 
   // Relation to admin user
-  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("admin_audit_logs")
 }
@@ -550,22 +473,22 @@ model AdminAuditLog {
 
 // Stores bank payment references for Venezuelan payment system
 model PaymentReference {
-  id             Int      @id @default(autoincrement())
-  referenceNumber String   @unique @db.VarChar(20) // 20-digit reference number
-  bankCode       String   @db.VarChar(10) // Bank code (0102, 0105, etc.)
-  amount         Decimal  @db.Decimal(10, 2) // Payment amount in VES
-  currency       String   @default("VES") @db.VarChar(3)
-  userId         Int      @map("user_id") // User who generated the reference
-  serviceType    String   @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
-  serviceId      Int      @map("service_id") // ID of the service (rideId, orderId, etc.)
-  paymentMethod  String   @db.VarChar(20) // 'transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'
-  status         String   @default("pending") @db.VarChar(20) // 'pending', 'confirmed', 'expired', 'failed'
-  isPartial      Boolean  @default(false) @map("is_partial") // True for partial payments
-  groupId        String?  @map("group_id") // UUID for grouping multiple payments
-  expiresAt      DateTime @map("expires_at") // Reference expiration time
-  confirmedAt    DateTime? @map("confirmed_at") // When payment was confirmed
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id              Int       @id @default(autoincrement())
+  referenceNumber String    @unique @db.VarChar(20) // 20-digit reference number
+  bankCode        String    @db.VarChar(10) // Bank code (0102, 0105, etc.)
+  amount          Decimal   @db.Decimal(10, 2) // Payment amount in VES
+  currency        String    @default("VES") @db.VarChar(3)
+  userId          Int       @map("user_id") // User who generated the reference
+  serviceType     String    @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
+  serviceId       Int       @map("service_id") // ID of the service (rideId, orderId, etc.)
+  paymentMethod   String    @db.VarChar(20) // 'transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'
+  status          String    @default("pending") @db.VarChar(20) // 'pending', 'confirmed', 'expired', 'failed'
+  isPartial       Boolean   @default(false) @map("is_partial") // True for partial payments
+  groupId         String?   @map("group_id") // UUID for grouping multiple payments
+  expiresAt       DateTime  @map("expires_at") // Reference expiration time
+  confirmedAt     DateTime? @map("confirmed_at") // When payment was confirmed
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -583,21 +506,21 @@ model PaymentReference {
 
 // Tracks payment groups for multi-method payments
 model PaymentGroup {
-  id             String   @id @default(cuid()) // UUID for payment groups
-  userId         Int      @map("user_id")
-  serviceType    String   @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
-  serviceId      Int      @map("service_id") // ID of the service
-  totalAmount    Decimal  @map("total_amount") @db.Decimal(10, 2) // Total amount to pay
-  paidAmount     Decimal  @map("paid_amount") @default(0.00) @db.Decimal(10, 2) // Amount paid so far
-  remainingAmount Decimal @map("remaining_amount") @db.Decimal(10, 2) // Amount still needed
-  status         String   @default("incomplete") @db.VarChar(20) // 'incomplete', 'complete', 'cancelled', 'expired'
-  expiresAt      DateTime @map("expires_at") // Group expiration (24 hours from first payment)
-  completedAt    DateTime? @map("completed_at") // When payment was fully completed
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id              String    @id @default(cuid()) // UUID for payment groups
+  userId          Int       @map("user_id")
+  serviceType     String    @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
+  serviceId       Int       @map("service_id") // ID of the service
+  totalAmount     Decimal   @map("total_amount") @db.Decimal(10, 2) // Total amount to pay
+  paidAmount      Decimal   @default(0.00) @map("paid_amount") @db.Decimal(10, 2) // Amount paid so far
+  remainingAmount Decimal   @map("remaining_amount") @db.Decimal(10, 2) // Amount still needed
+  status          String    @default("incomplete") @db.VarChar(20) // 'incomplete', 'complete', 'cancelled', 'expired'
+  expiresAt       DateTime  @map("expires_at") // Group expiration (24 hours from first payment)
+  completedAt     DateTime? @map("completed_at") // When payment was fully completed
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   paymentReferences PaymentReference[]
 
   @@index([userId])
@@ -609,13 +532,13 @@ model PaymentGroup {
 
 // Stores confirmed bank transactions
 model BankTransaction {
-  id                   Int      @id @default(autoincrement())
-  paymentReferenceId   Int      @map("payment_reference_id")
-  bankTransactionId    String   @db.VarChar(100) // Transaction ID from bank
-  bankResponse         Json     @map("bank_response") // Full response from bank API
-  confirmedAmount      Decimal  @db.Decimal(10, 2) // Confirmed amount by bank
+  id                    Int      @id @default(autoincrement())
+  paymentReferenceId    Int      @map("payment_reference_id")
+  bankTransactionId     String   @db.VarChar(100) // Transaction ID from bank
+  bankResponse          Json     @map("bank_response") // Full response from bank API
+  confirmedAmount       Decimal  @db.Decimal(10, 2) // Confirmed amount by bank
   confirmationTimestamp DateTime @map("confirmation_timestamp")
-  createdAt            DateTime @default(now()) @map("created_at")
+  createdAt             DateTime @default(now()) @map("created_at")
 
   // Relations
   paymentReference PaymentReference @relation(fields: [paymentReferenceId], references: [id], onDelete: Cascade)
