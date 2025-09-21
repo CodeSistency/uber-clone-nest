@@ -25,12 +25,6 @@ export interface AuthenticatedUser {
   id: number;
   email: string;
   name: string;
-  permissions: string[];
-  groups: {
-    id: number;
-    name: string;
-    priority: number;
-  }[];
 }
 
 /**

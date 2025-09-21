@@ -21,7 +21,10 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
-import { RegisterResult, LoginResult } from './interfaces/jwt-payload.interface';
+import {
+  RegisterResult,
+  LoginResult,
+} from './interfaces/jwt-payload.interface';
 
 @ApiTags('auth')
 @Controller('api/auth')
@@ -32,11 +35,12 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Registrar nuevo usuario',
-    description: 'Crea una nueva cuenta de usuario con email y contraseña en el sistema de autenticación interno'
+    description:
+      'Crea una nueva cuenta de usuario con email y contraseña en el sistema de autenticación interno',
   })
   @ApiBody({
     type: RegisterDto,
-    description: 'Datos de registro del usuario'
+    description: 'Datos de registro del usuario',
   })
   @ApiResponse({
     status: 201,
@@ -44,30 +48,20 @@ export class AuthController {
     schema: {
       type: 'object',
       properties: {
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
-        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+        refreshToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
         user: {
           type: 'object',
           properties: {
             id: { type: 'number', example: 1 },
             email: { type: 'string', example: 'usuario@example.com' },
             name: { type: 'string', example: 'Juan Pérez' },
-            permissions: {
-              type: 'array',
-              items: { type: 'string' },
-              example: ['users:read', 'users:read:own']
-            },
-            groups: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number', example: 4 },
-                  name: { type: 'string', example: 'Usuario Estándar' },
-                  priority: { type: 'number', example: 0 }
-                }
-              }
-            }
           },
         },
       },
@@ -83,11 +77,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Iniciar sesión',
-    description: 'Autentica al usuario con email y contraseña en el sistema de autenticación interno'
+    description:
+      'Autentica al usuario con email y contraseña en el sistema de autenticación interno',
   })
   @ApiBody({
     type: LoginDto,
-    description: 'Credenciales de inicio de sesión'
+    description: 'Credenciales de inicio de sesión',
   })
   @ApiResponse({
     status: 200,
@@ -95,30 +90,20 @@ export class AuthController {
     schema: {
       type: 'object',
       properties: {
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
-        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+        refreshToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
         user: {
           type: 'object',
           properties: {
             id: { type: 'number', example: 1 },
             email: { type: 'string', example: 'usuario@example.com' },
             name: { type: 'string', example: 'Juan Pérez' },
-            permissions: {
-              type: 'array',
-              items: { type: 'string' },
-              example: ['users:read', 'users:read:own', 'rides:create']
-            },
-            groups: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number', example: 4 },
-                  name: { type: 'string', example: 'Usuario Estándar' },
-                  priority: { type: 'number', example: 0 }
-                }
-              }
-            }
           },
         },
       },
@@ -135,11 +120,11 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @ApiOperation({
     summary: 'Refrescar token',
-    description: 'Genera un nuevo access token usando el refresh token'
+    description: 'Genera un nuevo access token usando el refresh token',
   })
   @ApiBody({
     type: RefreshTokenDto,
-    description: 'Refresh token para obtener un nuevo access token'
+    description: 'Refresh token para obtener un nuevo access token',
   })
   @ApiResponse({
     status: 200,
@@ -147,37 +132,35 @@ export class AuthController {
     schema: {
       type: 'object',
       properties: {
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
-        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+        refreshToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
         user: {
           type: 'object',
           properties: {
             id: { type: 'number', example: 1 },
             email: { type: 'string', example: 'usuario@example.com' },
             name: { type: 'string', example: 'Juan Pérez' },
-            permissions: {
-              type: 'array',
-              items: { type: 'string' },
-              example: ['users:read', 'users:read:own']
-            },
-            groups: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number', example: 4 },
-                  name: { type: 'string', example: 'Usuario Estándar' },
-                  priority: { type: 'number', example: 0 }
-                }
-              }
-            }
           },
         },
       },
     },
   })
   @ApiResponse({ status: 401, description: 'Refresh token inválido' })
-  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<{ accessToken: string; refreshToken: string; user: { id: number; email: string; name: string; permissions: string[]; groups: { id: number; name: string; priority: number; }[] } }> {
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    user: {
+      id: number;
+      email: string;
+      name: string;
+    };
+  }> {
     return this.authService.refreshToken(refreshTokenDto.refreshToken);
   }
 
@@ -186,7 +169,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Obtener perfil del usuario',
-    description: 'Obtiene la información del perfil del usuario autenticado en el sistema interno'
+    description:
+      'Obtiene la información del perfil del usuario autenticado en el sistema interno',
   })
   @ApiResponse({
     status: 200,
@@ -200,28 +184,12 @@ export class AuthController {
         clerkId: { type: 'string', nullable: true, example: null },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
-        permissions: {
-          type: 'array',
-          items: { type: 'string' },
-          example: ['users:read', 'users:read:own', 'rides:create', 'analytics:read']
-        },
-        groups: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number', example: 4 },
-              name: { type: 'string', example: 'Usuario Estándar' },
-              priority: { type: 'number', example: 0 }
-            }
-          }
-        },
         wallet: {
           type: 'object',
           nullable: true,
           properties: {
-            balance: { type: 'number', example: 50.00 }
-          }
+            balance: { type: 'number', example: 50.0 },
+          },
         },
         emergencyContacts: {
           type: 'array',
@@ -229,10 +197,10 @@ export class AuthController {
             type: 'object',
             properties: {
               name: { type: 'string', example: 'María García' },
-              phone: { type: 'string', example: '+584241234567' }
-            }
-          }
-        }
+              phone: { type: 'string', example: '+584241234567' },
+            },
+          },
+        },
       },
     },
   })
@@ -247,7 +215,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Cerrar sesión',
-    description: 'Invalida el refresh token del usuario (implementación básica)'
+    description:
+      'Invalida el refresh token del usuario (implementación básica)',
   })
   @ApiResponse({
     status: 200,

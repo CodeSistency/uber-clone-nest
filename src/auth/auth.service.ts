@@ -1,13 +1,21 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { GroupPermissionsService } from '../group-permissions/group-permissions.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { User } from '@prisma/client';
-import { JwtPayload, RefreshTokenPayload, RegisterResult, LoginResult } from './interfaces/jwt-payload.interface';
+import {
+  JwtPayload,
+  RefreshTokenPayload,
+  RegisterResult,
+  LoginResult,
+} from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -15,8 +23,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private notificationsService: NotificationsService,
-    private groupPermissionsService: GroupPermissionsService,
-  ) {}
+  ) { }
 
   /**
    * Registra un nuevo usuario
@@ -36,7 +43,7 @@ export class AuthService {
       timezone,
       firebaseToken,
       deviceType,
-      deviceId
+      deviceId,
     } = registerDto;
 
     // Verificar si el usuario ya existe
@@ -70,9 +77,6 @@ export class AuthService {
     // Generar tokens
     const tokens = await this.generateTokens(user);
 
-    // Obtener permisos y grupos del usuario
-    const { permissions, groups } = await this.getUserPermissionsAndGroups(user.id);
-
     // Registrar token de Firebase si se proporcionó
     if (firebaseToken) {
       try {
@@ -80,11 +84,14 @@ export class AuthService {
           user.id.toString(),
           firebaseToken,
           deviceType,
-          deviceId
+          deviceId,
         );
       } catch (error) {
         // Log error pero no fallar el registro por esto
-        console.warn('Error registering Firebase token during registration:', error.message);
+        console.warn(
+          'Error registering Firebase token during registration:',
+          error.message,
+        );
       }
     }
 
@@ -95,8 +102,6 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        permissions,
-        groups,
       },
     };
   }
@@ -122,10 +127,15 @@ export class AuthService {
 
     // Verificar contraseña
     if (!user.password) {
-      throw new UnauthorizedException('Este usuario no tiene una contraseña configurada. Use el sistema de recuperación de contraseña.');
+      throw new UnauthorizedException(
+        'Este usuario no tiene una contraseña configurada. Use el sistema de recuperación de contraseña.',
+      );
     }
 
-    const isPasswordValid = await this.validatePassword(password, user.password);
+    const isPasswordValid = await this.validatePassword(
+      password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -140,7 +150,6 @@ export class AuthService {
     const tokens = await this.generateTokens(user);
 
     // Obtener permisos y grupos del usuario
-    const { permissions, groups } = await this.getUserPermissionsAndGroups(user.id);
 
     // Registrar token de Firebase si se proporcionó
     if (firebaseToken) {
@@ -149,11 +158,14 @@ export class AuthService {
           user.id.toString(),
           firebaseToken,
           deviceType,
-          deviceId
+          deviceId,
         );
       } catch (error) {
         // Log error pero no fallar el login por esto
-        console.warn('Error registering Firebase token during login:', error.message);
+        console.warn(
+          'Error registering Firebase token during login:',
+          error.message,
+        );
       }
     }
 
@@ -164,8 +176,6 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        permissions,
-        groups,
       },
     };
   }
@@ -173,12 +183,23 @@ export class AuthService {
   /**
    * Refresca el access token usando el refresh token
    */
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; user: { id: number; email: string; name: string; permissions: string[]; groups: { id: number; name: string; priority: number; }[] } }> {
+  async refreshToken(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    user: {
+      id: number;
+      email: string;
+      name: string;
+    };
+  }> {
     try {
       // Verificar el refresh token
-      const payload = this.jwtService.verify<RefreshTokenPayload>(refreshToken, {
-        secret: process.env.JWT_SECRET || 'fallback-secret-key',
-      });
+      const payload = this.jwtService.verify<RefreshTokenPayload>(
+        refreshToken,
+        {
+          secret: process.env.JWT_SECRET || 'fallback-secret-key',
+        },
+      );
 
       // Buscar usuario
       const user = await this.prisma.user.findUnique({
@@ -192,7 +213,6 @@ export class AuthService {
       const tokens = await this.generateTokens(user);
 
       // Obtener permisos y grupos del usuario
-      const { permissions, groups } = await this.getUserPermissionsAndGroups(user.id);
 
       return {
         accessToken: tokens.accessToken,
@@ -201,8 +221,6 @@ export class AuthService {
           id: user.id,
           email: user.email,
           name: user.name,
-          permissions,
-          groups,
         },
       };
     } catch (error) {
@@ -213,7 +231,9 @@ export class AuthService {
   /**
    * Genera access token y refresh token para un usuario
    */
-  private async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+  private async generateTokens(
+    user: User,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const payload: JwtPayload = {
       sub: user.id.toString(),
       email: user.email,
@@ -239,22 +259,6 @@ export class AuthService {
     };
   }
 
-  private async getUserPermissionsAndGroups(userId: number): Promise<{ permissions: string[]; groups: { id: number; name: string; priority: number; }[] }> {
-    try {
-      const userPermissions = await this.groupPermissionsService.getUserPermissions(userId);
-      return {
-        permissions: userPermissions.permissions,
-        groups: userPermissions.groups,
-      };
-    } catch (error) {
-      console.warn(`Error getting permissions for user ${userId}:`, error.message);
-      return {
-        permissions: [],
-        groups: [],
-      };
-    }
-  }
-
   /**
    * Hashea una contraseña
    */
@@ -266,7 +270,10 @@ export class AuthService {
   /**
    * Valida una contraseña contra su hash
    */
-  private async validatePassword(password: string, hashedPassword: string): Promise<boolean> {
+  private async validatePassword(
+    password: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return bcrypt.compare(password, hashedPassword);
   }
 
@@ -280,7 +287,7 @@ export class AuthService {
   /**
    * Obtiene el perfil del usuario actual con permisos
    */
-  async getProfile(userId: number): Promise<User & { permissions: string[]; groups: { id: number; name: string; priority: number; }[] } | null> {
+  async getProfile(userId: number): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -291,13 +298,8 @@ export class AuthService {
 
     if (!user) return null;
 
-    // Obtener permisos y grupos del usuario
-    const { permissions, groups } = await this.getUserPermissionsAndGroups(userId);
-
     return {
       ...user,
-      permissions,
-      groups,
     };
   }
 }
