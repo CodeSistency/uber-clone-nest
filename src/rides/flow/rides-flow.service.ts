@@ -22,31 +22,11 @@ export class RidesFlowService {
     private readonly parcelsService: ParcelsService,
   ) {}
 
-  // Método para obtener tiers de viaje disponibles
+  // Método para obtener todos los tiers de viaje disponibles
   async getAvailableRideTiers() {
     return this.prisma.rideTier.findMany({
       orderBy: { baseFare: 'asc' }, // Ordenar por precio base (del más barato al más caro)
     });
-  }
-
-  // Método para obtener tiers disponibles para un tipo de vehículo específico
-  async getAvailableTiersForVehicleType(vehicleTypeId: number) {
-    const combinations = await this.prisma.tierVehicleType.findMany({
-      where: {
-        vehicleTypeId,
-        isActive: true,
-      },
-      include: {
-        tier: true,
-      },
-      orderBy: {
-        tier: {
-          baseFare: 'asc',
-        },
-      },
-    });
-
-    return combinations.map(combo => combo.tier);
   }
 
   // Método para validar si una combinación tier + vehicleType es válida
