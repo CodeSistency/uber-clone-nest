@@ -5,8 +5,10 @@ import { AdminJwtPayload, AuthenticatedAdmin } from '../interfaces/admin.interfa
 import { AdminService } from '../admin.service';
 import { AdminRole } from '../entities/admin.entity';
 
+export const JWT_STRATEGY_NAME = 'admin-jwt';
+
 @Injectable()
-export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
+export class AdminJwtStrategy extends PassportStrategy(Strategy, JWT_STRATEGY_NAME) {
   private readonly logger = new Logger(AdminJwtStrategy.name);
 
   constructor(private adminService: AdminService) {
@@ -56,6 +58,7 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
       email: admin.email,
       userType: admin.userType || 'user',
       adminRole: admin.adminRole || AdminRole.SUPPORT,
+      isActive: admin.isActive,
       adminPermissions: admin.adminPermissions,
       lastAdminLogin: admin.lastAdminLogin || undefined,
     };

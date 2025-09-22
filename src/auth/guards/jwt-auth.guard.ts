@@ -4,8 +4,25 @@ import { AuthGuard } from '@nestjs/passport';
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   canActivate(context: ExecutionContext) {
-    // Agregar logs para debugging
+    // Excluir rutas públicas
     const request = context.switchToHttp().getRequest();
+    const path = request.path;
+    
+    // Lista de rutas públicas que no requieren autenticación
+    const publicRoutes = [
+      '/api/auth/login',
+      '/api/auth/register',
+      '/',
+      '/api',
+      '/api/'
+    ];
+    
+    // Si la ruta es pública, permitir el acceso sin autenticación
+    if (publicRoutes.includes(path)) {
+      return true;
+    }
+    
+    // Para rutas que requieren autenticación, verificar el token
     const authHeader = request.headers.authorization;
 
     console.log('🔐 JwtAuthGuard - Headers recibidos:', {

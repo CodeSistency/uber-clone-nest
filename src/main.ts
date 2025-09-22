@@ -101,11 +101,25 @@ async function bootstrap() {
 
   SwaggerModule.setup(swaggerConfig.path || 'api', app, document);
 
-  // Enable CORS
+  // Enable CORS with secure defaults
   app.enableCors({
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'X-Requested-With',
+      'X-Access-Token'
+    ],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
 
   await app.listen(port);

@@ -12,7 +12,6 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DriverGuard } from '../../drivers/guards/driver.guard';
-import { AdminAuthGuard } from '../../admin/guards/admin-auth.guard';
 import { PermissionsGuard } from '../../admin/guards/permissions.guard';
 import { RequirePermissions } from '../../admin/decorators/permissions.decorator';
 import { Permission } from '../../admin/entities/admin.entity';
@@ -201,7 +200,7 @@ export class DriverAvailabilityController {
   // =========================================
 
   @Put('admin/availability/:driverId')
-  @UseGuards(AdminAuthGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.DRIVER_WRITE)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -353,7 +352,7 @@ export class DriverAvailabilityController {
   }
 
   @Get('admin/availability/:driverId')
-  @UseGuards(AdminAuthGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.DRIVER_READ)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
