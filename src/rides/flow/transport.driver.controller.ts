@@ -184,9 +184,24 @@ export class TransportDriverController {
       }
     }
   })
-  async available() {
-    // Leverage RidesService through flow service
-    const list = await (this.flow as any)['ridesService'].getAvailableRides();
+  async available(@Req() req: any) {
+    // Get driver's vehicle type
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: req.user.id },
+      select: { vehicleTypeId: true }
+    });
+
+    if (!driver?.vehicleTypeId) {
+      throw new Error('Driver vehicle type not configured');
+    }
+
+    // Leverage RidesService through flow service with vehicle type filtering
+    const list = await (this.flow as any)['ridesService'].getRideRequests(
+      0, // Default lat (will be filtered by vehicle type only)
+      0, // Default lng (will be filtered by vehicle type only)
+      1000, // Large radius to get all rides (filtered by vehicle type)
+      driver.vehicleTypeId // Filter by driver's vehicle type
+    );
     return { data: list };
   }
 

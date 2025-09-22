@@ -63,7 +63,7 @@ export class ErrandDriverController {
     @Body() body: ErrandShoppingUpdateDto,
     @Req() req: any,
   ) {
-    const e = await this.flow.updateErrandShopping(Number(id), Number(req.user.id), body);
+    const e = await this.flow.updateErrandShopping(Number(id), body);
     return { data: e };
   }
 

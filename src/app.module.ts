@@ -23,6 +23,11 @@ import { OrdersModule } from './orders/orders.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminModule } from './admin/admin.module';
 import { RidesFlowModule } from './rides/flow/rides-flow.module';
+import { ErrandsModule } from './errands/errands.module';
+import { ParcelsModule } from './parcels/parcels.module';
+import { CartModule } from './cart/cart.module';
+import { LocationsModule } from './locations/locations.module';
+import { TestingModule } from './testing/testing.module';
 
 @Module({
   imports: [
@@ -52,6 +57,12 @@ import { RidesFlowModule } from './rides/flow/rides-flow.module';
     AdminModule,
     // Flow orchestrator
     RidesFlowModule,
+    // New services modules
+    ErrandsModule,
+    ParcelsModule,
+    CartModule,
+    LocationsModule,
+    TestingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

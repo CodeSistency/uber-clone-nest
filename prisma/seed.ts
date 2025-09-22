@@ -229,6 +229,62 @@ async function main() {
   ]);
 
   // =========================================
+  // SECTION 4: TIER-VEHICLE TYPE COMBINATIONS
+  // =========================================
+  console.log('🔗 Seeding tier-vehicle type combinations...');
+  const tierVehicleCombinations = await Promise.all([
+    // Economy tier - Disponible en Carro y Moto
+    prisma.tierVehicleType.create({
+      data: {
+        tierId: rideTiers[0].id, // Economy
+        vehicleTypeId: vehicleTypes[0].id, // Car
+        isActive: true,
+      },
+    }),
+    prisma.tierVehicleType.create({
+      data: {
+        tierId: rideTiers[0].id, // Economy
+        vehicleTypeId: vehicleTypes[1].id, // Motorcycle
+        isActive: true,
+      },
+    }),
+
+    // Comfort tier - Disponible en Carro y Moto
+    prisma.tierVehicleType.create({
+      data: {
+        tierId: rideTiers[1].id, // Comfort
+        vehicleTypeId: vehicleTypes[0].id, // Car
+        isActive: true,
+      },
+    }),
+    prisma.tierVehicleType.create({
+      data: {
+        tierId: rideTiers[1].id, // Comfort
+        vehicleTypeId: vehicleTypes[1].id, // Motorcycle
+        isActive: true,
+      },
+    }),
+
+    // Premium tier - Solo disponible en Carro
+    prisma.tierVehicleType.create({
+      data: {
+        tierId: rideTiers[2].id, // Premium
+        vehicleTypeId: vehicleTypes[0].id, // Car
+        isActive: true,
+      },
+    }),
+
+    // Opcional: Comfort en bicicleta para entregas locales
+    prisma.tierVehicleType.create({
+      data: {
+        tierId: rideTiers[1].id, // Comfort
+        vehicleTypeId: vehicleTypes[2].id, // Bicycle
+        isActive: true,
+      },
+    }),
+  ]);
+
+  // =========================================
   // SECTION 5: RIDES
   // =========================================
   console.log('🚕 Seeding rides...');

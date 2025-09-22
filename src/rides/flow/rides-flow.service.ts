@@ -5,6 +5,9 @@ import { WebSocketGatewayClass } from '../../websocket/websocket.gateway';
 import { RidesService } from '../rides.service';
 import { OrdersService } from '../../orders/orders.service';
 import { StripeService } from '../../stripe/stripe.service';
+import { ErrandsService } from '../../errands/errands.service';
+import { ParcelsService } from '../../parcels/parcels.service';
+import { CreateErrandDto } from './dto/errand-flow.dtos';
 
 @Injectable()
 export class RidesFlowService {
@@ -15,7 +18,49 @@ export class RidesFlowService {
     private readonly ridesService: RidesService,
     private readonly ordersService: OrdersService,
     private readonly stripeService: StripeService,
+    private readonly errandsService: ErrandsService,
+    private readonly parcelsService: ParcelsService,
   ) {}
+
+  // Método para obtener tiers de viaje disponibles
+  async getAvailableRideTiers() {
+    return this.prisma.rideTier.findMany({
+      orderBy: { baseFare: 'asc' }, // Ordenar por precio base (del más barato al más caro)
+    });
+  }
+
+  // Método para obtener tiers disponibles para un tipo de vehículo específico
+  async getAvailableTiersForVehicleType(vehicleTypeId: number) {
+    const combinations = await this.prisma.tierVehicleType.findMany({
+      where: {
+        vehicleTypeId,
+        isActive: true,
+      },
+      include: {
+        tier: true,
+      },
+      orderBy: {
+        tier: {
+          baseFare: 'asc',
+        },
+      },
+    });
+
+    return combinations.map(combo => combo.tier);
+  }
+
+  // Método para validar si una combinación tier + vehicleType es válida
+  async isValidTierVehicleCombination(tierId: number, vehicleTypeId: number): Promise<boolean> {
+    const combination = await this.prisma.tierVehicleType.findFirst({
+      where: {
+        tierId,
+        vehicleTypeId,
+        isActive: true,
+      },
+    });
+
+    return !!combination;
+  }
 
   async defineTransportRide(payload: {
     userId: number;
@@ -25,6 +70,20 @@ export class RidesFlowService {
     vehicleTypeId?: number;
     tierId?: number;
   }) {
+    // Validar que la combinación tier + vehicleType sea válida
+    if (payload.tierId && payload.vehicleTypeId) {
+      const isValidCombination = await this.isValidTierVehicleCombination(
+        payload.tierId,
+        payload.vehicleTypeId
+      );
+
+      if (!isValidCombination) {
+        throw new Error(
+          `Invalid combination: Tier ${payload.tierId} is not available for vehicle type ${payload.vehicleTypeId}`
+        );
+      }
+    }
+
     const ride = await this.ridesService.createRide({
       origin_address: payload.origin.address,
       destination_address: payload.destination.address,
@@ -64,6 +123,24 @@ export class RidesFlowService {
 
       if (!existingRide) {
         throw new Error(`Ride with id ${rideId} not found`);
+      }
+
+      // Determinar los valores finales (usar existentes si no se proporcionan)
+      const finalTierId = tierId !== undefined ? tierId : existingRide.tierId;
+      const finalVehicleTypeId = vehicleTypeId !== undefined ? vehicleTypeId : existingRide.requestedVehicleTypeId;
+
+      // Validar combinación si ambos valores están definidos
+      if (finalTierId && finalVehicleTypeId) {
+        const isValidCombination = await this.isValidTierVehicleCombination(
+          finalTierId,
+          finalVehicleTypeId
+        );
+
+        if (!isValidCombination) {
+          throw new Error(
+            `Invalid combination: Tier ${finalTierId} is not available for vehicle type ${finalVehicleTypeId}`
+          );
+        }
       }
 
       // Prepare update data - only include fields that are provided
@@ -309,86 +386,32 @@ export class RidesFlowService {
     return order;
   }
 
-  // Errand flow (in-memory orchestration persisted minimally if needed)
-  private errands = new Map<number, any>();
-  private nextErrandId = 1;
-
-  async createErrand(userId: number, dto: any) {
-    const id = this.nextErrandId++;
-    const errand = {
-      id,
-      userId,
-      status: 'requested',
-      ...dto,
-      itemsCost: 0,
-      createdAt: new Date(),
-    };
-    this.errands.set(id, errand);
-    this.gateway.server?.to(`errand-${id}`).emit('errand:created', { errandId: id, userId });
-    return errand;
+  // Errand flow using database persistence
+  async createErrand(userId: number, dto: CreateErrandDto) {
+    return this.errandsService.createErrand(userId, dto);
   }
 
-  async updateErrandShopping(errandId: number, driverId: number, data: { itemsCost: number; notes?: string }) {
-    const e = this.errands.get(errandId);
-    if (!e) throw new Error('Errand not found');
-    e.itemsCost = data.itemsCost;
-    e.shoppingNotes = data.notes;
-    e.status = 'shopping_in_progress';
-    this.gateway.server?.to(`errand-${errandId}`).emit('errand:shopping_update', { errandId, driverId, ...data });
-    await this.notifications.sendNotification({
-      userId: String(e.userId),
-      type: 'errand_update' as any,
-      title: 'Errand update',
-      message: `Items cost updated to ${data.itemsCost}`,
-      data: { errandId },
-      channels: [1 as any],
-    } as any);
-    return e;
+  async updateErrandShopping(errandId: number, data: { itemsCost: number; notes?: string }) {
+    return this.errandsService.updateErrandShopping(errandId, {
+      itemsCost: data.itemsCost,
+      notes: data.notes
+    });
   }
 
   async driverAcceptErrand(errandId: number, driverId: number) {
-    const e = this.errands.get(errandId);
-    if (!e) throw new Error('Errand not found');
-    e.driverId = driverId;
-    e.status = 'accepted';
-    this.gateway.server?.to(`errand-${errandId}`).emit('errand:accepted', { errandId, driverId });
-    await this.notifications.sendNotification({
-      userId: String(e.userId),
-      type: 'errand_accepted' as any,
-      title: 'Errand accepted',
-      message: 'A driver accepted your errand',
-      data: { errandId, driverId },
-      channels: [1 as any],
-    } as any);
-    return e;
+    return this.errandsService.acceptErrand(errandId, driverId);
   }
 
   async driverStartErrand(errandId: number, driverId: number) {
-    const e = this.errands.get(errandId);
-    if (!e) throw new Error('Errand not found');
-    e.status = 'en_route';
-    this.gateway.server?.to(`errand-${errandId}`).emit('errand:started', { errandId, driverId });
-    return e;
+    return this.errandsService.startErrandDelivery(errandId);
   }
 
   async driverCompleteErrand(errandId: number, driverId: number) {
-    const e = this.errands.get(errandId);
-    if (!e) throw new Error('Errand not found');
-    e.status = 'completed';
-    this.gateway.server?.to(`errand-${errandId}`).emit('errand:completed', { errandId, driverId, itemsCost: e.itemsCost });
-    await this.notifications.sendNotification({
-      userId: String(e.userId),
-      type: 'errand_completed' as any,
-      title: 'Errand completed',
-      message: 'Your errand has been completed',
-      data: { errandId },
-      channels: [1 as any],
-    } as any);
-    return e;
+    return this.errandsService.completeErrand(errandId);
   }
 
   async getErrandStatus(errandId: number) {
-    return this.errands.get(errandId);
+    return this.errandsService.getErrandStatus(errandId);
   }
 
   // Helper method to get transport ride status
@@ -405,61 +428,35 @@ export class RidesFlowService {
   }
 
   async cancelErrand(errandId: number, reason?: string) {
-    const e = this.errands.get(errandId);
-    if (!e) throw new Error('Errand not found');
-    e.status = 'cancelled';
-    this.gateway.server?.to(`errand-${errandId}`).emit('errand:cancelled', { errandId, reason });
-    return { ok: true };
+    return this.errandsService.cancelErrand(errandId, reason);
   }
 
-  // Parcel flow (in-memory orchestration)
-  private parcels = new Map<number, any>();
-  private nextParcelId = 1;
-
+  // Parcel flow using database persistence
   async createParcel(userId: number, dto: any) {
-    const id = this.nextParcelId++;
-    const p = { id, userId, status: 'requested', ...dto, createdAt: new Date() };
-    this.parcels.set(id, p);
-    this.gateway.server?.to(`parcel-${id}`).emit('parcel:created', { parcelId: id, userId });
-    return p;
+    return this.parcelsService.createParcel(userId, dto);
   }
 
   async driverAcceptParcel(parcelId: number, driverId: number) {
-    const p = this.parcels.get(parcelId);
-    if (!p) throw new Error('Parcel not found');
-    p.driverId = driverId;
-    p.status = 'accepted';
-    this.gateway.server?.to(`parcel-${parcelId}`).emit('parcel:accepted', { parcelId, driverId });
-    return p;
+    return this.parcelsService.acceptParcel(parcelId, driverId);
   }
 
   async driverPickupParcel(parcelId: number, driverId: number) {
-    const p = this.parcels.get(parcelId);
-    if (!p) throw new Error('Parcel not found');
-    p.status = 'picked_up';
-    this.gateway.server?.to(`parcel-${parcelId}`).emit('parcel:picked_up', { parcelId, driverId });
-    return p;
+    return this.parcelsService.pickupParcel(parcelId);
   }
 
   async driverDeliverParcel(parcelId: number, driverId: number, proof?: { signatureImageUrl?: string; photoUrl?: string }) {
-    const p = this.parcels.get(parcelId);
-    if (!p) throw new Error('Parcel not found');
-    p.status = 'delivered';
-    p.proof = proof;
-    this.gateway.server?.to(`parcel-${parcelId}`).emit('parcel:delivered', { parcelId, driverId, proof });
-    return p;
+    return this.parcelsService.deliverParcel(parcelId, {
+      photoUrl: proof?.photoUrl,
+      signatureUrl: proof?.signatureImageUrl
+    });
   }
 
   async getParcelStatus(parcelId: number) {
-    return this.parcels.get(parcelId);
+    return this.parcelsService.getParcelStatus(parcelId);
   }
 
   async cancelParcel(parcelId: number, reason?: string) {
-    const p = this.parcels.get(parcelId);
-    if (!p) throw new Error('Parcel not found');
-    p.status = 'cancelled';
-    this.gateway.server?.to(`parcel-${parcelId}`).emit('parcel:cancelled', { parcelId, reason });
-    return { ok: true };
+    return this.parcelsService.cancelParcel(parcelId, reason);
   }
 }
 

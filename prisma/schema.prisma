@@ -27,6 +27,7 @@ model VehicleType {
   // Relations
   drivers Driver[]
   rides   Ride[]   @relation("RequestedVehicleType")
+  tiers       TierVehicleType[]
 
   @@map("vehicle_types")
 }
@@ -84,6 +85,11 @@ model User {
   notifications           Notification[]
   ownedStores             Store[]
 
+  // New services relations
+  errands          Errand[]
+  parcels          Parcel[]
+  cart             Cart?
+
   // Venezuelan payment system relations
   paymentReferences PaymentReference[]
   paymentGroups     PaymentGroup[]
@@ -116,6 +122,8 @@ model Driver {
   documents      DriverDocument[]
   rides          Ride[]
   deliveryOrders DeliveryOrder[]
+  errands         Errand[]
+  parcels         Parcel[]
 
   @@map("drivers")
 }
@@ -149,9 +157,26 @@ model RideTier {
   imageUrl      String? @map("image_url")
 
   // Relations
-  rides Ride[]
+  rides         Ride[]
+  vehicleTypes  TierVehicleType[]
 
   @@map("ride_tiers")
+}
+
+// Defines valid combinations between tiers and vehicle types
+model TierVehicleType {
+  id            Int         @id @default(autoincrement())
+  tierId        Int         @map("tier_id")
+  vehicleTypeId Int         @map("vehicle_type_id")
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  tier          RideTier    @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([tierId, vehicleTypeId])
+  @@map("tier_vehicle_types")
 }
 
 // Stores information about each ride
@@ -228,6 +253,7 @@ model Product {
   // Relations
   store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+  cartItems  CartItem[]
 
   @@map("products")
 }
@@ -357,19 +383,23 @@ model EmergencyContact {
   @@map("emergency_contacts")
 }
 
-// Stores chat messages for rides or deliveries
+// Stores chat messages for rides, deliveries, errands, and parcels
 model ChatMessage {
   id          Int      @id @default(autoincrement())
   rideId      Int?     @map("ride_id")
   orderId     Int?     @map("order_id")
+  errandId      Int?     @map("errand_id")
+  parcelId      Int?     @map("parcel_id")
   senderId    Int      @map("sender_id")
   messageText String   @map("message_text")
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
-  ride   Ride?          @relation(fields: [rideId], references: [rideId])
-  order  DeliveryOrder? @relation(fields: [orderId], references: [orderId])
-  sender User           @relation("MessageSender", fields: [senderId], references: [id])
+  ride    Ride?          @relation(fields: [rideId], references: [rideId])
+  order   DeliveryOrder? @relation(fields: [orderId], references: [orderId])
+  errand  Errand?        @relation(fields: [errandId], references: [id])
+  parcel  Parcel?        @relation(fields: [parcelId], references: [id])
+  sender  User           @relation("MessageSender", fields: [senderId], references: [id])
 
   @@map("chat_messages")
 }
@@ -546,6 +576,110 @@ model BankTransaction {
   @@index([paymentReferenceId])
   @@index([bankTransactionId])
   @@map("bank_transactions")
+}
+
+// =========================================
+// ERRAND SERVICE TABLES
+// =========================================
+
+// Stores errand requests where drivers perform personal tasks
+model Errand {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @map("user_id")
+  driverId           Int?     @map("driver_id")
+  description        String   @db.VarChar(300)
+  itemsList          String?  @db.Text
+  pickupAddress      String   @db.VarChar(255)
+  pickupLat          Decimal  @db.Decimal(9, 6)
+  pickupLng          Decimal  @db.Decimal(9, 6)
+  dropoffAddress     String   @db.VarChar(255)
+  dropoffLat         Decimal  @db.Decimal(9, 6)
+  dropoffLng         Decimal  @db.Decimal(9, 6)
+  status             String   @default("requested") @db.VarChar(20)
+  itemsCost          Decimal? @db.Decimal(10, 2)
+  serviceFee         Decimal? @db.Decimal(10, 2)
+  totalAmount        Decimal? @db.Decimal(10, 2)
+  shoppingNotes      String?  @db.Text
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user     User         @relation(fields: [userId], references: [id])
+  driver   Driver?      @relation(fields: [driverId], references: [id])
+  messages ChatMessage[]
+
+  @@map("errands")
+}
+
+// =========================================
+// PARCEL SERVICE TABLES
+// =========================================
+
+// Stores parcel delivery requests
+model Parcel {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  driverId          Int?     @map("driver_id")
+  pickupAddress     String   @db.VarChar(255)
+  pickupLat         Decimal  @db.Decimal(9, 6)
+  pickupLng         Decimal  @db.Decimal(9, 6)
+  dropoffAddress    String   @db.VarChar(255)
+  dropoffLat        Decimal  @db.Decimal(9, 6)
+  dropoffLng        Decimal  @db.Decimal(9, 6)
+  type              String   @db.VarChar(50) // 'documents', 'small_package', 'large_package'
+  description       String?  @db.Text
+  weight            Decimal? @db.Decimal(5, 2)
+  dimensions        String?  @db.VarChar(50) // '20x15x10'
+  status            String   @default("requested") @db.VarChar(20)
+  serviceFee        Decimal? @db.Decimal(10, 2)
+  totalAmount       Decimal? @db.Decimal(10, 2)
+  proofOfPickup     String?  @map("proof_of_pickup") // Photo URL
+  proofOfDelivery   String?  @map("proof_of_delivery") // Photo/Signature URL
+  recipientName     String?  @map("recipient_name")
+  recipientPhone    String?  @map("recipient_phone")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user     User         @relation(fields: [userId], references: [id])
+  driver   Driver?      @relation(fields: [driverId], references: [id])
+  messages ChatMessage[]
+
+  @@map("parcels")
+}
+
+// =========================================
+// SHOPPING CART TABLES
+// =========================================
+
+// Stores user shopping carts
+model Cart {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique @map("user_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user     User       @relation(fields: [userId], references: [id])
+  items    CartItem[]
+
+  @@map("carts")
+}
+
+// Stores items in shopping carts
+model CartItem {
+  id         Int     @id @default(autoincrement())
+  cartId     Int     @map("cart_id")
+  productId  Int     @map("product_id")
+  quantity   Int     @default(1)
+  notes      String? @db.VarChar(255)
+
+  // Relations
+  cart     Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
 }
 
 // =========================================

@@ -1,0 +1,257 @@
+[1mdiff --cc prisma/schema.prisma[m
+[1mindex 62e35a5,745ecb6..0000000[m
+[1m--- a/prisma/schema.prisma[m
+[1m+++ b/prisma/schema.prisma[m
+[36m@@@ -25,64 -25,73 +25,67 @@@[m [mmodel VehicleType [m
+    updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")[m
+  [m
+    // Relations[m
+[31m-   drivers Driver[][m
+[31m-   rides   Ride[]   @relation("RequestedVehicleType")[m
+[32m+   drivers     Driver[][m
+[32m+   rides       Ride[]   @relation("RequestedVehicleType")[m
+[31m -  tiers       TierVehicleType[][m
+  [m
+    @@map("vehicle_types")[m
+  }[m
+  [m
+  // Stores user information with support for regular users and administrators[m
+  model User {[m
+[31m -  id          Int       @id @default(autoincrement())[m
+[31m -  name        String    @db.VarChar(100)[m
+[31m -  email       String    @unique @db.VarChar(100)[m
+[31m -  password    String?   @db.VarChar(255) // Hashed password for authentication[m
+[31m -  isActive    Boolean   @default(true) @map("is_active")[m
+[31m -  lastLogin   DateTime? @map("last_login")[m
+[31m -  createdAt   DateTime  @default(now()) @map("created_at")[m
+[31m -  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")[m
+[32m +  id        Int       @id @default(autoincrement())[m
+[32m +  name      String    @db.VarChar(100)[m
+[32m +  email     String    @unique @db.VarChar(100)[m
+[32m +  password  String?   @db.VarChar(255) // Hashed password for authentication[m
+[32m +  isActive  Boolean   @default(true) @map("is_active")[m
+[32m +  lastLogin DateTime? @map("last_login")[m
+[32m +  createdAt DateTime  @default(now()) @map("created_at")[m
+[32m +  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")[m
+  [m
+    // Profile information[m
+[31m -  phone         String?   @db.VarChar(20)[m
+[31m -  dateOfBirth   DateTime? @map("date_of_birth")[m
+[31m -  gender        String?   @db.VarChar(20) // 'male', 'female', 'other', 'prefer_not_to_say'[m
+[31m -  profileImage  String?   @map("profile_image") // URL to profile image[m
+[31m -  address       String?   @db.VarChar(255)[m
+[31m -  city          String?   @db.VarChar(100)[m
+[31m -  state         String?   @db.VarChar(100)[m
+[31m -  country       String?   @db.VarChar(100)[m
+[31m -  postalCode    String?   @map("postal_code") @db.VarChar(20)[m
+[32m +  phone        String?   @db.VarChar(20)[m
+[32m +  dateOfBirth  DateTime? @map("date_of_birth")[m
+[32m +  gender       String?   @db.VarChar(20) // 'male', 'female', 'other', 'prefer_not_to_say'[m
+[32m +  profileImage String?   @map("profile_image") // URL to profile image[m
+[32m +  address      String?   @db.VarChar(255)[m
+[32m +  city         String?   @db.VarChar(100)[m
+[32m +  state        String?   @db.VarChar(100)[m
+[32m +  country      String?   @db.VarChar(100)[m
+[32m +  postalCode   String?   @map("postal_code") @db.VarChar(20)[m
+  [m
+    // Preferences[m
+[31m -  preferredLanguage String? @map("preferred_language") @db.VarChar(10) @default("es") // 'es', 'en', etc.[m
+[31m -  timezone          String? @db.VarChar(50) @default("America/Caracas")[m
+[31m -  currency          String? @db.VarChar(10) @default("USD") // 'USD', 'EUR', etc.[m
+[32m +  preferredLanguage String? @default("es") @map("preferred_language") @db.VarChar(10) // 'es', 'en', etc.[m
+[32m +  timezone          String? @default("America/Caracas") @db.VarChar(50)[m
+[32m +  currency          String? @default("USD") @db.VarChar(10) // 'USD', 'EUR', etc.[m
+  [m
+    // Verification status[m
+[31m -  emailVerified     Boolean @default(false) @map("email_verified")[m
+[31m -  phoneVerified     Boolean @default(false) @map("phone_verified")[m
+[31m -  identityVerified  Boolean @default(false) @map("identity_verified")[m
+[32m +  emailVerified    Boolean @default(false) @map("email_verified")[m
+[32m +  phoneVerified    Boolean @default(false) @map("phone_verified")[m
+[32m +  identityVerified Boolean @default(false) @map("identity_verified")[m
+  [m
+    // Admin-specific fields (optional - only populated for admin users)[m
+[31m -  userType          String?   @default("user") @map("user_type") // 'user' or 'admin'[m
+[31m -  adminRole         String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support'[m
+[31m -  adminPermissions  String[]  @default([]) @map("admin_permissions") // Array of permission strings[m
+[31m -  lastAdminLogin    DateTime? @map("last_admin_login")[m
+[31m -  adminCreatedAt    DateTime? @map("admin_created_at")[m
+[31m -  adminUpdatedAt    DateTime? @updatedAt @map("admin_updated_at")[m
+[32m +  userType         String?   @default("user") @map("user_type") // 'user' or 'admin'[m
+[32m +  adminRole        String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support'[m
+[32m +  adminPermissions String[]  @default([]) @map("admin_permissions") // Array of permission strings[m
+[32m +  lastAdminLogin   DateTime? @map("last_admin_login")[m
+[32m +  adminCreatedAt   DateTime? @map("admin_created_at")[m
+[32m +  adminUpdatedAt   DateTime? @updatedAt @map("admin_updated_at")[m
+  [m
+    // Relations (available for both regular users and admins)[m
+[31m -  rides            Ride[][m
+[31m -  deliveryOrders   DeliveryOrder[][m
+[31m -  wallet           Wallet?[m
+[31m -  ratings          Rating[][m
+[31m -  emergencyContacts EmergencyContact[][m
+[31m -  sentMessages     ChatMessage[] @relation("MessageSender")[m
+[31m -  receivedRatings  Rating[] @relation("RatedUser")[m
+[32m +  rides                   Ride[][m
+[32m +  deliveryOrders          DeliveryOrder[][m
+[32m +  wallet                  Wallet?[m
+[32m +  ratings                 Rating[][m
+[32m +  emergencyContacts       EmergencyContact[][m
+[32m +  sentMessages            ChatMessage[]            @relation("MessageSender")[m
+[32m +  receivedRatings         Rating[]                 @relation("RatedUser")[m
+    notificationPreferences NotificationPreferences?[m
+[31m-   pushTokens              PushToken[][m
+[31m-   notifications           Notification[][m
+[31m-   ownedStores             Store[][m
+[32m+   pushTokens       PushToken[][m
+[32m+   notifications    Notification[][m
+[32m+   ownedStores      Store[][m
+[32m+ [m
+[31m -  // New services relations[m
+[31m -  errands          Errand[][m
+[31m -  parcels          Parcel[][m
+[31m -  cart             Cart?[m
+[31m -[m
+[32m+   // Group-based permission system relations[m
+[32m+   userGroups       UserGroup[][m
+  [m
+    // Venezuelan payment system relations[m
+    paymentReferences PaymentReference[][m
+[36m@@@ -96,26 -105,28 +99,26 @@@[m
+  [m
+  // Stores driver/courier information, their vehicle, and status[m
+  model Driver {[m
+[31m -  id                   Int      @id @default(autoincrement())[m
+[31m -  firstName            String   @map("first_name") @db.VarChar(50)[m
+[31m -  lastName             String   @map("last_name") @db.VarChar(50)[m
+[31m -  profileImageUrl      String?  @map("profile_image_url")[m
+[31m -  carImageUrl          String?  @map("car_image_url")[m
+[31m -  carModel             String?  @map("car_model") @db.VarChar(100)[m
+[31m -  licensePlate         String?  @unique @map("license_plate") @db.VarChar(20)[m
+[31m -  carSeats             Int      @map("car_seats")[m
+[31m -  vehicleTypeId        Int?     @map("vehicle_type_id") // Nueva relación con tipo de vehículo[m
+[31m -  status               String   @default("offline") @db.VarChar(20)[m
+[31m -  verificationStatus   String   @default("pending") @map("verification_status") @db.VarChar(20)[m
+[31m -  canDoDeliveries      Boolean  @default(false) @map("can_do_deliveries")[m
+[31m -  createdAt            DateTime @default(now()) @map("created_at")[m
+[31m -  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")[m
+[32m +  id                 Int      @id @default(autoincrement())[m
+[32m +  firstName          String   @map("first_name") @db.VarChar(50)[m
+[32m +  lastName           String   @map("last_name") @db.VarChar(50)[m
+[32m +  profileImageUrl    String?  @map("profile_image_url")[m
+[32m +  carImageUrl        String?  @map("car_image_url")[m
+[32m +  carModel           String?  @map("car_model") @db.VarChar(100)[m
+[32m +  licensePlate       String?  @unique @map("license_plate") @db.VarChar(20)[m
+[32m +  carSeats           Int      @map("car_seats")[m
+[32m +  vehicleTypeId      Int?     @map("vehicle_type_id") // Nueva relación con tipo de vehículo[m
+[32m +  status             String   @default("offline") @db.VarChar(20)[m
+[32m +  verificationStatus String   @default("pending") @map("verification_status") @db.VarChar(20)[m
+[32m +  canDoDeliveries    Boolean  @default(false) @map("can_do_deliveries")[m
+[32m +  createdAt          DateTime @default(now()) @map("created_at")[m
+[32m +  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")[m
+  [m
+    // Relations[m
+[31m-   vehicleType    VehicleType?     @relation(fields: [vehicleTypeId], references: [id])[m
+[31m-   documents      DriverDocument[][m
+[31m-   rides          Ride[][m
+[31m-   deliveryOrders DeliveryOrder[][m
+[32m+   vehicleType     VehicleType?    @relation(fields: [vehicleTypeId], references: [id])[m
+[32m+   documents       DriverDocument[][m
+[32m+   rides           Ride[][m
+[32m+   deliveryOrders  DeliveryOrder[][m
+[31m -  errands         Errand[][m
+[31m -  parcels         Parcel[][m
+  [m
+    @@map("drivers")[m
+  }[m
+[36m@@@ -154,24 -166,40 +158,40 @@@[m [mmodel RideTier [m
+    @@map("ride_tiers")[m
+  }[m
+  [m
+[32m+ // Defines valid combinations between tiers and vehicle types[m
+[32m+ model TierVehicleType {[m
+[32m+   id            Int         @id @default(autoincrement())[m
+[32m+   tierId        Int         @map("tier_id")[m
+[32m+   vehicleTypeId Int         @map("vehicle_type_id")[m
+[32m+   isActive      Boolean     @default(true) @map("is_active")[m
+[32m+   createdAt     DateTime    @default(now()) @map("created_at")[m
+[32m+ [m
+[32m+   // Relations[m
+[32m+   tier          RideTier    @relation(fields: [tierId], references: [id], onDelete: Cascade)[m
+[32m+   vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)[m
+[32m+ [m
+[32m+   @@unique([tierId, vehicleTypeId])[m
+[32m+   @@map("tier_vehicle_types")[m
+[32m+ }[m
+[32m+ [m
+  // Stores information about each ride[m
+  model Ride {[m
+[31m -  rideId                   Int      @id @default(autoincrement()) @map("ride_id")[m
+[31m -  originAddress            String   @map("origin_address") @db.VarChar(255)[m
+[31m -  destinationAddress       String   @map("destination_address") @db.VarChar(255)[m
+[31m -  originLatitude           Decimal  @map("origin_latitude") @db.Decimal(9, 6)[m
+[31m -  originLongitude          Decimal  @map("origin_longitude") @db.Decimal(9, 6)[m
+[31m -  destinationLatitude      Decimal  @map("destination_latitude") @db.Decimal(9, 6)[m
+[31m -  destinationLongitude     Decimal @map("destination_longitude") @db.Decimal(9, 6)[m
+[31m -  rideTime                 Int      @map("ride_time")[m
+[31m -  farePrice                Decimal  @map("fare_price") @db.Decimal(10, 2)[m
+[31m -  paymentStatus            String   @map("payment_status") @db.VarChar(20)[m
+[31m -  driverId                 Int?     @map("driver_id")[m
+[31m -  userId                   Int      @map("user_id")[m
+[31m -  tierId                   Int?     @map("tier_id")[m
+[31m -  requestedVehicleTypeId   Int?     @map("requested_vehicle_type_id") // Tipo de vehículo solicitado[m
+[31m -  scheduledFor             DateTime? @map("scheduled_for")[m
+[31m -  createdAt                DateTime @default(now()) @map("created_at")[m
+[32m +  rideId                 Int       @id @default(autoincrement()) @map("ride_id")[m
+[32m +  originAddress          String    @map("origin_address") @db.VarChar(255)[m
+[32m +  destinationAddress     String    @map("destination_address") @db.VarChar(255)[m
+[32m +  originLatitude         Decimal   @map("origin_latitude") @db.Decimal(9, 6)[m
+[32m +  originLongitude        Decimal   @map("origin_longitude") @db.Decimal(9, 6)[m
+[32m +  destinationLatitude    Decimal   @map("destination_latitude") @db.Decimal(9, 6)[m
+[32m +  destinationLongitude   Decimal   @map("destination_longitude") @db.Decimal(9, 6)[m
+[32m +  rideTime               Int       @map("ride_time")[m
+[32m +  farePrice              Decimal   @map("fare_price") @db.Decimal(10, 2)[m
+[32m +  paymentStatus          String    @map("payment_status") @db.VarChar(20)[m
+[32m +  driverId               Int?      @map("driver_id")[m
+[32m +  userId                 Int       @map("user_id")[m
+[32m +  tierId                 Int?      @map("tier_id")[m
+[32m +  requestedVehicleTypeId Int?      @map("requested_vehicle_type_id") // Tipo de vehículo solicitado[m
+[32m +  scheduledFor           DateTime? @map("scheduled_for")[m
+[32m +  createdAt              DateTime  @default(now()) @map("created_at")[m
+  [m
+    // Relations[m
+    driver               Driver?       @relation(fields: [driverId], references: [id])[m
+[36m@@@ -357,19 -386,23 +378,21 @@@[m [mmodel EmergencyContact [m
+    @@map("emergency_contacts")[m
+  }[m
+  [m
+[31m- // Stores chat messages for rides or deliveries[m
+[32m+ // Stores chat messages for rides, deliveries, errands, and parcels[m
+  model ChatMessage {[m
+[31m-   id          Int      @id @default(autoincrement())[m
+[31m-   rideId      Int?     @map("ride_id")[m
+[31m-   orderId     Int?     @map("order_id")[m
+[31m-   senderId    Int      @map("sender_id")[m
+[31m-   messageText String   @map("message_text")[m
+[31m-   createdAt   DateTime @default(now()) @map("created_at")[m
+[32m+   id            Int      @id @default(autoincrement())[m
+[32m+   rideId        Int?     @map("ride_id")[m
+[32m+   orderId       Int?     @map("order_id")[m
+[31m -  errandId      Int?     @map("errand_id")[m
+[31m -  parcelId      Int?     @map("parcel_id")[m
+[32m+   senderId      Int      @map("sender_id")[m
+[32m+   messageText   String   @map("message_text")[m
+[32m+   createdAt     DateTime @default(now()) @map("created_at")[m
+  [m
+    // Relations[m
+[31m-   ride   Ride?          @relation(fields: [rideId], references: [rideId])[m
+[31m-   order  DeliveryOrder? @relation(fields: [orderId], references: [orderId])[m
+[31m-   sender User           @relation("MessageSender", fields: [senderId], references: [id])[m
+[32m+   ride    Ride?          @relation(fields: [rideId], references: [rideId])[m
+[32m+   order   DeliveryOrder? @relation(fields: [orderId], references: [orderId])[m
+[32m+   errand  Errand?        @relation(fields: [errandId], references: [id])[m
+[32m+   parcel  Parcel?        @relation(fields: [parcelId], references: [id])[m
+[32m+   sender  User           @relation("MessageSender", fields: [senderId], references: [id])[m
+  [m
+    @@map("chat_messages")[m
+  }[m

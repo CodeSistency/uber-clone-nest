@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
 import { ConfirmRidePaymentDto, DefineRideDto, RateRideFlowDto, SelectVehicleDto } from './dto/transport-flow.dtos';
@@ -14,6 +14,83 @@ export class TransportClientController {
     private readonly flow: RidesFlowService,
     private readonly paymentsService: PaymentsService,
   ) {}
+
+  @Get('tiers')
+  @ApiOperation({
+    summary: 'Get available ride tiers for transport flow',
+    description: 'Retrieve all available ride tiers with their pricing information for transport ride calculations',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns available ride tiers',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Economy' },
+              baseFare: { type: 'number', example: 2.50 },
+              perMinuteRate: { type: 'number', example: 0.15 },
+              perMileRate: { type: 'number', example: 1.25 },
+              imageUrl: { type: 'string', example: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=100' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 500, description: 'Database error' })
+  async getRideTiers(): Promise<{ data: any[] }> {
+    const tiers = await this.flow.getAvailableRideTiers();
+    return { data: tiers };
+  }
+
+  @Get('tiers/:vehicleTypeId')
+  @ApiOperation({
+    summary: 'Get available tiers for a specific vehicle type',
+    description: 'Retrieve ride tiers that are available for a specific vehicle type (car, motorcycle, etc.)',
+  })
+  @ApiParam({
+    name: 'vehicleTypeId',
+    description: 'ID of the vehicle type',
+    example: 1,
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns available tiers for the vehicle type',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Economy' },
+              baseFare: { type: 'number', example: 2.50 },
+              perMinuteRate: { type: 'number', example: 0.15 },
+              perMileRate: { type: 'number', example: 1.25 },
+              imageUrl: { type: 'string', example: 'https://...' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid vehicle type ID' })
+  @ApiResponse({ status: 500, description: 'Database error' })
+  async getTiersForVehicleType(
+    @Param('vehicleTypeId') vehicleTypeId: string,
+  ): Promise<{ data: any[] }> {
+    const tiers = await this.flow.getAvailableTiersForVehicleType(Number(vehicleTypeId));
+    return { data: tiers };
+  }
 
   @Post('define-ride')
   @ApiOperation({

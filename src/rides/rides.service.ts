@@ -118,6 +118,7 @@ export class RidesService {
     });
   }
 
+
   async scheduleRide(scheduleRideDto: ScheduleRideDto): Promise<Ride> {
     const {
       origin_address,
@@ -413,6 +414,7 @@ export class RidesService {
     driverLat: number,
     driverLng: number,
     radius: number = 5,
+    driverVehicleTypeId?: number,
   ): Promise<any[]> {
     // Calculate bounding box for the search radius
     const earthRadius = 6371; // Earth's radius in kilometers
@@ -426,26 +428,60 @@ export class RidesService {
     const minLng = driverLng - lngDelta;
     const maxLng = driverLng + lngDelta;
 
+    // Build where clause
+    const whereClause: any = {
+      driverId: null, // No driver assigned yet
+      originLatitude: {
+        gte: minLat,
+        lte: maxLat,
+      },
+      originLongitude: {
+        gte: minLng,
+        lte: maxLng,
+      },
+      // Optionally filter by creation time (e.g., rides created in the last 30 minutes)
+      createdAt: {
+        gte: new Date(Date.now() - 30 * 60 * 1000), // Last 30 minutes
+      },
+    };
+
+    // If driver vehicle type is provided, filter by valid tier-vehicle combinations
+    if (driverVehicleTypeId) {
+      // Get all tier IDs that are valid for this vehicle type
+      const validCombinations = await this.prisma.tierVehicleType.findMany({
+        where: {
+          vehicleTypeId: driverVehicleTypeId,
+          isActive: true,
+        },
+        select: {
+          tierId: true,
+        },
+      });
+
+      const validTierIds = validCombinations.map(combo => combo.tierId);
+
+      // Only show rides that request vehicle types compatible with driver's vehicle
+      // OR rides that don't specify a vehicle type (backwards compatibility)
+      whereClause.OR = [
+        {
+          requestedVehicleTypeId: driverVehicleTypeId,
+          tierId: {
+            in: validTierIds,
+          },
+        },
+        {
+          requestedVehicleTypeId: null, // Rides without specific vehicle type
+        },
+      ];
+    }
+
     // Find rides that are available (no driver assigned) and within the bounding box
     const availableRides = await this.prisma.ride.findMany({
-      where: {
-        driverId: null, // No driver assigned yet
-        originLatitude: {
-          gte: minLat,
-          lte: maxLat,
-        },
-        originLongitude: {
-          gte: minLng,
-          lte: maxLng,
-        },
-        // Optionally filter by creation time (e.g., rides created in the last 30 minutes)
-        createdAt: {
-          gte: new Date(Date.now() - 30 * 60 * 1000), // Last 30 minutes
-        },
-      },
+      where: whereClause,
       include: {
         tier: true,
         user: true,
+        requestedVehicleType: true, // Include vehicle type info
       },
       orderBy: {
         createdAt: 'desc',
