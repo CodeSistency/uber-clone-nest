@@ -22,11 +22,47 @@ export class RidesFlowService {
     private readonly parcelsService: ParcelsService,
   ) {}
 
-  // Método para obtener todos los tiers de viaje disponibles
-  async getAvailableRideTiers() {
-    return this.prisma.rideTier.findMany({
-      orderBy: { baseFare: 'asc' }, // Ordenar por precio base (del más barato al más caro)
+  // Método para obtener tiers organizados por tipo de vehículo
+  async getAvailableRideTiersByVehicleType() {
+    // Obtener todas las combinaciones válidas con la información completa
+    const combinations = await this.prisma.tierVehicleType.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        tier: true,
+        vehicleType: true,
+      },
+      orderBy: [
+        { vehicleType: { displayName: 'asc' } },
+        { tier: { baseFare: 'asc' } }
+      ],
     });
+
+    // Agrupar por tipo de vehículo
+    const groupedByVehicleType = combinations.reduce((acc, combo) => {
+      const vehicleName = combo.vehicleType.name; // "car", "motorcycle", "bicycle"
+
+      if (!acc[vehicleName]) {
+        acc[vehicleName] = [];
+      }
+
+      acc[vehicleName].push({
+        id: combo.tier.id,
+        name: combo.tier.name,
+        baseFare: combo.tier.baseFare,
+        perMinuteRate: combo.tier.perMinuteRate,
+        perMileRate: combo.tier.perMileRate,
+        imageUrl: combo.tier.imageUrl,
+        vehicleTypeId: combo.vehicleTypeId,
+        vehicleTypeName: combo.vehicleType.displayName,
+        vehicleTypeIcon: combo.vehicleType.icon,
+      });
+
+      return acc;
+    }, {});
+
+    return groupedByVehicleType;
   }
 
   // Método para validar si una combinación tier + vehicleType es válida

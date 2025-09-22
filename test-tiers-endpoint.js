@@ -12,31 +12,57 @@ async function testTiersEndpoint() {
 
     // Validar estructura
     const { data } = response.data;
-    if (!Array.isArray(data)) {
-      throw new Error('La respuesta no contiene un array en data');
+    if (!data || typeof data !== 'object') {
+      throw new Error('La respuesta no contiene un objeto válido en data');
     }
 
-    if (data.length === 0) {
-      throw new Error('No se encontraron tiers');
+    // Verificar que tenga las claves esperadas (car, motorcycle, etc.)
+    const vehicleTypes = Object.keys(data);
+    if (vehicleTypes.length === 0) {
+      throw new Error('No se encontraron tipos de vehículo');
     }
 
-    // Validar primer tier
-    const firstTier = data[0];
-    const requiredFields = ['id', 'name', 'baseFare', 'perMinuteRate', 'perMileRate'];
+    console.log(`📊 Se encontraron ${vehicleTypes.length} tipos de vehículo: ${vehicleTypes.join(', ')}`);
 
-    for (const field of requiredFields) {
-      if (!(field in firstTier)) {
-        throw new Error(`El tier no tiene el campo requerido: ${field}`);
+    // Validar cada tipo de vehículo
+    for (const vehicleType of vehicleTypes) {
+      const tiers = data[vehicleType];
+
+      if (!Array.isArray(tiers)) {
+        throw new Error(`Los tiers para ${vehicleType} no son un array`);
+      }
+
+      if (tiers.length === 0) {
+        console.log(`⚠️  ${vehicleType} no tiene tiers disponibles`);
+        continue;
+      }
+
+      console.log(`✅ ${vehicleType}: ${tiers.length} tiers disponibles`);
+
+      // Validar primer tier de cada tipo
+      const firstTier = tiers[0];
+      const requiredFields = ['id', 'name', 'baseFare', 'perMinuteRate', 'perMileRate', 'vehicleTypeId', 'vehicleTypeName'];
+
+      for (const field of requiredFields) {
+        if (!(field in firstTier)) {
+          throw new Error(`El tier de ${vehicleType} no tiene el campo requerido: ${field}`);
+        }
       }
     }
 
     console.log('✅ Estructura de datos correcta');
-    console.log(`📈 Se encontraron ${data.length} tiers disponibles`);
 
-    // Mostrar tiers encontrados
-    data.forEach((tier, index) => {
-      console.log(`${index + 1}. ${tier.name} (ID: ${tier.id}) - Base: $${tier.baseFare}`);
-    });
+    // Calcular total de tiers
+    const totalTiers = Object.values(data).reduce((sum, tiers) => sum + tiers.length, 0);
+    console.log(`📈 Se encontraron ${totalTiers} tiers disponibles en total`);
+
+    // Mostrar tiers encontrados por tipo de vehículo
+    for (const [vehicleType, tiers] of Object.entries(data)) {
+      console.log(`\n🚗 ${vehicleType.toUpperCase()}:`);
+      tiers.forEach((tier, index) => {
+        console.log(`  ${index + 1}. ${tier.name} (ID: ${tier.id}) - Base: $${tier.baseFare} - ${tier.vehicleTypeName}`);
+      });
+    }
 
   } catch (error) {
     console.error('❌ Error al probar el endpoint:', error.message);

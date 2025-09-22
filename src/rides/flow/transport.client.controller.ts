@@ -17,26 +17,48 @@ export class TransportClientController {
 
   @Get('tiers')
   @ApiOperation({
-    summary: 'Get all available ride tiers for transport flow',
-    description: 'Retrieve all available ride tiers with their pricing information. Frontend should validate which combinations are allowed.',
+    summary: 'Get ride tiers organized by vehicle type',
+    description: 'Retrieve all available ride tiers grouped by compatible vehicle types for easy frontend consumption.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns all available ride tiers',
+    description: 'Returns ride tiers grouped by vehicle type',
     schema: {
       type: 'object',
       properties: {
         data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number', example: 1 },
-              name: { type: 'string', example: 'Economy' },
-              baseFare: { type: 'number', example: 2.50 },
-              perMinuteRate: { type: 'number', example: 0.15 },
-              perMileRate: { type: 'number', example: 1.25 },
-              imageUrl: { type: 'string', example: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=100' },
+          type: 'object',
+          properties: {
+            car: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  name: { type: 'string', example: 'Economy' },
+                  baseFare: { type: 'number', example: 2.50 },
+                  perMinuteRate: { type: 'number', example: 0.15 },
+                  perMileRate: { type: 'number', example: 1.25 },
+                  imageUrl: { type: 'string', example: 'https://...' },
+                  vehicleTypeId: { type: 'number', example: 1 },
+                  vehicleTypeName: { type: 'string', example: 'Carro' },
+                  vehicleTypeIcon: { type: 'string', example: '🚗' },
+                },
+              },
+            },
+            motorcycle: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  name: { type: 'string', example: 'Economy' },
+                  baseFare: { type: 'number', example: 2.50 },
+                  vehicleTypeId: { type: 'number', example: 2 },
+                  vehicleTypeName: { type: 'string', example: 'Moto' },
+                  vehicleTypeIcon: { type: 'string', example: '🏍️' },
+                },
+              },
             },
           },
         },
@@ -44,9 +66,9 @@ export class TransportClientController {
     },
   })
   @ApiResponse({ status: 500, description: 'Database error' })
-  async getRideTiers(): Promise<{ data: any[] }> {
-    const tiers = await this.flow.getAvailableRideTiers();
-    return { data: tiers };
+  async getRideTiers(): Promise<{ data: any }> {
+    const tiersByVehicleType = await this.flow.getAvailableRideTiersByVehicleType();
+    return { data: tiersByVehicleType };
   }
 
   @Post('define-ride')
