@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { ErrandsService } from './errands.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { WebSocketModule } from '../websocket/websocket.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule],
+  imports: [PrismaModule, NotificationsModule, WebSocketModule],
   providers: [ErrandsService],
   exports: [ErrandsService],
 })
