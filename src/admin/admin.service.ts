@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Admin, AdminRole, Permission } from './entities/admin.entity';
 import { AdminJwtPayload, AuthenticatedAdmin } from './interfaces/admin.interface';
 import { DashboardMetrics } from './modules/dashboard/dtos/metrics.dto';
-import { CreateAdminDto, CreateAdminResponseDto } from './dto/create-admin.dto';
+import { CreateAdminDto, CreateAdminResponseDto, CreateBusinessUserDto, CreateBusinessUserResponseDto } from './dto/create-admin.dto';
 import { UpdateAdminDto, UpdateAdminResponseDto } from './dto/update-admin.dto';
 import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-login.dto';
 import * as bcrypt from 'bcrypt';
@@ -39,8 +39,12 @@ export class AdminService {
     
     // Buscar usuario por email y verificar que sea admin
     const user = await this.prisma.user.findUnique({
-      where: { email, userType: 'admin' },
+      where: { email, OR: [
+        { userType: 'admin' },
+        { userType: 'bussiness' }
+      ] },
     });
+    console.log(user);  
 
     if (!user) {
       this.logger.warn(`No admin found with email: ${email}`);
@@ -58,8 +62,7 @@ export class AdminService {
       this.logger.warn(`No password set for admin: ${email}`);
       return null;
     }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password.trim(), user.password);
     if (!isPasswordValid) {
       this.logger.warn(`Invalid password for admin: ${email}`);
       return null;
@@ -80,6 +83,7 @@ export class AdminService {
    * @returns Access and refresh tokens with admin info
    */
   async login(loginDto: { email: string; password: string }): Promise<AdminLoginResponseDto> {
+    console.log(loginDto);
     const { email, password } = loginDto;
     
     this.logger.debug(`[Login] Attempting login for admin: ${email}`);
@@ -89,9 +93,13 @@ export class AdminService {
       const admin = await this.prisma.user.findFirst({
         where: { 
           email: email.toLowerCase().trim(),
-          userType: 'admin'
+          OR: [
+            { userType: 'admin' },
+            { userType: 'bussiness' }
+          ]
         }
       });
+      console.log(admin);
 
       if (!admin) {
         this.logger.warn(`[Login] No admin found with email: ${email}`);
@@ -199,11 +207,14 @@ export class AdminService {
    * @returns New access and refresh tokens with admin info
    */
   async refreshTokens(user: { id: string; email: string; role: AdminRole; refreshToken: string }): Promise<AdminLoginResponseDto> {
-    // Find the admin user
+    // Find the admin or business user
     const admin = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         id: parseInt(user.id), // Convert string ID to number as per Prisma schema
-        userType: 'admin',
+        OR: [
+          { userType: 'admin' },
+          { userType: 'bussiness' }
+        ],
         isActive: true
       }
     });
@@ -321,6 +332,79 @@ export class AdminService {
       adminPermissions: user.adminPermissions as Permission[],
       isActive: user.isActive,
       adminCreatedAt: user.adminCreatedAt,
+    };
+  }
+
+  async createBusinessUser(createBusinessUserDto: CreateBusinessUserDto): Promise<CreateBusinessUserResponseDto> {
+    const { name, email, password, phone } = createBusinessUserDto;
+
+    // Verificar si el email ya existe
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Hash de la contraseña
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Permisos por defecto para business users
+    const defaultBusinessPermissions: Permission[] = this.getDefaultPermissionsForRole(AdminRole.BUSSINESS);
+
+    // Crear business user
+    const user = await this.prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        phone,
+        userType: 'bussiness', // Business users are regular users with business permissions
+        adminRole: AdminRole.BUSSINESS, // Use business role
+        adminPermissions: defaultBusinessPermissions,
+        isActive: true,
+        emailVerified: false, // Require email verification
+        phoneVerified: phone ? false : undefined, // Require phone verification if provided
+        lastLogin: new Date(), // Set initial login time
+        lastAdminLogin: new Date(), // Set initial admin login time
+      },
+    });
+
+    this.logger.log(`Business user ${email} created successfully`);
+
+    // Generate tokens for immediate authentication (same as login)
+    const payload: AdminJwtPayload = {
+      sub: user.id.toString(),
+      email: user.email,
+      role: AdminRole.BUSSINESS,
+      permissions: defaultBusinessPermissions,
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+      admin: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        userType: user.userType as 'user',
+        adminRole: AdminRole.BUSSINESS,
+        adminPermissions: user.adminPermissions as string[],
+        lastLogin: user.lastLogin,
+        isActive: user.isActive,
+        profileImage: user.profileImage,
+        phone: user.phone,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      },
+      expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '3600', 10) // 1 hour default
     };
   }
 

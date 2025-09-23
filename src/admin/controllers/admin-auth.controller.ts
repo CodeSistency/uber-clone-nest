@@ -1,13 +1,14 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Body, 
-  UseGuards, 
-  Request, 
-  BadRequestException, 
-  UnauthorizedException, 
-  NotFoundException, 
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+  BadRequestException,
+  UnauthorizedException,
+  NotFoundException,
+  ConflictException,
   HttpStatus,
   HttpCode
 } from '@nestjs/common';
@@ -29,6 +30,7 @@ import { AdminService } from '../admin.service';
 import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { AdminLoginDto } from '../dto/login.dto';
 import { AdminRefreshTokenDto } from '../dto/refresh-token.dto';
+import { CreateBusinessUserDto, CreateBusinessUserResponseDto } from '../dto/create-admin.dto';
 import { STRATEGY_NAME as LOCAL_STRATEGY_NAME } from '../strategies/admin-local.strategy';
 import { JWT_REFRESH_STRATEGY_NAME } from '../strategies/admin-jwt-refresh.strategy';
 
@@ -201,6 +203,150 @@ export class AdminAuthController {
       return await this.adminService.login({ email, password });
     } catch (error) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+  }
+
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Register Business User',
+    description: `Register a new business user with default business permissions and automatic authentication.
+    Creates a regular user account with business role and permissions for managing business operations.
+    Returns JWT tokens for immediate authentication, eliminating the need for a separate login step.`
+  })
+  @ApiBody({
+    type: CreateBusinessUserDto,
+    description: 'Business user registration data',
+    examples: {
+      business_user: {
+        summary: 'Business User Registration',
+        value: {
+          name: 'John Business',
+          email: 'business@company.com',
+          password: 'Business123!',
+          phone: '+1234567890'
+        }
+      }
+    }
+  })
+  @ApiOkResponse({
+    description: 'Business user registered successfully with authentication tokens',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT access token for authentication'
+        },
+        refreshToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          description: 'JWT refresh token for getting new access tokens'
+        },
+        admin: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'number',
+              example: 1,
+              description: 'Business user ID'
+            },
+            name: {
+              type: 'string',
+              example: 'John Business',
+              description: 'Full name of the business user'
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'business@company.com',
+              description: 'Business user email address'
+            },
+            userType: {
+              type: 'string',
+              example: 'user',
+              enum: ['user'],
+              description: 'User type'
+            },
+            adminRole: {
+              type: 'string',
+              example: 'bussiness',
+              enum: ['bussiness'],
+              description: 'Business role assigned to the user'
+            },
+            adminPermissions: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['bussiness:read', 'bussiness:write', 'bussiness:approve'],
+              description: 'Business permissions granted to the user'
+            },
+            lastLogin: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Timestamp of last login',
+              nullable: true
+            },
+            isActive: {
+              type: 'boolean',
+              example: true,
+              description: 'Whether the business account is active'
+            },
+            profileImage: {
+              type: 'string',
+              nullable: true,
+              example: null,
+              description: 'Business user profile image URL'
+            },
+            phone: {
+              type: 'string',
+              nullable: true,
+              example: '+1234567890',
+              description: 'Business user phone number'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Business account creation timestamp'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Business account last update timestamp'
+            }
+          }
+        },
+        expiresIn: {
+          type: 'number',
+          example: 3600,
+          description: 'Time in seconds until the access token expires'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - Invalid input data or email already exists',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
+          type: 'string',
+          example: 'User with this email already exists',
+          description: 'Error message indicating the issue'
+        },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  async register(@Body() createBusinessUserDto: CreateBusinessUserDto): Promise<CreateBusinessUserResponseDto> {
+    try {
+      return await this.adminService.createBusinessUser(createBusinessUserDto);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
     }
   }
 

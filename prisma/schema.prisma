@@ -65,8 +65,8 @@ model User {
   identityVerified Boolean @default(false) @map("identity_verified")
 
   // Admin-specific fields (optional - only populated for admin users)
-  userType         String?   @default("user") @map("user_type") // 'user' or 'admin'
-  adminRole        String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support'
+  userType         String?   @default("user") @map("user_type") // 'user' or 'admin' or 'bussiness'
+  adminRole        String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support', 'bussiness'
   adminPermissions String[]  @default([]) @map("admin_permissions") // Array of permission strings
   lastAdminLogin   DateTime? @map("last_admin_login")
   adminCreatedAt   DateTime? @map("admin_created_at")
