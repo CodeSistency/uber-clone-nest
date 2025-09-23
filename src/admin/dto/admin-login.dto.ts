@@ -28,10 +28,10 @@ export class AdminLoginDto {
 class AdminInfoDto {
   @ApiProperty({
     description: 'Admin ID',
-    example: 1,
-    type: 'number'
+    example: '1',
+    type: 'string'
   })
-  id: number;
+  id: string;
 
   @ApiProperty({
     description: 'Admin full name',
@@ -47,6 +47,21 @@ class AdminInfoDto {
     format: 'email'
   })
   email: string;
+
+  @ApiProperty({
+    description: 'Whether the admin account is active',
+    example: true,
+    type: 'boolean'
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Last login timestamp',
+    example: '2024-01-15T10:30:00Z',
+    type: 'string',
+    format: 'date-time'
+  })
+  lastLogin: Date;
 
   @ApiProperty({
     description: 'User type',
@@ -78,6 +93,38 @@ class AdminInfoDto {
     required: false
   })
   lastAdminLogin?: Date;
+
+  @ApiProperty({
+    description: 'Profile image URL',
+    example: 'https://example.com/profile.jpg',
+    type: 'string',
+    required: false
+  })
+  profileImage?: string | null;
+
+  @ApiProperty({
+    description: 'Phone number',
+    example: '+1234567890',
+    type: 'string',
+    required: false
+  })
+  phone?: string | null;
+
+  @ApiProperty({
+    description: 'Account creation timestamp',
+    example: '2024-01-01T00:00:00Z',
+    type: 'string',
+    format: 'date-time'
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'Last update timestamp',
+    example: '2024-01-15T10:30:00Z',
+    type: 'string',
+    format: 'date-time'
+  })
+  updatedAt: Date;
 }
 
 export class AdminLoginResponseDto {

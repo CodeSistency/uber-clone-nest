@@ -2,7 +2,7 @@ import { AdminRole, Permission } from '../entities/admin.entity';
 
 // Interfaz para el payload del JWT de admin
 export interface AdminJwtPayload {
-  sub: number; // Admin ID
+  sub: string; // Admin ID as string for JWT compatibility
   email: string;
   role: AdminRole;
   permissions: Permission[];
@@ -19,70 +19,9 @@ export interface AuthenticatedAdmin {
   adminRole: AdminRole | null;
   adminPermissions: Permission[];
   lastAdminLogin?: Date | null;
+  isActive: boolean;
 }
 
-// Interfaz para métricas del dashboard
-export interface DashboardMetrics {
-  // Usuarios
-  totalUsers: number;
-  activeUsers: number;
-  newUsersToday: number;
-  newUsersThisWeek: number;
-  newUsersThisMonth: number;
-
-  // Drivers
-  totalDrivers: number;
-  onlineDrivers: number;
-  pendingVerifications: number;
-  approvedDrivers: number;
-  suspendedDrivers: number;
-
-  // Rides
-  activeRides: number;
-  completedRidesToday: number;
-  cancelledRidesToday: number;
-  completedRidesThisWeek: number;
-  totalRides: number;
-
-  // Delivery
-  activeOrders: number;
-  completedOrdersToday: number;
-  completedOrdersThisWeek: number;
-  totalOrders: number;
-
-  // Financial
-  totalRevenue: number;
-  revenueToday: number;
-  revenueThisWeek: number;
-  revenueThisMonth: number;
-  pendingPayments: number;
-  totalWalletBalance: number;
-
-  // Stores
-  totalStores: number;
-  activeStores: number;
-  pendingStores: number;
-
-  // System
-  totalNotificationsSent: number;
-  systemUptime: string;
-}
-
-// Interfaz para filtros de búsqueda de usuarios
-export interface UserFilters {
-  search?: string; // nombre, email, teléfono
-  status?: string[];
-  registrationDate?: DateRange;
-  rideCount?: NumberRange;
-  rating?: NumberRange;
-  location?: LocationFilter;
-  hasWallet?: boolean;
-  isVerified?: boolean;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}
 
 // Interfaz para filtros de búsqueda de drivers
 export interface DriverFilters {
@@ -98,6 +37,22 @@ export interface DriverFilters {
   page?: number;
   limit?: number;
 }
+
+  // Interfaz para filtros de búsqueda de usuarios
+  export interface UserFilters {
+    search?: string; // nombre, email, teléfono
+    status?: string[];
+    registrationDate?: DateRange;
+    rideCount?: NumberRange;
+    rating?: NumberRange;
+    location?: LocationFilter;
+    hasWallet?: boolean;
+    isVerified?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }
 
 // Interfaz para filtros de búsqueda de rides
 export interface RideFilters {

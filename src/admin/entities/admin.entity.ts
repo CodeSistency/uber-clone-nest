@@ -49,6 +49,9 @@ export enum AdminRole {
 
 // Permisos específicos por módulo
 export enum Permission {
+  // Dashboard
+  DASHBOARD_READ = 'dashboard:read',
+  
   // Users
   USER_READ = 'user:read',
   USER_WRITE = 'user:write',
@@ -78,7 +81,14 @@ export enum Permission {
 
   // System
   SYSTEM_CONFIG = 'system:config',
+  
+  // Reports
   REPORTS_VIEW = 'reports:view',
+  REPORTS_READ = 'reports:read',
+  REPORTS_GENERATE = 'reports:generate',
+  REPORTS_SCHEDULE = 'reports:schedule',
+  
+  // Logs
   LOGS_VIEW = 'logs:view',
 
   // Stores & Products
@@ -91,4 +101,14 @@ export enum Permission {
   // Notifications
   NOTIFICATION_SEND = 'notification:send',
   NOTIFICATION_READ = 'notification:read',
+
+  // Admin Management
+  ADMIN_READ = 'admin:read',
+  ADMIN_WRITE = 'admin:write',
+  ADMIN_DELETE = 'admin:delete',
+  
+  // Profile
+  PROFILE_READ = 'profile:read',
+  PROFILE_UPDATE = 'profile:update',
+  PASSWORD_UPDATE = 'password:update',
 }

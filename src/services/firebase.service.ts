@@ -31,29 +31,54 @@ export class FirebaseService {
 
   private initializeFirebase(): void {
     try {
-      const firebaseConfig = this.appConfigService.firebase;
-
-      if (!firebaseConfig.isConfigured()) {
-        this.logger.warn(
-          'Firebase configuration not found. Push notifications will be disabled.',
-        );
+      if (!this.appConfigService.firebase) {
+        this.logger.warn('Firebase configuration not found. Push notifications will be disabled.');
         return;
       }
 
-      // Initialize Firebase Admin SDK with only required and available properties
-      const firebaseAppConfig: admin.AppOptions = {
-        credential: admin.credential.cert(JSON.parse(firebaseConfig.serviceAccount!)),
-        projectId: firebaseConfig.projectId!,
-      };
+      const firebaseConfig = this.appConfigService.firebase;
+      const projectId = firebaseConfig.projectId;
+      const serviceAccount = firebaseConfig.serviceAccount;
 
-      // Add optional properties if available
-      if (firebaseConfig.storageBucket) {
-        firebaseAppConfig.storageBucket = firebaseConfig.storageBucket;
+      if (!projectId || !serviceAccount) {
+        this.logger.warn('Firebase configuration incomplete. Push notifications will be disabled.');
+        return;
       }
 
-      this.firebaseApp = admin.initializeApp(firebaseAppConfig);
+      let serviceAccountJson;
+      try {
+        // Try to parse service account (it might be a JSON string or already an object)
+        serviceAccountJson = typeof serviceAccount === 'string' 
+          ? JSON.parse(serviceAccount) 
+          : serviceAccount;
+        
+        // Validate required service account fields
+        if (!serviceAccountJson.private_key || !serviceAccountJson.client_email) {
+          throw new Error('Service account is missing required fields (private_key or client_email)');
+        }
+      } catch (error) {
+        this.logger.error('Failed to initialize Firebase:', error);
+        return;
+      }
 
-      this.logger.log('Firebase Admin SDK initialized successfully');
+      try {
+        // Initialize Firebase Admin SDK
+        const firebaseAppConfig: admin.AppOptions = {
+          credential: admin.credential.cert(serviceAccountJson as admin.ServiceAccount),
+          projectId: projectId,
+        };
+
+        // Add optional properties if available
+        if (firebaseConfig.storageBucket) {
+          firebaseAppConfig.storageBucket = firebaseConfig.storageBucket;
+        }
+
+        this.firebaseApp = admin.initializeApp(firebaseAppConfig);
+        this.logger.log('Firebase Admin SDK initialized successfully');
+      } catch (error) {
+        this.logger.error('Failed to initialize Firebase Admin SDK:', error);
+        this.firebaseApp = null;
+      }
     } catch (error) {
       this.logger.error('Failed to initialize Firebase:', error);
       this.firebaseApp = null;
@@ -65,7 +90,12 @@ export class FirebaseService {
     payload: PushNotificationPayload,
   ): Promise<string | null> {
     if (!this.firebaseApp) {
-      this.logger.warn('Firebase not initialized, skipping push notification');
+      this.logger.debug('Firebase not initialized, push notifications are disabled');
+      return null;
+    }
+    
+    if (!token) {
+      this.logger.warn('Cannot send push notification: missing token');
       return null;
     }
 

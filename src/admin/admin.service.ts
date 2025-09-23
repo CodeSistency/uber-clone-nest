@@ -8,7 +8,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { Admin, AdminRole, Permission } from './entities/admin.entity';
-import { AdminJwtPayload, AuthenticatedAdmin, DashboardMetrics } from './interfaces/admin.interface';
+import { AdminJwtPayload, AuthenticatedAdmin } from './interfaces/admin.interface';
+import { DashboardMetrics } from './modules/dashboard/dtos/metrics.dto';
 import { CreateAdminDto, CreateAdminResponseDto } from './dto/create-admin.dto';
 import { UpdateAdminDto, UpdateAdminResponseDto } from './dto/update-admin.dto';
 import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-login.dto';
@@ -27,48 +28,196 @@ export class AdminService {
   // AUTENTICACIÓN
   // ===============================
 
-  async login(loginDto: AdminLoginDto): Promise<AdminLoginResponseDto> {
-    const { email, password } = loginDto;
-
+  /**
+   * Validates an admin's credentials
+   * @param email Admin's email
+   * @param password Admin's password
+   * @returns The admin if credentials are valid, null otherwise
+   */
+  async validateAdmin(email: string, password: string): Promise<any> {
+    this.logger.debug(`Validating admin with email: ${email}`);
+    
     // Buscar usuario por email y verificar que sea admin
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email, userType: 'admin' },
     });
 
-    if (!user || user.userType !== 'admin') {
-      throw new UnauthorizedException('Invalid credentials');
+    if (!user) {
+      this.logger.warn(`No admin found with email: ${email}`);
+      return null;
     }
 
     // Verificar si está activo
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is deactivated');
+      this.logger.warn(`Admin account is deactivated: ${email}`);
+      return null;
     }
 
     // Verificar contraseña
     if (!user.password) {
-      throw new UnauthorizedException('Invalid credentials');
+      this.logger.warn(`No password set for admin: ${email}`);
+      return null;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      this.logger.warn(`Invalid password for admin: ${email}`);
+      return null;
     }
 
-    // Actualizar último login del admin
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastLogin: new Date(),
-        lastAdminLogin: new Date()
-      },
+    this.logger.debug(`Admin validated successfully: ${email}`);
+    return user;
+  }
+
+  /**
+   * Refresh access and refresh tokens
+   * @param user User information from refresh token
+   * @returns New access and refresh tokens with admin info
+   */
+  /**
+   * Authenticate admin user with email and password
+   * @param loginDto Login credentials
+   * @returns Access and refresh tokens with admin info
+   */
+  async login(loginDto: { email: string; password: string }): Promise<AdminLoginResponseDto> {
+    const { email, password } = loginDto;
+    
+    this.logger.debug(`[Login] Attempting login for admin: ${email}`);
+    
+    try {
+      // Find admin by email
+      const admin = await this.prisma.user.findFirst({
+        where: { 
+          email: email.toLowerCase().trim(),
+          userType: 'admin'
+        }
+      });
+
+      if (!admin) {
+        this.logger.warn(`[Login] No admin found with email: ${email}`);
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      this.logger.debug(`[Login] Admin found - ID: ${admin.id}, Active: ${admin.isActive}, Has Password: ${!!admin.password}`);
+
+      if (!admin.isActive) {
+        this.logger.warn(`[Login] Account is deactivated for: ${email}`);
+        throw new UnauthorizedException('This account has been deactivated');
+      }
+
+      if (!admin.password) {
+        this.logger.warn(`[Login] No password set for admin: ${email}`);
+        throw new UnauthorizedException('Account not properly configured');
+      }
+
+      // Verify password
+      this.logger.debug(`[Login] Verifying password for: ${admin.email}`);
+      this.logger.debug(`[Login] Password length: ${password ? password.length : 0} chars`);
+      
+      // Normalize password input
+      const normalizedPassword = password.trim();
+      
+      // Log password comparison details (without logging actual password)
+      this.logger.debug(`[Login] Comparing password with stored hash...`);
+      
+      const isPasswordValid = await bcrypt.compare(normalizedPassword, admin.password);
+      
+      if (!isPasswordValid) {
+        // Check for common issues
+        if (password !== normalizedPassword) {
+          this.logger.warn(`[Login] Password contains leading/trailing whitespace`);
+        }
+        
+        // Check if it's a case sensitivity issue
+        const lowerCasePassword = password.toLowerCase();
+        const upperCasePassword = password.toUpperCase();
+        const isCaseSensitive = (password !== lowerCasePassword || password !== upperCasePassword);
+        
+        if (isCaseSensitive) {
+          this.logger.warn(`[Login] Password might have case sensitivity issues`);
+        }
+        
+        this.logger.warn(`[Login] Invalid password for admin: ${email}`);
+        throw new UnauthorizedException('Invalid email or password');
+      }
+      
+      this.logger.debug(`[Login] Password verified successfully for: ${email}`);
+
+      // Generate tokens
+      const payload: AdminJwtPayload = {
+        sub: admin.id.toString(),
+        email: admin.email,
+        role: (admin.adminRole as AdminRole) || AdminRole.ADMIN,
+        permissions: (admin.adminPermissions || []) as Permission[],
+      };
+
+      const accessToken = this.jwtService.sign(payload);
+      const refreshToken = this.jwtService.sign(payload, {
+        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+      });
+
+      // Update last login timestamps
+      await this.prisma.user.update({
+        where: { id: admin.id },
+        data: {
+          lastLogin: new Date(),
+          lastAdminLogin: new Date(),
+          // Store refresh token hash in the password field (temporarily)
+          password: await bcrypt.hash(refreshToken, 10)
+        }
+      });
+
+      return {
+        accessToken,
+        refreshToken,
+        admin: {
+          id: admin.id.toString(), // Keep as string to match AdminInfoDto
+          name: admin.name,
+          email: admin.email,
+          isActive: admin.isActive,
+          lastLogin: admin.lastLogin || new Date(),
+          userType: admin.userType as 'user' | 'admin',
+          adminRole: admin.adminRole as AdminRole,
+          adminPermissions: (admin.adminPermissions || []) as Permission[],
+          lastAdminLogin: admin.lastAdminLogin || new Date(),
+          profileImage: admin.profileImage || null,
+          phone: admin.phone || null,
+          createdAt: admin.createdAt,
+          updatedAt: admin.updatedAt
+        },
+        expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '3600', 10) // 1 hour default
+      };
+    } catch (error) {
+      this.logger.error(`[Login] Error during login for ${email}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh access and refresh tokens
+   * @param user User information from refresh token
+   * @returns New access and refresh tokens with admin info
+   */
+  async refreshTokens(user: { id: string; email: string; role: AdminRole; refreshToken: string }): Promise<AdminLoginResponseDto> {
+    // Find the admin user
+    const admin = await this.prisma.user.findUnique({
+      where: { 
+        id: parseInt(user.id), // Convert string ID to number as per Prisma schema
+        userType: 'admin',
+        isActive: true
+      }
     });
 
-    // Generar tokens
+    if (!admin) {
+      throw new UnauthorizedException('Access Denied');
+    }
+
+    // Generate new tokens
     const payload: AdminJwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.adminRole as AdminRole,
-      permissions: user.adminPermissions as Permission[],
+      sub: admin.id.toString(),
+      email: admin.email,
+      role: (admin.adminRole as AdminRole) || AdminRole.ADMIN,
+      permissions: (admin.adminPermissions || []) as Permission[],
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -76,21 +225,38 @@ export class AdminService {
       expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
     });
 
-    this.logger.log(`Admin ${email} logged in successfully`);
+    this.logger.log(`Admin ${admin.email} refreshed tokens successfully`);
+
+    // Update the refresh token in the database
+    await this.prisma.user.update({
+      where: { id: admin.id },
+      data: {
+        // Store the hashed refresh token in the password field (temporarily)
+        password: await bcrypt.hash(refreshToken, 10),
+        lastLogin: new Date(),
+        lastAdminLogin: new Date()
+      }
+    });
 
     return {
       accessToken,
       refreshToken,
       admin: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        userType: user.userType as 'user' | 'admin',
-        adminRole: user.adminRole as AdminRole,
-        adminPermissions: user.adminPermissions as Permission[],
-        lastAdminLogin: user.lastAdminLogin || undefined,
+        id: admin.id.toString(), // Keep as string to match AdminInfoDto
+        name: admin.name,
+        email: admin.email,
+        isActive: admin.isActive,
+        lastLogin: admin.lastLogin || new Date(),
+        userType: admin.userType as 'user' | 'admin',
+        adminRole: admin.adminRole as AdminRole,
+        adminPermissions: (admin.adminPermissions || []) as Permission[],
+        lastAdminLogin: admin.lastAdminLogin || new Date(),
+        profileImage: admin.profileImage || null,
+        phone: admin.phone || null,
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt
       },
-      expiresIn: 3600, // 1 hour
+      expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '3600', 10) // 1 hour default
     };
   }
 
@@ -158,12 +324,15 @@ export class AdminService {
     };
   }
 
-  async findAdminById(id: number): Promise<Admin | null> {
+  async findAdminById(id: number | string): Promise<AuthenticatedAdmin | null> {
+    const userId = typeof id === 'string' ? parseInt(id, 10) : id;
+    
+    if (isNaN(userId)) {
+      return null;
+    }
+    
     const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: {
-        adminAuditLogs: true,
-      },
+      where: { id: userId },
     });
 
     if (!user || user.userType !== 'admin') return null;
@@ -172,18 +341,11 @@ export class AdminService {
       id: user.id,
       name: user.name,
       email: user.email,
-      password: user.password,
+      userType: user.userType as 'user' | 'admin',
+      adminRole: user.adminRole as AdminRole,
+      adminPermissions: (user.adminPermissions || []) as Permission[],
+      lastAdminLogin: user.lastAdminLogin || null,
       isActive: user.isActive,
-      lastLogin: user.lastLogin,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      userType: user.userType as 'user' | 'admin' | null,
-      adminRole: user.adminRole as AdminRole | null,
-      adminPermissions: user.adminPermissions as Permission[],
-      lastAdminLogin: user.lastAdminLogin,
-      adminCreatedAt: user.adminCreatedAt,
-      adminUpdatedAt: user.adminUpdatedAt,
-      adminAuditLogs: user.adminAuditLogs,
     };
   }
 
