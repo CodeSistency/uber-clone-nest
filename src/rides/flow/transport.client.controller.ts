@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards, Query, NotFoundException, ConflictException } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LocationTrackingService } from '../../redis/location-tracking.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
-import { ConfirmRidePaymentDto, DefineRideDto, RateRideFlowDto, SelectVehicleDto } from './dto/transport-flow.dtos';
+import { ConfirmRidePaymentDto, DefineRideDto, RateRideFlowDto, SelectVehicleDto, MatchBestDriverDto, MatchedDriverDto, ConfirmDriverDto, PayWithMultipleMethodsDto, GeneratePaymentReferenceDto, ConfirmPaymentWithReferenceDto } from './dto/transport-flow.dtos';
 import { PaymentsService } from '../../payments/payments.service';
 
 @ApiTags('rides-flow-client')
@@ -270,116 +270,95 @@ export class TransportClientController {
     }
   }
 
-  @Get('nearby-drivers')
+  @Post('match-best-driver')
   @ApiOperation({
-    summary: 'Buscar conductores cercanos disponibles',
+    summary: 'Encontrar el mejor conductor disponible automáticamente',
     description: `
-    **FUNCIONALIDAD PRINCIPAL:** Permite al cliente buscar conductores cercanos disponibles para su viaje.
+    **NUEVO FLUJO DE MATCHING AUTOMÁTICO**
 
-    **¿Qué hace?**
-    - Busca conductores online en un radio específico
-    - Filtra por tipo de vehículo compatible con el tier seleccionado
-    - Calcula distancia estimada y tiempo de llegada
-    - Ordena por proximidad y calificación
+    Este endpoint reemplaza el flujo anterior de "lista de conductores".
+    El sistema automáticamente encuentra y selecciona el mejor conductor disponible
+    basado en algoritmos de optimización que consideran:
 
-    **Parámetros requeridos:**
-    - \`lat\`, \`lng\`: Ubicación actual del cliente
-    - \`tierId\`: Tier seleccionado (opcional, filtra vehículos compatibles)
-    - \`vehicleTypeId\`: Tipo de vehículo específico (opcional)
+    **Criterios de Matching:**
+    - ✅ **Distancia**: Conductores más cercanos tienen prioridad
+    - ✅ **Calificación**: Conductores con mejor rating
+    - ✅ **Tiempo estimado**: Menor tiempo de llegada
+    - ✅ **Disponibilidad**: Solo conductores online y verificados
+    - ✅ **Compatibilidad**: Vehículos compatibles con el tier solicitado
 
-    **Información devuelta:**
-    - Datos del conductor (nombre, foto, calificación)
-    - Información del vehículo (modelo, placa, asientos)
-    - Distancia estimada y tiempo de llegada
-    - Estado de verificación del conductor
+    **Algoritmo de Puntuación:**
+    \`\`\`
+    Score = (1/distance) × 40 + rating × 35 + (1/estimated_time) × 25
+    \`\`\`
 
-    **Uso típico:**
-    1. Cliente define su viaje
-    2. Cliente busca conductores cercanos
-    3. Cliente selecciona conductor preferido
-    4. Cliente solicita viaje específico al conductor
+    **Flujo típico:**
+    1. Usuario define viaje (origen/destino + tier)
+    2. Sistema busca mejor conductor automáticamente
+    3. Usuario ve detalles del conductor encontrado
+    4. Usuario confirma o busca otro conductor
+    5. Sistema notifica al conductor seleccionado
+
+    **Estados del matching:**
+    - \`matching\`: Buscando conductor óptimo
+    - \`found\`: Conductor encontrado exitosamente
+    - \`no_drivers\`: No hay conductores disponibles
     `
   })
-  @ApiQuery({
-    name: 'lat',
-    description: 'Latitud actual del cliente',
-    example: 4.6097,
-    type: Number,
-    required: true
-  })
-  @ApiQuery({
-    name: 'lng', 
-    description: 'Longitud actual del cliente',
-    example: -74.0817,
-    type: Number,
-    required: true
-  })
-  @ApiQuery({
-    name: 'radius',
-    description: 'Radio de búsqueda en kilómetros',
-    example: 5,
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'tierId',
-    description: 'ID del tier seleccionado (filtra vehículos compatibles)',
-    example: 1,
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'vehicleTypeId',
-    description: 'ID del tipo de vehículo específico',
-    example: 1,
-    type: Number,
-    required: false
+  @ApiBody({
+    type: MatchBestDriverDto,
+    examples: {
+      'basic_matching': {
+        summary: 'Matching básico con ubicación',
+        description: 'Busca el mejor conductor en un radio de 5km',
+        value: {
+          lat: 4.6097,
+          lng: -74.0817
+        }
+      },
+      'tier_specific': {
+        summary: 'Matching con tier específico',
+        description: 'Busca conductor Economy (tier 1) en zona específica',
+        value: {
+          lat: 4.6097,
+          lng: -74.0817,
+          tierId: 1,
+          radiusKm: 3
+        }
+      },
+      'vehicle_specific': {
+        summary: 'Matching con tipo de vehículo específico',
+        description: 'Busca conductor con moto (vehicleType 2)',
+        value: {
+          lat: 10.4998,
+          lng: -66.8517,
+          vehicleTypeId: 2,
+          radiusKm: 8
+        }
+      }
+    }
   })
   @ApiResponse({
     status: 200,
-    description: 'Conductores cercanos encontrados exitosamente',
+    description: 'Mejor conductor encontrado exitosamente',
     schema: {
       type: 'object',
       properties: {
         data: {
-          type: 'array',
-          items: {
             type: 'object',
             properties: {
-              driverId: { type: 'number', example: 1 },
-              firstName: { type: 'string', example: 'Carlos' },
-              lastName: { type: 'string', example: 'Rodriguez' },
-              profileImageUrl: { type: 'string', example: 'https://...' },
-              rating: { type: 'number', example: 4.8 },
-              carModel: { type: 'string', example: 'Toyota Camry' },
-              licensePlate: { type: 'string', example: 'ABC-123' },
-              carSeats: { type: 'number', example: 4 },
-              vehicleType: {
+            matchedDriver: {
+              $ref: '#/components/schemas/MatchedDriverDto'
+            },
+            searchCriteria: {
                 type: 'object',
                 properties: {
-                  id: { type: 'number', example: 1 },
-                  name: { type: 'string', example: 'car' },
-                  displayName: { type: 'string', example: 'Carro' },
-                  icon: { type: 'string', example: '🚗' }
-                }
-              },
-              distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
-              estimatedArrival: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
-              verificationStatus: { type: 'string', example: 'approved' },
-              isOnline: { type: 'boolean', example: true }
-            }
-          }
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'number', example: 3 },
-            radius: { type: 'number', example: 5 },
-            searchLocation: {
-              type: 'object',
-              properties: {
                 lat: { type: 'number', example: 4.6097 },
-                lng: { type: 'number', example: -74.0817 }
+                lng: { type: 'number', example: -74.0817 },
+                tierId: { type: 'number', example: 1, nullable: true },
+                vehicleTypeId: { type: 'number', example: 1, nullable: true },
+                radiusKm: { type: 'number', example: 5 },
+                searchDuration: { type: 'number', example: 1.2, description: 'Tiempo de búsqueda en segundos' }
               }
             }
           }
@@ -387,59 +366,112 @@ export class TransportClientController {
       }
     }
   })
-  @ApiResponse({ status: 400, description: 'Parámetros de ubicación requeridos' })
-  @ApiResponse({ status: 500, description: 'Error al buscar conductores' })
-  async getNearbyDrivers(
-    @Query('lat') lat: string,
-    @Query('lng') lng: string,
-    @Query('radius') radius: string = '5',
-    @Query('tierId') tierId?: string,
-    @Query('vehicleTypeId') vehicleTypeId?: string,
-  ) {
-    const nearbyDrivers = await this.flow.getNearbyDrivers({
-      lat: Number(lat),
-      lng: Number(lng),
-      radius: Number(radius),
-      tierId: tierId ? Number(tierId) : undefined,
-      vehicleTypeId: vehicleTypeId ? Number(vehicleTypeId) : undefined,
-    });
-    return { data: nearbyDrivers };
+  @ApiResponse({ status: 400, description: 'Parámetros de búsqueda inválidos' })
+  @ApiResponse({
+    status: 404,
+    description: 'No se encontraron conductores disponibles',
+    schema: {
+          type: 'object',
+          properties: {
+        error: { type: 'string', example: 'NO_DRIVERS_AVAILABLE' },
+        message: { type: 'string', example: 'No hay conductores disponibles en tu área' },
+        searchCriteria: {
+              type: 'object',
+              properties: {
+            lat: { type: 'number' },
+            lng: { type: 'number' },
+            radiusKm: { type: 'number' },
+            triedTierIds: { type: 'array', items: { type: 'number' } },
+            triedVehicleTypeIds: { type: 'array', items: { type: 'number' } }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 500, description: 'Error interno del servidor' })
+  async matchBestDriver(@Body() body: MatchBestDriverDto) {
+    try {
+      const result = await this.flow.findBestDriverMatch({
+        lat: body.lat,
+        lng: body.lng,
+        tierId: body.tierId,
+        vehicleTypeId: body.vehicleTypeId,
+        radiusKm: body.radiusKm || 5
+      });
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'NO_DRIVERS_AVAILABLE') {
+        throw new NotFoundException({
+          error: 'NO_DRIVERS_AVAILABLE',
+          message: 'No hay conductores disponibles en tu área',
+          searchCriteria: {
+            lat: body.lat,
+            lng: body.lng,
+            radiusKm: body.radiusKm || 5,
+            triedTierIds: body.tierId ? [body.tierId] : [],
+            triedVehicleTypeIds: body.vehicleTypeId ? [body.vehicleTypeId] : []
+          }
+        });
+      }
+      throw error;
+    }
   }
 
-  @Post(':rideId/request-driver')
+
+  @Post(':rideId/confirm-driver')
   @ApiOperation({ 
-    summary: 'Solicitar conductor específico para este viaje',
+    summary: 'Confirmar conductor encontrado y enviar solicitud',
     description: `
-    **FUNCIONALIDAD:** Permite al cliente solicitar un conductor específico para su viaje.
+    **CONFIRMACIÓN DEL MATCHING AUTOMÁTICO**
+
+    Después de que el sistema encuentra el mejor conductor automáticamente,
+    el usuario debe confirmar que quiere proceder con ese conductor.
 
     **¿Qué hace?**
-    - Envía notificación específica al conductor seleccionado
-    - Crea una solicitud de viaje dirigida
-    - El conductor puede aceptar o rechazar
+    - ✅ Valida que el conductor esté disponible
+    - ✅ Asocia el conductor al viaje
+    - ✅ Envía notificación push/SMS al conductor
+    - ✅ Actualiza estado del viaje a 'driver_confirmed'
+    - ✅ Inicia temporizador de respuesta (2 minutos)
 
-    **Uso típico:**
-    1. Cliente busca conductores cercanos con /nearby-drivers
-    2. Cliente selecciona conductor preferido
-    3. Cliente usa este endpoint para solicitar específicamente a ese conductor
-    4. Conductor recibe notificación y puede aceptar/rechazar
+    **Flujo:**
+    1. Usuario ve conductor encontrado por matching automático
+    2. Usuario confirma conductor → Este endpoint
+    3. Sistema notifica al conductor inmediatamente
+    4. Conductor tiene 2 minutos para responder
+    5. Si conductor acepta → Viaje confirmado
+    6. Si conductor rechaza o no responde → Usuario puede buscar otro
+
+    **Notificaciones enviadas:**
+    - Push notification al conductor
+    - SMS al conductor (si habilitado)
+    - WebSocket event al conductor: \`driver:ride-request\`
     `
   })
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        driverId: {
-          type: 'number',
-          example: 1,
-          description: 'ID del conductor específico a solicitar'
+    type: ConfirmDriverDto,
+    examples: {
+      'basic_confirmation': {
+        summary: 'Confirmación básica',
+        description: 'Confirma el conductor encontrado sin notas adicionales',
+        value: {
+          driverId: 1
         }
       },
-      required: ['driverId']
+      'confirmation_with_notes': {
+        summary: 'Confirmación con notas',
+        description: 'Confirma conductor con instrucciones especiales',
+        value: {
+          driverId: 1,
+          notes: 'Por favor llegue rápido, tengo prisa por llegar al aeropuerto'
+        }
+      }
     }
   })
   @ApiResponse({
     status: 200,
-    description: 'Solicitud enviada al conductor específico',
+    description: 'Conductor confirmado y notificación enviada',
     schema: {
       type: 'object',
       properties: {
@@ -448,25 +480,71 @@ export class TransportClientController {
           properties: {
             rideId: { type: 'number', example: 123 },
             driverId: { type: 'number', example: 1 },
-            status: { type: 'string', example: 'requested' },
-            message: { type: 'string', example: 'Solicitud enviada al conductor' }
+            status: { type: 'string', example: 'driver_confirmed' },
+            message: { type: 'string', example: 'Conductor notificado exitosamente' },
+            notificationSent: { type: 'boolean', example: true },
+            responseTimeoutMinutes: { type: 'number', example: 2 },
+            expiresAt: { type: 'string', format: 'date-time' }
           }
         }
       }
     }
   })
-  async requestSpecificDriver(
+  @ApiResponse({ status: 400, description: 'Datos de confirmación inválidos' })
+  @ApiResponse({
+    status: 404,
+    description: 'Conductor no encontrado o no disponible',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'DRIVER_NOT_AVAILABLE' },
+        message: { type: 'string', example: 'El conductor ya no está disponible' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Viaje ya tiene conductor asignado',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'RIDE_ALREADY_HAS_DRIVER' },
+        message: { type: 'string', example: 'Este viaje ya tiene un conductor asignado' }
+      }
+    }
+  })
+  async confirmDriver(
     @Param('rideId') rideId: string,
-    @Body() body: { driverId: number }
+    @Body() body: ConfirmDriverDto,
+    @Req() req: any
   ) {
-    return this.flow.requestSpecificDriver(Number(rideId), body.driverId);
+    try {
+      const result = await this.flow.confirmDriverForRide(
+        Number(rideId),
+        body.driverId,
+        req.user.id,
+        body.notes
+      );
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'DRIVER_NOT_AVAILABLE') {
+        throw new NotFoundException({
+          error: 'DRIVER_NOT_AVAILABLE',
+          message: 'El conductor ya no está disponible'
+        });
+      }
+      if (error.message === 'RIDE_ALREADY_HAS_DRIVER') {
+        throw new ConflictException({
+          error: 'RIDE_ALREADY_HAS_DRIVER',
+          message: 'Este viaje ya tiene un conductor asignado'
+        });
+      }
+      throw error;
+    }
   }
 
-  @Post(':rideId/request-driver')
-  @ApiOperation({ summary: 'Request driver matching for this ride (notify nearby drivers)' })
-  async requestDriver(@Param('rideId') rideId: string) {
-    return this.flow.requestTransportDriver(Number(rideId));
-  }
+
 
 
   @Post(':rideId/confirm-payment')
@@ -485,18 +563,61 @@ export class TransportClientController {
     4. Se notifica al usuario con instrucciones de pago
 
     **Métodos de pago soportados:**
-    - \`transfer\`: Transferencia bancaria
-    - \`pago_movil\`: Pago móvil
-    - \`zelle\`: Zelle
-    - \`bitcoin\`: Bitcoin
+    - \`transfer\`: Transferencia bancaria (requiere bankCode)
+    - \`pago_movil\`: Pago móvil venezolano (requiere bankCode)
+    - \`zelle\`: Transferencias Zelle
+    - \`bitcoin\`: Pagos en Bitcoin
+    - \`cash\`: Pago en efectivo (sin referencia)
 
     **Flujo de pago:**
-    1. Usuario confirma pago → Obtiene referencia bancaria
+    1. Usuario confirma pago → Obtiene referencia bancaria (excepto efectivo)
     2. Usuario paga usando la referencia en su app bancaria
     3. Usuario confirma pago realizado
     4. Sistema valida con el banco
     5. Viaje se confirma cuando pago es validado
     `
+  })
+  @ApiBody({
+    type: ConfirmRidePaymentDto,
+    examples: {
+      'transfer_banco_venezuela': {
+        summary: '💳 Transferencia bancaria - Banco de Venezuela',
+        description: 'Pago mediante transferencia bancaria tradicional en Banco de Venezuela',
+        value: {
+          method: 'transfer',
+          bankCode: '0102'
+        }
+      },
+      'pago_movil_mercantil': {
+        summary: '📱 Pago móvil - Banco Mercantil',
+        description: 'Pago mediante Pago Móvil venezolano usando Banco Mercantil',
+        value: {
+          method: 'pago_movil',
+          bankCode: '0105'
+        }
+      },
+      'zelle_payment': {
+        summary: '💰 Pago Zelle',
+        description: 'Transferencia internacional mediante Zelle (sin código bancario)',
+        value: {
+          method: 'zelle'
+        }
+      },
+      'bitcoin_payment': {
+        summary: '₿ Pago Bitcoin',
+        description: 'Pago en criptomonedas Bitcoin (la referencia será la dirección wallet)',
+        value: {
+          method: 'bitcoin'
+        }
+      },
+      'cash_payment': {
+        summary: '💵 Pago en efectivo',
+        description: 'Pago directo en efectivo al conductor (no genera referencia bancaria)',
+        value: {
+          method: 'cash'
+        }
+      }
+    }
   })
   @ApiResponse({
     status: 200,
@@ -597,6 +718,744 @@ export class TransportClientController {
     return { data: rating };
   }
 
+  // =========================================
+  // NUEVOS ENDPOINTS DE PAGOS COMPLETOS
+  // =========================================
+
+  @Post(':rideId/pay-with-multiple-methods')
+  @ApiOperation({
+    summary: '💰 Pagar viaje con múltiples métodos de pago',
+    description: `
+    **PAGO DIRECTO EN LA APP - SISTEMA COMPLETO**
+
+    Permite al usuario pagar un viaje directamente en la aplicación usando uno o múltiples métodos de pago venezolanos.
+
+    **Funcionalidades:**
+    - ✅ Pago con un solo método (ej: solo transferencia)
+    - ✅ Pago combinado con múltiples métodos (ej: parte transferencia + parte Zelle)
+    - ✅ Validación automática de montos y métodos
+    - ✅ Creación de referencias para pagos electrónicos
+    - ✅ Confirmación inmediata para pagos en efectivo
+
+    **Métodos de pago soportados:**
+    - \`transfer\`: Transferencia bancaria
+    - \`pago_movil\`: Pago móvil venezolano
+    - \`zelle\`: Transferencias Zelle
+    - \`bitcoin\`: Pagos en Bitcoin
+    - \`cash\`: Pago en efectivo (sin referencia)
+
+    **Flujo de pago múltiple:**
+    1. Usuario selecciona métodos y montos
+    2. Sistema valida que sumen el total
+    3. Crea grupo de pagos con UUID único
+    4. Genera referencias para métodos electrónicos
+    5. Usuario confirma cada pago individualmente
+    6. Viaje se completa cuando todos los pagos están confirmados
+    `
+  })
+  @ApiBody({
+    type: PayWithMultipleMethodsDto,
+    examples: {
+      'single_method_transfer': {
+        summary: '💳 Pago con un solo método - Transferencia',
+        description: 'Pago completo del viaje usando solo transferencia bancaria',
+        value: {
+          totalAmount: 25.50,
+          payments: [
+            {
+              method: 'transfer',
+              amount: 25.50,
+              bankCode: '0102'
+            }
+          ]
+        }
+      },
+      'multiple_methods_combined': {
+        summary: '🔄 Pago combinado - Transferencia + Zelle',
+        description: 'Pago dividido entre transferencia bancaria y Zelle',
+        value: {
+          totalAmount: 75.50,
+          payments: [
+            {
+              method: 'transfer',
+              amount: 50.00,
+              bankCode: '0102'
+            },
+            {
+              method: 'zelle',
+              amount: 25.50
+            }
+          ]
+        }
+      },
+      'cash_payment_only': {
+        summary: '💵 Pago solo en efectivo',
+        description: 'Pago directo al conductor en efectivo (sin referencias)',
+        value: {
+          totalAmount: 25.50,
+          payments: [
+            {
+              method: 'cash',
+              amount: 25.50
+            }
+          ]
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pago(s) procesado(s) exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            groupId: {
+              type: 'string',
+              example: 'cm1n8x9p40000abcdefghijk',
+              description: 'UUID del grupo de pagos (para pagos múltiples)'
+            },
+            rideId: { type: 'number', example: 123 },
+            totalAmount: { type: 'number', example: 75.50 },
+            paymentMethods: {
+              type: 'array',
+              items: { type: 'string', example: 'transfer' },
+              description: 'Métodos de pago utilizados'
+            },
+            references: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  referenceNumber: { type: 'string', example: '12345678901234567890' },
+                  method: { type: 'string', example: 'transfer' },
+                  amount: { type: 'number', example: 50.00 },
+                  bankCode: { type: 'string', example: '0102' },
+                  expiresAt: { type: 'string', format: 'date-time' }
+                }
+              },
+              description: 'Referencias generadas para pagos electrónicos'
+            },
+            cashAmount: {
+              type: 'number',
+              example: 0,
+              description: 'Monto a pagar en efectivo'
+            },
+            status: {
+              type: 'string',
+              example: 'incomplete',
+              enum: ['complete', 'incomplete'],
+              description: 'Estado del grupo de pagos'
+            },
+            instructions: {
+              type: 'string',
+              example: 'Realiza los pagos electrónicos y confirma cada uno individualmente'
+            }
+          }
+        }
+      }
+    }
+  })
+  async payWithMultipleMethods(
+    @Param('rideId') rideId: string,
+    @Body() body: PayWithMultipleMethodsDto,
+    @Req() req: any,
+  ) {
+    // Validar que el viaje existe y pertenece al usuario
+    const ride = await this.flow.getTransportRideStatus(Number(rideId));
+    if (!ride) {
+      throw new Error('Viaje no encontrado');
+    }
+    if (ride.userId !== req.user.id) {
+      throw new Error('Este viaje no pertenece al usuario actual');
+    }
+
+    // Validar que el viaje esté en estado correcto para pago
+    if (ride.paymentStatus !== 'pending') {
+      throw new Error(`El viaje ya tiene estado de pago: ${ride.paymentStatus}`);
+    }
+
+    // Validar que los montos sumen el total correcto
+    const rideAmount = Number(ride.farePrice || 0);
+    const totalPayments = body.payments.reduce((sum, payment) => sum + payment.amount, 0);
+
+    if (Math.abs(totalPayments - body.totalAmount) > 0.01) {
+      throw new Error('Los montos de los pagos no coinciden con el total especificado');
+    }
+
+    if (Math.abs(body.totalAmount - rideAmount) > 0.01) {
+      throw new Error(`El monto total (${body.totalAmount}) no coincide con el precio del viaje (${rideAmount})`);
+    }
+
+    // Determinar si es pago único o múltiple
+    const isSinglePayment = body.payments.length === 1;
+
+    if (isSinglePayment) {
+      // PAGO ÚNICO
+      const payment = body.payments[0];
+
+      if (payment.method === 'cash') {
+        // Pago en efectivo - confirmar inmediatamente
+        const result = await this.flow.confirmTransportPayment(Number(rideId), payment.method);
+        return {
+          data: {
+            rideId: Number(rideId),
+            totalAmount: body.totalAmount,
+            paymentMethods: ['cash'],
+            status: 'complete',
+            message: 'Pago en efectivo confirmado exitosamente',
+            cashAmount: body.totalAmount
+          }
+        };
+      } else {
+        // Pago electrónico único - generar referencia
+        const reference = await this.paymentsService.generateBankReference({
+          serviceType: 'ride',
+          serviceId: Number(rideId),
+          amount: payment.amount,
+          paymentMethod: payment.method,
+          bankCode: payment.bankCode,
+          userId: req.user.id
+        });
+
+        return {
+          data: {
+            rideId: Number(rideId),
+            totalAmount: body.totalAmount,
+            paymentMethods: [payment.method],
+            references: [{
+              referenceNumber: reference.referenceNumber,
+              method: payment.method,
+              amount: payment.amount,
+              bankCode: payment.bankCode,
+              expiresAt: reference.expiresAt
+            }],
+            cashAmount: 0,
+            status: 'incomplete',
+            instructions: this.paymentsService.getPaymentInstructions(payment.method, reference.referenceNumber)
+          }
+        };
+      }
+    } else {
+      // PAGOS MÚLTIPLES
+      const electronicPayments = body.payments.filter(p => p.method !== 'cash');
+      const cashAmount = body.payments
+        .filter(p => p.method === 'cash')
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      // Crear grupo de pagos múltiples
+      const groupResult = await this.paymentsService.initiateMultiplePayments({
+        serviceType: 'ride',
+        serviceId: Number(rideId),
+        totalAmount: body.totalAmount,
+        userId: req.user.id,
+        payments: body.payments.map(p => ({
+          method: p.method,
+          amount: p.amount,
+          bankCode: p.bankCode
+        }))
+      });
+
+      return {
+        data: {
+          groupId: groupResult.groupId,
+          rideId: Number(rideId),
+          totalAmount: body.totalAmount,
+          paymentMethods: body.payments.map(p => p.method),
+          references: groupResult.references,
+          cashAmount: groupResult.cashAmount,
+          status: 'incomplete',
+          instructions: groupResult.instructions
+        }
+      };
+    }
+  }
+
+  @Post(':rideId/generate-payment-reference')
+  @ApiOperation({
+    summary: '📄 Generar referencia para pago externo',
+    description: `
+    **PAGO EXTERNO - GENERACIÓN DE REFERENCIA**
+
+    Genera una referencia bancaria que puede ser usada por cualquier persona para pagar el viaje externamente.
+
+    **Casos de uso:**
+    - ✅ Alguien más paga el viaje por ti
+    - ✅ Pago desde otra app bancaria
+    - ✅ Pago programado para más tarde
+    - ✅ Compartir referencia con familiares/amigos
+
+    **Proceso:**
+    1. Usuario selecciona método de pago
+    2. Sistema genera referencia única de 20 dígitos
+    3. Usuario comparte la referencia con quien pagará
+    4. Pagador usa la referencia en su banco/app
+    5. Usuario confirma el pago realizado
+    `
+  })
+  @ApiBody({
+    type: GeneratePaymentReferenceDto,
+    examples: {
+      'transfer_reference': {
+        summary: '💳 Referencia para transferencia bancaria',
+        description: 'Generar referencia que alguien puede usar para transferirte dinero',
+        value: {
+          method: 'transfer',
+          bankCode: '0102'
+        }
+      },
+      'zelle_reference': {
+        summary: '💰 Referencia para Zelle',
+        description: 'Generar referencia para pago internacional vía Zelle',
+        value: {
+          method: 'zelle'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Referencia generada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            rideId: { type: 'number', example: 123 },
+            referenceNumber: { type: 'string', example: '12345678901234567890' },
+            method: { type: 'string', example: 'transfer' },
+            amount: { type: 'number', example: 25.50 },
+            bankCode: { type: 'string', example: '0102' },
+            expiresAt: { type: 'string', format: 'date-time' },
+            instructions: { type: 'string', example: 'Realice la transferencia...' },
+            shareableLink: {
+              type: 'string',
+              example: 'https://app.uber-clone.com/pay/12345678901234567890',
+              description: 'Enlace para compartir con el pagador'
+            }
+          }
+        }
+      }
+    }
+  })
+  async generatePaymentReference(
+    @Param('rideId') rideId: string,
+    @Body() body: GeneratePaymentReferenceDto,
+    @Req() req: any,
+  ) {
+    // Validar viaje y usuario
+    const ride = await this.flow.getTransportRideStatus(Number(rideId));
+    if (!ride) {
+      throw new Error('Viaje no encontrado');
+    }
+    if (ride.userId !== req.user.id) {
+      throw new Error('Este viaje no pertenece al usuario actual');
+    }
+
+    // Generar referencia
+    const reference = await this.paymentsService.generateBankReference({
+      serviceType: 'ride',
+      serviceId: Number(rideId),
+      amount: Number(ride.farePrice || 0),
+      paymentMethod: body.method,
+      bankCode: body.bankCode,
+      userId: req.user.id
+    });
+
+    return {
+      data: {
+        rideId: Number(rideId),
+        referenceNumber: reference.referenceNumber,
+        method: body.method,
+        amount: Number(ride.farePrice || 0),
+        bankCode: body.bankCode,
+        expiresAt: reference.expiresAt,
+        instructions: this.paymentsService.getPaymentInstructions(body.method, reference.referenceNumber),
+        shareableLink: `https://app.uber-clone.com/pay/${reference.referenceNumber}`
+      }
+    };
+  }
+
+  @Post(':rideId/confirm-payment-with-reference')
+  @ApiOperation({
+    summary: '✅ Confirmar pago realizado con referencia externa',
+    description: `
+    **CONFIRMACIÓN DE PAGO EXTERNO**
+
+    Confirma que un pago realizado con una referencia externa fue procesado correctamente.
+
+    **Proceso:**
+    1. Usuario ingresa la referencia de 20 dígitos
+    2. Sistema valida que la referencia existe y pertenece al viaje
+    3. Consulta al banco correspondiente
+    4. Si el pago fue confirmado, actualiza el estado del viaje
+    5. Notifica al usuario y conductor
+
+    **Tiempo de procesamiento:**
+    - ✅ Simulación desarrollo: inmediato
+    - ⏱️ Producción real: 1-5 minutos por banco venezolano
+    `
+  })
+  @ApiBody({
+    type: ConfirmPaymentWithReferenceDto,
+    examples: {
+      'confirm_transfer': {
+        summary: '✅ Confirmar transferencia realizada',
+        description: 'Confirmar que la transferencia bancaria fue procesada',
+        value: {
+          referenceNumber: '12345678901234567890',
+          bankCode: '0102'
+        }
+      },
+      'confirm_zelle': {
+        summary: '✅ Confirmar pago Zelle',
+        description: 'Confirmar pago internacional vía Zelle',
+        value: {
+          referenceNumber: '09876543210987654321'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pago confirmado exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            rideId: { type: 'number', example: 123 },
+            referenceNumber: { type: 'string', example: '12345678901234567890' },
+            amount: { type: 'number', example: 25.50 },
+            transactionId: { type: 'string', example: 'BV-1725979200000' },
+            confirmedAt: { type: 'string', format: 'date-time' },
+            message: { type: 'string', example: 'Pago confirmado exitosamente' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pago aún en proceso',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            message: { type: 'string', example: 'Pago no encontrado o en proceso de confirmación' },
+            referenceNumber: { type: 'string', example: '12345678901234567890' }
+          }
+        }
+      }
+    }
+  })
+  async confirmPaymentWithReference(
+    @Param('rideId') rideId: string,
+    @Body() body: ConfirmPaymentWithReferenceDto,
+    @Req() req: any,
+  ) {
+    // Validar viaje y usuario
+    const ride = await this.flow.getTransportRideStatus(Number(rideId));
+    if (!ride) {
+      throw new Error('Viaje no encontrado');
+    }
+    if (ride.userId !== req.user.id) {
+      throw new Error('Este viaje no pertenece al usuario actual');
+    }
+
+    // Confirmar pago con referencia
+    const result = await this.paymentsService.confirmBankReference({
+      referenceNumber: body.referenceNumber,
+      bankCode: body.bankCode
+    }, req.user.id);
+
+    return {
+      data: {
+        success: result.success,
+        rideId: Number(rideId),
+        referenceNumber: body.referenceNumber,
+        amount: result.success ? result.transaction.amount : null,
+        transactionId: result.success ? result.transaction.transactionId : null,
+        confirmedAt: result.success ? result.transaction.timestamp : null,
+        message: result.message
+      }
+    };
+  }
+
+  @Post(':rideId/confirm-partial-payment')
+  @ApiOperation({
+    summary: '✅ Confirmar pago parcial en grupo múltiple',
+    description: `
+    **CONFIRMACIÓN DE PAGO PARCIAL**
+
+    Confirma un pago individual dentro de un grupo de pagos múltiples.
+
+    **Cuándo usar:**
+    - Después de pagar una referencia específica en un grupo múltiple
+    - Para actualizar el progreso del pago total
+    - Cuando el grupo está parcialmente completo
+
+    **Actualización automática:**
+    - ✅ Grupo se marca como 'complete' cuando todos los pagos están confirmados
+    - ✅ Viaje se actualiza cuando el grupo está completo
+    - ✅ Notificaciones automáticas al usuario
+    `
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['referenceNumber'],
+      properties: {
+        referenceNumber: {
+          type: 'string',
+          example: '12345678901234567890',
+          description: 'Referencia del pago parcial a confirmar',
+          minLength: 20,
+          maxLength: 20
+        },
+        bankCode: {
+          type: 'string',
+          example: '0102',
+          description: 'Código del banco (opcional)',
+          minLength: 4,
+          maxLength: 4
+        }
+      }
+    },
+    examples: {
+      'confirm_partial_transfer': {
+        summary: '✅ Confirmar transferencia parcial',
+        description: 'Confirmar una de las transferencias en un pago múltiple',
+        value: {
+          referenceNumber: '12345678901234567890',
+          bankCode: '0102'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pago parcial confirmado exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
+            rideId: { type: 'number', example: 123 },
+            referenceNumber: { type: 'string', example: '12345678901234567890' },
+            amount: { type: 'number', example: 25.00 },
+            groupStatus: {
+              type: 'string',
+              example: 'incomplete',
+              enum: ['incomplete', 'complete']
+            },
+            paidAmount: { type: 'number', example: 25.00 },
+            remainingAmount: { type: 'number', example: 50.50 },
+            message: { type: 'string', example: 'Pago parcial confirmado. Grupo: incomplete' }
+          }
+        }
+      }
+    }
+  })
+  async confirmPartialPayment(
+    @Param('rideId') rideId: string,
+    @Body() body: { referenceNumber: string; bankCode?: string },
+    @Req() req: any,
+  ) {
+    // Validar viaje y usuario
+    const ride = await this.flow.getTransportRideStatus(Number(rideId));
+    if (!ride) {
+      throw new Error('Viaje no encontrado');
+    }
+    if (ride.userId !== req.user.id) {
+      throw new Error('Este viaje no pertenece al usuario actual');
+    }
+
+    // Confirmar pago parcial
+    const result = await this.paymentsService.confirmPartialPayment({
+      referenceNumber: body.referenceNumber,
+      bankCode: body.bankCode
+    }, req.user.id);
+
+    return {
+      data: {
+        success: result.success,
+        groupId: result.groupId,
+        rideId: Number(rideId),
+        referenceNumber: body.referenceNumber,
+        amount: result.success ? result.transaction?.amount : null,
+        groupStatus: result.groupId ? 'updated' : 'unknown',
+        isPartial: result.isPartial,
+        message: result.message
+      }
+    };
+  }
+
+  @Get(':rideId/payment-status')
+  @ApiOperation({
+    summary: '📊 Consultar estado de pagos múltiples',
+    description: `
+    **ESTADO COMPLETO DE PAGOS**
+
+    Obtiene información detallada sobre el estado de un grupo de pagos múltiples.
+
+    **Información incluida:**
+    - ✅ Estado general del grupo (incomplete/complete/cancelled/expired)
+    - ✅ Monto total vs pagado vs pendiente
+    - ✅ Lista de todos los pagos con sus estados
+    - ✅ Estadísticas de confirmación
+    - ✅ Fechas importantes (creación, expiración, completado)
+
+    **Útil para:**
+    - Mostrar progreso en la UI
+    - Depurar pagos pendientes
+    - Historial de transacciones múltiples
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estado de pagos obtenido exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            rideId: { type: 'number', example: 123 },
+            groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
+            totalAmount: { type: 'number', example: 75.50 },
+            paidAmount: { type: 'number', example: 25.00 },
+            remainingAmount: { type: 'number', example: 50.50 },
+            status: {
+              type: 'string',
+              example: 'incomplete',
+              enum: ['incomplete', 'complete', 'cancelled', 'expired']
+            },
+            expiresAt: { type: 'string', format: 'date-time' },
+            createdAt: { type: 'string', format: 'date-time' },
+            statistics: {
+              type: 'object',
+              properties: {
+                totalReferences: { type: 'number', example: 3 },
+                confirmedReferences: { type: 'number', example: 1 },
+                pendingReferences: { type: 'number', example: 2 },
+                confirmationRate: { type: 'number', example: 33.33 }
+              }
+            },
+            payments: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  referenceNumber: { type: 'string', example: '12345678901234567890' },
+                  method: { type: 'string', example: 'transfer' },
+                  amount: { type: 'number', example: 25.00 },
+                  status: { type: 'string', example: 'confirmed' },
+                  bankCode: { type: 'string', example: '0102' },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  confirmedAt: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  async getPaymentStatus(
+    @Param('rideId') rideId: string,
+    @Req() req: any,
+  ) {
+    // Validar viaje y usuario
+    const ride = await this.flow.getTransportRideStatus(Number(rideId));
+    if (!ride) {
+      throw new Error('Viaje no encontrado');
+    }
+    if (ride.userId !== req.user.id) {
+      throw new Error('Este viaje no pertenece al usuario actual');
+    }
+
+    // Buscar si existe un grupo de pagos para este viaje
+    const paymentGroup = await this.prisma.paymentGroup.findFirst({
+      where: {
+        serviceType: 'ride',
+        serviceId: Number(rideId),
+        userId: req.user.id
+      },
+      include: {
+        paymentReferences: {
+          orderBy: { createdAt: 'asc' }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 1
+    });
+
+    if (!paymentGroup) {
+      // No hay grupo de pagos, devolver estado simple
+      return {
+        data: {
+          rideId: Number(rideId),
+          totalAmount: Number(ride.farePrice || 0),
+          paidAmount: ride.paymentStatus === 'paid' ? Number(ride.farePrice || 0) : 0,
+          remainingAmount: ride.paymentStatus === 'paid' ? 0 : Number(ride.farePrice || 0),
+          status: ride.paymentStatus === 'paid' ? 'complete' : 'pending',
+          hasPaymentGroup: false,
+          message: 'Viaje sin grupo de pagos múltiples'
+        }
+      };
+    }
+
+    // Calcular estadísticas
+    const totalReferences = paymentGroup.paymentReferences.length;
+    const confirmedReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'confirmed').length;
+    const pendingReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'pending').length;
+    const expiredReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'expired').length;
+
+    return {
+      data: {
+        rideId: Number(rideId),
+        groupId: paymentGroup.id,
+        totalAmount: Number(paymentGroup.totalAmount),
+        paidAmount: Number(paymentGroup.paidAmount),
+        remainingAmount: Number(paymentGroup.remainingAmount),
+        status: paymentGroup.status,
+        expiresAt: paymentGroup.expiresAt,
+        createdAt: paymentGroup.createdAt,
+        completedAt: paymentGroup.completedAt,
+        hasPaymentGroup: true,
+        statistics: {
+          totalReferences,
+          confirmedReferences,
+          pendingReferences,
+          expiredReferences,
+          confirmationRate: totalReferences > 0 ? (confirmedReferences / totalReferences) * 100 : 0
+        },
+        payments: paymentGroup.paymentReferences.map(ref => ({
+          referenceNumber: ref.referenceNumber,
+          method: ref.paymentMethod,
+          amount: Number(ref.amount),
+          status: ref.status,
+          bankCode: ref.bankCode,
+          createdAt: ref.createdAt,
+          confirmedAt: ref.confirmedAt,
+          expiresAt: ref.expiresAt
+        }))
+      }
+    };
+  }
+
   @Post('test/simulate-driver-locations')
   @ApiOperation({
     summary: 'Simular ubicaciones de conductores para pruebas',
@@ -670,42 +1529,46 @@ export class TransportClientController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Ubicaciones de conductores simuladas exitosamente',
+    description: 'Conductores simulados encontrados (misma estructura que el endpoint real)',
     schema: {
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          example: 'Successfully simulated 20 driver locations'
-        },
-        simulatedDrivers: {
+        data: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              driverId: { type: 'number' },
-              name: { type: 'string' },
-              location: {
+              id: { type: 'number', example: 1 },
+              firstName: { type: 'string', example: 'Carlos' },
+              lastName: { type: 'string', example: 'Rodriguez' },
+              profileImageUrl: { type: 'string', example: 'https://...' },
+              carModel: { type: 'string', example: 'Toyota Camry' },
+              licensePlate: { type: 'string', example: 'ABC-123' },
+              carSeats: { type: 'number', example: 4 },
+              vehicleType: {
                 type: 'object',
                 properties: {
-                  lat: { type: 'number' },
-                  lng: { type: 'number' }
+                  id: { type: 'number', example: 1 },
+                  name: { type: 'string', example: 'car' },
+                  displayName: { type: 'string', example: 'Carro' },
+                  icon: { type: 'string', example: '🚗' }
                 }
               },
-              distanceFromCenter: { type: 'number' },
-              vehicleType: { type: 'string' }
+              currentLocation: {
+                type: 'object',
+                properties: {
+                  lat: { type: 'number', example: 10.4998 },
+                  lng: { type: 'number', example: -66.8517 }
+                }
+              },
+              lastLocationUpdate: { type: 'string', format: 'date-time' },
+              locationAccuracy: { type: 'number', example: 5.0 },
+              distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
+              estimatedMinutes: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
+              rating: { type: 'number', example: 4.5 }
             }
           }
-        },
-        center: {
-          type: 'object',
-          properties: {
-            lat: { type: 'number' },
-            lng: { type: 'number' }
-          }
-        },
-        radiusKm: { type: 'number' },
-        timestamp: { type: 'string', format: 'date-time' }
+        }
       }
     }
   })
@@ -737,7 +1600,13 @@ export class TransportClientController {
           id: true,
           firstName: true,
           lastName: true,
+          profileImageUrl: true,
+          carModel: true,
+          licensePlate: true,
+          carSeats: true,
           vehicleTypeId: true,
+          lastLocationUpdate: true,
+          locationAccuracy: true,
           vehicleType: {
             select: {
               id: true,
@@ -811,24 +1680,31 @@ export class TransportClientController {
         // Calcular distancia desde el centro usando el método del LocationTrackingService
         const distanceFromCenter = this.locationTrackingService.calculateDistance(centerLat, centerLng, newLat, newLng);
 
+        // Calculate estimated time (assuming average speed of 30 km/h in city)
+        const estimatedMinutes = Math.round((distanceFromCenter / 30) * 60);
+
         simulatedDrivers.push({
-          driverId: driver.id,
-          name: `${driver.firstName} ${driver.lastName}`,
-          location: { lat: newLat, lng: newLng },
-          distanceFromCenter: Math.round(distanceFromCenter * 100) / 100,
-          vehicleType: driver.vehicleType?.displayName || 'Unknown',
-          status: 'online',
-          locationActive: true
+          id: driver.id,
+          firstName: driver.firstName,
+          lastName: driver.lastName,
+          profileImageUrl: driver.profileImageUrl,
+          carModel: driver.carModel,
+          licensePlate: driver.licensePlate,
+          carSeats: driver.carSeats,
+          vehicleType: driver.vehicleType,
+          currentLocation: {
+            lat: newLat,
+            lng: newLng,
+          },
+          lastLocationUpdate: driver.lastLocationUpdate,
+          locationAccuracy: driver.locationAccuracy ? Number(driver.locationAccuracy) : null,
+          distance: Math.round(distanceFromCenter * 100) / 100, // Round to 2 decimal places
+          estimatedMinutes,
+          rating: 4.5, // Simulated rating
         });
       }
 
-      return {
-        message: `Successfully simulated ${simulatedDrivers.length} driver locations`,
-        simulatedDrivers,
-        center: { lat: centerLat, lng: centerLng },
-        radiusKm,
-        timestamp: new Date()
-      };
+      return { data: simulatedDrivers };
 
     } catch (error) {
       console.error('Error simulating driver locations:', error);

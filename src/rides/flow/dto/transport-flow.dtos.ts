@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, Length } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, Length, ValidateNested, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -208,6 +208,575 @@ export class RateRideFlowDto {
   @IsString()
   @Max(500)
   comment?: string;
+}
+
+// === NUEVOS DTOS PARA MATCHING AUTOMÁTICO ===
+
+export class MatchBestDriverDto {
+  @ApiProperty({
+    description: 'Latitud de la ubicación del cliente',
+    example: 4.6097,
+    minimum: -90,
+    maximum: 90,
+    type: 'number',
+    format: 'float'
+  })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  @Type(() => Number)
+  lat: number;
+
+  @ApiProperty({
+    description: 'Longitud de la ubicación del cliente',
+    example: -74.0817,
+    minimum: -180,
+    maximum: 180,
+    type: 'number',
+    format: 'float'
+  })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  @Type(() => Number)
+  lng: number;
+
+  @ApiPropertyOptional({
+    description: 'ID del nivel de servicio (tier) solicitado',
+    example: 1,
+    minimum: 1,
+    type: 'number',
+    enum: [1, 2, 3]
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  tierId?: number;
+
+  @ApiPropertyOptional({
+    description: 'ID del tipo de vehículo solicitado',
+    example: 1,
+    minimum: 1,
+    type: 'number',
+    enum: [1, 2, 3, 4]
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  vehicleTypeId?: number;
+
+  @ApiPropertyOptional({
+    description: 'Radio de búsqueda en kilómetros',
+    example: 5,
+    minimum: 0.1,
+    maximum: 20,
+    type: 'number',
+    default: 5
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(20)
+  @Type(() => Number)
+  radiusKm?: number = 5;
+}
+
+export class MatchedDriverDto {
+  @ApiProperty({
+    description: 'Información del conductor encontrado',
+    type: 'object',
+    properties: {
+      driverId: { type: 'number', example: 1 },
+      firstName: { type: 'string', example: 'Carlos' },
+      lastName: { type: 'string', example: 'Rodriguez' },
+      profileImageUrl: { type: 'string', example: 'https://...' },
+      rating: { type: 'number', example: 4.8 },
+      totalRides: { type: 'number', example: 1250 },
+      memberSince: { type: 'string', format: 'date-time' }
+    }
+  })
+  driver: {
+    driverId: number;
+    firstName: string;
+    lastName: string;
+    profileImageUrl?: string;
+    rating: number;
+    totalRides: number;
+    memberSince: Date;
+  };
+
+  @ApiProperty({
+    description: 'Información del vehículo',
+    type: 'object',
+    properties: {
+      carModel: { type: 'string', example: 'Toyota Camry 2020' },
+      licensePlate: { type: 'string', example: 'ABC-123' },
+      carSeats: { type: 'number', example: 4 },
+      vehicleType: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1 },
+          name: { type: 'string', example: 'car' },
+          displayName: { type: 'string', example: 'Carro' },
+          icon: { type: 'string', example: '🚗' }
+        }
+      }
+    }
+  })
+  vehicle: {
+    carModel: string;
+    licensePlate: string;
+    carSeats: number;
+    vehicleType: {
+      id: number;
+      name: string;
+      displayName: string;
+      icon?: string;
+    };
+  };
+
+  @ApiProperty({
+    description: 'Información de ubicación y tiempo estimado',
+    type: 'object',
+    properties: {
+      distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
+      estimatedArrival: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
+      currentLocation: {
+        type: 'object',
+        properties: {
+          lat: { type: 'number', example: 4.6097 },
+          lng: { type: 'number', example: -74.0817 }
+        }
+      }
+    }
+  })
+  location: {
+    distance: number;
+    estimatedArrival: number;
+    currentLocation: {
+      lat: number;
+      lng: number;
+    };
+  };
+
+  @ApiProperty({
+    description: 'Información del tier seleccionado',
+    type: 'object',
+    properties: {
+      tierId: { type: 'number', example: 1 },
+      tierName: { type: 'string', example: 'Economy' },
+      estimatedFare: { type: 'number', example: 15.50 }
+    }
+  })
+  pricing: {
+    tierId: number;
+    tierName: string;
+    estimatedFare: number;
+  };
+
+  @ApiProperty({
+    description: 'Puntuación del matching (interno)',
+    type: 'number',
+    example: 85.5,
+    minimum: 0,
+    maximum: 100
+  })
+  matchScore: number;
+
+  @ApiProperty({
+    description: 'Timestamp de cuando se encontró el conductor',
+    type: 'string',
+    format: 'date-time'
+  })
+  matchedAt: Date;
+}
+
+export class ConfirmDriverDto {
+  @ApiProperty({
+    description: 'ID del conductor que el usuario confirma',
+    example: 1,
+    minimum: 1,
+    type: 'number'
+  })
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  driverId: number;
+
+  @ApiPropertyOptional({
+    description: 'Notas adicionales del usuario para el conductor',
+    example: 'Por favor llegue rápido, tengo prisa',
+    maxLength: 200,
+    type: 'string'
+  })
+  @IsOptional()
+  @IsString()
+  @Max(200)
+  notes?: string;
+}
+
+export class DriverRideRequestDto {
+  @ApiProperty({
+    description: 'ID del viaje solicitado',
+    example: 123,
+    minimum: 1,
+    type: 'number'
+  })
+  rideId: number;
+
+  @ApiProperty({
+    description: 'Información del pasajero',
+    type: 'object',
+    properties: {
+      name: { type: 'string', example: 'Juan Pérez' },
+      rating: { type: 'number', example: 4.9 }
+    }
+  })
+  passenger: {
+    name: string;
+    rating: number;
+  };
+
+  @ApiProperty({
+    description: 'Detalles del viaje',
+    type: 'object',
+    properties: {
+      originAddress: { type: 'string', example: 'Calle 123, Bogotá' },
+      destinationAddress: { type: 'string', example: 'Centro Comercial, Medellín' },
+      distance: { type: 'number', example: 15.5, description: 'Distancia en km' },
+      estimatedDuration: { type: 'number', example: 25, description: 'Duración estimada en minutos' },
+      fareAmount: { type: 'number', example: 25.50 }
+    }
+  })
+  ride: {
+    originAddress: string;
+    destinationAddress: string;
+    distance: number;
+    estimatedDuration: number;
+    fareAmount: number;
+  };
+
+  @ApiProperty({
+    description: 'Ubicación de recogida',
+    type: 'object',
+    properties: {
+      lat: { type: 'number', example: 4.6097 },
+      lng: { type: 'number', example: -74.0817 }
+    }
+  })
+  pickupLocation: {
+    lat: number;
+    lng: number;
+  };
+
+  @ApiPropertyOptional({
+    description: 'Notas del pasajero',
+    example: 'Por favor llegue rápido',
+    type: 'string'
+  })
+  notes?: string;
+
+  @ApiProperty({
+    description: 'Tiempo límite para responder (minutos)',
+    example: 2,
+    minimum: 1,
+    type: 'number'
+  })
+  responseTimeoutMinutes: number = 2;
+
+  @ApiProperty({
+    description: 'Timestamp de la solicitud',
+    type: 'string',
+    format: 'date-time'
+  })
+  requestedAt: Date;
+}
+
+export class DriverResponseDto {
+  @ApiProperty({
+    description: 'Respuesta del conductor',
+    example: 'accept',
+    enum: ['accept', 'reject'],
+    enumName: 'DriverResponse'
+  })
+  @IsIn(['accept', 'reject'])
+  response: 'accept' | 'reject';
+
+  @ApiPropertyOptional({
+    description: 'Razón de rechazo (solo si response es "reject")',
+    example: 'Estoy muy lejos del punto de recogida',
+    maxLength: 200,
+    type: 'string'
+  })
+  @IsOptional()
+  @IsString()
+  @Max(200)
+  reason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tiempo estimado de llegada en minutos (solo si response es "accept")',
+    example: 5,
+    minimum: 1,
+    maximum: 60,
+    type: 'number'
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(60)
+  @Type(() => Number)
+  estimatedArrivalMinutes?: number;
+}
+
+// === REPORTES DE CONDUCTORES ===
+
+export class ReportIssueDto {
+  @ApiProperty({
+    description: 'Tipo de problema reportado',
+    example: 'traffic_jam',
+    enum: ['traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other']
+  })
+  @IsIn(['traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other'])
+  type: 'traffic_jam' | 'breakdown' | 'accident' | 'passenger_issue' | 'other';
+
+  @ApiProperty({
+    description: 'Descripción detallada del problema',
+    example: 'Hay un accidente bloqueando la ruta principal',
+    minLength: 10,
+    maxLength: 500
+  })
+  @IsNotEmpty()
+  @IsString()
+  @Length(10, 500)
+  description: string;
+
+  @ApiProperty({
+    description: 'Severidad del problema',
+    example: 'medium',
+    enum: ['low', 'medium', 'high']
+  })
+  @IsIn(['low', 'medium', 'high'])
+  severity: 'low' | 'medium' | 'high';
+
+  @ApiPropertyOptional({
+    description: 'Ubicación actual del conductor cuando reporta el problema',
+    type: 'object',
+    properties: {
+      lat: { type: 'number', example: 4.6097 },
+      lng: { type: 'number', example: -74.0817 }
+    }
+  })
+  @IsOptional()
+  @ValidateNested()
+  location?: {
+    lat: number;
+    lng: number;
+  };
+
+  @ApiPropertyOptional({
+    description: 'Tiempo estimado de retraso en minutos',
+    example: 15,
+    minimum: 1,
+    maximum: 120
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(120)
+  @Type(() => Number)
+  estimatedDelay?: number;
+
+  @ApiPropertyOptional({
+    description: 'Indica si el problema requiere cancelación del viaje',
+    example: false,
+    default: false
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  requiresCancellation?: boolean = false;
+}
+
+export class CancelRideDto {
+  @ApiProperty({
+    description: 'Razón de la cancelación',
+    example: 'Vehículo averiado en el motor',
+    minLength: 10,
+    maxLength: 200
+  })
+  @IsNotEmpty()
+  @IsString()
+  @Length(10, 200)
+  reason: string;
+
+  @ApiPropertyOptional({
+    description: 'Ubicación actual del conductor al momento de cancelar',
+    type: 'object',
+    properties: {
+      lat: { type: 'number', example: 4.6097 },
+      lng: { type: 'number', example: -74.0817 }
+    }
+  })
+  @IsOptional()
+  @ValidateNested()
+  location?: {
+    lat: number;
+    lng: number;
+  };
+
+  @ApiPropertyOptional({
+    description: 'Notas adicionales para el pasajero',
+    example: 'Lamento las molestias, estoy coordinando asistencia',
+    maxLength: 200
+  })
+  @IsOptional()
+  @IsString()
+  @Max(200)
+  notes?: string;
+}
+
+// === WALLET Y REEMBOLSOS ===
+
+export class RefundRideDto {
+  @ApiProperty({
+    description: 'ID del viaje a reembolsar',
+    example: 123,
+    minimum: 1
+  })
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  rideId: number;
+
+  @ApiProperty({
+    description: 'Razón del reembolso',
+    example: 'driver_cancellation',
+    enum: ['driver_cancellation', 'passenger_cancellation', 'system_cancellation', 'technical_issue']
+  })
+  @IsIn(['driver_cancellation', 'passenger_cancellation', 'system_cancellation', 'technical_issue'])
+  reason: 'driver_cancellation' | 'passenger_cancellation' | 'system_cancellation' | 'technical_issue';
+
+  @ApiPropertyOptional({
+    description: 'Monto a reembolsar (si no se especifica, se usa el monto completo del viaje)',
+    example: 25.50,
+    minimum: 0.01
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  refundAmount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Notas administrativas sobre el reembolso',
+    example: 'Cancelación por avería del vehículo',
+    maxLength: 300
+  })
+  @IsOptional()
+  @IsString()
+  @Max(300)
+  notes?: string;
+}
+
+
+// === NUEVOS DTOS PARA SISTEMA DE PAGOS COMPLETO ===
+
+export class PayWithMultipleMethodsDto {
+  @ApiProperty({
+    description: 'Monto total del viaje a pagar',
+    example: 25.50,
+    minimum: 0.01,
+    type: 'number',
+    format: 'float'
+  })
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  totalAmount: number;
+
+  @ApiProperty({
+    description: 'Array de métodos de pago. Puede contener un solo método o múltiples.',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        method: {
+          type: 'string',
+          enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
+          example: 'transfer',
+          description: 'Método de pago venezolano'
+        },
+        amount: {
+          type: 'number',
+          example: 25.50,
+          description: 'Monto a pagar con este método'
+        },
+        bankCode: {
+          type: 'string',
+          example: '0102',
+          description: 'Código de banco (requerido para transfer y pago_movil)',
+          minLength: 4,
+          maxLength: 4
+        }
+      }
+    },
+    minItems: 1
+  })
+  payments: Array<{
+    method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin';
+    amount: number;
+    bankCode?: string;
+  }>;
+}
+
+export class GeneratePaymentReferenceDto {
+  @ApiProperty({
+    description: 'Método de pago para generar la referencia',
+    example: 'transfer',
+    enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
+    enumName: 'VenezuelanPaymentMethod'
+  })
+  @IsIn(['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'])
+  method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin';
+
+  @ApiPropertyOptional({
+    description: 'Código del banco venezolano (requerido para transfer y pago_movil)',
+    example: '0102',
+    minLength: 4,
+    maxLength: 4,
+    enum: ['0102', '0105', '0196', '0108']
+  })
+  @IsOptional()
+  @IsString()
+  @Length(4, 4)
+  bankCode?: string;
+}
+
+export class ConfirmPaymentWithReferenceDto {
+  @ApiProperty({
+    description: 'Número de referencia bancaria de 20 dígitos',
+    example: '12345678901234567890',
+    minLength: 20,
+    maxLength: 20,
+    type: 'string'
+  })
+  @IsString()
+  @Length(20, 20)
+  referenceNumber: string;
+
+  @ApiPropertyOptional({
+    description: 'Código del banco donde se realizó el pago (opcional, se infiere de la referencia)',
+    example: '0102',
+    minLength: 4,
+    maxLength: 4,
+    enum: ['0102', '0105', '0196', '0108']
+  })
+  @IsOptional()
+  @IsString()
+  @Length(4, 4)
+  bankCode?: string;
 }
 
 

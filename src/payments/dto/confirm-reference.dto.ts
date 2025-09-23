@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsNotEmpty, IsString, Length, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ConfirmReferenceDto {
@@ -14,13 +14,14 @@ export class ConfirmReferenceDto {
   referenceNumber: string;
 
   @ApiProperty({
-    description: 'Código del banco venezolano',
+    description: 'Código del banco venezolano (opcional, se infiere de la referencia si no se proporciona)',
     example: '0102',
     minLength: 4,
-    maxLength: 4
+    maxLength: 4,
+    required: false
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @Length(4, 4)
-  bankCode: string;
+  bankCode?: string;
 }

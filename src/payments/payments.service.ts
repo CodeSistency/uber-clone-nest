@@ -113,10 +113,12 @@ export class PaymentsService {
       throw new Error('La referencia ha expirado');
     }
 
-    this.logger.log(`🏦 Consultando banco ${dto.bankCode} para referencia ${dto.referenceNumber}`);
+    // Usar bankCode del DTO o de la referencia almacenada
+    const bankCodeToUse = dto.bankCode || reference.bankCode;
+    this.logger.log(`🏦 Consultando banco ${bankCodeToUse} para referencia ${dto.referenceNumber}`);
 
     // Consultar al banco simulado
-    const bankApi = this.banksService.getBankApi(dto.bankCode);
+    const bankApi = this.banksService.getBankApi(bankCodeToUse);
     const validation: PaymentValidation = await bankApi.verifyPayment(dto.referenceNumber);
 
     if (validation.confirmed) {

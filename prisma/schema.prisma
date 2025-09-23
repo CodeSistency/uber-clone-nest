@@ -134,6 +134,7 @@ model Driver {
   errands             Errand[]
   parcels             Parcel[]
   locationHistory     DriverLocationHistory[]
+  driverReports       DriverReport[]
 
   @@map("drivers")
 }
@@ -224,17 +225,26 @@ model Ride {
   rideTime               Int       @map("ride_time")
   farePrice              Decimal   @map("fare_price") @db.Decimal(10, 2)
   paymentStatus          String    @map("payment_status") @db.VarChar(20)
+  status                 String    @default("pending") @db.VarChar(20) // 'pending', 'driver_confirmed', 'accepted', 'arrived', 'in_progress', 'completed', 'cancelled'
   driverId               Int?      @map("driver_id")
   userId                 Int       @map("user_id")
   tierId                 Int?      @map("tier_id")
   requestedVehicleTypeId Int?      @map("requested_vehicle_type_id") // Tipo de vehículo solicitado
   scheduledFor           DateTime? @map("scheduled_for")
+  // Cancellation fields
+  cancelledAt            DateTime? @map("cancelled_at")
+  cancelledBy            String?   @map("cancelled_by") // 'driver', 'passenger', 'system'
+  cancellationReason     String?   @map("cancellation_reason")
+  cancellationNotes      String?   @map("cancellation_notes")
   createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   driver               Driver?                @relation(fields: [driverId], references: [id])
   tier                 RideTier?              @relation(fields: [tierId], references: [id])
   user                 User?                  @relation(fields: [userId], references: [id])
+  driverReports        DriverReport[]
+  cancellations        RideCancellation[]
   requestedVehicleType VehicleType?           @relation("RequestedVehicleType", fields: [requestedVehicleTypeId], references: [id])
   ratings              Rating[]
   messages             ChatMessage[]
@@ -374,6 +384,8 @@ model WalletTransaction {
   amount          Decimal  @db.Decimal(10, 2)
   transactionType String   @map("transaction_type") @db.VarChar(20)
   description     String?
+  referenceType   String?  @map("reference_type") // 'ride_cancellation', 'order_cancellation', 'payment_refund', etc.
+  referenceId     String?  @map("reference_id") // ID del objeto relacionado
   createdAt       DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -714,6 +726,53 @@ model CartItem {
 
   @@unique([cartId, productId])
   @@map("cart_items")
+}
+
+// =========================================
+// DRIVER REPORTS TABLES
+// =========================================
+
+// Stores driver reports for issues during rides
+model DriverReport {
+  id                 Int       @id @default(autoincrement())
+  rideId             Int       @map("ride_id")
+  driverId           Int       @map("driver_id")
+  reportType         String    @map("report_type") // 'traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other'
+  description        String    @map("description")
+  severity           String    @map("severity") // 'low', 'medium', 'high'
+  locationLat        Decimal?  @map("location_lat") @db.Decimal(9, 6)
+  locationLng        Decimal?  @map("location_lng") @db.Decimal(9, 6)
+  estimatedDelay     Int?      @map("estimated_delay") // minutos
+  requiresCancellation Boolean @default(false) @map("requires_cancellation")
+  status             String    @default("reported") @map("status") // 'reported', 'acknowledged', 'resolved'
+  adminNotes         String?   @map("admin_notes")
+  reportedAt         DateTime  @default(now()) @map("reported_at")
+  resolvedAt         DateTime? @map("resolved_at")
+
+  // Relations
+  ride    Ride    @relation(fields: [rideId], references: [rideId], onDelete: Cascade)
+  driver  Driver  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_reports")
+}
+
+// Ride cancellations with refund tracking
+model RideCancellation {
+  id                 Int       @id @default(autoincrement())
+  rideId             Int       @map("ride_id")
+  cancelledBy        String    @map("cancelled_by") // 'driver', 'passenger', 'system'
+  reason             String    @map("reason")
+  notes              String?   @map("notes")
+  refundAmount       Decimal   @map("refund_amount") @db.Decimal(10, 2)
+  refundProcessed    Boolean   @default(false) @map("refund_processed")
+  locationLat        Decimal?  @map("location_lat") @db.Decimal(9, 6)
+  locationLng        Decimal?  @map("location_lng") @db.Decimal(9, 6)
+  cancelledAt        DateTime  @default(now()) @map("cancelled_at")
+
+  // Relations
+  ride Ride @relation(fields: [rideId], references: [rideId], onDelete: Cascade)
+
+  @@map("ride_cancellations")
 }
 
 // =========================================

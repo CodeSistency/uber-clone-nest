@@ -7,10 +7,12 @@ import { RidesModule } from '../rides.module';
 import { OrdersModule } from '../../orders/orders.module';
 import { StripeModule } from '../../stripe/stripe.module';
 import { PaymentsModule } from '../../payments/payments.module';
+import { WalletModule } from '../../wallet/wallet.module';
 import { ErrandsModule } from '../../errands/errands.module';
 import { ParcelsModule } from '../../parcels/parcels.module';
 import { RedisModule } from '../../redis/redis.module';
 import { RidesFlowService } from './rides-flow.service';
+import { DriverReportsService } from './driver-reports.service';
 import { TransportClientController } from './transport.client.controller';
 import { TransportDriverController } from './transport.driver.controller';
 import { DeliveryClientController } from './delivery.client.controller';
@@ -32,6 +34,7 @@ import { DriverAvailabilityController } from './driver.availability.controller';
     OrdersModule,
     StripeModule,
     PaymentsModule,
+    WalletModule,
     ErrandsModule,
     ParcelsModule,
     RedisModule,
@@ -47,7 +50,7 @@ import { DriverAvailabilityController } from './driver.availability.controller';
     ParcelDriverController,
     DriverAvailabilityController,
   ],
-  providers: [RidesFlowService, IdempotencyService],
+  providers: [RidesFlowService, DriverReportsService, IdempotencyService],
 })
 export class RidesFlowModule {}
 

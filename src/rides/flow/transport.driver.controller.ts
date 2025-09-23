@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards, NotFoundException, ConflictException } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -11,9 +11,10 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DriverGuard } from '../../drivers/guards/driver.guard';
 import { RidesFlowService } from './rides-flow.service';
+import { DriverReportsService, IssueReport } from './driver-reports.service';
 import { IdempotencyService } from '../../common/services/idempotency.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SetDriverAvailabilityDto } from './dto/transport-flow.dtos';
+import { SetDriverAvailabilityDto, DriverResponseDto, ReportIssueDto, CancelRideDto } from './dto/transport-flow.dtos';
 
 @ApiTags('rides-flow-driver')
 @UseGuards(JwtAuthGuard)
@@ -21,6 +22,7 @@ import { SetDriverAvailabilityDto } from './dto/transport-flow.dtos';
 export class TransportDriverController {
   constructor(
     private readonly flow: RidesFlowService,
+    private readonly reports: DriverReportsService,
     private readonly idemp: IdempotencyService,
     private readonly prisma: PrismaService,
   ) {}
@@ -289,6 +291,224 @@ export class TransportDriverController {
     );
     if (key) this.idemp.set(key, 200, ride);
     return { data: ride };
+  }
+
+  @Post(':rideId/respond')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Conductor responde a solicitud de viaje específica',
+    description: `
+    **NUEVO FLUJO DE MATCHING AUTOMÁTICO**
+
+    Después de que un usuario confirma un conductor encontrado por matching automático,
+    el conductor recibe una notificación y debe responder dentro de 2 minutos.
+
+    **¿Qué hace?**
+    - ✅ Valida que el conductor tenga una solicitud pendiente para este viaje
+    - ✅ Si **acepta**: Asigna el viaje al conductor y notifica al usuario
+    - ✅ Si **rechaza**: Libera el viaje para que el usuario busque otro conductor
+    - ✅ Actualiza el estado del viaje apropiadamente
+
+    **Tiempo límite:**
+    - El conductor tiene 2 minutos para responder
+    - Después de ese tiempo, la solicitud expira automáticamente
+    - El usuario puede buscar otro conductor si expira
+
+    **Flujo de estados:**
+    - \`driver_confirmed\` → \`accepted\` (si acepta)
+    - \`driver_confirmed\` → \`pending\` (si rechaza o expira)
+
+    **Notificaciones enviadas:**
+    - Al usuario: Aceptación/rechazo del conductor
+    - WebSocket events para tracking en tiempo real
+    `
+  })
+  @ApiBody({
+    type: DriverResponseDto,
+    examples: {
+      'accept_ride': {
+        summary: '✅ Aceptar solicitud de viaje',
+        description: 'Conductor acepta el viaje y está listo para recoger al pasajero',
+        value: {
+          response: 'accept',
+          estimatedArrivalMinutes: 5
+        }
+      },
+      'reject_ride': {
+        summary: '❌ Rechazar solicitud de viaje',
+        description: 'Conductor rechaza el viaje por alguna razón específica',
+        value: {
+          response: 'reject',
+          reason: 'Estoy muy lejos del punto de recogida'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Respuesta del conductor procesada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            rideId: { type: 'number', example: 123 },
+            driverId: { type: 'number', example: 1 },
+            response: { type: 'string', example: 'accept', enum: ['accept', 'reject'] },
+            status: { type: 'string', example: 'accepted' },
+            message: { type: 'string', example: 'Viaje aceptado exitosamente' },
+            userNotified: { type: 'boolean', example: true }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos de respuesta inválidos',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'INVALID_RESPONSE' },
+        message: { type: 'string', example: 'Respuesta debe ser "accept" o "reject"' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Solicitud de viaje no encontrada o expirada',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'REQUEST_NOT_FOUND' },
+        message: { type: 'string', example: 'No hay solicitud pendiente para este viaje' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'El viaje ya fue asignado a otro conductor',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'RIDE_ALREADY_ASSIGNED' },
+        message: { type: 'string', example: 'Este viaje ya fue aceptado por otro conductor' }
+      }
+    }
+  })
+  async respondToRideRequest(
+    @Param('rideId') rideId: string,
+    @Body() body: DriverResponseDto,
+    @Req() req: any
+  ) {
+    try {
+      const result = await this.flow.handleDriverRideResponse(
+        Number(rideId),
+        Number(req.user.id),
+        body.response,
+        body.reason,
+        body.estimatedArrivalMinutes
+      );
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'REQUEST_NOT_FOUND') {
+        throw new NotFoundException({
+          error: 'REQUEST_NOT_FOUND',
+          message: 'No hay solicitud pendiente para este viaje'
+        });
+      }
+      if (error.message === 'RIDE_ALREADY_ASSIGNED') {
+        throw new ConflictException({
+          error: 'RIDE_ALREADY_ASSIGNED',
+          message: 'Este viaje ya fue aceptado por otro conductor'
+        });
+      }
+      throw error;
+    }
+  }
+
+  // =========================================
+  // SISTEMA DE REPORTES Y CANCELACIONES
+  // =========================================
+
+  @Post(':rideId/report-issue')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Reportar problema durante un viaje',
+    description: 'Sistema de reportes de conductores. Permite reportar trafico, averias, accidentes, etc.'
+  })
+  @ApiBody({
+    type: ReportIssueDto,
+    description: 'Detalles del problema reportado'
+  })
+  async reportIssue(
+    @Param('rideId') rideId: string,
+    @Body() body: ReportIssueDto,
+    @Req() req: any
+  ) {
+    const driverId = req.user.driverId;
+    if (!driverId) {
+      throw new NotFoundException('Usuario no es conductor');
+    }
+
+    const report: IssueReport = {
+      type: body.type,
+      description: body.description,
+      severity: body.severity,
+      location: body.location,
+      estimatedDelay: body.estimatedDelay,
+      requiresCancellation: body.requiresCancellation
+    };
+
+    const result = await this.reports.reportIssue(
+      Number(rideId),
+      driverId,
+      report
+    );
+
+    return {
+      success: true,
+      data: result
+    };
+  }
+
+  @Post(':rideId/cancel')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Conductor cancela viaje con reembolso automático',
+    description: 'Cancela viaje y procesa reembolso automático al pasajero. Solo para situaciones excepcionales.'
+  })
+  @ApiBody({
+    type: CancelRideDto,
+    description: 'Detalles de la cancelación'
+  })
+  async cancelRide(
+    @Param('rideId') rideId: string,
+    @Body() body: CancelRideDto,
+    @Req() req: any
+  ) {
+    const driverId = req.user.driverId;
+    if (!driverId) {
+      throw new NotFoundException('Usuario no es conductor');
+    }
+
+    const result = await this.flow.cancelRideWithRefund(
+      Number(rideId),
+      driverId,
+      {
+        reason: body.reason,
+        location: body.location,
+        notes: body.notes,
+        refundType: 'driver_cancellation'
+      }
+    );
+
+    return {
+      success: true,
+      data: result
+    };
   }
 
   // =========================================

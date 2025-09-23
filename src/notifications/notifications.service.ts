@@ -473,6 +473,14 @@ export class NotificationsService {
         return 'emergency.wav';
       case NotificationType.RIDE_REQUEST:
         return 'ride_request.wav';
+      case NotificationType.DRIVER_REPORT_TRAFFIC:
+      case NotificationType.DRIVER_REPORT_BREAKDOWN:
+      case NotificationType.DRIVER_REPORT_ACCIDENT:
+        return 'alert.wav';
+      case NotificationType.DRIVER_CANCEL_RIDE:
+        return 'cancel.wav';
+      case NotificationType.RIDE_REFUND_PROCESSED:
+        return 'refund.wav';
       default:
         return 'default';
     }

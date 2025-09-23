@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType, NotificationChannel } from '../../notifications/interfaces/notification.interface';
 import { WebSocketGatewayClass } from '../../websocket/websocket.gateway';
+import { WalletService } from '../../wallet/wallet.service';
 import { RidesService } from '../rides.service';
 import { OrdersService } from '../../orders/orders.service';
 import { StripeService } from '../../stripe/stripe.service';
@@ -12,6 +14,8 @@ import { CreateErrandDto } from './dto/errand-flow.dtos';
 
 @Injectable()
 export class RidesFlowService {
+  private readonly logger = new Logger(RidesFlowService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
@@ -22,6 +26,7 @@ export class RidesFlowService {
     private readonly errandsService: ErrandsService,
     private readonly parcelsService: ParcelsService,
     private readonly locationTrackingService: LocationTrackingService,
+    private readonly walletService: WalletService,
   ) {}
 
   // Método para obtener tiers organizados por tipo de vehículo
@@ -213,15 +218,6 @@ export class RidesFlowService {
     }
   }
 
-  async requestTransportDriver(rideId: number) {
-    const ride = await this.prisma.ride.findUnique({ where: { rideId } });
-    if (!ride) throw new Error('Ride not found');
-    await this.notifications.notifyNearbyDrivers(rideId, {
-      lat: Number(ride.originLatitude),
-      lng: Number(ride.originLongitude),
-    });
-    return { ok: true };
-  }
 
   async confirmTransportPayment(rideId: number, method: 'cash' | 'card', _clientSecret?: string) {
     let payment:
@@ -481,108 +477,7 @@ export class RidesFlowService {
   // NUEVOS MÉTODOS PARA BÚSQUEDA DE CONDUCTORES
   // =========================================
 
-  async getNearbyDrivers(params: {
-    lat: number;
-    lng: number;
-    radius: number;
-    tierId?: number;
-    vehicleTypeId?: number;
-  }) {
-    const { lat, lng, radius, tierId, vehicleTypeId } = params;
 
-    // Use the enhanced LocationTrackingService
-    let filters: any = {
-      status: 'online',
-      verified: true,
-    };
-
-    // Si se especifica un tier, filtrar por vehículos compatibles
-    if (tierId) {
-      const compatibleVehicleTypes = await this.prisma.tierVehicleType.findMany({
-        where: { tierId },
-        select: { vehicleTypeId: true },
-      });
-
-      if (compatibleVehicleTypes.length > 0) {
-        const vehicleTypeIds = compatibleVehicleTypes.map(vt => vt.vehicleTypeId);
-        filters.vehicleTypeId = vehicleTypeIds.length === 1 ? vehicleTypeIds[0] : { in: vehicleTypeIds };
-      }
-    }
-
-    if (vehicleTypeId) {
-      filters.vehicleTypeId = vehicleTypeId;
-    }
-
-    // Use the LocationTrackingService for better location handling
-    const nearbyDrivers = await this.locationTrackingService.findNearbyDrivers(
-      lat,
-      lng,
-      radius / 1000, // Convert meters to kilometers
-      filters
-    );
-
-    return nearbyDrivers;
-  }
-
-  async requestSpecificDriver(rideId: number, driverId: number) {
-    // Verificar que el viaje existe
-    const ride = await this.prisma.ride.findUnique({ where: { rideId } });
-    if (!ride) {
-      throw new Error('Ride not found');
-    }
-
-    // Verificar que el conductor existe y está disponible
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: driverId },
-      select: { id: true, status: true, verificationStatus: true }
-    });
-
-    if (!driver) {
-      throw new Error('Driver not found');
-    }
-
-    if (driver.status !== 'online') {
-      throw new Error('Driver is not available');
-    }
-
-    if (driver.verificationStatus !== 'approved') {
-      throw new Error('Driver is not verified');
-    }
-
-    // Enviar notificación específica al conductor
-    await this.notifications.sendNotification({
-      userId: `driver_${driverId}`, // Placeholder - en producción sería el user ID real
-      type: 'RIDE_REQUEST' as any,
-      title: 'Solicitud de Viaje Específica',
-      message: `Tienes una solicitud de viaje específica de ${ride.originAddress} a ${ride.destinationAddress}`,
-      data: {
-        rideId,
-        isSpecificRequest: true,
-        pickupLocation: {
-          lat: Number(ride.originLatitude),
-          lng: Number(ride.originLongitude)
-        }
-      },
-      channels: ['push' as any],
-      priority: 'high'
-    });
-
-    // Emitir evento WebSocket
-    this.gateway.server?.to(`driver-${driverId}`).emit('ride:specific-request', {
-      rideId,
-      originAddress: ride.originAddress,
-      destinationAddress: ride.destinationAddress,
-      farePrice: ride.farePrice,
-      requestedAt: new Date()
-    });
-
-    return {
-      rideId,
-      driverId,
-      status: 'requested',
-      message: 'Solicitud enviada al conductor específico'
-    };
-  }
 
   // Método auxiliar para calcular distancia entre dos puntos
   private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -599,6 +494,689 @@ export class RidesFlowService {
 
   private deg2rad(deg: number): number {
     return deg * (Math.PI/180);
+  }
+
+  // === NUEVOS MÉTODOS PARA MATCHING AUTOMÁTICO ===
+
+  /**
+   * Encuentra el mejor conductor disponible usando algoritmo de scoring
+   */
+  async findBestDriverMatch(params: {
+    lat: number;
+    lng: number;
+    tierId?: number;
+    vehicleTypeId?: number;
+    radiusKm?: number;
+  }) {
+    const { lat, lng, tierId, vehicleTypeId, radiusKm = 5 } = params;
+    const startTime = Date.now();
+
+    try {
+      // 1. Obtener conductores candidatos con filtros básicos
+    let filters: any = {
+      status: 'online',
+        verificationStatus: 'approved',
+    };
+
+      // 2. Aplicar filtros de compatibilidad si se especifican
+    if (tierId) {
+      const compatibleVehicleTypes = await this.prisma.tierVehicleType.findMany({
+          where: { tierId, isActive: true },
+        select: { vehicleTypeId: true },
+      });
+
+      if (compatibleVehicleTypes.length > 0) {
+        const vehicleTypeIds = compatibleVehicleTypes.map(vt => vt.vehicleTypeId);
+        filters.vehicleTypeId = vehicleTypeIds.length === 1 ? vehicleTypeIds[0] : { in: vehicleTypeIds };
+      }
+    }
+
+    if (vehicleTypeId) {
+      filters.vehicleTypeId = vehicleTypeId;
+    }
+
+      // 3. Buscar conductores usando LocationTrackingService
+      const candidateDrivers = await this.locationTrackingService.findNearbyDrivers(
+      lat,
+      lng,
+        radiusKm / 1000, // Convertir a metros para el servicio
+      filters
+    );
+
+      if (candidateDrivers.length === 0) {
+        throw new Error('NO_DRIVERS_AVAILABLE');
+      }
+
+      // 4. Calcular scores para cada conductor
+      const scoredDrivers = await Promise.all(
+        candidateDrivers.map(async (driver) => {
+          const score = await this.calculateDriverScore(driver, lat, lng);
+          return { ...driver, score };
+        })
+      );
+
+      // 5. Ordenar por score descendente y tomar el mejor
+      scoredDrivers.sort((a, b) => b.score - a.score);
+      const bestDriver = scoredDrivers[0];
+
+      // 6. Obtener información adicional del conductor
+      const driverDetails = await this.getDriverDetailedInfo(bestDriver.id);
+
+      // 7. Calcular tiempo estimado de llegada (velocidad promedio 30 km/h en ciudad)
+      const estimatedMinutes = Math.max(1, Math.round((bestDriver.distance * 1000 / 30) * 60)); // Convertir km a minutos
+
+      // 8. Preparar respuesta
+      const result = {
+        matchedDriver: {
+          driver: {
+            driverId: bestDriver.id,
+            firstName: driverDetails.firstName,
+            lastName: driverDetails.lastName,
+            profileImageUrl: driverDetails.profileImageUrl,
+            rating: driverDetails.rating,
+            totalRides: driverDetails.totalRides,
+            memberSince: driverDetails.createdAt,
+          },
+          vehicle: {
+            carModel: driverDetails.carModel,
+            licensePlate: driverDetails.licensePlate,
+            carSeats: driverDetails.carSeats,
+            vehicleType: driverDetails.vehicleType || null,
+          },
+          location: {
+            distance: Math.round(bestDriver.distance * 100) / 100, // Redondear a 2 decimales
+            estimatedArrival: estimatedMinutes,
+            currentLocation: bestDriver.currentLocation,
+          },
+          pricing: {
+            tierId: tierId || 1,
+            tierName: await this.getTierName(tierId || 1),
+            estimatedFare: await this.calculateEstimatedFare(tierId || 1, estimatedMinutes, bestDriver.distance),
+          },
+          matchScore: Math.round(bestDriver.score * 100) / 100,
+          matchedAt: new Date(),
+        },
+        searchCriteria: {
+          lat,
+          lng,
+          tierId,
+          vehicleTypeId,
+          radiusKm,
+          searchDuration: (Date.now() - startTime) / 1000, // En segundos
+        }
+      };
+
+      return result;
+
+    } catch (error) {
+      console.error('Error in findBestDriverMatch:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calcula el score de un conductor basado en múltiples factores
+   */
+  private async calculateDriverScore(driver: any, userLat: number, userLng: number): Promise<number> {
+    try {
+      // Pesos para cada factor (suman 100)
+      const WEIGHTS = {
+        DISTANCE: 40,      // 40% - Más cercano = mejor
+        RATING: 35,        // 35% - Mejor rating = mejor
+        ETA: 25,          // 25% - Menor tiempo de llegada = mejor
+      };
+
+      // 1. Factor de distancia (inverso - más cercano = score más alto)
+      const distanceKm = driver.distance;
+      const distanceScore = Math.max(0, Math.min(WEIGHTS.DISTANCE, WEIGHTS.DISTANCE * (1 / (1 + distanceKm))));
+
+      // 2. Factor de rating (directo - mejor rating = score más alto)
+      const driverDetails = await this.getDriverDetailedInfo(driver.driverId);
+      const ratingScore = (driverDetails.rating / 5) * WEIGHTS.RATING; // Normalizar a 0-5
+
+      // 3. Factor de tiempo estimado (inverso - menor tiempo = score más alto)
+      const estimatedMinutes = Math.max(1, Math.round((distanceKm / 30) * 60)); // 30 km/h promedio
+      const etaScore = Math.max(0, Math.min(WEIGHTS.ETA, WEIGHTS.ETA * (1 / (1 + estimatedMinutes / 10))));
+
+      // Score total
+      const totalScore = distanceScore + ratingScore + etaScore;
+
+      return Math.min(100, Math.max(0, totalScore)); // Asegurar rango 0-100
+
+    } catch (error) {
+      console.error(`Error calculating score for driver ${driver.driverId}:`, error);
+      return 0; // Score mínimo si hay error
+    }
+  }
+
+  /**
+   * Obtiene información detallada de un conductor
+   */
+  private async getDriverDetailedInfo(driverId: number) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+      include: {
+        vehicleType: true,
+        rides: {
+          where: {
+            status: 'completed',
+            paymentStatus: 'paid',
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Últimos 30 días
+            }
+          },
+          select: {
+            rideId: true,
+            ratings: {
+              select: { ratingValue: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!driver) {
+      throw new Error('Driver not found');
+    }
+
+    // Calcular rating promedio de los últimos 30 días
+    const recentRatings = driver.rides.flatMap(ride => ride.ratings.map(r => r.ratingValue));
+    const avgRating = recentRatings.length > 0
+      ? recentRatings.reduce((sum, rating) => sum + rating, 0) / recentRatings.length
+      : 4.5; // Rating por defecto si no hay calificaciones recientes
+
+    return {
+      ...driver,
+      rating: Math.round(avgRating * 10) / 10, // Redondear a 1 decimal
+      totalRides: driver.rides.length,
+    };
+  }
+
+  /**
+   * Obtiene el nombre de un tier
+   */
+  private async getTierName(tierId: number): Promise<string> {
+    const tier = await this.prisma.rideTier.findUnique({
+      where: { id: tierId },
+      select: { name: true }
+    });
+    return tier?.name || 'Economy';
+  }
+
+  /**
+   * Calcula tarifa estimada
+   */
+  private async calculateEstimatedFare(tierId: number, minutes: number, distanceKm: number): Promise<number> {
+    const tier = await this.prisma.rideTier.findUnique({
+      where: { id: tierId }
+    });
+
+    if (!tier) return 0;
+
+    const baseFare = Number(tier.baseFare);
+    const perMinuteRate = Number(tier.perMinuteRate);
+    const perMileRate = Number(tier.perMileRate);
+
+    const fare = baseFare + (minutes * perMinuteRate) + (distanceKm * perMileRate);
+    return Math.round(fare * 100) / 100; // Redondear a 2 decimales
+  }
+
+  /**
+   * Confirma conductor para un viaje y envía notificación
+   */
+  async confirmDriverForRide(
+    rideId: number,
+    driverId: number,
+    userId: number,
+    notes?: string
+  ) {
+    try {
+      // 1. Verificar que el viaje existe y pertenece al usuario
+      const ride = await this.prisma.ride.findUnique({
+        where: { rideId },
+        include: { user: true }
+      });
+
+    if (!ride) {
+      throw new Error('Ride not found');
+    }
+
+      if (ride.userId !== userId) {
+        throw new Error('Ride does not belong to user');
+      }
+
+      if (ride.driverId) {
+        throw new Error('RIDE_ALREADY_HAS_DRIVER');
+      }
+
+      // 2. Verificar que el conductor esté disponible
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+        select: {
+          id: true,
+          status: true,
+          verificationStatus: true,
+          firstName: true,
+          lastName: true
+        }
+    });
+
+    if (!driver) {
+      throw new Error('Driver not found');
+    }
+
+    if (driver.status !== 'online') {
+        throw new Error('DRIVER_NOT_AVAILABLE');
+    }
+
+    if (driver.verificationStatus !== 'approved') {
+        throw new Error('Driver not verified');
+      }
+
+      // 3. Actualizar el viaje con el conductor confirmado
+      const updatedRide = await this.prisma.ride.update({
+        where: { rideId },
+        data: {
+          driverId: driverId,
+          status: 'driver_confirmed',
+          updatedAt: new Date()
+        }
+      });
+
+      // 4. Calcular tiempo de expiración (2 minutos)
+      const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+
+      // 5. Enviar notificación al conductor
+      const notificationSent = await this.sendDriverRideRequest(
+        driverId,
+        rideId,
+        ride,
+        notes
+      );
+
+      // 6. Emitir evento WebSocket
+      this.gateway.server?.to(`driver-${driverId}`).emit('driver:ride-request', {
+        rideId,
+        userName: ride.user?.name || 'Usuario',
+        userRating: 4.9, // TODO: Calcular rating real del usuario
+        pickupAddress: ride.originAddress,
+        dropoffAddress: ride.destinationAddress,
+        estimatedFare: ride.farePrice,
+        distance: 0, // TODO: Calcular distancia real
+        duration: ride.rideTime,
+        pickupLocation: {
+          lat: Number(ride.originLatitude),
+          lng: Number(ride.originLongitude)
+        },
+        notes: notes || null,
+        expiresAt: expiresAt.toISOString(),
+        requestedAt: new Date().toISOString()
+      });
+
+      return {
+        rideId,
+        driverId,
+        status: 'driver_confirmed',
+        message: 'Conductor notificado exitosamente',
+        notificationSent,
+        responseTimeoutMinutes: 2,
+        expiresAt
+      };
+
+    } catch (error) {
+      console.error('Error confirming driver for ride:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envía notificación de solicitud de viaje al conductor
+   */
+  private async sendDriverRideRequest(
+    driverId: number,
+    rideId: number,
+    ride: any,
+    notes?: string
+  ): Promise<boolean> {
+    try {
+      // Calcular distancia aproximada (simplificada)
+      const distance = 5; // TODO: Calcular distancia real
+      const duration = ride.rideTime || 15;
+
+    await this.notifications.sendNotification({
+        userId: `driver_${driverId}`, // Placeholder - debería ser el userId real del conductor
+      type: 'RIDE_REQUEST' as any,
+        title: 'Nueva Solicitud de Viaje',
+        message: `Tienes una solicitud de viaje desde ${ride.originAddress} hasta ${ride.destinationAddress}`,
+      data: {
+        rideId,
+          isDirectRequest: true,
+        pickupLocation: {
+          lat: Number(ride.originLatitude),
+          lng: Number(ride.originLongitude)
+          },
+          dropoffLocation: {
+            lat: Number(ride.destinationLatitude),
+            lng: Number(ride.destinationLongitude)
+          },
+          estimatedFare: ride.farePrice,
+          distance,
+          duration,
+          notes: notes || null,
+          expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString()
+      },
+      channels: ['push' as any],
+      priority: 'high'
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error sending driver notification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Maneja la respuesta del conductor a una solicitud específica
+   */
+  async handleDriverRideResponse(
+    rideId: number,
+    driverId: number,
+    response: 'accept' | 'reject',
+    reason?: string,
+    estimatedArrivalMinutes?: number
+  ) {
+    try {
+      // 1. Verificar que el viaje existe y está en estado driver_confirmed
+      const ride = await this.prisma.ride.findUnique({
+        where: { rideId },
+        include: {
+          user: true,
+          driver: true
+        }
+      });
+
+      if (!ride) {
+        throw new Error('Ride not found');
+      }
+
+      if (ride.status !== 'driver_confirmed') {
+        throw new Error('REQUEST_NOT_FOUND');
+      }
+
+      if (ride.driverId !== driverId) {
+        throw new Error('RIDE_ALREADY_ASSIGNED');
+      }
+
+      // 2. Verificar que no haya expirado el tiempo límite (2 minutos)
+      const confirmedAt = ride.updatedAt;
+      const now = new Date();
+      const timeDiff = now.getTime() - confirmedAt.getTime();
+      const timeLimit = 2 * 60 * 1000; // 2 minutos en milisegundos
+
+      if (timeDiff > timeLimit) {
+        // Tiempo expirado - liberar el viaje
+        await this.prisma.ride.update({
+          where: { rideId },
+          data: {
+            driverId: null,
+            status: 'pending',
+            updatedAt: new Date()
+          }
+        });
+
+        // Notificar al usuario que el tiempo expiró
+        await this.notifications.sendNotification({
+          userId: ride.userId.toString(),
+          type: 'RIDE_REQUEST_EXPIRED' as any,
+          title: 'Tiempo Agotado',
+          message: 'El conductor no respondió a tiempo. Puedes buscar otro conductor.',
+          data: { rideId },
+          channels: ['push' as any]
+        });
+
+        throw new Error('REQUEST_EXPIRED');
+      }
+
+      if (response === 'accept') {
+        // 3a. ACEPTAR: Actualizar estado del viaje
+        const updatedRide = await this.prisma.ride.update({
+          where: { rideId },
+          data: {
+            status: 'accepted',
+            updatedAt: new Date()
+          }
+        });
+
+        // Notificar al usuario
+        await this.notifications.sendNotification({
+          userId: ride.userId.toString(),
+          type: 'RIDE_ACCEPTED' as any,
+          title: '¡Viaje Aceptado!',
+          message: `El conductor ${ride.driver?.firstName} ${ride.driver?.lastName} ha aceptado tu viaje.`,
+          data: {
+            rideId,
+            driverId,
+            driverName: `${ride.driver?.firstName} ${ride.driver?.lastName}`,
+            estimatedArrivalMinutes: estimatedArrivalMinutes || 5
+          },
+          channels: ['push' as any]
+    });
+
+    // Emitir evento WebSocket
+        this.gateway.server?.to(`ride-${rideId}`).emit('ride:accepted', {
+      rideId,
+          driverId,
+          driverName: `${ride.driver?.firstName} ${ride.driver?.lastName}`,
+          estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
+          timestamp: new Date()
+    });
+
+    return {
+      rideId,
+      driverId,
+          response: 'accept',
+          status: 'accepted',
+          message: 'Viaje aceptado exitosamente',
+          userNotified: true,
+          estimatedArrivalMinutes: estimatedArrivalMinutes || 5
+        };
+
+      } else if (response === 'reject') {
+        // 3b. RECHAZAR: Liberar el viaje para otros conductores
+        await this.prisma.ride.update({
+          where: { rideId },
+          data: {
+            driverId: null,
+            status: 'pending',
+            updatedAt: new Date()
+          }
+        });
+
+        // Notificar al usuario
+        await this.notifications.sendNotification({
+          userId: ride.userId.toString(),
+          type: 'RIDE_REJECTED' as any,
+          title: 'Viaje Rechazado',
+          message: `El conductor no pudo aceptar tu viaje. Puedes buscar otro conductor.`,
+          data: {
+            rideId,
+            driverId,
+            reason: reason || 'Conductor no disponible'
+          },
+          channels: ['push' as any]
+        });
+
+        // Emitir evento WebSocket
+        this.gateway.server?.to(`ride-${rideId}`).emit('ride:rejected', {
+          rideId,
+          driverId,
+          reason: reason || 'Conductor no disponible',
+          timestamp: new Date()
+        });
+
+        return {
+          rideId,
+          driverId,
+          response: 'reject',
+          status: 'pending',
+          message: 'Viaje liberado para otros conductores',
+          userNotified: true,
+          reason: reason || 'Conductor no disponible'
+        };
+
+      } else {
+        throw new Error('INVALID_RESPONSE');
+      }
+
+    } catch (error) {
+      console.error('Error handling driver ride response:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancela un viaje y procesa reembolso automático al pasajero
+   */
+  async cancelRideWithRefund(
+    rideId: number,
+    driverId: number,
+    cancellationData: {
+      reason: string;
+      location?: { lat: number; lng: number };
+      notes?: string;
+      refundType: 'driver_cancellation' | 'passenger_cancellation' | 'system_cancellation';
+    }
+  ) {
+    try {
+      // 1. Verificar que el viaje existe y pertenece al conductor
+      const ride = await this.prisma.ride.findUnique({
+        where: { rideId },
+        include: {
+          user: true,
+          driver: true,
+          tier: true
+        }
+      });
+
+      if (!ride) {
+        throw new Error('Ride not found');
+      }
+
+      if (ride.driverId !== driverId) {
+        throw new Error('Driver not authorized for this ride');
+      }
+
+      // 2. Verificar que el viaje esté en estado válido para cancelación
+      if (ride.status === 'completed' || ride.status === 'cancelled') {
+        throw new Error('Ride already completed or cancelled');
+      }
+
+      // 3. Solo permitir cancelación si el pago fue exitoso
+      if (ride.paymentStatus !== 'paid') {
+        throw new Error('Cannot refund unpaid ride');
+      }
+
+      const refundAmount = Number(ride.farePrice);
+      this.logger.log(`💰 Procesando reembolso de $${refundAmount} para viaje ${rideId}`);
+
+      // 4. Procesar reembolso en wallet del pasajero
+      const { wallet, transaction } = await this.walletService.processRefund(
+        ride.userId,
+        refundAmount,
+        `Cancelación por conductor: ${cancellationData.reason}`,
+        'ride_cancellation',
+        rideId.toString()
+      );
+
+      // 5. Actualizar estado del viaje
+      await this.prisma.ride.update({
+        where: { rideId },
+        data: {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancelledBy: 'driver',
+          cancellationReason: cancellationData.reason,
+          cancellationNotes: cancellationData.notes,
+          updatedAt: new Date()
+        }
+      });
+
+      // 6. Crear registro de cancelación
+      await this.prisma.rideCancellation.create({
+        data: {
+          rideId,
+          cancelledBy: 'driver',
+          reason: cancellationData.reason,
+          notes: cancellationData.notes,
+          refundAmount,
+          refundProcessed: true,
+          locationLat: cancellationData.location?.lat,
+          locationLng: cancellationData.location?.lng,
+          cancelledAt: new Date()
+        }
+      });
+
+      // 7. Notificar al pasajero sobre el reembolso
+      await this.notifications.sendNotification({
+        userId: ride.userId.toString(),
+        type: NotificationType.RIDE_REFUND_PROCESSED,
+        title: 'Viaje Cancelado - Reembolso Procesado',
+        message: `Tu viaje ha sido cancelado por el conductor. Se te ha reembolsado $${refundAmount.toFixed(2)} a tu wallet.`,
+        data: {
+          rideId,
+          refundAmount,
+          newBalance: wallet.balance,
+          reason: cancellationData.reason,
+          driverName: ride.driver?.firstName + ' ' + ride.driver?.lastName,
+          cancellationNotes: cancellationData.notes
+        },
+        channels: [NotificationChannel.PUSH]
+      });
+
+      // 8. Notificar al conductor sobre la cancelación exitosa
+      await this.notifications.sendNotification({
+        userId: driverId.toString(),
+        type: NotificationType.DRIVER_CANCEL_RIDE,
+        title: 'Viaje Cancelado Exitosamente',
+        message: `Has cancelado el viaje ${rideId}. El pasajero ha sido reembolsado automáticamente.`,
+        data: {
+          rideId,
+          refundAmount,
+          passengerNotified: true,
+          reason: cancellationData.reason
+        },
+        channels: [NotificationChannel.PUSH]
+      });
+
+      // 9. Emitir evento WebSocket
+      this.gateway.server?.to(`ride-${rideId}`).emit('ride:cancelled', {
+        rideId,
+        cancelledBy: 'driver',
+        reason: cancellationData.reason,
+        refundAmount,
+        newBalance: wallet.balance,
+        timestamp: new Date()
+      });
+
+      this.logger.log(`✅ Viaje ${rideId} cancelado por conductor con reembolso procesado`);
+
+      return {
+        rideId,
+        status: 'cancelled',
+        refundProcessed: true,
+        refundAmount,
+        newWalletBalance: wallet.balance,
+        passengerNotified: true,
+        driverNotified: true,
+        cancellationReason: cancellationData.reason,
+        transactionId: transaction.id
+      };
+
+    } catch (error) {
+      this.logger.error(`❌ Error cancelando viaje ${rideId}:`, error);
+      throw error;
+    }
   }
 }
 

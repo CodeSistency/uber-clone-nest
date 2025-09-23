@@ -20,6 +20,14 @@ export enum NotificationType {
   DRIVER_MESSAGE = 'driver_message',
   PROMOTIONAL = 'promotional',
   SYSTEM_MAINTENANCE = 'system_maintenance',
+  // Nuevos tipos para reportes y reembolsos
+  DRIVER_REPORT_TRAFFIC = 'driver_report_traffic',
+  DRIVER_REPORT_BREAKDOWN = 'driver_report_breakdown',
+  DRIVER_REPORT_ACCIDENT = 'driver_report_accident',
+  DRIVER_REPORT_PASSENGER_ISSUE = 'driver_report_passenger_issue',
+  DRIVER_CANCEL_RIDE = 'driver_cancel_ride',
+  RIDE_REFUND_PROCESSED = 'ride_refund_processed',
+  DRIVER_REQUEST_EXPIRED = 'driver_request_expired',
 }
 
 export enum NotificationChannel {
