@@ -9,6 +9,7 @@ import { StripeModule } from '../../stripe/stripe.module';
 import { PaymentsModule } from '../../payments/payments.module';
 import { ErrandsModule } from '../../errands/errands.module';
 import { ParcelsModule } from '../../parcels/parcels.module';
+import { RedisModule } from '../../redis/redis.module';
 import { RidesFlowService } from './rides-flow.service';
 import { TransportClientController } from './transport.client.controller';
 import { TransportDriverController } from './transport.driver.controller';
@@ -33,6 +34,7 @@ import { DriverAvailabilityController } from './driver.availability.controller';
     PaymentsModule,
     ErrandsModule,
     ParcelsModule,
+    RedisModule,
   ],
   controllers: [
     TransportClientController,

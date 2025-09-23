@@ -679,15 +679,7 @@ export class RealtimeController {
         availableVehicleTypes = vehicleTypes.map(vt => vt.id);
       }
 
-      const simulatedDrivers: Array<{
-        driverId: number;
-        name: string;
-        location: { lat: number; lng: number };
-        distanceFromCenter: number;
-        vehicleType: string;
-        status: string;
-        locationActive: boolean;
-      }> = [];
+      const simulatedDrivers: any[] = [];
 
       // Simular ubicaciones para cada conductor
       for (let i = 0; i < Math.min(driverCount, existingDrivers.length); i++) {
