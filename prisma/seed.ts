@@ -15,30 +15,35 @@ async function main() {
       data: {
         name: 'John Doe',
         email: 'john.doe@example.com',
+        refreshToken: '',
       },
     }),
     prisma.user.create({
       data: {
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
+        refreshToken: '',
       },
     }),
     prisma.user.create({
       data: {
         name: 'Mike Johnson',
         email: 'mike.johnson@example.com',
+        refreshToken: '',
       },
     }),
     prisma.user.create({
       data: {
         name: 'Sarah Wilson',
         email: 'sarah.wilson@example.com',
+        refreshToken: '',
       },
     }),
     prisma.user.create({
       data: {
         name: 'David Brown',
         email: 'david.brown@example.com',
+        refreshToken: '',
       },
     }),
   ]);
@@ -93,6 +98,7 @@ async function main() {
       data: {
         name: 'Carlos Rodriguez',
         email: 'carlos.driver@example.com',
+        refreshToken: '',
         password: await bcrypt.hash('Driver123!', 12),
       },
     }),
@@ -100,6 +106,7 @@ async function main() {
       data: {
         name: 'Maria Garcia',
         email: 'maria.driver@example.com',
+        refreshToken: '',
         password: await bcrypt.hash('Driver123!', 12),
       },
     }),
@@ -107,6 +114,7 @@ async function main() {
       data: {
         name: 'Luis Martinez',
         email: 'luis.driver@example.com',
+        refreshToken: '',
         password: await bcrypt.hash('Driver123!', 12),
       },
     }),
@@ -118,8 +126,10 @@ async function main() {
         id: driverUsers[0].id, // Associate with user
         firstName: 'Carlos',
         lastName: 'Rodriguez',
-        profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=carlos',
-        carImageUrl: 'https://images.unsplash.com/photo-1549924231-f129b911e442?w=400',
+        profileImageUrl:
+          'https://api.dicebear.com/7.x/avataaars/svg?seed=carlos',
+        carImageUrl:
+          'https://images.unsplash.com/photo-1549924231-f129b911e442?w=400',
         carModel: 'Toyota Camry',
         licensePlate: 'ABC123',
         carSeats: 4,
@@ -134,8 +144,10 @@ async function main() {
         id: driverUsers[1].id, // Associate with user
         firstName: 'Maria',
         lastName: 'Garcia',
-        profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=maria',
-        carImageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
+        profileImageUrl:
+          'https://api.dicebear.com/7.x/avataaars/svg?seed=maria',
+        carImageUrl:
+          'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
         carModel: 'Honda Civic',
         licensePlate: 'XYZ789',
         carSeats: 4,
@@ -151,7 +163,8 @@ async function main() {
         firstName: 'Luis',
         lastName: 'Martinez',
         profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=luis',
-        carImageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
+        carImageUrl:
+          'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
         carModel: 'Yamaha MT-07',
         licensePlate: 'MOT789',
         carSeats: 2,
@@ -202,28 +215,31 @@ async function main() {
     prisma.rideTier.create({
       data: {
         name: 'Economy',
-        baseFare: 2.50,
+        baseFare: 2.5,
         perMinuteRate: 0.15,
         perMileRate: 1.25,
-        imageUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=100',
+        imageUrl:
+          'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=100',
       },
     }),
     prisma.rideTier.create({
       data: {
         name: 'Comfort',
-        baseFare: 4.00,
+        baseFare: 4.0,
         perMinuteRate: 0.25,
-        perMileRate: 2.00,
-        imageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=100',
+        perMileRate: 2.0,
+        imageUrl:
+          'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=100',
       },
     }),
     prisma.rideTier.create({
       data: {
         name: 'Premium',
-        baseFare: 6.00,
+        baseFare: 6.0,
         perMinuteRate: 0.35,
-        perMileRate: 3.00,
-        imageUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=100',
+        perMileRate: 3.0,
+        imageUrl:
+          'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=100',
       },
     }),
   ]);
@@ -298,7 +314,7 @@ async function main() {
         destinationLatitude: 40.7589,
         destinationLongitude: -73.9851,
         rideTime: 15,
-        farePrice: 12.50,
+        farePrice: 12.5,
         paymentStatus: 'completed',
         driverId: drivers[0].id,
         userId: users[0].id,
@@ -332,7 +348,7 @@ async function main() {
         destinationLatitude: 40.7074,
         destinationLongitude: -74.0113,
         rideTime: 30,
-        farePrice: 25.00,
+        farePrice: 25.0,
         paymentStatus: 'pending',
         userId: users[2].id,
         tierId: rideTiers[2].id,
@@ -354,7 +370,8 @@ async function main() {
         longitude: -73.9934,
         category: 'Restaurant',
         cuisineType: 'Italian',
-        logoUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100',
+        logoUrl:
+          'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100',
         rating: 4.5,
         isOpen: true,
         ownerId: users[0].id,
@@ -368,7 +385,8 @@ async function main() {
         longitude: -73.9851,
         category: 'Restaurant',
         cuisineType: 'American',
-        logoUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100',
+        logoUrl:
+          'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100',
         rating: 4.2,
         isOpen: true,
         ownerId: users[1].id,
@@ -382,7 +400,8 @@ async function main() {
         longitude: -73.9654,
         category: 'Grocery',
         cuisineType: 'Healthy',
-        logoUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=100',
+        logoUrl:
+          'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=100',
         rating: 4.7,
         isOpen: true,
         ownerId: users[2].id,
@@ -402,7 +421,8 @@ async function main() {
         name: 'Margherita Pizza',
         description: 'Classic pizza with tomato sauce, mozzarella, and basil',
         price: 15.99,
-        imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200',
+        imageUrl:
+          'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200',
         category: 'Pizza',
         isAvailable: true,
       },
@@ -413,7 +433,8 @@ async function main() {
         name: 'Pepperoni Pizza',
         description: 'Pizza with tomato sauce, mozzarella, and pepperoni',
         price: 18.99,
-        imageUrl: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=200',
+        imageUrl:
+          'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=200',
         category: 'Pizza',
         isAvailable: true,
       },
@@ -425,7 +446,8 @@ async function main() {
         name: 'Classic Cheeseburger',
         description: 'Juicy beef patty with cheese, lettuce, and tomato',
         price: 12.99,
-        imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200',
+        imageUrl:
+          'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200',
         category: 'Burger',
         isAvailable: true,
       },
@@ -436,7 +458,8 @@ async function main() {
         name: 'French Fries',
         description: 'Crispy golden fries',
         price: 4.99,
-        imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200',
+        imageUrl:
+          'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200',
         category: 'Sides',
         isAvailable: true,
       },
@@ -448,7 +471,8 @@ async function main() {
         name: 'Organic Apples',
         description: 'Fresh organic apples, 1 lb',
         price: 3.99,
-        imageUrl: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200',
+        imageUrl:
+          'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200',
         category: 'Fruits',
         isAvailable: true,
       },
@@ -459,7 +483,8 @@ async function main() {
         name: 'Spinach',
         description: 'Fresh organic spinach, 1 bunch',
         price: 2.49,
-        imageUrl: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=200',
+        imageUrl:
+          'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=200',
         category: 'Vegetables',
         isAvailable: true,
       },
@@ -481,7 +506,7 @@ async function main() {
         deliveryLongitude: -73.9934,
         totalPrice: 34.98,
         deliveryFee: 3.99,
-        tip: 5.00,
+        tip: 5.0,
         status: 'delivered',
         paymentStatus: 'completed',
       },
@@ -496,7 +521,7 @@ async function main() {
         deliveryLongitude: -73.9851,
         totalPrice: 17.98,
         deliveryFee: 2.99,
-        tip: 3.00,
+        tip: 3.0,
         status: 'in_transit',
         paymentStatus: 'completed',
       },
@@ -552,7 +577,7 @@ async function main() {
     prisma.promotion.create({
       data: {
         promoCode: 'WELCOME10',
-        discountPercentage: 10.00,
+        discountPercentage: 10.0,
         expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         isActive: true,
       },
@@ -560,7 +585,7 @@ async function main() {
     prisma.promotion.create({
       data: {
         promoCode: 'RIDE20',
-        discountAmount: 5.00,
+        discountAmount: 5.0,
         expiryDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
         isActive: true,
       },
@@ -568,7 +593,7 @@ async function main() {
     prisma.promotion.create({
       data: {
         promoCode: 'FOOD15',
-        discountPercentage: 15.00,
+        discountPercentage: 15.0,
         expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         isActive: true,
       },
@@ -583,13 +608,13 @@ async function main() {
     prisma.wallet.create({
       data: {
         userId: users[0].id,
-        balance: 150.00,
+        balance: 150.0,
       },
     }),
     prisma.wallet.create({
       data: {
         userId: users[1].id,
-        balance: 75.50,
+        balance: 75.5,
       },
     }),
     prisma.wallet.create({
@@ -608,7 +633,7 @@ async function main() {
     prisma.walletTransaction.create({
       data: {
         walletId: wallets[0].id,
-        amount: 50.00,
+        amount: 50.0,
         transactionType: 'credit',
         description: 'Initial deposit',
       },
@@ -616,7 +641,7 @@ async function main() {
     prisma.walletTransaction.create({
       data: {
         walletId: wallets[0].id,
-        amount: -12.50,
+        amount: -12.5,
         transactionType: 'debit',
         description: 'Ride payment',
       },
@@ -624,7 +649,7 @@ async function main() {
     prisma.walletTransaction.create({
       data: {
         walletId: wallets[1].id,
-        amount: 100.00,
+        amount: 100.0,
         transactionType: 'credit',
         description: 'Referral bonus',
       },
@@ -685,7 +710,7 @@ async function main() {
       data: {
         orderId: deliveryOrders[0].orderId,
         ratedByUserId: users[0].id,
-        ratedUserId: users.find(u => u.id === deliveryOrders[0].userId)?.id,
+        ratedUserId: users.find((u) => u.id === deliveryOrders[0].userId)?.id,
         ratingValue: 5,
         comment: 'Fast delivery, food was hot!',
       },
@@ -730,21 +755,21 @@ async function main() {
       data: {
         rideId: rides[0].rideId,
         senderId: users[0].id,
-        messageText: 'Hi Carlos, I\'m waiting at the entrance',
+        messageText: "Hi Carlos, I'm waiting at the entrance",
       },
     }),
     prisma.chatMessage.create({
       data: {
         rideId: rides[0].rideId,
         senderId: users[rides[0].userId - 1]?.id || users[0].id,
-        messageText: 'Sure, I\'ll be there in 2 minutes!',
+        messageText: "Sure, I'll be there in 2 minutes!",
       },
     }),
     prisma.chatMessage.create({
       data: {
         rideId: rides[1].rideId,
         senderId: users[1].id,
-        messageText: 'Please wait, I\'m coming down',
+        messageText: "Please wait, I'm coming down",
       },
     }),
     // Delivery chat messages
@@ -758,7 +783,9 @@ async function main() {
     prisma.chatMessage.create({
       data: {
         orderId: deliveryOrders[0].orderId,
-        senderId: users.find(u => u.id === deliveryOrders[0].userId)?.id || users[0].id,
+        senderId:
+          users.find((u) => u.id === deliveryOrders[0].userId)?.id ||
+          users[0].id,
         messageText: 'Enjoy your meal! Rate us 5 stars please 😊',
       },
     }),
@@ -780,15 +807,33 @@ async function main() {
       userType: 'admin',
       adminRole: 'super_admin',
       adminPermissions: [
-        'user:read', 'user:write', 'user:delete',
-        'driver:approve', 'driver:suspend', 'driver:read', 'driver:write',
-        'ride:monitor', 'ride:intervene', 'ride:read', 'ride:write',
-        'delivery:read', 'delivery:write', 'delivery:monitor',
-        'payment:refund', 'wallet:manage', 'financial:read',
-        'system:config', 'reports:view', 'logs:view',
-        'store:read', 'store:write', 'store:approve',
-        'product:read', 'product:write',
-        'notification:send', 'notification:read',
+        'user:read',
+        'user:write',
+        'user:delete',
+        'driver:approve',
+        'driver:suspend',
+        'driver:read',
+        'driver:write',
+        'ride:monitor',
+        'ride:intervene',
+        'ride:read',
+        'ride:write',
+        'delivery:read',
+        'delivery:write',
+        'delivery:monitor',
+        'payment:refund',
+        'wallet:manage',
+        'financial:read',
+        'system:config',
+        'reports:view',
+        'logs:view',
+        'store:read',
+        'store:write',
+        'store:approve',
+        'product:read',
+        'product:write',
+        'notification:send',
+        'notification:read',
       ],
       isActive: true,
       adminCreatedAt: new Date(),
@@ -804,16 +849,29 @@ async function main() {
       email: 'admin@uberclone.com',
       password: adminPassword,
       userType: 'admin',
+      refreshToken: '',
       adminRole: 'admin',
       adminPermissions: [
-        'user:read', 'user:write',
-        'driver:approve', 'driver:read', 'driver:write',
-        'ride:monitor', 'ride:read', 'ride:write',
-        'delivery:read', 'delivery:write', 'delivery:monitor',
-        'financial:read', 'reports:view',
-        'store:read', 'store:write', 'store:approve',
-        'product:read', 'product:write',
-        'notification:send', 'notification:read',
+        'user:read',
+        'user:write',
+        'driver:approve',
+        'driver:read',
+        'driver:write',
+        'ride:monitor',
+        'ride:read',
+        'ride:write',
+        'delivery:read',
+        'delivery:write',
+        'delivery:monitor',
+        'financial:read',
+        'reports:view',
+        'store:read',
+        'store:write',
+        'store:approve',
+        'product:read',
+        'product:write',
+        'notification:send',
+        'notification:read',
       ],
       isActive: true,
       adminCreatedAt: new Date(),
@@ -829,11 +887,19 @@ async function main() {
       email: 'moderator@uberclone.com',
       password: moderatorPassword,
       userType: 'admin',
+      refreshToken: '',
       adminRole: 'moderator',
       adminPermissions: [
-        'user:read', 'driver:read', 'ride:monitor', 'ride:read',
-        'delivery:read', 'delivery:monitor', 'reports:view',
-        'store:read', 'product:read', 'notification:read',
+        'user:read',
+        'driver:read',
+        'ride:monitor',
+        'ride:read',
+        'delivery:read',
+        'delivery:monitor',
+        'reports:view',
+        'store:read',
+        'product:read',
+        'notification:read',
       ],
       isActive: true,
       adminCreatedAt: new Date(),
@@ -849,10 +915,15 @@ async function main() {
       email: 'support@uberclone.com',
       password: supportPassword,
       userType: 'admin',
+      refreshToken: '',
       adminRole: 'support',
       adminPermissions: [
-        'user:read', 'driver:read', 'ride:read', 'delivery:read',
-        'notification:send', 'notification:read',
+        'user:read',
+        'driver:read',
+        'ride:read',
+        'delivery:read',
+        'notification:send',
+        'notification:read',
       ],
       isActive: true,
       adminCreatedAt: new Date(),
@@ -876,7 +947,9 @@ async function main() {
   console.log(`   ⭐ ${5} ratings created`);
   console.log(`   🚨 ${3} emergency contacts created`);
   console.log(`   💬 ${5} chat messages created`);
-  console.log(`   👑 ${4} admins created (super_admin, admin, moderator, support)`);
+  console.log(
+    `   👑 ${4} admins created (super_admin, admin, moderator, support)`,
+  );
 
   // =========================================
   // VENEZUELAN PAYMENT SYSTEM SEEDS
@@ -889,13 +962,13 @@ async function main() {
     {
       referenceNumber: '12345678901234567890',
       bankCode: '0102',
-      amount: 25.50,
+      amount: 25.5,
       userId: 1,
       serviceType: 'ride',
       serviceId: 1,
       paymentMethod: 'transfer',
       status: 'pending',
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
     },
     {
       referenceNumber: '09876543210987654321',
@@ -907,18 +980,18 @@ async function main() {
       paymentMethod: 'pago_movil',
       status: 'confirmed',
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      confirmedAt: new Date()
+      confirmedAt: new Date(),
     },
     {
       referenceNumber: '11111111111111111111',
       bankCode: '0196',
-      amount: 15.00,
+      amount: 15.0,
       userId: 3,
       serviceType: 'errand',
       serviceId: 1,
       paymentMethod: 'transfer',
       status: 'expired',
-      expiresAt: new Date(Date.now() - 60 * 60 * 1000) // Expired 1 hour ago
+      expiresAt: new Date(Date.now() - 60 * 60 * 1000), // Expired 1 hour ago
     },
     {
       referenceNumber: '22222222222222222222',
@@ -929,13 +1002,13 @@ async function main() {
       serviceId: 1,
       paymentMethod: 'zelle',
       status: 'pending',
-      expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000) // 12 hours from now
-    }
+      expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours from now
+    },
   ];
 
   for (const ref of paymentReferences) {
     await prisma.paymentReference.create({
-      data: ref
+      data: ref,
     });
   }
 
@@ -952,15 +1025,15 @@ async function main() {
         transactionId: 'MERC-1725979200000-abc123def',
         amount: 35.75,
         timestamp: new Date(),
-        bankCode: '0105'
+        bankCode: '0105',
       },
-      confirmationTimestamp: new Date()
-    }
+      confirmationTimestamp: new Date(),
+    },
   ];
 
   for (const tx of bankTransactions) {
     await prisma.bankTransaction.create({
-      data: tx
+      data: tx,
     });
   }
 
@@ -969,7 +1042,9 @@ async function main() {
   console.log('\n✅ Venezuelan Payment System seeded successfully!');
   console.log('📋 Test Payment References:');
   paymentReferences.forEach((ref, index) => {
-    console.log(`   ${index + 1}. ${ref.referenceNumber} - ${ref.serviceType} - ${ref.amount} VES - ${ref.status}`);
+    console.log(
+      `   ${index + 1}. ${ref.referenceNumber} - ${ref.serviceType} - ${ref.amount} VES - ${ref.status}`,
+    );
   });
 }
 

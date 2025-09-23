@@ -32,12 +32,12 @@ model VehicleType {
   @@map("vehicle_types")
 }
 
-// Stores user information with support for regular users and administrators
 model User {
   id        Int       @id @default(autoincrement())
   name      String    @db.VarChar(100)
   email     String    @unique @db.VarChar(100)
   password  String?   @db.VarChar(255) // Hashed password for authentication
+  refreshToken String? @db.VarChar(255) // Hashed refresh token
   isActive  Boolean   @default(true) @map("is_active")
   lastLogin DateTime? @map("last_login")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -46,8 +46,8 @@ model User {
   // Profile information
   phone        String?   @db.VarChar(20)
   dateOfBirth  DateTime? @map("date_of_birth")
-  gender       String?   @db.VarChar(20) // 'male', 'female', 'other', 'prefer_not_to_say'
-  profileImage String?   @map("profile_image") // URL to profile image
+  gender       String?   @db.VarChar(20)
+  profileImage String?   @map("profile_image")
   address      String?   @db.VarChar(255)
   city         String?   @db.VarChar(100)
   state        String?   @db.VarChar(100)
@@ -55,24 +55,24 @@ model User {
   postalCode   String?   @map("postal_code") @db.VarChar(20)
 
   // Preferences
-  preferredLanguage String? @default("es") @map("preferred_language") @db.VarChar(10) // 'es', 'en', etc.
+  preferredLanguage String? @default("es") @map("preferred_language") @db.VarChar(10)
   timezone          String? @default("America/Caracas") @db.VarChar(50)
-  currency          String? @default("USD") @db.VarChar(10) // 'USD', 'EUR', etc.
+  currency          String? @default("USD") @db.VarChar(10)
 
   // Verification status
   emailVerified    Boolean @default(false) @map("email_verified")
   phoneVerified    Boolean @default(false) @map("phone_verified")
   identityVerified Boolean @default(false) @map("identity_verified")
 
-  // Admin-specific fields (optional - only populated for admin users)
-  userType         String?   @default("user") @map("user_type") // 'user' or 'admin'
-  adminRole        String?   @map("admin_role") @db.VarChar(20) // 'super_admin', 'admin', 'moderator', 'support'
-  adminPermissions String[]  @default([]) @map("admin_permissions") // Array of permission strings
+  // Admin-specific fields
+  userType         String?   @default("user") @map("user_type")
+  adminRole        String?   @map("admin_role") @db.VarChar(20)
+  adminPermissions String[]  @default([]) @map("admin_permissions")
   lastAdminLogin   DateTime? @map("last_admin_login")
   adminCreatedAt   DateTime? @map("admin_created_at")
   adminUpdatedAt   DateTime? @updatedAt @map("admin_updated_at")
 
-  // Relations (available for both regular users and admins)
+  // Relations
   rides                   Ride[]
   deliveryOrders          DeliveryOrder[]
   wallet                  Wallet?
@@ -99,6 +99,7 @@ model User {
 
   @@map("users")
 }
+
 
 // Stores driver/courier information, their vehicle, and status
 model Driver {

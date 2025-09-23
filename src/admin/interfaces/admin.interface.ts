@@ -22,7 +22,6 @@ export interface AuthenticatedAdmin {
   isActive: boolean;
 }
 
-
 // Interfaz para filtros de búsqueda de drivers
 export interface DriverFilters {
   search?: string;
@@ -38,21 +37,21 @@ export interface DriverFilters {
   limit?: number;
 }
 
-  // Interfaz para filtros de búsqueda de usuarios
-  export interface UserFilters {
-    search?: string; // nombre, email, teléfono
-    status?: string[];
-    registrationDate?: DateRange;
-    rideCount?: NumberRange;
-    rating?: NumberRange;
-    location?: LocationFilter;
-    hasWallet?: boolean;
-    isVerified?: boolean;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-    page?: number;
-    limit?: number;
-  }
+// Interfaz para filtros de búsqueda de usuarios
+export interface UserFilters {
+  search?: string; // nombre, email, teléfono
+  status?: string[];
+  registrationDate?: DateRange;
+  rideCount?: NumberRange;
+  rating?: NumberRange;
+  location?: LocationFilter;
+  hasWallet?: boolean;
+  isVerified?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
 
 // Interfaz para filtros de búsqueda de rides
 export interface RideFilters {

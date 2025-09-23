@@ -15,17 +15,15 @@ export class AdminAuthGuard extends AuthGuard(JWT_STRATEGY_NAME) {
     // Skip authentication for public routes
     const request = context.switchToHttp().getRequest();
     const path = request.path;
-    
+
     const publicRoutes = [
       '/',
       '/admin/auth/login',
       '/admin/auth/refresh-token',
     ];
-    
     if (publicRoutes.some(route => path === route || path.startsWith(route + '/'))) {
       return true;
     }
-    
     // For all other routes, require authentication
     const token = this.extractTokenFromHeader(request);
 
