@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Req, UseGuards, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
 import { ConfirmRidePaymentDto, DefineRideDto, RateRideFlowDto, SelectVehicleDto } from './dto/transport-flow.dtos';
@@ -264,6 +264,198 @@ export class TransportClientController {
       console.error(`❌ selectVehicle failed:`, error);
       throw error;
     }
+  }
+
+  @Get('nearby-drivers')
+  @ApiOperation({
+    summary: 'Buscar conductores cercanos disponibles',
+    description: `
+    **FUNCIONALIDAD PRINCIPAL:** Permite al cliente buscar conductores cercanos disponibles para su viaje.
+
+    **¿Qué hace?**
+    - Busca conductores online en un radio específico
+    - Filtra por tipo de vehículo compatible con el tier seleccionado
+    - Calcula distancia estimada y tiempo de llegada
+    - Ordena por proximidad y calificación
+
+    **Parámetros requeridos:**
+    - \`lat\`, \`lng\`: Ubicación actual del cliente
+    - \`tierId\`: Tier seleccionado (opcional, filtra vehículos compatibles)
+    - \`vehicleTypeId\`: Tipo de vehículo específico (opcional)
+
+    **Información devuelta:**
+    - Datos del conductor (nombre, foto, calificación)
+    - Información del vehículo (modelo, placa, asientos)
+    - Distancia estimada y tiempo de llegada
+    - Estado de verificación del conductor
+
+    **Uso típico:**
+    1. Cliente define su viaje
+    2. Cliente busca conductores cercanos
+    3. Cliente selecciona conductor preferido
+    4. Cliente solicita viaje específico al conductor
+    `
+  })
+  @ApiQuery({
+    name: 'lat',
+    description: 'Latitud actual del cliente',
+    example: 4.6097,
+    type: Number,
+    required: true
+  })
+  @ApiQuery({
+    name: 'lng', 
+    description: 'Longitud actual del cliente',
+    example: -74.0817,
+    type: Number,
+    required: true
+  })
+  @ApiQuery({
+    name: 'radius',
+    description: 'Radio de búsqueda en kilómetros',
+    example: 5,
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'tierId',
+    description: 'ID del tier seleccionado (filtra vehículos compatibles)',
+    example: 1,
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'vehicleTypeId',
+    description: 'ID del tipo de vehículo específico',
+    example: 1,
+    type: Number,
+    required: false
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Conductores cercanos encontrados exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              driverId: { type: 'number', example: 1 },
+              firstName: { type: 'string', example: 'Carlos' },
+              lastName: { type: 'string', example: 'Rodriguez' },
+              profileImageUrl: { type: 'string', example: 'https://...' },
+              rating: { type: 'number', example: 4.8 },
+              carModel: { type: 'string', example: 'Toyota Camry' },
+              licensePlate: { type: 'string', example: 'ABC-123' },
+              carSeats: { type: 'number', example: 4 },
+              vehicleType: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  name: { type: 'string', example: 'car' },
+                  displayName: { type: 'string', example: 'Carro' },
+                  icon: { type: 'string', example: '🚗' }
+                }
+              },
+              distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
+              estimatedArrival: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
+              verificationStatus: { type: 'string', example: 'approved' },
+              isOnline: { type: 'boolean', example: true }
+            }
+          }
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 3 },
+            radius: { type: 'number', example: 5 },
+            searchLocation: {
+              type: 'object',
+              properties: {
+                lat: { type: 'number', example: 4.6097 },
+                lng: { type: 'number', example: -74.0817 }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Parámetros de ubicación requeridos' })
+  @ApiResponse({ status: 500, description: 'Error al buscar conductores' })
+  async getNearbyDrivers(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+    @Query('radius') radius: string = '5',
+    @Query('tierId') tierId?: string,
+    @Query('vehicleTypeId') vehicleTypeId?: string,
+  ) {
+    const nearbyDrivers = await this.flow.getNearbyDrivers({
+      lat: Number(lat),
+      lng: Number(lng),
+      radius: Number(radius),
+      tierId: tierId ? Number(tierId) : undefined,
+      vehicleTypeId: vehicleTypeId ? Number(vehicleTypeId) : undefined,
+    });
+    return { data: nearbyDrivers };
+  }
+
+  @Post(':rideId/request-driver')
+  @ApiOperation({ 
+    summary: 'Solicitar conductor específico para este viaje',
+    description: `
+    **FUNCIONALIDAD:** Permite al cliente solicitar un conductor específico para su viaje.
+
+    **¿Qué hace?**
+    - Envía notificación específica al conductor seleccionado
+    - Crea una solicitud de viaje dirigida
+    - El conductor puede aceptar o rechazar
+
+    **Uso típico:**
+    1. Cliente busca conductores cercanos con /nearby-drivers
+    2. Cliente selecciona conductor preferido
+    3. Cliente usa este endpoint para solicitar específicamente a ese conductor
+    4. Conductor recibe notificación y puede aceptar/rechazar
+    `
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        driverId: {
+          type: 'number',
+          example: 1,
+          description: 'ID del conductor específico a solicitar'
+        }
+      },
+      required: ['driverId']
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Solicitud enviada al conductor específico',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            rideId: { type: 'number', example: 123 },
+            driverId: { type: 'number', example: 1 },
+            status: { type: 'string', example: 'requested' },
+            message: { type: 'string', example: 'Solicitud enviada al conductor' }
+          }
+        }
+      }
+    }
+  })
+  async requestSpecificDriver(
+    @Param('rideId') rideId: string,
+    @Body() body: { driverId: number }
+  ) {
+    return this.flow.requestSpecificDriver(Number(rideId), body.driverId);
   }
 
   @Post(':rideId/request-driver')

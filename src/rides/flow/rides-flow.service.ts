@@ -474,6 +474,188 @@ export class RidesFlowService {
   async cancelParcel(parcelId: number, reason?: string) {
     return this.parcelsService.cancelParcel(parcelId, reason);
   }
+
+  // =========================================
+  // NUEVOS MÉTODOS PARA BÚSQUEDA DE CONDUCTORES
+  // =========================================
+
+  async getNearbyDrivers(params: {
+    lat: number;
+    lng: number;
+    radius: number;
+    tierId?: number;
+    vehicleTypeId?: number;
+  }) {
+    const { lat, lng, radius, tierId, vehicleTypeId } = params;
+
+    // Construir filtros de búsqueda
+    const whereClause: any = {
+      status: 'online',
+      verificationStatus: 'approved',
+    };
+
+    // Si se especifica un tier, filtrar por vehículos compatibles
+    if (tierId) {
+      const compatibleVehicleTypes = await this.prisma.tierVehicleType.findMany({
+        where: { tierId, isActive: true },
+        select: { vehicleTypeId: true }
+      });
+      
+      const vehicleTypeIds = compatibleVehicleTypes.map(vt => vt.vehicleTypeId);
+      whereClause.vehicleTypeId = { in: vehicleTypeIds };
+    }
+
+    // Si se especifica un tipo de vehículo específico
+    if (vehicleTypeId) {
+      whereClause.vehicleTypeId = vehicleTypeId;
+    }
+
+    // Buscar conductores con filtros
+    const drivers = await this.prisma.driver.findMany({
+      where: whereClause,
+      include: {
+        vehicleType: true,
+        // Incluir calificaciones para calcular rating promedio
+        rides: {
+          include: {
+            ratings: true
+          }
+        }
+      },
+      take: 20, // Limitar a 20 conductores
+    });
+
+    // Calcular distancia y tiempo estimado para cada conductor
+    const driversWithDistance = drivers.map(driver => {
+      // Calcular rating promedio
+      const allRatings = driver.rides.flatMap(ride => ride.ratings);
+      const averageRating = allRatings.length > 0 
+        ? allRatings.reduce((sum, rating) => sum + rating.ratingValue, 0) / allRatings.length
+        : 5.0; // Rating por defecto si no hay calificaciones
+
+      // Simular ubicación del conductor (en un sistema real, esto vendría de tracking en tiempo real)
+      const driverLat = lat + (Math.random() - 0.5) * 0.01; // ±0.005 grados (~500m)
+      const driverLng = lng + (Math.random() - 0.5) * 0.01;
+
+      // Calcular distancia usando fórmula de Haversine
+      const distance = this.calculateDistance(lat, lng, driverLat, driverLng);
+      
+      // Calcular tiempo estimado de llegada (asumiendo velocidad promedio de 30 km/h)
+      const estimatedArrival = Math.round((distance / 30) * 60); // en minutos
+
+      return {
+        driverId: driver.id,
+        firstName: driver.firstName,
+        lastName: driver.lastName,
+        profileImageUrl: driver.profileImageUrl,
+        rating: Math.round(averageRating * 10) / 10, // Redondear a 1 decimal
+        carModel: driver.carModel,
+        licensePlate: driver.licensePlate,
+        carSeats: driver.carSeats,
+        vehicleType: driver.vehicleType ? {
+          id: driver.vehicleType.id,
+          name: driver.vehicleType.name,
+          displayName: driver.vehicleType.displayName,
+          icon: driver.vehicleType.icon
+        } : null,
+        distance: Math.round(distance * 10) / 10, // Redondear a 1 decimal
+        estimatedArrival: Math.max(1, estimatedArrival), // Mínimo 1 minuto
+        verificationStatus: driver.verificationStatus,
+        isOnline: driver.status === 'online'
+      };
+    });
+
+    // Filtrar por radio y ordenar por distancia
+    const nearbyDrivers = driversWithDistance
+      .filter(driver => driver.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
+
+    return {
+      drivers: nearbyDrivers,
+      meta: {
+        total: nearbyDrivers.length,
+        radius,
+        searchLocation: { lat, lng }
+      }
+    };
+  }
+
+  async requestSpecificDriver(rideId: number, driverId: number) {
+    // Verificar que el viaje existe
+    const ride = await this.prisma.ride.findUnique({ where: { rideId } });
+    if (!ride) {
+      throw new Error('Ride not found');
+    }
+
+    // Verificar que el conductor existe y está disponible
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+      select: { id: true, status: true, verificationStatus: true }
+    });
+
+    if (!driver) {
+      throw new Error('Driver not found');
+    }
+
+    if (driver.status !== 'online') {
+      throw new Error('Driver is not available');
+    }
+
+    if (driver.verificationStatus !== 'approved') {
+      throw new Error('Driver is not verified');
+    }
+
+    // Enviar notificación específica al conductor
+    await this.notifications.sendNotification({
+      userId: `driver_${driverId}`, // Placeholder - en producción sería el user ID real
+      type: 'RIDE_REQUEST' as any,
+      title: 'Solicitud de Viaje Específica',
+      message: `Tienes una solicitud de viaje específica de ${ride.originAddress} a ${ride.destinationAddress}`,
+      data: {
+        rideId,
+        isSpecificRequest: true,
+        pickupLocation: {
+          lat: Number(ride.originLatitude),
+          lng: Number(ride.originLongitude)
+        }
+      },
+      channels: ['push' as any],
+      priority: 'high'
+    });
+
+    // Emitir evento WebSocket
+    this.gateway.server?.to(`driver-${driverId}`).emit('ride:specific-request', {
+      rideId,
+      originAddress: ride.originAddress,
+      destinationAddress: ride.destinationAddress,
+      farePrice: ride.farePrice,
+      requestedAt: new Date()
+    });
+
+    return {
+      rideId,
+      driverId,
+      status: 'requested',
+      message: 'Solicitud enviada al conductor específico'
+    };
+  }
+
+  // Método auxiliar para calcular distancia entre dos puntos
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLng = this.deg2rad(lng2 - lng1);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distancia en km
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI/180);
+  }
 }
 
 
