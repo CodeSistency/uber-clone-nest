@@ -7,6 +7,7 @@ import { OrdersService } from '../../orders/orders.service';
 import { StripeService } from '../../stripe/stripe.service';
 import { ErrandsService } from '../../errands/errands.service';
 import { ParcelsService } from '../../parcels/parcels.service';
+import { LocationTrackingService } from '../../redis/location-tracking.service';
 import { CreateErrandDto } from './dto/errand-flow.dtos';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class RidesFlowService {
     private readonly stripeService: StripeService,
     private readonly errandsService: ErrandsService,
     private readonly parcelsService: ParcelsService,
+    private readonly locationTrackingService: LocationTrackingService,
   ) {}
 
   // Método para obtener tiers organizados por tipo de vehículo
@@ -488,96 +490,38 @@ export class RidesFlowService {
   }) {
     const { lat, lng, radius, tierId, vehicleTypeId } = params;
 
-    // Construir filtros de búsqueda
-    const whereClause: any = {
+    // Use the enhanced LocationTrackingService
+    let filters: any = {
       status: 'online',
-      verificationStatus: 'approved',
+      verified: true,
     };
 
     // Si se especifica un tier, filtrar por vehículos compatibles
     if (tierId) {
       const compatibleVehicleTypes = await this.prisma.tierVehicleType.findMany({
-        where: { tierId, isActive: true },
-        select: { vehicleTypeId: true }
+        where: { tierId },
+        select: { vehicleTypeId: true },
       });
-      
-      const vehicleTypeIds = compatibleVehicleTypes.map(vt => vt.vehicleTypeId);
-      whereClause.vehicleTypeId = { in: vehicleTypeIds };
-    }
 
-    // Si se especifica un tipo de vehículo específico
-    if (vehicleTypeId) {
-      whereClause.vehicleTypeId = vehicleTypeId;
-    }
-
-    // Buscar conductores con filtros
-    const drivers = await this.prisma.driver.findMany({
-      where: whereClause,
-      include: {
-        vehicleType: true,
-        // Incluir calificaciones para calcular rating promedio
-        rides: {
-          include: {
-            ratings: true
-          }
-        }
-      },
-      take: 20, // Limitar a 20 conductores
-    });
-
-    // Calcular distancia y tiempo estimado para cada conductor
-    const driversWithDistance = drivers.map(driver => {
-      // Calcular rating promedio
-      const allRatings = driver.rides.flatMap(ride => ride.ratings);
-      const averageRating = allRatings.length > 0 
-        ? allRatings.reduce((sum, rating) => sum + rating.ratingValue, 0) / allRatings.length
-        : 5.0; // Rating por defecto si no hay calificaciones
-
-      // Simular ubicación del conductor (en un sistema real, esto vendría de tracking en tiempo real)
-      const driverLat = lat + (Math.random() - 0.5) * 0.01; // ±0.005 grados (~500m)
-      const driverLng = lng + (Math.random() - 0.5) * 0.01;
-
-      // Calcular distancia usando fórmula de Haversine
-      const distance = this.calculateDistance(lat, lng, driverLat, driverLng);
-      
-      // Calcular tiempo estimado de llegada (asumiendo velocidad promedio de 30 km/h)
-      const estimatedArrival = Math.round((distance / 30) * 60); // en minutos
-
-      return {
-        driverId: driver.id,
-        firstName: driver.firstName,
-        lastName: driver.lastName,
-        profileImageUrl: driver.profileImageUrl,
-        rating: Math.round(averageRating * 10) / 10, // Redondear a 1 decimal
-        carModel: driver.carModel,
-        licensePlate: driver.licensePlate,
-        carSeats: driver.carSeats,
-        vehicleType: driver.vehicleType ? {
-          id: driver.vehicleType.id,
-          name: driver.vehicleType.name,
-          displayName: driver.vehicleType.displayName,
-          icon: driver.vehicleType.icon
-        } : null,
-        distance: Math.round(distance * 10) / 10, // Redondear a 1 decimal
-        estimatedArrival: Math.max(1, estimatedArrival), // Mínimo 1 minuto
-        verificationStatus: driver.verificationStatus,
-        isOnline: driver.status === 'online'
-      };
-    });
-
-    // Filtrar por radio y ordenar por distancia
-    const nearbyDrivers = driversWithDistance
-      .filter(driver => driver.distance <= radius)
-      .sort((a, b) => a.distance - b.distance);
-
-    return {
-      drivers: nearbyDrivers,
-      meta: {
-        total: nearbyDrivers.length,
-        radius,
-        searchLocation: { lat, lng }
+      if (compatibleVehicleTypes.length > 0) {
+        const vehicleTypeIds = compatibleVehicleTypes.map(vt => vt.vehicleTypeId);
+        filters.vehicleTypeId = vehicleTypeIds.length === 1 ? vehicleTypeIds[0] : { in: vehicleTypeIds };
       }
-    };
+    }
+
+    if (vehicleTypeId) {
+      filters.vehicleTypeId = vehicleTypeId;
+    }
+
+    // Use the LocationTrackingService for better location handling
+    const nearbyDrivers = await this.locationTrackingService.findNearbyDrivers(
+      lat,
+      lng,
+      radius / 1000, // Convert meters to kilometers
+      filters
+    );
+
+    return nearbyDrivers;
   }
 
   async requestSpecificDriver(rideId: number, driverId: number) {

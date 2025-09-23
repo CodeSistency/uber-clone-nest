@@ -114,16 +114,25 @@ model Driver {
   status             String   @default("offline") @db.VarChar(20)
   verificationStatus String   @default("pending") @map("verification_status") @db.VarChar(20)
   canDoDeliveries    Boolean  @default(false) @map("can_do_deliveries")
+
+  // Location tracking fields
+  currentLatitude    Decimal? @map("current_latitude") @db.Decimal(9, 6)
+  currentLongitude   Decimal? @map("current_longitude") @db.Decimal(9, 6)
+  lastLocationUpdate DateTime? @map("last_location_update")
+  locationAccuracy   Decimal? @map("location_accuracy") @db.Decimal(5, 2) // GPS accuracy in meters
+  isLocationActive   Boolean  @default(false) @map("is_location_active") // Whether driver is actively sharing location
+
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  vehicleType    VehicleType?     @relation(fields: [vehicleTypeId], references: [id])
-  documents      DriverDocument[]
-  rides          Ride[]
-  deliveryOrders DeliveryOrder[]
-  errands         Errand[]
-  parcels         Parcel[]
+  vehicleType         VehicleType?     @relation(fields: [vehicleTypeId], references: [id])
+  documents           DriverDocument[]
+  rides               Ride[]
+  deliveryOrders      DeliveryOrder[]
+  errands             Errand[]
+  parcels             Parcel[]
+  locationHistory     DriverLocationHistory[]
 
   @@map("drivers")
 }
@@ -141,6 +150,29 @@ model DriverDocument {
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@map("driver_documents")
+}
+
+// Stores historical location data for drivers
+model DriverLocationHistory {
+  id               Int      @id @default(autoincrement())
+  driverId         Int      @map("driver_id")
+  latitude         Decimal  @db.Decimal(9, 6)
+  longitude        Decimal  @db.Decimal(9, 6)
+  accuracy         Decimal? @db.Decimal(5, 2) // GPS accuracy in meters
+  speed            Decimal? @db.Decimal(5, 2) // Speed in m/s
+  heading          Decimal? @db.Decimal(5, 2) // Direction in degrees (0-360)
+  altitude         Decimal? @db.Decimal(7, 2) // Altitude in meters
+  rideId           Int?     @map("ride_id") // Associated ride if tracking during ride
+  timestamp        DateTime @default(now())
+  source           String   @default("gps") @db.VarChar(20) // 'gps', 'wifi', 'manual', etc.
+
+  // Relations
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  ride   Ride?  @relation(fields: [rideId], references: [rideId])
+
+  @@index([driverId, timestamp])
+  @@index([rideId])
+  @@map("driver_location_history")
 }
 
 // =========================================
@@ -199,12 +231,13 @@ model Ride {
   createdAt              DateTime  @default(now()) @map("created_at")
 
   // Relations
-  driver               Driver?       @relation(fields: [driverId], references: [id])
-  tier                 RideTier?     @relation(fields: [tierId], references: [id])
-  user                 User?         @relation(fields: [userId], references: [id])
-  requestedVehicleType VehicleType?  @relation("RequestedVehicleType", fields: [requestedVehicleTypeId], references: [id])
+  driver               Driver?                @relation(fields: [driverId], references: [id])
+  tier                 RideTier?              @relation(fields: [tierId], references: [id])
+  user                 User?                  @relation(fields: [userId], references: [id])
+  requestedVehicleType VehicleType?           @relation("RequestedVehicleType", fields: [requestedVehicleTypeId], references: [id])
   ratings              Rating[]
   messages             ChatMessage[]
+  locationHistory      DriverLocationHistory[]
 
   @@map("rides")
 }

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RedisPubSubService } from './redis-pubsub.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 
 interface DriverLocation {
   driverId: number;
@@ -20,6 +22,13 @@ interface RideUpdate {
 
 @Injectable()
 export class LocationTrackingService extends RedisPubSubService {
+  constructor(
+    private prisma: PrismaService,
+    configService: ConfigService,
+  ) {
+    super(configService);
+  }
+
   private driverLocations: Map<number, DriverLocation> = new Map();
   private rideSubscribers: Map<number, Set<string>> = new Map();
 
@@ -59,34 +68,146 @@ export class LocationTrackingService extends RedisPubSubService {
     driverId: number,
     location: { lat: number; lng: number },
     rideId?: number,
+    additionalData?: {
+      accuracy?: number;
+      speed?: number;
+      heading?: number;
+      altitude?: number;
+      source?: string;
+    },
   ) {
+    const now = new Date();
     const locationData: DriverLocation = {
       driverId,
       location,
-      timestamp: new Date(),
+      timestamp: now,
       rideId,
     };
 
-    // Store in memory (for Redis fallback)
-    this.driverLocations.set(driverId, locationData);
-
-    // Publish to Redis
-    await this.publish('driver:locations', locationData);
-
-    // If ride is active, publish ride update
-    if (rideId) {
-      await this.publishRideUpdate(rideId, 'location', {
-        driverLocation: location,
+    try {
+      // Update driver's current location in database
+      await this.prisma.driver.update({
+        where: { id: driverId },
+        data: {
+          currentLatitude: location.lat,
+          currentLongitude: location.lng,
+          lastLocationUpdate: now,
+          locationAccuracy: additionalData?.accuracy || null,
+          isLocationActive: true,
+          updatedAt: now,
+        },
       });
-    }
 
-    console.debug(
-      `Driver ${driverId} location updated: ${location.lat}, ${location.lng}`,
-    );
+      // Save to location history
+      await this.prisma.driverLocationHistory.create({
+        data: {
+          driverId,
+          latitude: location.lat,
+          longitude: location.lng,
+          accuracy: additionalData?.accuracy || null,
+          speed: additionalData?.speed || null,
+          heading: additionalData?.heading || null,
+          altitude: additionalData?.altitude || null,
+          rideId: rideId || null,
+          timestamp: now,
+          source: additionalData?.source || 'gps',
+        },
+      });
+
+      // Store in memory (for Redis fallback)
+      this.driverLocations.set(driverId, locationData);
+
+      // Publish to Redis
+      await this.publish('driver:locations', locationData);
+
+      // If ride is active, publish ride update
+      if (rideId) {
+        await this.publishRideUpdate(rideId, 'location', {
+          driverLocation: location,
+        });
+      }
+
+      console.debug(
+        `Driver ${driverId} location updated: ${location.lat}, ${location.lng}`,
+      );
+    } catch (error) {
+      console.error(`Failed to update driver location:`, error);
+      throw error;
+    }
   }
 
   getDriverLocation(driverId: number): DriverLocation | null {
     return this.driverLocations.get(driverId) || null;
+  }
+
+  // Get driver location from database (fallback when not in memory)
+  async getDriverLocationFromDB(driverId: number) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+      select: {
+        currentLatitude: true,
+        currentLongitude: true,
+        lastLocationUpdate: true,
+        locationAccuracy: true,
+        isLocationActive: true,
+      },
+    });
+
+    if (driver?.currentLatitude && driver?.currentLongitude) {
+      return {
+        driverId,
+        location: {
+          lat: Number(driver.currentLatitude),
+          lng: Number(driver.currentLongitude),
+        },
+        timestamp: driver.lastLocationUpdate || new Date(),
+        accuracy: driver.locationAccuracy ? Number(driver.locationAccuracy) : undefined,
+        isActive: driver.isLocationActive,
+      };
+    }
+
+    return null;
+  }
+
+  // Get driver location history
+  async getDriverLocationHistory(
+    driverId: number,
+    options?: {
+      limit?: number;
+      startDate?: Date;
+      endDate?: Date;
+      rideId?: number;
+    },
+  ) {
+    const whereClause: any = { driverId };
+
+    if (options?.startDate || options?.endDate) {
+      whereClause.timestamp = {};
+      if (options.startDate) whereClause.timestamp.gte = options.startDate;
+      if (options.endDate) whereClause.timestamp.lte = options.endDate;
+    }
+
+    if (options?.rideId) {
+      whereClause.rideId = options.rideId;
+    }
+
+    return this.prisma.driverLocationHistory.findMany({
+      where: whereClause,
+      orderBy: { timestamp: 'desc' },
+      take: options?.limit || 50,
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+        accuracy: true,
+        speed: true,
+        heading: true,
+        altitude: true,
+        timestamp: true,
+        source: true,
+        rideId: true,
+      },
+    });
   }
 
   // Ride tracking
@@ -189,16 +310,141 @@ export class LocationTrackingService extends RedisPubSubService {
     return null;
   }
 
+  // Geofencing and validation methods
+  async validateLocationInServiceArea(lat: number, lng: number): Promise<boolean> {
+    // Define service area boundaries (Caracas, Venezuela as example)
+    const serviceArea = {
+      north: 10.55,  // North boundary
+      south: 10.45,  // South boundary
+      east: -66.85,  // East boundary
+      west: -66.95,  // West boundary
+    };
+
+    return lat >= serviceArea.south &&
+           lat <= serviceArea.north &&
+           lng >= serviceArea.west &&
+           lng <= serviceArea.east;
+  }
+
+  // Calculate distance between two coordinates using Haversine formula
+  calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in kilometers
+  }
+
+  // Find drivers within radius and filter by criteria
+  async findNearbyDrivers(
+    centerLat: number,
+    centerLng: number,
+    radiusKm: number,
+    filters?: {
+      vehicleTypeId?: number;
+      status?: string;
+      verified?: boolean;
+      tierId?: number;
+    },
+  ) {
+    // First, validate location is in service area
+    const isInServiceArea = await this.validateLocationInServiceArea(centerLat, centerLng);
+    if (!isInServiceArea) {
+      return [];
+    }
+
+    // Get all online drivers from database
+    const whereClause: any = {
+      status: filters?.status || 'online',
+      isLocationActive: true,
+      currentLatitude: { not: null },
+      currentLongitude: { not: null },
+    };
+
+    if (filters?.verified !== undefined) {
+      whereClause.verificationStatus = filters.verified ? 'approved' : { not: 'approved' };
+    }
+
+    if (filters?.vehicleTypeId) {
+      whereClause.vehicleTypeId = filters.vehicleTypeId;
+    }
+
+    const drivers = await this.prisma.driver.findMany({
+      where: whereClause,
+      include: {
+        vehicleType: true,
+      },
+    });
+
+    // Filter by distance and calculate additional data
+    const nearbyDrivers = drivers
+      .map(driver => {
+        const distance = this.calculateDistance(
+          centerLat,
+          centerLng,
+          Number(driver.currentLatitude),
+          Number(driver.currentLongitude)
+        );
+
+        if (distance <= radiusKm) {
+          // Calculate estimated time (assuming average speed of 30 km/h in city)
+          const estimatedMinutes = Math.round((distance / 30) * 60);
+
+          return {
+            id: driver.id,
+            firstName: driver.firstName,
+            lastName: driver.lastName,
+            profileImageUrl: driver.profileImageUrl,
+            carModel: driver.carModel,
+            licensePlate: driver.licensePlate,
+            carSeats: driver.carSeats,
+            vehicleType: driver.vehicleType,
+            currentLocation: {
+              lat: Number(driver.currentLatitude),
+              lng: Number(driver.currentLongitude),
+            },
+            lastLocationUpdate: driver.lastLocationUpdate,
+            locationAccuracy: driver.locationAccuracy ? Number(driver.locationAccuracy) : null,
+            distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+            estimatedMinutes,
+            rating: 4.5, // TODO: Calculate from ratings table
+          };
+        }
+        return null;
+      })
+      .filter(driver => driver !== null)
+      .sort((a, b) => a!.distance - b!.distance); // Sort by distance
+
+    return nearbyDrivers;
+  }
+
   // Health check
-  getHealthStatus() {
+  async getHealthStatus() {
+    const [activeDriversCount, totalHistoryRecords] = await Promise.all([
+      this.prisma.driver.count({
+        where: {
+          status: 'online',
+          isLocationActive: true,
+          currentLatitude: { not: null },
+          currentLongitude: { not: null },
+        },
+      }),
+      this.prisma.driverLocationHistory.count(),
+    ]);
+
     return {
       redisConnected: this.isRedisConnected(),
       activeDrivers: this.driverLocations.size,
+      activeDriversInDB: activeDriversCount,
       activeRides: this.rideSubscribers.size,
       totalSubscribers: Array.from(this.rideSubscribers.values()).reduce(
         (total, subscribers) => total + subscribers.size,
         0,
       ),
+      totalLocationHistoryRecords: totalHistoryRecords,
       timestamp: new Date(),
     };
   }
