@@ -44,7 +44,8 @@ export enum AdminRole {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
   MODERATOR = 'moderator',
-  SUPPORT = 'support'
+  SUPPORT = 'support',
+  BUSSINESS = 'bussiness',
 }
 
 // Permisos específicos por módulo
@@ -97,6 +98,11 @@ export enum Permission {
   STORE_APPROVE = 'store:approve',
   PRODUCT_READ = 'product:read',
   PRODUCT_WRITE = 'product:write',
+
+  // Stores & Products
+  BUSSINESS_READ = 'bussiness:read',
+  BUSSINESS_WRITE = 'bussiness:write',
+  BUSSINESS_APPROVE = 'bussiness:approve',
 
   // Notifications
   NOTIFICATION_SEND = 'notification:send',

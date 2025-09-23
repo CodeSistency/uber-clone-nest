@@ -753,6 +753,12 @@ export class AdminService {
           Permission.NOTIFICATION_SEND,
           Permission.NOTIFICATION_READ,
         ];
+      case AdminRole.BUSSINESS:
+        return [
+          Permission.BUSSINESS_READ,
+          Permission.BUSSINESS_WRITE,
+          Permission.BUSSINESS_APPROVE,
+        ];
 
       default:
         return [];

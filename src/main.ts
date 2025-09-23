@@ -79,6 +79,7 @@ async function bootstrap() {
     .addTag('notifications', 'Notification management endpoints')
     .addTag('stores', 'Store management endpoints')
     .addTag('orders', 'Order management endpoints')
+    .addTag('employees', 'Employee management endpoints')
     .addServer(baseUrl, `${environment} server`)
     .addServer('http://localhost:3000', 'Local development server')
     .addBearerAuth(

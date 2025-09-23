@@ -97,6 +97,9 @@ model User {
   // Admin-specific relations
   adminAuditLogs AdminAuditLog[]
 
+  // Employee relations
+  employees Employee[]
+
   @@map("users")
 }
 
@@ -213,6 +216,26 @@ model Ride {
 // SECTION 3: MARKETPLACE & DELIVERY TABLES
 // =========================================
 
+// Manages employees working at stores
+model Employee {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  storeId    Int      @map("store_id")
+  isActive   Boolean  @default(true) @map("is_active")
+  hireDate   DateTime @default(now()) @map("hire_date")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([storeId])
+  @@index([storeId, isActive])
+  @@map("employees")
+}
+
 // Represents businesses on the platform (restaurants, shops, etc.)
 model Store {
   id          Int      @id @default(autoincrement())
@@ -234,6 +257,7 @@ model Store {
   deliveryOrders DeliveryOrder[]
   ratings        Rating[]
   owner          User?           @relation(fields: [ownerId], references: [id])
+  employees      Employee[]
 
   @@map("stores")
 }

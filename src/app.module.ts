@@ -22,6 +22,7 @@ import { StoresModule } from './stores/stores.module';
 import { OrdersModule } from './orders/orders.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminModule } from './admin/admin.module';
+import { EmployeesModule } from './employees/employees.module';
 import { RidesFlowModule } from './rides/flow/rides-flow.module';
 import { ErrandsModule } from './errands/errands.module';
 import { ParcelsModule } from './parcels/parcels.module';
@@ -53,6 +54,8 @@ import { TestingModule } from './testing/testing.module';
     StoresModule,
     OrdersModule,
     AnalyticsModule,
+    // Employees System
+    EmployeesModule,
     // Admin System
     AdminModule,
     // Flow orchestrator
