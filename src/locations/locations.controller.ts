@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, ParseFloatPipe } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { LocationsService } from './locations.service';
 import { ValidateLocationDto } from './dto/validate-location.dto';
@@ -204,27 +204,35 @@ export class LocationsController {
   })
   @ApiQuery({
     name: 'userLat',
-    description: 'User pickup location latitude',
+    description: 'User pickup location latitude (-90 to 90)',
     example: 4.6097,
     type: 'number',
+    minimum: -90,
+    maximum: 90,
   })
   @ApiQuery({
     name: 'userLng',
-    description: 'User pickup location longitude',
+    description: 'User pickup location longitude (-180 to 180)',
     example: -74.0817,
     type: 'number',
+    minimum: -180,
+    maximum: 180,
   })
   @ApiQuery({
     name: 'driverLat',
-    description: 'Driver current location latitude',
+    description: 'Driver current location latitude (-90 to 90)',
     example: 4.6767,
     type: 'number',
+    minimum: -90,
+    maximum: 90,
   })
   @ApiQuery({
     name: 'driverLng',
-    description: 'Driver current location longitude',
+    description: 'Driver current location longitude (-180 to 180)',
     example: -74.0483,
     type: 'number',
+    minimum: -180,
+    maximum: 180,
   })
   @ApiQuery({
     name: 'maxRadiusKm',
@@ -234,11 +242,11 @@ export class LocationsController {
     type: 'number',
   })
   async checkMatchingDistance(
-    @Query('userLat') userLat: number,
-    @Query('userLng') userLng: number,
-    @Query('driverLat') driverLat: number,
-    @Query('driverLng') driverLng: number,
-    @Query('maxRadiusKm') maxRadiusKm: number = 5,
+    @Query('userLat', ParseFloatPipe) userLat: number,
+    @Query('userLng', ParseFloatPipe) userLng: number,
+    @Query('driverLat', ParseFloatPipe) driverLat: number,
+    @Query('driverLng', ParseFloatPipe) driverLng: number,
+    @Query('maxRadiusKm', ParseFloatPipe) maxRadiusKm: number = 5,
   ) {
     const result = await this.locationsService.checkMatchingDistance(
       { lat: userLat, lng: userLng },
