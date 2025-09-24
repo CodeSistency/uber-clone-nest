@@ -654,7 +654,7 @@ export class RidesFlowService {
       // 3. Buscar conductores usando LocationTrackingService
       this.logger.log(`🔍 [MATCHING] Buscando conductores cercanos - Ubicación: (${lat}, ${lng}) - Radio: ${radiusKm}km - Filtros: ${JSON.stringify(filters)}`);
 
-      const candidateDrivers =
+      let candidateDrivers =
         await this.locationTrackingService.findNearbyDrivers(
       lat,
       lng,
@@ -662,15 +662,75 @@ export class RidesFlowService {
           filters,
         );
 
-      this.logger.log(`📊 [MATCHING] Encontrados ${candidateDrivers.length} conductores candidatos`);
+      this.logger.log(`📊 [MATCHING] Encontrados ${candidateDrivers.length} conductores candidatos por ubicación GPS`);
 
       // Log detallado de cada conductor encontrado con su ubicación
       candidateDrivers.forEach((driver, index) => {
         this.logger.log(`👤 [MATCHING] Conductor ${index + 1}: ID=${driver.id} - Distancia=${driver.distance}km - Ubicación=(${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`);
       });
 
+      // 🚨 FALLBACK: Si no hay conductores con ubicación GPS, buscar conductores online sin ubicación
       if (candidateDrivers.length === 0) {
-        this.logger.warn(`❌ [MATCHING] No se encontraron conductores disponibles en el área (${lat}, ${lng}) dentro de ${radiusKm}km`);
+        this.logger.warn(`⚠️ [MATCHING] No se encontraron conductores con ubicación GPS. Intentando fallback...`);
+
+        // Buscar todos los conductores online sin filtro de ubicación
+        const onlineDrivers = await this.prisma.driver.findMany({
+          where: {
+            status: 'online',
+            verificationStatus: 'approved',
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            carModel: true,
+            licensePlate: true,
+            carSeats: true,
+            vehicleTypeId: true,
+          },
+        });
+
+        this.logger.log(`🔄 [MATCHING] Fallback: Encontrados ${onlineDrivers.length} conductores online sin filtro de ubicación`);
+
+        if (onlineDrivers.length > 0) {
+          // Convertir a formato esperado por el algoritmo de scoring
+          // Para fallback, necesitamos obtener información adicional de cada conductor
+          candidateDrivers = await Promise.all(
+            onlineDrivers.map(async (driver) => {
+              // Obtener información detallada del conductor
+              const driverDetails = await this.getDriverDetailedInfo(driver.id);
+
+              return {
+                id: driver.id,
+                driverId: driver.id,
+                distance: radiusKm / 2, // Asumir distancia media
+                estimatedMinutes: Math.round((radiusKm / 2) / 30 * 60), // Estimar tiempo basado en distancia
+                currentLocation: { lat, lng }, // Usar ubicación del usuario como aproximación
+                firstName: driver.firstName,
+                lastName: driver.lastName,
+                profileImageUrl: driverDetails.profileImageUrl,
+                carModel: driver.carModel,
+                licensePlate: driver.licensePlate,
+                carSeats: driver.carSeats,
+                vehicleType: driverDetails.vehicleType,
+                rating: driverDetails.rating,
+                totalRides: driverDetails.totalRides,
+                createdAt: driverDetails.createdAt,
+                lastLocationUpdate: null,
+                locationAccuracy: null,
+                isLocationActive: false,
+              };
+            })
+          );
+
+          this.logger.log(`✅ [MATCHING] Fallback exitoso: Usando ${candidateDrivers.length} conductores online`);
+        } else {
+          this.logger.error(`❌ [MATCHING] Fallback falló: No hay conductores online disponibles`);
+        }
+      }
+
+      if (candidateDrivers.length === 0) {
+        this.logger.error(`❌ [MATCHING] No se encontraron conductores disponibles en el área (${lat}, ${lng}) dentro de ${radiusKm}km ni en fallback`);
         throw new Error('NO_DRIVERS_AVAILABLE');
       }
 
@@ -1427,6 +1487,51 @@ export class RidesFlowService {
       };
     } catch (error) {
       this.logger.error(`❌ Error simulando solicitud de viaje:`, error);
+      throw error;
+    }
+  }
+
+  async updateDriverLocation(
+    driverId: number,
+    locationData: {
+      lat: number;
+      lng: number;
+      accuracy?: number;
+      speed?: number;
+      heading?: number;
+      rideId?: number;
+    }
+  ) {
+    try {
+      this.logger.log(`📍 [LOCATION-UPDATE] Actualizando ubicación del conductor ${driverId}: (${locationData.lat}, ${locationData.lng})`);
+
+      // Actualizar ubicación usando el location tracking service
+      await this.locationTrackingService.updateDriverLocation(
+        driverId,
+        { lat: locationData.lat, lng: locationData.lng },
+        locationData.rideId,
+        {
+          accuracy: locationData.accuracy,
+          speed: locationData.speed,
+          heading: locationData.heading,
+          source: 'api'
+        }
+      );
+
+      this.logger.log(`✅ [LOCATION-UPDATE] Ubicación del conductor ${driverId} actualizada exitosamente`);
+
+      return {
+        driverId,
+        location: {
+          lat: locationData.lat,
+          lng: locationData.lng
+        },
+        updatedAt: new Date(),
+        accuracy: locationData.accuracy
+      };
+
+    } catch (error) {
+      this.logger.error(`❌ [LOCATION-UPDATE] Error actualizando ubicación del conductor ${driverId}:`, error);
       throw error;
     }
   }

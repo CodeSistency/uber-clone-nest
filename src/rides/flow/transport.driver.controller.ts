@@ -2,19 +2,23 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { ParseFloatPipe } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiTags,
   ApiResponse,
   ApiBody,
+  ApiQuery,
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
 } from '@nestjs/swagger';
@@ -30,12 +34,15 @@ import {
   ReportIssueDto,
   CancelRideDto,
   SimulateRequestDto,
+  UpdateDriverLocationDto,
 } from './dto/transport-flow.dtos';
 
 @ApiTags('rides-flow-driver')
 @UseGuards(JwtAuthGuard)
 @Controller('rides/flow/driver/transport')
 export class TransportDriverController {
+  private readonly logger = new Logger(TransportDriverController.name);
+
   constructor(
     private readonly flow: RidesFlowService,
     private readonly reports: DriverReportsService,
@@ -191,6 +198,24 @@ export class TransportDriverController {
     - Ordenadas por fecha de asignación (más recientes primero)
     `,
   })
+  @ApiQuery({
+    name: 'lat',
+    description: 'Latitud actual del conductor (opcional, para testing)',
+    example: 4.6097,
+    required: false,
+    type: 'number',
+    minimum: -90,
+    maximum: 90,
+  })
+  @ApiQuery({
+    name: 'lng',
+    description: 'Longitud actual del conductor (opcional, para testing)',
+    example: -74.0817,
+    required: false,
+    type: 'number',
+    minimum: -180,
+    maximum: 180,
+  })
   @ApiResponse({
     status: 200,
     description: 'Solicitudes pendientes obtenidas exitosamente',
@@ -242,13 +267,126 @@ export class TransportDriverController {
       },
     },
   })
-  async getPendingRequests(@Req() req: any) {
+  async getPendingRequests(
+    @Req() req: any,
+    @Query('lat', ParseFloatPipe) lat?: number,
+    @Query('lng', ParseFloatPipe) lng?: number
+  ) {
     try {
       // DriverGuard ya validó que el usuario es conductor y agregó req.driver
       const driverId = req.driver.id;
+
+      // Si se proporcionan coordenadas manualmente, actualizar ubicación
+      if (lat !== undefined && lng !== undefined) {
+        this.logger.log(`📍 [PENDING-REQUESTS] Usando ubicación manual del conductor: (${lat}, ${lng})`);
+        await this.flow.updateDriverLocation(driverId, {
+          lat,
+          lng
+        });
+      }
+
       const pendingRequests =
         await this.flow.getDriverPendingRequests(driverId);
       return pendingRequests;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Post('location')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: '📍 Actualizar ubicación GPS del conductor',
+    description: `
+    **IMPORTANTE:** Actualiza la ubicación actual del conductor en el sistema de tracking.
+
+    **¿Para qué sirve?**
+    - Permite que el conductor actualice su posición GPS en tiempo real
+    - Es necesario para que el algoritmo de matching automático funcione
+    - Los conductores deben actualizar su ubicación periódicamente (cada 30 segundos)
+
+    **Datos que se almacenan:**
+    - Ubicación GPS (latitud, longitud)
+    - Precisión de la ubicación
+    - Velocidad actual
+    - Dirección (heading)
+    - Timestamp de la actualización
+
+    **Después de actualizar:**
+    - El conductor aparecerá disponible para matching automático
+    - La ubicación se usa para calcular distancias y tiempos de llegada
+    - Se emiten actualizaciones en tiempo real a clientes activos
+
+    **Notas importantes:**
+    - La ubicación se almacena tanto en memoria (Redis) como en base de datos
+    - Si hay un ride activo, se especifica en \`rideId\`
+    - Las actualizaciones se publican a través de WebSockets
+    `
+  })
+  @ApiBody({ type: UpdateDriverLocationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Ubicación actualizada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Ubicación actualizada exitosamente' },
+        data: {
+          type: 'object',
+          properties: {
+            driverId: { type: 'number', example: 7 },
+            location: {
+              type: 'object',
+              properties: {
+                lat: { type: 'number', example: 4.6097 },
+                lng: { type: 'number', example: -74.0817 }
+              }
+            },
+            timestamp: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' },
+            accuracy: { type: 'number', example: 5.2 }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Usuario no es conductor'
+  })
+  async updateLocation(
+    @Body() locationData: UpdateDriverLocationDto,
+    @Req() req: any
+  ) {
+    try {
+      const driverId = req.user.driverId;
+      if (!driverId) {
+        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+      }
+
+      // Actualizar ubicación usando el location tracking service
+      await this.flow.updateDriverLocation(driverId, {
+        lat: locationData.lat,
+        lng: locationData.lng,
+        accuracy: locationData.accuracy,
+        speed: locationData.speed,
+        heading: locationData.heading,
+        rideId: locationData.rideId
+      });
+
+      return {
+        success: true,
+        message: 'Ubicación actualizada exitosamente',
+        data: {
+          driverId,
+          location: {
+            lat: locationData.lat,
+            lng: locationData.lng
+          },
+          timestamp: new Date(),
+          accuracy: locationData.accuracy
+        }
+      };
     } catch (error) {
       throw error;
     }

@@ -835,3 +835,79 @@ export class ConfirmPaymentWithReferenceDto {
 export class SimulateRequestDto {
   // No requiere parámetros - todo se genera automáticamente para testing
 }
+
+export class UpdateDriverLocationDto {
+  @ApiProperty({
+    description: 'Latitud de la ubicación actual del conductor',
+    example: 4.6097,
+    minimum: -90,
+    maximum: 90,
+    type: 'number'
+  })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  @Type(() => Number)
+  lat: number;
+
+  @ApiProperty({
+    description: 'Longitud de la ubicación actual del conductor',
+    example: -74.0817,
+    minimum: -180,
+    maximum: 180,
+    type: 'number'
+  })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  @Type(() => Number)
+  lng: number;
+
+  @ApiPropertyOptional({
+    description: 'Precisión de la ubicación en metros',
+    example: 5.2,
+    minimum: 0,
+    type: 'number'
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  accuracy?: number;
+
+  @ApiPropertyOptional({
+    description: 'Velocidad actual en km/h',
+    example: 45.5,
+    minimum: 0,
+    type: 'number'
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  speed?: number;
+
+  @ApiPropertyOptional({
+    description: 'Dirección en grados (0-360)',
+    example: 90,
+    minimum: 0,
+    maximum: 360,
+    type: 'number'
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(360)
+  @Type(() => Number)
+  heading?: number;
+
+  @ApiPropertyOptional({
+    description: 'ID del ride activo (opcional)',
+    example: 123,
+    type: 'number'
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  rideId?: number;
+}
