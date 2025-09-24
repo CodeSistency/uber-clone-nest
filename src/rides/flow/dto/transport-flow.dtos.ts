@@ -779,4 +779,8 @@ export class ConfirmPaymentWithReferenceDto {
   bankCode?: string;
 }
 
+export class SimulateRequestDto {
+  // No requiere parámetros - todo se genera automáticamente para testing
+}
+
 

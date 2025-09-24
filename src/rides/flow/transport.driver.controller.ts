@@ -14,7 +14,7 @@ import { RidesFlowService } from './rides-flow.service';
 import { DriverReportsService, IssueReport } from './driver-reports.service';
 import { IdempotencyService } from '../../common/services/idempotency.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SetDriverAvailabilityDto, DriverResponseDto, ReportIssueDto, CancelRideDto } from './dto/transport-flow.dtos';
+import { SetDriverAvailabilityDto, DriverResponseDto, ReportIssueDto, CancelRideDto, SimulateRequestDto } from './dto/transport-flow.dtos';
 
 @ApiTags('rides-flow-driver')
 @UseGuards(JwtAuthGuard)
@@ -139,72 +139,89 @@ export class TransportDriverController {
     return this.flow.driverArrivedTransport(Number(rideId), Number(req.user.id), String(req.user.id));
   }
 
-  @Get('available')
+  @Get('pending-requests')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Ver viajes disponibles para conductores',
+    summary: '📋 Ver solicitudes de viaje pendientes (matching automático)',
     description: `
     **IMPORTANTE:** Solo conductores registrados pueden usar este endpoint.
-    **NOTA PARA DESARROLLADORES:** Agregar @UseGuards(DriverGuard) después de implementar la validación de conductores.
 
     **¿Qué devuelve?**
-    - Lista de viajes pendientes de asignación
-    - Información completa de cada viaje (origen, destino, tarifa, etc.)
-    - Solo viajes que coinciden con la ubicación del conductor
+    - Lista de solicitudes de viaje asignadas automáticamente al conductor
+    - Solo viajes con \`status: 'driver_confirmed'\` (matching automático completado)
+    - Información completa del pasajero, ruta y tarifa
+    - Tiempo restante para aceptar/rechazar (2 minutos)
 
     **Uso típico:**
-    - Conductor consulta viajes disponibles
-    - Selecciona un viaje para aceptar
-    - Usa el endpoint 'accept' con el rideId correspondiente
+    - Conductor consulta solicitudes pendientes después de recibir notificación
+    - Revisa detalles del viaje antes de aceptar
+    - Responde con \`POST /{rideId}/respond\` (accept/reject)
+
+    **Estados posibles:**
+    - \`timeRemainingSeconds > 0\`: Solicitud activa, puede responder
+    - \`timeRemainingSeconds = 0\`: Solicitud expirada automáticamente
+
+    **Notas importantes:**
+    - Las solicitudes expiran automáticamente después de 2 minutos
+    - Solo muestra solicitudes asignadas al conductor autenticado
+    - Ordenadas por fecha de asignación (más recientes primero)
     `
   })
   @ApiResponse({
     status: 200,
-    description: 'Viajes disponibles obtenidos exitosamente',
+    description: 'Solicitudes pendientes obtenidas exitosamente',
     schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          rideId: { type: 'number', example: 456 },
+          status: { type: 'string', example: 'driver_confirmed' },
+          originAddress: { type: 'string', example: 'Parque de la 93, Bogotá' },
+          destinationAddress: { type: 'string', example: 'Zona Rosa, Bogotá' },
+          farePrice: { type: 'number', example: 18.5 },
+          estimatedDistance: { type: 'number', example: 3.2 },
+          duration: { type: 'number', example: 20 },
+          passenger: {
             type: 'object',
             properties: {
-              rideId: { type: 'number', example: 5 },
-              originAddress: { type: 'string', example: 'Calle 123, Bogotá' },
-              destinationAddress: { type: 'string', example: 'Carrera 7, Medellín' },
-              farePrice: { type: 'string', example: '25.00' },
-              tier: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string', example: 'Premium' },
-                  baseFare: { type: 'string', example: '6.00' }
-                }
-              }
+              name: { type: 'string', example: 'María García' },
+              phone: { type: 'string', example: '+573001234567' },
+              rating: { type: 'number', example: 4.9 }
+            }
+          },
+          tier: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', example: 'Premium' }
+            }
+          },
+          requestedAt: { type: 'string', format: 'date-time', example: '2024-01-15T10:00:00.000Z' },
+          expiresAt: { type: 'string', format: 'date-time', example: '2024-01-15T10:02:00.000Z' },
+          timeRemainingSeconds: { type: 'number', example: 85 },
+          pickupLocation: {
+            type: 'object',
+            properties: {
+              lat: { type: 'number', example: 4.6767 },
+              lng: { type: 'number', example: -74.0483 }
             }
           }
         }
       }
     }
   })
-  async available(@Req() req: any) {
-    // Get driver's vehicle type
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: req.user.id },
-      select: { vehicleTypeId: true }
-    });
+  async getPendingRequests(@Req() req: any) {
+    try {
+      const driverId = req.user.driverId;
+      if (!driverId) {
+        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+      }
 
-    if (!driver?.vehicleTypeId) {
-      throw new Error('Driver vehicle type not configured');
+      const pendingRequests = await this.flow.getDriverPendingRequests(driverId);
+      return pendingRequests;
+    } catch (error) {
+      throw error;
     }
-
-    // Leverage RidesService through flow service with vehicle type filtering
-    const list = await (this.flow as any)['ridesService'].getRideRequests(
-      0, // Default lat (will be filtered by vehicle type only)
-      0, // Default lng (will be filtered by vehicle type only)
-      1000, // Large radius to get all rides (filtered by vehicle type)
-      driver.vehicleTypeId // Filter by driver's vehicle type
-    );
-    return { data: list };
   }
 
   @Post(':rideId/start')
@@ -509,6 +526,92 @@ export class TransportDriverController {
       success: true,
       data: result
     };
+  }
+
+  // =========================================
+  // ENDPOINT PARA SIMULAR SOLICITUDES DE VIAJE
+  // =========================================
+
+  @Post('simulate-request')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: '🎯 Simular solicitud de viaje automática (para testing)',
+    description: `
+    **IMPORTANTE:** Este endpoint es exclusivamente para TESTING y desarrollo.
+
+    **¿Qué hace?**
+    - Crea un viaje simulado con datos de prueba (Bogotá)
+    - Busca un usuario aleatorio de la base de datos
+    - Asigna automáticamente el viaje al conductor autenticado
+    - Envía notificación al conductor como si fuera matching automático
+    - El conductor podrá ver la solicitud en \`GET /pending-requests\`
+
+    **Datos de prueba usados:**
+    - Origen: Parque de la 93, Bogotá
+    - Destino: Zona Rosa, Bogotá
+    - Tarifa: $18.50
+    - Tiempo estimado: 20 minutos
+    - Tier: Premium
+
+    **Después de simular:**
+    - Usa \`GET /pending-requests\` para ver la solicitud
+    - Responde con \`POST /{rideId}/respond\` (accept/reject)
+
+    **Notas importantes:**
+    - Solo funciona si hay usuarios activos en la BD
+    - Excluye al conductor actual como posible pasajero
+    - La solicitud expira en 2 minutos
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Solicitud simulada creada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            rideId: { type: 'number', example: 456 },
+            driverId: { type: 'number', example: 1 },
+            userId: { type: 'number', example: 123 },
+            userName: { type: 'string', example: 'María García' },
+            originAddress: { type: 'string', example: 'Parque de la 93, Bogotá' },
+            destinationAddress: { type: 'string', example: 'Zona Rosa, Bogotá' },
+            farePrice: { type: 'number', example: 18.5 },
+            tierName: { type: 'string', example: 'Premium' },
+            status: { type: 'string', example: 'driver_confirmed' },
+            message: { type: 'string', example: 'Solicitud simulada creada exitosamente' },
+            expiresAt: { type: 'string', format: 'date-time', example: '2024-01-15T10:02:00.000Z' },
+            notificationSent: { type: 'boolean', example: true }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No hay usuarios disponibles para simular el viaje'
+  })
+  async simulateRequest(@Req() req: any) {
+    try {
+      const driverId = req.user.driverId;
+      if (!driverId) {
+        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+      }
+
+      const result = await this.flow.simulateRideRequest(driverId);
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'NO_USERS_AVAILABLE') {
+        throw new NotFoundException({
+          error: 'NO_USERS_AVAILABLE',
+          message: 'No hay usuarios activos disponibles para simular el viaje'
+        });
+      }
+      throw error;
+    }
   }
 
   // =========================================

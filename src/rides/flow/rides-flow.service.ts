@@ -1178,6 +1178,157 @@ export class RidesFlowService {
       throw error;
     }
   }
+
+  async simulateRideRequest(driverId: number) {
+    try {
+      this.logger.log(`🎯 Simulando solicitud de viaje para conductor ${driverId}`);
+
+      // 1. Buscar un usuario aleatorio (excluyendo al conductor)
+      const randomUser = await this.prisma.user.findFirst({
+        where: {
+          id: { not: driverId }, // Excluir al conductor
+          isActive: true
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      });
+
+      if (!randomUser) {
+        throw new Error('NO_USERS_AVAILABLE');
+      }
+
+      // 2. Datos de prueba para el viaje (Bogotá)
+      const rideData = {
+        origin_address: 'Parque de la 93, Bogotá, Colombia',
+        destination_address: 'Zona Rosa, Bogotá, Colombia',
+        origin_latitude: 4.6767,
+        origin_longitude: -74.0483,
+        destination_latitude: 4.6567,
+        destination_longitude: -74.0583,
+        ride_time: 20, // 20 minutos
+        fare_price: 18.50,
+        payment_status: 'pending',
+        user_id: randomUser.id,
+        tier_id: 1, // Premium
+        vehicle_type_id: 1 // Carro
+      };
+
+      // 3. Crear el viaje usando el servicio de rides
+      const ride = await this.ridesService.createRide(rideData as any);
+
+      this.logger.log(`✅ Viaje simulado creado: ${ride.rideId} para usuario ${randomUser.name}`);
+
+      // 4. Confirmar conductor para el viaje (esto pone status: 'driver_confirmed')
+      const confirmation = await this.confirmDriverForRide(
+        ride.rideId,
+        driverId,
+        randomUser.id,
+        'Solicitud simulada para testing'
+      );
+
+      this.logger.log(`✅ Conductor ${driverId} asignado al viaje ${ride.rideId}`);
+
+      return {
+        rideId: ride.rideId,
+        driverId,
+        userId: randomUser.id,
+        userName: randomUser.name,
+        originAddress: rideData.origin_address,
+        destinationAddress: rideData.destination_address,
+        farePrice: rideData.fare_price,
+        tierName: 'Premium',
+        status: 'driver_confirmed',
+        message: 'Solicitud simulada creada exitosamente',
+        expiresAt: confirmation.expiresAt,
+        notificationSent: confirmation.notificationSent
+      };
+
+    } catch (error) {
+      this.logger.error(`❌ Error simulando solicitud de viaje:`, error);
+      throw error;
+    }
+  }
+
+  async getDriverPendingRequests(driverId: number) {
+    try {
+      this.logger.log(`📋 Obteniendo solicitudes pendientes para conductor ${driverId}`);
+
+      // Buscar rides donde el conductor está asignado y status es 'driver_confirmed'
+      const pendingRequests = await this.prisma.ride.findMany({
+        where: {
+          driverId: driverId,
+          status: 'driver_confirmed',
+          // Opcional: filtrar por tiempo de expiración
+          updatedAt: {
+            gte: new Date(Date.now() - 5 * 60 * 1000) // Últimos 5 minutos para evitar rides muy antiguos
+          }
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          tier: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc' // Más recientes primero
+        }
+      });
+
+      // Formatear respuesta
+      const formattedRequests = pendingRequests.map(ride => {
+        // Calcular tiempo restante para expiración (2 minutos desde la asignación)
+        const assignedAt = new Date(ride.updatedAt);
+        const expiresAt = new Date(assignedAt.getTime() + 2 * 60 * 1000);
+        const now = new Date();
+        const timeRemainingSeconds = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+
+        return {
+          rideId: ride.rideId,
+          status: ride.status,
+          originAddress: ride.originAddress,
+          destinationAddress: ride.destinationAddress,
+          farePrice: Number(ride.farePrice),
+          estimatedDistance: 0, // TODO: Calcular distancia real
+          duration: ride.rideTime,
+          passenger: {
+            name: ride.user?.name || 'Usuario',
+            phone: '+57xxxxxxxxxx', // TODO: Agregar teléfono real del usuario
+            rating: 4.9 // TODO: Calcular rating real del pasajero
+          },
+          tier: {
+            name: ride.tier?.name || 'Standard'
+          },
+          requestedAt: assignedAt.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          timeRemainingSeconds: timeRemainingSeconds,
+          pickupLocation: {
+            lat: Number(ride.originLatitude),
+            lng: Number(ride.originLongitude)
+          }
+        };
+      });
+
+      this.logger.log(`✅ Encontradas ${formattedRequests.length} solicitudes pendientes para conductor ${driverId}`);
+
+      return formattedRequests;
+
+    } catch (error) {
+      this.logger.error(`❌ Error obteniendo solicitudes pendientes para conductor ${driverId}:`, error);
+      throw error;
+    }
+  }
 }
 
 
