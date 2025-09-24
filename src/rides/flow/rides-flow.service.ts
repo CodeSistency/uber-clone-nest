@@ -622,11 +622,34 @@ export class RidesFlowService {
     this.logger.log(`🎯 [MATCHING] Iniciando búsqueda de conductor - Usuario: (${lat}, ${lng}) - Radio: ${radiusKm}km - Tier: ${tierId || 'auto'} - VehicleType: ${vehicleTypeId || 'auto'}`);
 
     try {
+      // 0. DEBUG: Verificar estado general del sistema
+      this.logger.log(`🔍 [MATCHING] DEBUG - Verificando estado del sistema antes de búsqueda`);
+      const totalDriversOnline = await this.prisma.driver.count({
+        where: { status: 'online', verificationStatus: 'approved' }
+      });
+      this.logger.log(`📊 [MATCHING] DEBUG - Total conductores online en BD: ${totalDriversOnline}`);
+
+      // Verificar location tracking service
+      try {
+        // Intentar obtener un conductor cualquiera para verificar si el service funciona
+        const sampleDriver = await this.prisma.driver.findFirst({
+          where: { status: 'online', verificationStatus: 'approved' },
+          select: { id: true, firstName: true, lastName: true }
+        });
+
+        if (sampleDriver) {
+          const locationCheck = await this.locationTrackingService.getDriverLocation(sampleDriver.id);
+          this.logger.log(`🔍 [MATCHING] DEBUG - Location tracking funciona: ${locationCheck ? '✅ SÍ' : '❌ NO'} (ejemplo conductor ${sampleDriver.firstName})`);
+        }
+      } catch (locationError) {
+        this.logger.error(`🔍 [MATCHING] DEBUG - Error en location tracking service:`, locationError);
+      }
+
       // 1. Obtener conductores candidatos con filtros básicos
       const filters: any = {
-      status: 'online',
+        status: 'online',
         verificationStatus: 'approved',
-    };
+      };
 
       // 2. Aplicar filtros de compatibilidad si se especifican
     if (tierId) {
@@ -647,9 +670,12 @@ export class RidesFlowService {
       }
     }
 
-    if (vehicleTypeId) {
-      filters.vehicleTypeId = vehicleTypeId;
-    }
+      if (vehicleTypeId) {
+        filters.vehicleTypeId = vehicleTypeId;
+      }
+
+      this.logger.log(`🔍 [MATCHING] DEBUG - Filtros aplicados:`, JSON.stringify(filters));
+      this.logger.log(`🔍 [MATCHING] DEBUG - Parámetros de búsqueda: lat=${lat}, lng=${lng}, radiusKm=${radiusKm}`);
 
       // 3. Buscar conductores usando LocationTrackingService
       this.logger.log(`🔍 [MATCHING] Buscando conductores cercanos - Ubicación: (${lat}, ${lng}) - Radio: ${radiusKm}km - Filtros: ${JSON.stringify(filters)}`);
@@ -692,6 +718,13 @@ export class RidesFlowService {
 
         this.logger.log(`🔄 [MATCHING] Fallback: Encontrados ${onlineDrivers.length} conductores online sin filtro de ubicación`);
 
+        // Log detallado de conductores encontrados en fallback
+        if (onlineDrivers.length > 0) {
+          onlineDrivers.forEach((driver, index) => {
+            this.logger.log(`👤 [MATCHING] Fallback - Conductor ${index + 1}: ${driver.firstName} ${driver.lastName} (ID: ${driver.id})`);
+          });
+        }
+
         if (onlineDrivers.length > 0) {
           // Convertir a formato esperado por el algoritmo de scoring
           // Para fallback, necesitamos obtener información adicional de cada conductor
@@ -726,6 +759,7 @@ export class RidesFlowService {
           this.logger.log(`✅ [MATCHING] Fallback exitoso: Usando ${candidateDrivers.length} conductores online`);
         } else {
           this.logger.error(`❌ [MATCHING] Fallback falló: No hay conductores online disponibles`);
+          this.logger.error(`💡 [MATCHING] Verificar que los conductores estén marcados como 'online' en la base de datos`);
         }
       }
 
