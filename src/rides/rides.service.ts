@@ -118,7 +118,6 @@ export class RidesService {
     });
   }
 
-
   async scheduleRide(scheduleRideDto: ScheduleRideDto): Promise<Ride> {
     const {
       origin_address,
@@ -243,7 +242,8 @@ export class RidesService {
           driverName:
             updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
           vehicleInfo: `${updatedRide.driver?.carModel} - ${updatedRide.driver?.licensePlate}`,
-          vehicleType: updatedRide.driver?.vehicleType?.displayName || 'Vehículo',
+          vehicleType:
+            updatedRide.driver?.vehicleType?.displayName || 'Vehículo',
         },
       );
       this.logger.log(`Notified passenger about accepted ride ${rideId}`);
@@ -258,7 +258,12 @@ export class RidesService {
   }
 
   async rateRide(rideId: number, rateRideDto: RateRideDto): Promise<Rating> {
-    const { ratedByUserId, ratedUserId: ratedUserIdValue, ratingValue, comment } = rateRideDto;
+    const {
+      ratedByUserId,
+      ratedUserId: ratedUserIdValue,
+      ratingValue,
+      comment,
+    } = rateRideDto;
 
     return this.prisma.rating.create({
       data: {
@@ -334,7 +339,6 @@ export class RidesService {
     return updatedRide;
   }
 
-
   async cancelRide(
     rideId: number,
     cancelledBy: string,
@@ -384,7 +388,10 @@ export class RidesService {
       );
 
       // If there was a driver assigned, notify them too
-      if (ride.driverId && ride.driverId.toString() !== ride.userId.toString()) {
+      if (
+        ride.driverId &&
+        ride.driverId.toString() !== ride.userId.toString()
+      ) {
         await this.notificationsService.notifyRideStatusUpdate(
           rideId,
           ride.driverId.toString(),
@@ -458,7 +465,7 @@ export class RidesService {
         },
       });
 
-      const validTierIds = validCombinations.map(combo => combo.tierId);
+      const validTierIds = validCombinations.map((combo) => combo.tierId);
 
       // Only show rides that request vehicle types compatible with driver's vehicle
       // OR rides that don't specify a vehicle type (backwards compatibility)

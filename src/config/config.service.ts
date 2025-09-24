@@ -16,16 +16,26 @@ export class AppConfigService {
   get app() {
     return {
       port: parseInt(this.configService.get<string>('PORT', '3000'), 10),
-      environment: this.configService.get<'development' | 'production' | 'test'>('NODE_ENV', 'development'),
+      environment: this.configService.get<
+        'development' | 'production' | 'test'
+      >('NODE_ENV', 'development'),
       cors: {
         origin: this.configService.get<string>('CORS_ORIGIN', '*'),
-        credentials: this.configService.get<string>('CORS_CREDENTIALS', 'true') === 'true',
+        credentials:
+          this.configService.get<string>('CORS_CREDENTIALS', 'true') === 'true',
       },
       swagger: {
-        enabled: this.configService.get<string>('SWAGGER_ENABLED', 'true') === 'true',
+        enabled:
+          this.configService.get<string>('SWAGGER_ENABLED', 'true') === 'true',
         path: this.configService.get<string>('SWAGGER_PATH', 'api'),
-        title: this.configService.get<string>('SWAGGER_TITLE', 'Uber Clone API'),
-        description: this.configService.get<string>('SWAGGER_DESCRIPTION', 'API para aplicación de transporte compartido'),
+        title: this.configService.get<string>(
+          'SWAGGER_TITLE',
+          'Uber Clone API',
+        ),
+        description: this.configService.get<string>(
+          'SWAGGER_DESCRIPTION',
+          'API para aplicación de transporte compartido',
+        ),
         version: this.configService.get<string>('SWAGGER_VERSION', '1.0'),
       },
     };
@@ -52,13 +62,17 @@ export class AppConfigService {
   // ===============================
   get firebase() {
     const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
-    const serviceAccount = this.configService.get<string>('FIREBASE_SERVICE_ACCOUNT');
+    const serviceAccount = this.configService.get<string>(
+      'FIREBASE_SERVICE_ACCOUNT',
+    );
 
     return {
       projectId: projectId || '',
       serviceAccount: serviceAccount || '',
       storageBucket: this.configService.get<string>('FIREBASE_STORAGE_BUCKET'),
-      messagingSenderId: this.configService.get<string>('FIREBASE_MESSAGING_SENDER_ID'),
+      messagingSenderId: this.configService.get<string>(
+        'FIREBASE_MESSAGING_SENDER_ID',
+      ),
       appId: this.configService.get<string>('FIREBASE_APP_ID'),
       measurementId: this.configService.get<string>('FIREBASE_MEASUREMENT_ID'),
       initialized: !!(projectId && serviceAccount),
@@ -91,7 +105,10 @@ export class AppConfigService {
   // REDIS CONFIGURATION
   // ===============================
   get redis() {
-    const url = this.configService.get<string>('REDIS_URL', 'redis://localhost:6379');
+    const url = this.configService.get<string>(
+      'REDIS_URL',
+      'redis://localhost:6379',
+    );
     return {
       url: url || 'redis://localhost:6379',
       host: extractRedisHost(url || 'redis://localhost:6379'),
@@ -122,7 +139,10 @@ export class AppConfigService {
     return {
       secret: this.configService.get<string>('JWT_SECRET') || '',
       expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '1h'),
-      refreshExpiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+      refreshExpiresIn: this.configService.get<string>(
+        'JWT_REFRESH_EXPIRES_IN',
+        '7d',
+      ),
     };
   }
 
@@ -131,11 +151,22 @@ export class AppConfigService {
   // ===============================
   get clerk() {
     const secretKey = this.configService.get<string>('CLERK_SECRET_KEY');
-    const publishableKey = this.configService.get<string>('CLERK_PUBLISHABLE_KEY');
+    const publishableKey = this.configService.get<string>(
+      'CLERK_PUBLISHABLE_KEY',
+    );
     const jwtPublicKey = this.configService.get<string>('CLERK_JWT_PUBLIC_KEY');
-    const apiUrl = this.configService.get<string>('CLERK_API_URL', 'https://api.clerk.com/v1');
-    const frontendApi = this.configService.get<string>('CLERK_FRONTEND_API', 'clerk.your-domain.com');
-    const domain = this.configService.get<string>('CLERK_DOMAIN', 'your-domain.com');
+    const apiUrl = this.configService.get<string>(
+      'CLERK_API_URL',
+      'https://api.clerk.com/v1',
+    );
+    const frontendApi = this.configService.get<string>(
+      'CLERK_FRONTEND_API',
+      'clerk.your-domain.com',
+    );
+    const domain = this.configService.get<string>(
+      'CLERK_DOMAIN',
+      'your-domain.com',
+    );
 
     return {
       secretKey: secretKey || '',
@@ -150,7 +181,9 @@ export class AppConfigService {
         return !!(secretKey && publishableKey && jwtPublicKey);
       },
       getBaseUrl: (): string => {
-        return this.app.environment === 'production' ? `https://${domain}` : 'http://localhost:3000';
+        return this.app.environment === 'production'
+          ? `https://${domain}`
+          : 'http://localhost:3000';
       },
     };
   }
@@ -160,10 +193,32 @@ export class AppConfigService {
   // ===============================
   get notification() {
     return {
-      rateLimitPerHour: parseInt(this.configService.get<string>('NOTIFICATION_RATE_LIMIT_PER_HOUR', '100'), 10),
-      rateLimitPerMinute: parseInt(this.configService.get<string>('NOTIFICATION_RATE_LIMIT_PER_MINUTE', '10'), 10),
-      analyticsEnabled: this.configService.get<string>('NOTIFICATION_ANALYTICS_ENABLED', 'true') === 'true',
-      retentionDays: parseInt(this.configService.get<string>('NOTIFICATION_ANALYTICS_RETENTION_DAYS', '30'), 10),
+      rateLimitPerHour: parseInt(
+        this.configService.get<string>(
+          'NOTIFICATION_RATE_LIMIT_PER_HOUR',
+          '100',
+        ),
+        10,
+      ),
+      rateLimitPerMinute: parseInt(
+        this.configService.get<string>(
+          'NOTIFICATION_RATE_LIMIT_PER_MINUTE',
+          '10',
+        ),
+        10,
+      ),
+      analyticsEnabled:
+        this.configService.get<string>(
+          'NOTIFICATION_ANALYTICS_ENABLED',
+          'true',
+        ) === 'true',
+      retentionDays: parseInt(
+        this.configService.get<string>(
+          'NOTIFICATION_ANALYTICS_RETENTION_DAYS',
+          '30',
+        ),
+        10,
+      ),
     };
   }
 

@@ -45,12 +45,14 @@ async function bootstrap() {
   const isIPAddress = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
 
   // For IP addresses (VPS), use HTTP. For domains, use HTTPS in production
-  const protocol = (environment === 'production' && !isIPAddress) ? 'https' : 'http';
+  const protocol =
+    environment === 'production' && !isIPAddress ? 'https' : 'http';
 
   // Include port for IP addresses, development environment, or when explicitly different from default
-  const needsPort = isIPAddress ||
-                   (environment === 'development') ||
-                   (environment === 'production' && port !== 80 && port !== 443);
+  const needsPort =
+    isIPAddress ||
+    environment === 'development' ||
+    (environment === 'production' && port !== 80 && port !== 443);
 
   const baseUrl = needsPort
     ? `${protocol}://${host}:${port}`
@@ -61,9 +63,9 @@ async function bootstrap() {
     .setTitle(swaggerConfig.title || 'Uber Clone API')
     .setDescription(
       swaggerConfig.description ||
-      'Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features. ' +
-      'Use the "Authorize" button to set your JWT token for testing authenticated endpoints. ' +
-      'Note: Registration endpoint (POST /api/user) is public and does not require authentication.',
+        'Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features. ' +
+          'Use the "Authorize" button to set your JWT token for testing authenticated endpoints. ' +
+          'Note: Registration endpoint (POST /api/user) is public and does not require authentication.',
     )
     .setVersion(swaggerConfig.version || '1.0.0')
     .addTag('users', 'User management endpoints')
@@ -87,7 +89,8 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'JWT',
-        description: 'Enter JWT token. For development testing, you can use: Bearer dev-test-token',
+        description:
+          'Enter JWT token. For development testing, you can use: Bearer dev-test-token',
         in: 'header',
       },
       'JWT-auth', // This name will be used in the security schemes
@@ -107,7 +110,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:3001',
       'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001'
+      'http://127.0.0.1:3001',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: [
@@ -115,16 +118,18 @@ async function bootstrap() {
       'Authorization',
       'Accept',
       'X-Requested-With',
-      'X-Access-Token'
+      'X-Access-Token',
     ],
     credentials: true,
     preflightContinue: false,
-    optionsSuccessStatus: 204
+    optionsSuccessStatus: 204,
   });
 
   await app.listen(port);
   console.log(`🚀 Application is running on: ${baseUrl}`);
-  console.log(`📖 Swagger documentation: ${baseUrl}/${swaggerConfig.path || 'api'}`);
+  console.log(
+    `📖 Swagger documentation: ${baseUrl}/${swaggerConfig.path || 'api'}`,
+  );
   console.log(`🔧 Environment: ${environment}`);
   console.log(`🌐 Host: ${host}`);
   console.log(`📡 Port: ${port}`);

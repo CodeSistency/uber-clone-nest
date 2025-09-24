@@ -1,9 +1,9 @@
-import { 
-  Injectable, 
-  NotFoundException, 
+import {
+  Injectable,
+  NotFoundException,
   ConflictException,
   InternalServerErrorException,
-  Logger 
+  Logger,
 } from '@nestjs/common';
 import { Prisma, Store } from '@prisma/client';
 import { PrismaService } from '../../../../prisma/prisma.service';
@@ -14,9 +14,9 @@ type StoreStatus = 'active' | 'inactive' | 'all';
 
 // Helper type to convert Decimal fields to number
 type DecimalToNumber<T> = {
-  [K in keyof T]: T[K] extends Prisma.Decimal 
-    ? number 
-    : T[K] extends object 
+  [K in keyof T]: T[K] extends Prisma.Decimal
+    ? number
+    : T[K] extends object
       ? DecimalToNumber<T[K]>
       : T[K];
 };
@@ -58,7 +58,8 @@ export class StoreManagementService {
     if (value === null || value === undefined) return 0;
     if (typeof value === 'number') return value;
     if (typeof value === 'string') return parseFloat(value) || 0;
-    if (value && typeof value.toString === 'function') return parseFloat(value.toString()) || 0;
+    if (value && typeof value.toString === 'function')
+      return parseFloat(value.toString()) || 0;
     return 0;
   }
 
@@ -67,7 +68,13 @@ export class StoreManagementService {
    * @param options Pagination and filtering options
    * @returns List of stores and pagination info
    */
-  async getStores(options: { page: number; limit: number; search?: string; status?: StoreStatus; category?: string }) {
+  async getStores(options: {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: StoreStatus;
+    category?: string;
+  }) {
     const { page, limit, search, status, category } = options;
     const skip = (page - 1) * limit;
 
@@ -109,7 +116,7 @@ export class StoreManagementService {
           },
           orderBy: { createdAt: 'desc' },
         }) as unknown as Promise<StoreWithStats[]>,
-        
+
         // Count total stores matching filters
         this.prisma.store.count({ where }),
       ]);
@@ -117,22 +124,23 @@ export class StoreManagementService {
       // Calculate statistics for each store
       const storesWithStats = await Promise.all(
         stores.map(async (store) => {
-          const [ratingAgg, revenueAgg, menuItemsCount, ordersCount] = await Promise.all([
-            this.prisma.rating.aggregate({
-              where: { storeId: store.id },
-              _avg: { ratingValue: true },
-              _count: true,
-            }),
-            this.prisma.deliveryOrder.aggregate({
-              where: { 
-                storeId: store.id, 
-                status: 'DELIVERED' 
-              },
-              _sum: { totalPrice: true },
-            }),
-            this.prisma.product.count({ where: { storeId: store.id } }),
-            this.prisma.deliveryOrder.count({ where: { storeId: store.id } })
-          ]);
+          const [ratingAgg, revenueAgg, menuItemsCount, ordersCount] =
+            await Promise.all([
+              this.prisma.rating.aggregate({
+                where: { storeId: store.id },
+                _avg: { ratingValue: true },
+                _count: true,
+              }),
+              this.prisma.deliveryOrder.aggregate({
+                where: {
+                  storeId: store.id,
+                  status: 'DELIVERED',
+                },
+                _sum: { totalPrice: true },
+              }),
+              this.prisma.product.count({ where: { storeId: store.id } }),
+              this.prisma.deliveryOrder.count({ where: { storeId: store.id } }),
+            ]);
 
           // Create a new object with the correct types
           const storeWithStats: StoreWithStats = {
@@ -201,21 +209,21 @@ export class StoreManagementService {
           _count: true,
         }),
         this.prisma.deliveryOrder.aggregate({
-          where: { 
-            storeId: id, 
-            status: 'DELIVERED' 
+          where: {
+            storeId: id,
+            status: 'DELIVERED',
           },
           _sum: { totalPrice: true },
-        })
+        }),
       ]);
 
       // Get product and order counts
-      const productCount = await this.prisma.product.count({ 
-        where: { storeId: id } 
+      const productCount = await this.prisma.product.count({
+        where: { storeId: id },
       });
 
-      const orderCount = await this.prisma.deliveryOrder.count({ 
-        where: { storeId: id } 
+      const orderCount = await this.prisma.deliveryOrder.count({
+        where: { storeId: id },
       });
 
       // Transform the data for the response
@@ -227,7 +235,7 @@ export class StoreManagementService {
         orders: orderCount,
         revenue: this.toNumber(revenueAgg._sum.totalPrice),
         latitude: this.toNumber(store.latitude),
-        longitude: this.toNumber(store.longitude)
+        longitude: this.toNumber(store.longitude),
       } as StoreWithStats;
     } catch (error) {
       this.logger.error(`Error fetching store ${id}:`, error);
@@ -310,13 +318,17 @@ export class StoreManagementService {
 
     // Prepare update data based on DTO
     const updateData: Prisma.StoreUpdateInput = {};
-    
+
     // Only include fields that are provided in the DTO and exist in the Prisma schema
-    if (updateStoreDto.name !== undefined) updateData.name = updateStoreDto.name;
-    if (updateStoreDto.address !== undefined) updateData.address = updateStoreDto.address;
-    if (updateStoreDto.latitude !== undefined) updateData.latitude = new Prisma.Decimal(updateStoreDto.latitude);
-    if (updateStoreDto.longitude !== undefined) updateData.longitude = new Prisma.Decimal(updateStoreDto.longitude);
-    
+    if (updateStoreDto.name !== undefined)
+      updateData.name = updateStoreDto.name;
+    if (updateStoreDto.address !== undefined)
+      updateData.address = updateStoreDto.address;
+    if (updateStoreDto.latitude !== undefined)
+      updateData.latitude = new Prisma.Decimal(updateStoreDto.latitude);
+    if (updateStoreDto.longitude !== undefined)
+      updateData.longitude = new Prisma.Decimal(updateStoreDto.longitude);
+
     // Only include fields that exist in the Prisma schema
     // The following fields are known to exist: name, address, latitude, longitude
     // Other fields will be ignored as they don't exist in the schema
@@ -345,9 +357,9 @@ export class StoreManagementService {
 
       // Get revenue statistics
       const revenueAgg = await this.prisma.deliveryOrder.aggregate({
-        where: { 
+        where: {
           storeId: id,
-          status: 'DELIVERED'
+          status: 'DELIVERED',
         },
         _sum: { totalPrice: true },
       });
@@ -355,7 +367,7 @@ export class StoreManagementService {
       // Get product and order counts
       const [productCount, orderCount] = await Promise.all([
         this.prisma.product.count({ where: { storeId: id } }),
-        this.prisma.deliveryOrder.count({ where: { storeId: id } })
+        this.prisma.deliveryOrder.count({ where: { storeId: id } }),
       ]);
 
       // Format the response with statistics
@@ -363,7 +375,7 @@ export class StoreManagementService {
         ...updatedStore,
         _count: {
           products: updatedStore._count?.products || 0,
-          deliveryOrders: updatedStore._count?.deliveryOrders || 0
+          deliveryOrders: updatedStore._count?.deliveryOrders || 0,
         },
         rating: this.toNumber(ratingAgg._avg.ratingValue),
         totalRatings: ratingAgg._count || 0,
@@ -371,7 +383,7 @@ export class StoreManagementService {
         menuItems: productCount,
         orders: orderCount,
         latitude: this.toNumber(updatedStore.latitude),
-        longitude: this.toNumber(updatedStore.longitude)
+        longitude: this.toNumber(updatedStore.longitude),
       };
 
       return {
@@ -383,7 +395,7 @@ export class StoreManagementService {
       throw new InternalServerErrorException('Failed to update store');
     }
   }
-  
+
   /**
    * Delete a store (hard delete)
    * @param id Store ID
@@ -417,7 +429,7 @@ export class StoreManagementService {
    */
   async updateStoreStatus(id: number, isActive: boolean) {
     // Check if the store exists
-    const store = await this.prisma.store.findUnique({ 
+    const store = await this.prisma.store.findUnique({
       where: { id },
       include: {
         _count: {
@@ -428,41 +440,42 @@ export class StoreManagementService {
         },
       },
     });
-    
+
     if (!store) {
       throw new NotFoundException(`Store with ID ${id} not found`);
     }
 
     try {
       // Update the store's isOpen status and fetch all necessary data
-      const [updatedStore, ratingAgg, revenueAgg, productCount, orderCount] = await Promise.all([
-        this.prisma.store.update({
-          where: { id },
-          data: { isOpen: isActive },
-          include: {
-            _count: {
-              select: {
-                products: true,
-                deliveryOrders: true,
+      const [updatedStore, ratingAgg, revenueAgg, productCount, orderCount] =
+        await Promise.all([
+          this.prisma.store.update({
+            where: { id },
+            data: { isOpen: isActive },
+            include: {
+              _count: {
+                select: {
+                  products: true,
+                  deliveryOrders: true,
+                },
               },
             },
-          },
-        }),
-        this.prisma.rating.aggregate({
-          where: { storeId: id },
-          _avg: { ratingValue: true },
-          _count: true,
-        }),
-        this.prisma.deliveryOrder.aggregate({
-          where: { 
-            storeId: id,
-            status: 'DELIVERED'
-          },
-          _sum: { totalPrice: true },
-        }),
-        this.prisma.product.count({ where: { storeId: id } }),
-        this.prisma.deliveryOrder.count({ where: { storeId: id } })
-      ]);
+          }),
+          this.prisma.rating.aggregate({
+            where: { storeId: id },
+            _avg: { ratingValue: true },
+            _count: true,
+          }),
+          this.prisma.deliveryOrder.aggregate({
+            where: {
+              storeId: id,
+              status: 'DELIVERED',
+            },
+            _sum: { totalPrice: true },
+          }),
+          this.prisma.product.count({ where: { storeId: id } }),
+          this.prisma.deliveryOrder.count({ where: { storeId: id } }),
+        ]);
 
       // Create a properly typed response
       const storeWithStats: StoreWithStats = {
@@ -480,7 +493,9 @@ export class StoreManagementService {
         longitude: this.toNumber(updatedStore.longitude),
       };
 
-      this.logger.log(`Updated status for store ${id} to ${isActive ? 'active' : 'inactive'}`);
+      this.logger.log(
+        `Updated status for store ${id} to ${isActive ? 'active' : 'inactive'}`,
+      );
 
       return {
         success: true,

@@ -5,7 +5,7 @@ export class RideCompleteDto {
   @ApiProperty({
     description: 'Unique identifier of the completed ride',
     example: 1,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -14,7 +14,7 @@ export class RideCompleteDto {
   @ApiProperty({
     description: 'Unique identifier of the driver who completed the ride',
     example: 5,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -22,7 +22,7 @@ export class RideCompleteDto {
 
   @ApiProperty({
     description: 'Clerk ID of the passenger',
-    example: 'user_2abc123def456'
+    example: 'user_2abc123def456',
   })
   @IsNotEmpty()
   @IsString()
@@ -32,16 +32,9 @@ export class RideCompleteDto {
     description: 'Final fare amount for the completed ride',
     example: 25.75,
     minimum: 0,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
   fare: number;
 }
-
-
-
-
-
-
-

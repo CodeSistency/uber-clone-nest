@@ -14,17 +14,23 @@ export class LocationsController {
     description: `
     Validates that the provided latitude and longitude coordinates are within valid ranges.
     Also checks if the location is within the service area.
-    `
+    `,
   })
   async validate(@Body() dto: ValidateLocationDto) {
-    const isValid = await this.locationsService.validateCoordinates(dto.lat, dto.lng);
-    const serviceAreaCheck = await this.locationsService.validateServiceArea(dto.lat, dto.lng);
+    const isValid = await this.locationsService.validateCoordinates(
+      dto.lat,
+      dto.lng,
+    );
+    const serviceAreaCheck = await this.locationsService.validateServiceArea(
+      dto.lat,
+      dto.lng,
+    );
 
     return {
       data: {
         isValid,
-        serviceArea: serviceAreaCheck
-      }
+        serviceArea: serviceAreaCheck,
+      },
     };
   }
 
@@ -34,16 +40,17 @@ export class LocationsController {
     description: `
     Returns address suggestions based on a search query.
     Useful for autocomplete functionality in address inputs.
-    `
+    `,
   })
   @ApiQuery({
     name: 'q',
     description: 'Search query for address suggestions',
     example: 'Centro, Caracas',
-    type: 'string'
+    type: 'string',
   })
   async getSuggestions(@Query('q') query: string) {
-    const suggestions = await this.locationsService.getAddressSuggestions(query);
+    const suggestions =
+      await this.locationsService.getAddressSuggestions(query);
     return { data: suggestions };
   }
 
@@ -52,19 +59,19 @@ export class LocationsController {
     summary: 'Reverse geocode coordinates to address',
     description: `
     Converts latitude and longitude coordinates to a human-readable address.
-    `
+    `,
   })
   @ApiQuery({
     name: 'lat',
     description: 'Latitude coordinate',
     example: 10.5061,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'lng',
     description: 'Longitude coordinate',
     example: -66.9146,
-    type: 'number'
+    type: 'number',
   })
   async reverseGeocode(@Query('lat') lat: number, @Query('lng') lng: number) {
     const address = await this.locationsService.reverseGeocode(lat, lng);
@@ -76,13 +83,13 @@ export class LocationsController {
     summary: 'Geocode address to coordinates',
     description: `
     Converts a human-readable address to latitude and longitude coordinates.
-    `
+    `,
   })
   @ApiQuery({
     name: 'address',
     description: 'Address to geocode',
     example: 'Centro, Caracas, Venezuela',
-    type: 'string'
+    type: 'string',
   })
   async geocode(@Query('address') address: string) {
     const coordinates = await this.locationsService.geocodeAddress(address);
@@ -94,41 +101,41 @@ export class LocationsController {
     summary: 'Calculate distance between two points',
     description: `
     Calculates the distance between two geographic points in kilometers.
-    `
+    `,
   })
   @ApiQuery({
     name: 'originLat',
     description: 'Origin latitude',
     example: 10.5061,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'originLng',
     description: 'Origin longitude',
     example: -66.9146,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'destLat',
     description: 'Destination latitude',
     example: 10.4998,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'destLng',
     description: 'Destination longitude',
     example: -66.8517,
-    type: 'number'
+    type: 'number',
   })
   async calculateDistance(
     @Query('originLat') originLat: number,
     @Query('originLng') originLng: number,
     @Query('destLat') destLat: number,
-    @Query('destLng') destLng: number
+    @Query('destLng') destLng: number,
   ) {
     const distance = await this.locationsService.calculateDistance(
       { lat: originLat, lng: originLng },
-      { lat: destLat, lng: destLng }
+      { lat: destLat, lng: destLng },
     );
     return { data: { distance } };
   }
@@ -138,31 +145,31 @@ export class LocationsController {
     summary: 'Estimate travel time',
     description: `
     Estimates travel time between two points based on distance and transport mode.
-    `
+    `,
   })
   @ApiQuery({
     name: 'originLat',
     description: 'Origin latitude',
     example: 10.5061,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'originLng',
     description: 'Origin longitude',
     example: -66.9146,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'destLat',
     description: 'Destination latitude',
     example: 10.4998,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'destLng',
     description: 'Destination longitude',
     example: -66.8517,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'mode',
@@ -170,19 +177,19 @@ export class LocationsController {
     example: 'driving',
     enum: ['driving', 'walking'],
     required: false,
-    type: 'string'
+    type: 'string',
   })
   async estimateTime(
     @Query('originLat') originLat: number,
     @Query('originLng') originLng: number,
     @Query('destLat') destLat: number,
     @Query('destLng') destLng: number,
-    @Query('mode') mode: 'driving' | 'walking' = 'driving'
+    @Query('mode') mode: 'driving' | 'walking' = 'driving',
   ) {
     const timeMinutes = await this.locationsService.estimateTravelTime(
       { lat: originLat, lng: originLng },
       { lat: destLat, lng: destLng },
-      mode
+      mode,
     );
     return { data: { timeMinutes } };
   }
@@ -192,41 +199,46 @@ export class LocationsController {
     summary: 'Find nearby places',
     description: `
     Finds nearby places of a specific type (restaurant, store, pharmacy) within a radius.
-    `
+    `,
   })
   @ApiQuery({
     name: 'lat',
     description: 'Center latitude',
     example: 10.5061,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'lng',
     description: 'Center longitude',
     example: -66.9146,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'type',
     description: 'Type of places to search',
     example: 'restaurant',
     enum: ['restaurant', 'store', 'pharmacy'],
-    type: 'string'
+    type: 'string',
   })
   @ApiQuery({
     name: 'radius',
     description: 'Search radius in meters',
     example: 1000,
     required: false,
-    type: 'number'
+    type: 'number',
   })
   async getNearbyPlaces(
     @Query('lat') lat: number,
     @Query('lng') lng: number,
     @Query('type') type: string,
-    @Query('radius') radius: number = 1000
+    @Query('radius') radius: number = 1000,
   ) {
-    const places = await this.locationsService.getNearbyPlaces(lat, lng, type as any, radius);
+    const places = await this.locationsService.getNearbyPlaces(
+      lat,
+      lng,
+      type as any,
+      radius,
+    );
     return { data: places };
   }
 }

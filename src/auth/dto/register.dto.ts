@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsPhoneNumber, IsIn, IsDateString } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsPhoneNumber,
+  IsIn,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -66,7 +75,10 @@ export class RegisterDto {
     example: '1990-05-15',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha de nacimiento debe tener formato YYYY-MM-DD' })
+  @IsDateString(
+    {},
+    { message: 'La fecha de nacimiento debe tener formato YYYY-MM-DD' },
+  )
   dateOfBirth?: string;
 
   @ApiPropertyOptional({
@@ -75,7 +87,9 @@ export class RegisterDto {
     enum: ['male', 'female', 'other', 'prefer_not_to_say'],
   })
   @IsOptional()
-  @IsIn(['male', 'female', 'other', 'prefer_not_to_say'], { message: 'Género inválido' })
+  @IsIn(['male', 'female', 'other', 'prefer_not_to_say'], {
+    message: 'Género inválido',
+  })
   gender?: string;
 
   @ApiPropertyOptional({

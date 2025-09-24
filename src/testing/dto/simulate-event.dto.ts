@@ -1,11 +1,17 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsObject } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsObject,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SimulateEventDto {
   @ApiProperty({
     description: 'Service ID to simulate event for',
     example: 123,
-    type: 'number'
+    type: 'number',
   })
   @IsNotEmpty()
   @IsNumber()
@@ -14,7 +20,7 @@ export class SimulateEventDto {
   @ApiProperty({
     description: 'Type of service',
     example: 'ride',
-    enum: ['ride', 'delivery', 'errand', 'parcel']
+    enum: ['ride', 'delivery', 'errand', 'parcel'],
   })
   @IsNotEmpty()
   @IsString()
@@ -23,7 +29,7 @@ export class SimulateEventDto {
   @ApiProperty({
     description: 'Type of event to simulate',
     example: 'accepted',
-    type: 'string'
+    type: 'string',
   })
   @IsNotEmpty()
   @IsString()
@@ -33,7 +39,7 @@ export class SimulateEventDto {
     description: 'Additional data for the event',
     example: { driverId: 99, estimatedTime: 15 },
     type: 'object',
-    additionalProperties: true
+    additionalProperties: true,
   })
   @IsOptional()
   @IsObject()

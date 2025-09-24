@@ -5,7 +5,7 @@ export class DriverLocationUpdateDto {
   @ApiProperty({
     description: 'Unique identifier of the driver',
     example: 1,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -20,16 +20,16 @@ export class DriverLocationUpdateDto {
         example: 40.7128,
         description: 'Latitude coordinate',
         minimum: -90,
-        maximum: 90
+        maximum: 90,
       },
       lng: {
         type: 'number',
         example: -74.006,
         description: 'Longitude coordinate',
         minimum: -180,
-        maximum: 180
-      }
-    }
+        maximum: 180,
+      },
+    },
   })
   @IsNotEmpty()
   location: {
@@ -40,16 +40,9 @@ export class DriverLocationUpdateDto {
   @ApiPropertyOptional({
     description: 'ID of the active ride (if applicable)',
     example: 1,
-    type: Number
+    type: Number,
   })
   @IsOptional()
   @IsNumber()
   rideId?: number;
 }
-
-
-
-
-
-
-

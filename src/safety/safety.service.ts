@@ -7,8 +7,7 @@ export class SafetyService {
   constructor(private prisma: PrismaService) {}
 
   async triggerSOS(sosAlertDto: SOSAlertDto): Promise<any> {
-    const { userId, rideId, location, emergencyType, message } =
-      sosAlertDto;
+    const { userId, rideId, location, emergencyType, message } = sosAlertDto;
 
     // Get user information
     const user = await this.prisma.user.findUnique({

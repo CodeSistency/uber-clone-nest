@@ -8,7 +8,7 @@ export class ValidateLocationDto {
     minimum: -90,
     maximum: 90,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-90)
@@ -21,7 +21,7 @@ export class ValidateLocationDto {
     minimum: -180,
     maximum: 180,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-180)

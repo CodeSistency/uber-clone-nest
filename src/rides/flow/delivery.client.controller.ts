@@ -1,5 +1,19 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiBody, ApiResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+  ApiBody,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
 import { ConfirmDeliveryPaymentDto } from './dto/delivery-flow.dtos';
@@ -34,12 +48,12 @@ export class DeliveryClientController {
     - \`order:accepted\` - Courier accepts the order
     - \`order:picked_up\` - Courier picked up the order
     - \`order:delivered\` - Order delivered to customer
-    `
+    `,
   })
   @ApiBody({
     type: CreateOrderDto,
     examples: {
-      'pizza_delivery': {
+      pizza_delivery: {
         summary: 'Pizza delivery order',
         value: {
           storeId: 1,
@@ -50,18 +64,18 @@ export class DeliveryClientController {
             {
               productId: 1,
               quantity: 2,
-              price: 25.00
+              price: 25.0,
             },
             {
               productId: 2,
               quantity: 1,
-              price: 8.50
-            }
+              price: 8.5,
+            },
           ],
-          specialInstructions: 'Timbre 1201, por favor llamar antes de subir'
-        }
+          specialInstructions: 'Timbre 1201, por favor llamar antes de subir',
+        },
       },
-      'grocery_delivery': {
+      grocery_delivery: {
         summary: 'Grocery items delivery',
         value: {
           storeId: 2,
@@ -72,21 +86,24 @@ export class DeliveryClientController {
             {
               productId: 10,
               quantity: 1,
-              price: 15.00
+              price: 15.0,
             },
             {
               productId: 11,
               quantity: 3,
-              price: 5.50
-            }
+              price: 5.5,
+            },
           ],
-          specialInstructions: 'Dejar en portería si no contesto'
-        }
-      }
-    }
+          specialInstructions: 'Dejar en portería si no contesto',
+        },
+      },
+    },
   })
   async createOrder(@Body() body: CreateOrderDto, @Req() req: any) {
-    const order = await this.flow.createDeliveryOrder(Number(req.user.id), body);
+    const order = await this.flow.createDeliveryOrder(
+      Number(req.user.id),
+      body,
+    );
     return { data: order };
   }
 
@@ -111,7 +128,7 @@ export class DeliveryClientController {
     - \`zelle\`: Zelle
     - \`bitcoin\`: Bitcoin
     - \`cash\`: Efectivo (sin referencia bancaria)
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -127,17 +144,23 @@ export class DeliveryClientController {
             reference: {
               type: 'object',
               properties: {
-                referenceNumber: { type: 'string', example: '12345678901234567890' },
+                referenceNumber: {
+                  type: 'string',
+                  example: '12345678901234567890',
+                },
                 bankCode: { type: 'string', example: '0102' },
-                amount: { type: 'number', example: 35.50 },
+                amount: { type: 'number', example: 35.5 },
                 expiresAt: { type: 'string', format: 'date-time' },
-                instructions: { type: 'string', example: 'Realice la transferencia...' }
-              }
-            }
-          }
-        }
-      }
-    }
+                instructions: {
+                  type: 'string',
+                  example: 'Realice la transferencia...',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   async confirmPayment(
     @Param('orderId') orderId: string,
@@ -157,7 +180,10 @@ export class DeliveryClientController {
 
     // Para pagos en efectivo, no necesitamos generar referencia
     if (body.method === 'cash') {
-      const updated = await this.flow.confirmDeliveryPayment(Number(orderId), body.method);
+      const updated = await this.flow.confirmDeliveryPayment(
+        Number(orderId),
+        body.method,
+      );
       return { data: { ...updated, paymentMethod: 'cash' } };
     }
 
@@ -168,7 +194,7 @@ export class DeliveryClientController {
       amount: Number(order.totalPrice || 0),
       paymentMethod: body.method,
       bankCode: body.bankCode,
-      userId: req.user.id
+      userId: req.user.id,
     });
 
     return {
@@ -176,8 +202,11 @@ export class DeliveryClientController {
         orderId: Number(orderId),
         paymentStatus: 'pending_reference',
         reference: reference,
-        instructions: this.paymentsService.getPaymentInstructions(body.method, reference.referenceNumber)
-      }
+        instructions: this.paymentsService.getPaymentInstructions(
+          body.method,
+          reference.referenceNumber,
+        ),
+      },
     };
   }
 
@@ -196,9 +225,10 @@ export class DeliveryClientController {
 
   @Post(':orderId/cancel')
   @ApiOperation({ summary: 'Cancel delivery order' })
-  async cancel(@Param('orderId') orderId: string, @Body() body: { reason?: string }) {
+  async cancel(
+    @Param('orderId') orderId: string,
+    @Body() body: { reason?: string },
+  ) {
     return this.flow.cancelDelivery(Number(orderId), body?.reason);
   }
 }
-
-

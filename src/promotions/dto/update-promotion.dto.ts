@@ -13,7 +13,7 @@ export class UpdatePromotionDto {
     description: 'New promotional code (must be unique)',
     example: 'UPDATED10',
     minLength: 3,
-    maxLength: 20
+    maxLength: 20,
   })
   @IsOptional()
   @IsString()
@@ -24,7 +24,7 @@ export class UpdatePromotionDto {
     example: 15.0,
     minimum: 0,
     maximum: 100,
-    type: Number
+    type: Number,
   })
   @IsOptional()
   @Transform(({ value }) => (value ? parseFloat(value) : value))
@@ -35,7 +35,7 @@ export class UpdatePromotionDto {
     description: 'Updated fixed discount amount in dollars',
     example: 5.0,
     minimum: 0,
-    type: Number
+    type: Number,
   })
   @IsOptional()
   @Transform(({ value }) => (value ? parseFloat(value) : value))
@@ -45,7 +45,7 @@ export class UpdatePromotionDto {
   @ApiPropertyOptional({
     description: 'Updated expiration date of the promotion (ISO date string)',
     example: '2024-12-31',
-    format: 'date'
+    format: 'date',
   })
   @IsOptional()
   @IsDateString()
@@ -53,7 +53,7 @@ export class UpdatePromotionDto {
 
   @ApiPropertyOptional({
     description: 'Updated active status of the promotion',
-    example: true
+    example: true,
   })
   @IsOptional()
   @IsBoolean()

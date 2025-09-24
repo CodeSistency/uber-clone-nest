@@ -25,7 +25,14 @@ import { Permission } from '../../../entities/admin.entity';
 import { RideManagementService } from '../services/ride-management.service';
 import { FormattedRide } from '../services/ride-management.service';
 
-type RideStatus = 'pending' | 'accepted' | 'arrived' | 'in_progress' | 'completed' | 'cancelled' | 'all';
+type RideStatus =
+  | 'pending'
+  | 'accepted'
+  | 'arrived'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'all';
 
 type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | 'all';
 
@@ -42,7 +49,8 @@ export class RideManagementController {
   @RequirePermissions(Permission.RIDE_READ)
   @ApiOperation({
     summary: 'Get rides with filters',
-    description: 'Retrieve a paginated list of rides with advanced filtering options',
+    description:
+      'Retrieve a paginated list of rides with advanced filtering options',
   })
   @ApiQuery({
     name: 'page',
@@ -60,7 +68,15 @@ export class RideManagementController {
   })
   @ApiQuery({
     name: 'status',
-    enum: ['pending', 'accepted', 'arrived', 'in_progress', 'completed', 'cancelled', 'all'],
+    enum: [
+      'pending',
+      'accepted',
+      'arrived',
+      'in_progress',
+      'completed',
+      'cancelled',
+      'all',
+    ],
     required: false,
     description: 'Filter by ride status',
     example: 'completed',
@@ -133,15 +149,15 @@ export class RideManagementController {
     @Query('userId') userId?: number,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
-  ): Promise<{ 
-    success: boolean; 
-    data: FormattedRide[]; 
-    pagination: { 
-      page: number; 
-      limit: number; 
-      total: number; 
-      pages: number; 
-    } 
+  ): Promise<{
+    success: boolean;
+    data: FormattedRide[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
   }> {
     this.logger.log(
       `Fetching rides - page: ${page}, limit: ${limit}, paymentStatus: ${paymentStatus}`,
@@ -254,7 +270,9 @@ export class RideManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'Ride not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getRideById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching ride by ID: ${id}`);

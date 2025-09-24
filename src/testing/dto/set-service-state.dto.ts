@@ -5,7 +5,7 @@ export class SetServiceStateDto {
   @ApiProperty({
     description: 'Service ID to update',
     example: 123,
-    type: 'number'
+    type: 'number',
   })
   @IsNotEmpty()
   @IsNumber()
@@ -14,7 +14,7 @@ export class SetServiceStateDto {
   @ApiProperty({
     description: 'Type of service',
     example: 'ride',
-    enum: ['ride', 'delivery', 'errand', 'parcel']
+    enum: ['ride', 'delivery', 'errand', 'parcel'],
   })
   @IsNotEmpty()
   @IsString()
@@ -23,7 +23,7 @@ export class SetServiceStateDto {
   @ApiProperty({
     description: 'New state for the service',
     example: 'completed',
-    type: 'string'
+    type: 'string',
   })
   @IsNotEmpty()
   @IsString()

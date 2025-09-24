@@ -1,11 +1,18 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber, MaxLength, IsEmail } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsNumber,
+  MaxLength,
+  IsEmail,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class CreateStoreDto {
   @ApiProperty({
     description: 'Store name',
-    example: 'Pizza Palace'
+    example: 'Pizza Palace',
   })
   @IsNotEmpty()
   @IsString()
@@ -14,7 +21,7 @@ export class CreateStoreDto {
 
   @ApiProperty({
     description: 'Store address',
-    example: '123 Main St, New York, NY 10001'
+    example: '123 Main St, New York, NY 10001',
   })
   @IsNotEmpty()
   @IsString()
@@ -22,7 +29,7 @@ export class CreateStoreDto {
 
   @ApiProperty({
     description: 'Store latitude',
-    example: 40.7128
+    example: 40.7128,
   })
   @IsNumber()
   @Transform(({ value }) => parseFloat(value))
@@ -30,7 +37,7 @@ export class CreateStoreDto {
 
   @ApiProperty({
     description: 'Store longitude',
-    example: -74.0060
+    example: -74.006,
   })
   @IsNumber()
   @Transform(({ value }) => parseFloat(value))
@@ -38,7 +45,7 @@ export class CreateStoreDto {
 
   @ApiPropertyOptional({
     description: 'Store category',
-    example: 'restaurant'
+    example: 'restaurant',
   })
   @IsOptional()
   @IsString()
@@ -46,7 +53,7 @@ export class CreateStoreDto {
 
   @ApiPropertyOptional({
     description: 'Cuisine type',
-    example: 'italian'
+    example: 'italian',
   })
   @IsOptional()
   @IsString()
@@ -54,7 +61,7 @@ export class CreateStoreDto {
 
   @ApiPropertyOptional({
     description: 'Store logo URL',
-    example: 'https://example.com/logo.png'
+    example: 'https://example.com/logo.png',
   })
   @IsOptional()
   @IsString()
@@ -62,7 +69,7 @@ export class CreateStoreDto {
 
   @ApiPropertyOptional({
     description: 'Store phone number',
-    example: '+1-555-0123'
+    example: '+1-555-0123',
   })
   @IsOptional()
   @IsString()
@@ -70,7 +77,7 @@ export class CreateStoreDto {
 
   @ApiPropertyOptional({
     description: 'Store email',
-    example: 'contact@pizzapalace.com'
+    example: 'contact@pizzapalace.com',
   })
   @IsOptional()
   @IsEmail()

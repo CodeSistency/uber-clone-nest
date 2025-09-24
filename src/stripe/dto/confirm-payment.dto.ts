@@ -7,7 +7,7 @@ export class ConfirmPaymentDto {
     example: 'pm_1N2B3C4D5E6F7G8H',
     pattern: '^pm_',
     minLength: 20,
-    maxLength: 30
+    maxLength: 30,
   })
   @IsNotEmpty()
   @IsString()
@@ -19,7 +19,7 @@ export class ConfirmPaymentDto {
     example: 'pi_1N2B3C4D5E6F7G8H',
     pattern: '^pi_',
     minLength: 20,
-    maxLength: 30
+    maxLength: 30,
   })
   @IsNotEmpty()
   @IsString()
@@ -31,7 +31,7 @@ export class ConfirmPaymentDto {
     example: 'cus_1N2B3C4D5E6F7G8H',
     pattern: '^cus_',
     minLength: 20,
-    maxLength: 30
+    maxLength: 30,
   })
   @IsNotEmpty()
   @IsString()

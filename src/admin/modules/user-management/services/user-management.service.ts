@@ -106,7 +106,7 @@ export class UserManagementService {
   async getUserById(id: number) {
     try {
       const user = await this.prisma.user.findUnique({
-        where: { 
+        where: {
           id,
           userType: { not: 'admin' }, // Asegurar que no sea un administrador
         },
@@ -157,7 +157,7 @@ export class UserManagementService {
   async updateUserStatus(id: number, isActive: boolean) {
     // Verificar que el usuario existe y no es administrador
     const user = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         id,
         userType: { not: 'admin' },
       },
@@ -183,8 +183,10 @@ export class UserManagementService {
       },
     });
 
-    this.logger.log(`Updated status for user ${id} to ${isActive ? 'active' : 'inactive'}`);
-    
+    this.logger.log(
+      `Updated status for user ${id} to ${isActive ? 'active' : 'inactive'}`,
+    );
+
     return {
       success: true,
       message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
@@ -199,7 +201,7 @@ export class UserManagementService {
   async deleteUser(id: number) {
     // Verificar que el usuario existe y no es administrador
     const user = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         id,
         userType: { not: 'admin' },
       },

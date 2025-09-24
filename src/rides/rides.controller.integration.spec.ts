@@ -298,5 +298,4 @@ describe('RidesController (Integration)', () => {
         .expect(400);
     });
   });
-
 });

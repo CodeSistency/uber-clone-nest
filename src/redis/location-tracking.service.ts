@@ -161,7 +161,9 @@ export class LocationTrackingService extends RedisPubSubService {
           lng: Number(driver.currentLongitude),
         },
         timestamp: driver.lastLocationUpdate || new Date(),
-        accuracy: driver.locationAccuracy ? Number(driver.locationAccuracy) : undefined,
+        accuracy: driver.locationAccuracy
+          ? Number(driver.locationAccuracy)
+          : undefined,
         isActive: driver.isLocationActive,
       };
     }
@@ -311,30 +313,43 @@ export class LocationTrackingService extends RedisPubSubService {
   }
 
   // Geofencing and validation methods
-  async validateLocationInServiceArea(lat: number, lng: number): Promise<boolean> {
+  async validateLocationInServiceArea(
+    lat: number,
+    lng: number,
+  ): Promise<boolean> {
     // Define service area boundaries (Caracas, Venezuela as example)
     const serviceArea = {
-      north: 10.55,  // North boundary
-      south: 10.45,  // South boundary
-      east: -66.85,  // East boundary
-      west: -66.95,  // West boundary
+      north: 10.55, // North boundary
+      south: 10.45, // South boundary
+      east: -66.85, // East boundary
+      west: -66.95, // West boundary
     };
 
-    return lat >= serviceArea.south &&
-           lat <= serviceArea.north &&
-           lng >= serviceArea.west &&
-           lng <= serviceArea.east;
+    return (
+      lat >= serviceArea.south &&
+      lat <= serviceArea.north &&
+      lng >= serviceArea.west &&
+      lng <= serviceArea.east
+    );
   }
 
   // Calculate distance between two coordinates using Haversine formula
-  calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  calculateDistance(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
     const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Distance in kilometers
   }
 
@@ -351,7 +366,10 @@ export class LocationTrackingService extends RedisPubSubService {
     },
   ) {
     // First, validate location is in service area
-    const isInServiceArea = await this.validateLocationInServiceArea(centerLat, centerLng);
+    const isInServiceArea = await this.validateLocationInServiceArea(
+      centerLat,
+      centerLng,
+    );
     if (!isInServiceArea) {
       return [];
     }
@@ -365,7 +383,9 @@ export class LocationTrackingService extends RedisPubSubService {
     };
 
     if (filters?.verified !== undefined) {
-      whereClause.verificationStatus = filters.verified ? 'approved' : { not: 'approved' };
+      whereClause.verificationStatus = filters.verified
+        ? 'approved'
+        : { not: 'approved' };
     }
 
     if (filters?.vehicleTypeId) {
@@ -381,12 +401,12 @@ export class LocationTrackingService extends RedisPubSubService {
 
     // Filter by distance and calculate additional data
     const nearbyDrivers = drivers
-      .map(driver => {
+      .map((driver) => {
         const distance = this.calculateDistance(
           centerLat,
           centerLng,
           Number(driver.currentLatitude),
-          Number(driver.currentLongitude)
+          Number(driver.currentLongitude),
         );
 
         if (distance <= radiusKm) {
@@ -407,7 +427,9 @@ export class LocationTrackingService extends RedisPubSubService {
               lng: Number(driver.currentLongitude),
             },
             lastLocationUpdate: driver.lastLocationUpdate,
-            locationAccuracy: driver.locationAccuracy ? Number(driver.locationAccuracy) : null,
+            locationAccuracy: driver.locationAccuracy
+              ? Number(driver.locationAccuracy)
+              : null,
             distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
             estimatedMinutes,
             rating: 4.5, // TODO: Calculate from ratings table
@@ -415,8 +437,8 @@ export class LocationTrackingService extends RedisPubSubService {
         }
         return null;
       })
-      .filter(driver => driver !== null)
-      .sort((a, b) => a!.distance - b!.distance); // Sort by distance
+      .filter((driver) => driver !== null)
+      .sort((a, b) => a.distance - b.distance); // Sort by distance
 
     return nearbyDrivers;
   }

@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../prisma/prisma.service';
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
 import * as bcrypt from 'bcrypt';
@@ -17,7 +22,7 @@ export class ProfileService {
    */
   async getProfile(adminId: number) {
     const admin = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         id: adminId,
         userType: 'admin',
       },
@@ -83,8 +88,11 @@ export class ProfileService {
 
     // Actualizar contraseña si se proporciona la actual
     if (currentPassword && newPassword && admin.password) {
-      const isPasswordValid = await bcrypt.compare(currentPassword, admin.password);
-      
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        admin.password,
+      );
+
       if (!isPasswordValid) {
         throw new ConflictException('Current password is incorrect');
       }

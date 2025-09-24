@@ -5,7 +5,7 @@ export class DriverStatusUpdateDto {
   @ApiProperty({
     description: 'Unique identifier of the driver',
     example: 1,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -14,17 +14,10 @@ export class DriverStatusUpdateDto {
   @ApiProperty({
     description: 'New availability status of the driver',
     example: 'online',
-    enum: ['online', 'offline', 'busy', 'away']
+    enum: ['online', 'offline', 'busy', 'away'],
   })
   @IsNotEmpty()
   @IsString()
   @IsIn(['online', 'offline', 'busy', 'away'])
   status: string;
 }
-
-
-
-
-
-
-

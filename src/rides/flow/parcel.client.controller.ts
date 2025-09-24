@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
@@ -35,38 +43,40 @@ export class ParcelClientController {
     - \`electronics\` - Requires careful handling
     - \`fragile\` - Extra care for breakable items
     - \`other\` - General packages
-    `
+    `,
   })
   @ApiBody({
     type: CreateParcelDto,
     examples: {
-      'document_delivery': {
+      document_delivery: {
         summary: 'Legal documents delivery',
         value: {
           pickupAddress: 'Notaría Primera, Calle 100 #15-30, Piso 5',
           pickupLat: 4.6097,
           pickupLng: -74.0817,
           dropoffAddress: 'Registro Civil, Carrera 7 #23-45',
-          dropoffLat: 4.6150,
-          dropoffLng: -74.0750,
+          dropoffLat: 4.615,
+          dropoffLng: -74.075,
           type: 'documents',
-          description: 'Contrato de compraventa y documentos de propiedad (5 páginas cada uno)'
-        }
+          description:
+            'Contrato de compraventa y documentos de propiedad (5 páginas cada uno)',
+        },
       },
-      'electronic_device': {
+      electronic_device: {
         summary: 'Electronic device delivery',
         value: {
           pickupAddress: 'Tienda de Electrónicos ABC, Centro Comercial Plaza',
           pickupLat: 4.6584,
           pickupLng: -74.0548,
           dropoffAddress: 'Casa del cliente, Calle 45 #123-67',
-          dropoffLat: 4.6610,
-          dropoffLng: -74.0520,
+          dropoffLat: 4.661,
+          dropoffLng: -74.052,
           type: 'electronics',
-          description: 'Laptop Dell XPS 13 con cargador original, mouse inalámbrico y maletín protector'
-        }
+          description:
+            'Laptop Dell XPS 13 con cargador original, mouse inalámbrico y maletín protector',
+        },
       },
-      'fragile_package': {
+      fragile_package: {
         summary: 'Fragile item delivery',
         value: {
           pickupAddress: 'Cerámica Artesanal, Calle 50 #20-30',
@@ -76,10 +86,11 @@ export class ParcelClientController {
           dropoffLat: 4.6584,
           dropoffLng: -74.0548,
           type: 'fragile',
-          description: 'Juego de vajilla de porcelana fina (24 piezas) - Manejar con extremo cuidado'
-        }
-      }
-    }
+          description:
+            'Juego de vajilla de porcelana fina (24 piezas) - Manejar con extremo cuidado',
+        },
+      },
+    },
   })
   async create(@Body() body: CreateParcelDto, @Req() req: any) {
     const parcel = await this.flow.createParcel(Number(req.user.id), body);
@@ -105,5 +116,3 @@ export class ParcelClientController {
     return this.flow.cancelParcel(Number(id), body?.reason);
   }
 }
-
-

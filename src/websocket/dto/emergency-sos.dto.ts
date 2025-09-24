@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class EmergencySOSDto {
   @ApiProperty({
     description: 'Clerk ID of the user triggering the SOS alert',
-    example: 'user_2abc123def456'
+    example: 'user_2abc123def456',
   })
   @IsNotEmpty()
   @IsString()
@@ -13,7 +13,7 @@ export class EmergencySOSDto {
   @ApiProperty({
     description: 'ID of the ride where the emergency occurred',
     example: 1,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -28,16 +28,16 @@ export class EmergencySOSDto {
         example: 40.7128,
         description: 'Latitude coordinate',
         minimum: -90,
-        maximum: 90
+        maximum: 90,
       },
       lng: {
         type: 'number',
         example: -74.006,
         description: 'Longitude coordinate',
         minimum: -180,
-        maximum: 180
-      }
-    }
+        maximum: 180,
+      },
+    },
   })
   @IsNotEmpty()
   location: {
@@ -49,16 +49,9 @@ export class EmergencySOSDto {
     description: 'Description of the emergency situation',
     example: 'I need immediate medical assistance due to chest pain.',
     minLength: 10,
-    maxLength: 500
+    maxLength: 500,
   })
   @IsNotEmpty()
   @IsString()
   message: string;
 }
-
-
-
-
-
-
-

@@ -6,11 +6,7 @@ import { PaymentsController } from './payments.controller';
 import { BanksModule } from '../banks/banks.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    NotificationsModule,
-    BanksModule,
-  ],
+  imports: [PrismaModule, NotificationsModule, BanksModule],
   controllers: [PaymentsController],
   providers: [PaymentsService],
   exports: [PaymentsService],

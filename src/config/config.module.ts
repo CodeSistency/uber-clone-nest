@@ -19,11 +19,7 @@ import { validationSchema } from './validation.schema';
         allowUnknown: true,
         abortEarly: false,
       },
-      envFilePath: [
-        '.env.local',
-        '.env',
-        '.env.example',
-      ].filter((path) => {
+      envFilePath: ['.env.local', '.env', '.env.example'].filter((path) => {
         try {
           require('fs').accessSync(path);
           return true;

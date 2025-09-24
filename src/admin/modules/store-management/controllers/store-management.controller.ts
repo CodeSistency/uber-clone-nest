@@ -32,7 +32,13 @@ import { AdminCreateStoreDto } from '../dtos/create-store.dto';
 import { UpdateStoreDto } from '../dtos/update-store.dto';
 
 type StoreStatus = 'active' | 'inactive' | 'all';
-type StoreType = 'restaurant' | 'grocery' | 'pharmacy' | 'convenience' | 'other' | 'all';
+type StoreType =
+  | 'restaurant'
+  | 'grocery'
+  | 'pharmacy'
+  | 'convenience'
+  | 'other'
+  | 'all';
 
 @Controller()
 @UseGuards(AdminAuthGuard, PermissionsGuard)
@@ -47,7 +53,8 @@ export class StoreManagementController {
   @RequirePermissions(Permission.STORE_READ)
   @ApiOperation({
     summary: 'Get stores with filters',
-    description: 'Retrieve a paginated list of stores with advanced filtering options',
+    description:
+      'Retrieve a paginated list of stores with advanced filtering options',
   })
   @ApiQuery({
     name: 'page',
@@ -100,14 +107,20 @@ export class StoreManagementController {
               name: { type: 'string', example: 'Pizza Palace' },
               description: { type: 'string', example: 'Best pizza in town' },
               logo: { type: 'string', example: 'https://example.com/logo.jpg' },
-              banner: { type: 'string', example: 'https://example.com/banner.jpg' },
+              banner: {
+                type: 'string',
+                example: 'https://example.com/banner.jpg',
+              },
               type: { type: 'string', example: 'restaurant' },
               address: { type: 'string', example: '123 Main St, City' },
               latitude: { type: 'number', example: 40.7128 },
               longitude: { type: 'number', example: -74.006 },
               phone: { type: 'string', example: '+1234567890' },
               email: { type: 'string', example: 'info@pizzapalace.com' },
-              openingHours: { type: 'string', example: 'Mon-Fri: 9:00 AM - 10:00 PM' },
+              openingHours: {
+                type: 'string',
+                example: 'Mon-Fri: 9:00 AM - 10:00 PM',
+              },
               isActive: { type: 'boolean', example: true },
               rating: { type: 'number', example: 4.5 },
               deliveryFee: { type: 'number', example: 2.5 },
@@ -130,7 +143,9 @@ export class StoreManagementController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getStores(
     @Query('page') page: number = 1,
@@ -181,7 +196,10 @@ export class StoreManagementController {
         phone: { type: 'string', example: '+1234567890' },
         email: { type: 'string', example: 'info@pizzapalace.com' },
         website: { type: 'string', example: 'https://pizzapalace.com' },
-        openingHours: { type: 'string', example: 'Mon-Fri: 9:00 AM - 10:00 PM' },
+        openingHours: {
+          type: 'string',
+          example: 'Mon-Fri: 9:00 AM - 10:00 PM',
+        },
         isActive: { type: 'boolean', example: true },
         rating: { type: 'number', example: 4.5 },
         totalRatings: { type: 'number', example: 125 },
@@ -209,7 +227,10 @@ export class StoreManagementController {
               id: { type: 'number', example: 1 },
               name: { type: 'string', example: 'Pizza' },
               description: { type: 'string', example: 'Delicious pizzas' },
-              image: { type: 'string', example: 'https://example.com/pizza.jpg' },
+              image: {
+                type: 'string',
+                example: 'https://example.com/pizza.jpg',
+              },
               isActive: { type: 'boolean', example: true },
               items: { type: 'number', example: 12 },
             },
@@ -222,7 +243,9 @@ export class StoreManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'Store not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getStoreById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching store by ID: ${id}`);
@@ -255,7 +278,9 @@ export class StoreManagementController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async createStore(@Body() createStoreDto: AdminCreateStoreDto) {
     this.logger.log('Creating a new store');
@@ -295,7 +320,9 @@ export class StoreManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'Store not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateStore(
     @Param('id', ParseIntPipe) id: number,
@@ -329,7 +356,9 @@ export class StoreManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'Store not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async deleteStore(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Deleting store with ID: ${id}`);
@@ -355,7 +384,10 @@ export class StoreManagementController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Store status updated successfully' },
+        message: {
+          type: 'string',
+          example: 'Store status updated successfully',
+        },
         data: {
           type: 'object',
           properties: {
@@ -368,13 +400,17 @@ export class StoreManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'Store not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateStoreStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('isActive') isActive: boolean,
   ) {
-    this.logger.log(`Updating status for store ID: ${id}, isActive: ${isActive}`);
+    this.logger.log(
+      `Updating status for store ID: ${id}, isActive: ${isActive}`,
+    );
     return this.storeService.updateStoreStatus(id, isActive);
   }
 }

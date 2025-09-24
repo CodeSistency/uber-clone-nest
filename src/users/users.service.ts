@@ -141,10 +141,7 @@ export class UsersService {
   /**
    * Actualizar usuario actual basado en ID del token JWT
    */
-  async updateCurrentUser(
-    userId: number,
-    data: any
-  ): Promise<User> {
+  async updateCurrentUser(userId: number, data: any): Promise<User> {
     // Convertir campos de fecha si existen
     const updateData = { ...data };
     if (updateData.dateOfBirth) {
@@ -170,7 +167,9 @@ export class UsersService {
   /**
    * Buscar usuarios con filtros dinámicos y paginación
    */
-  async searchUsers(searchDto: SearchUsersDto): Promise<PaginatedUsersResponseDto> {
+  async searchUsers(
+    searchDto: SearchUsersDto,
+  ): Promise<PaginatedUsersResponseDto> {
     const {
       page = 1,
       limit = 10,
@@ -356,12 +355,14 @@ export class UsersService {
     if (lastLoginFrom || lastLoginTo) appliedFilters.push('lastLoginDateRange');
 
     // Convert Decimal values to numbers for JSON serialization
-    const processedUsers = users.map(user => ({
+    const processedUsers = users.map((user) => ({
       ...user,
-      wallet: user.wallet ? {
-        ...user.wallet,
-        balance: Number(user.wallet.balance)
-      } : user.wallet,
+      wallet: user.wallet
+        ? {
+            ...user.wallet,
+            balance: Number(user.wallet.balance),
+          }
+        : user.wallet,
     }));
 
     return {
@@ -374,10 +375,13 @@ export class UsersService {
         hasNext,
         hasPrev,
       },
-      filters: appliedFilters.length > 0 ? {
-        applied: appliedFilters,
-        ...filters,
-      } : undefined,
+      filters:
+        appliedFilters.length > 0
+          ? {
+              applied: appliedFilters,
+              ...filters,
+            }
+          : undefined,
     };
   }
 }

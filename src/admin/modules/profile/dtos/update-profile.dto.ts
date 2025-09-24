@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, MinLength, IsOptional, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  MinLength,
+  IsOptional,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiProperty({
@@ -21,7 +27,8 @@ export class UpdateProfileDto {
   email?: string;
 
   @ApiProperty({
-    description: 'Contraseña actual (requerida para realizar cambios en el perfil)',
+    description:
+      'Contraseña actual (requerida para realizar cambios en el perfil)',
     example: 'currentPassword123',
     required: false,
   })

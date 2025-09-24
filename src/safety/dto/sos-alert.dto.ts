@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString, IsNumber, IsIn, MinLength, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsIn,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -7,7 +14,7 @@ export class SOSAlertDto {
     description: 'Clerk ID of the user triggering the SOS alert',
     example: 'user_2abc123def456',
     minLength: 10,
-    maxLength: 50
+    maxLength: 50,
   })
   @IsNotEmpty()
   @IsString()
@@ -17,7 +24,7 @@ export class SOSAlertDto {
     description: 'ID of the ride where the emergency occurred',
     example: 1,
     minimum: 1,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @Transform(({ value }) => parseInt(value))
@@ -33,14 +40,14 @@ export class SOSAlertDto {
         example: 40.7128,
         description: 'Latitude coordinate (-90 to 90)',
         minimum: -90,
-        maximum: 90
+        maximum: 90,
       },
       longitude: {
         type: 'number',
         example: -74.006,
         description: 'Longitude coordinate (-180 to 180)',
         minimum: -180,
-        maximum: 180
+        maximum: 180,
       },
     },
   })
@@ -53,7 +60,7 @@ export class SOSAlertDto {
   @ApiProperty({
     description: 'Emergency category: medical, safety, vehicle, or other',
     example: 'medical',
-    enum: ['medical', 'safety', 'vehicle', 'other']
+    enum: ['medical', 'safety', 'vehicle', 'other'],
   })
   @IsNotEmpty()
   @IsString()
@@ -64,7 +71,7 @@ export class SOSAlertDto {
     description: 'Description of the emergency situation',
     example: 'I need immediate medical assistance.',
     minLength: 10,
-    maxLength: 500
+    maxLength: 500,
   })
   @IsNotEmpty()
   @IsString()

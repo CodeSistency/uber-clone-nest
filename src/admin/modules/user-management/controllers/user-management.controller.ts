@@ -40,7 +40,8 @@ export class UserManagementController {
   @RequirePermissions(Permission.USER_READ)
   @ApiOperation({
     summary: 'Get users with filters',
-    description: 'Retrieve a paginated list of users with advanced filtering and search capabilities',
+    description:
+      'Retrieve a paginated list of users with advanced filtering and search capabilities',
   })
   @ApiQuery({
     name: 'page',
@@ -119,7 +120,9 @@ export class UserManagementController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getUsers(
     @Query('page') page: number = 1,
@@ -185,7 +188,9 @@ export class UserManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'User not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getUserById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching user by ID: ${id}`);
@@ -224,13 +229,17 @@ export class UserManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'User not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateUserStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('isActive') isActive: boolean,
   ) {
-    this.logger.log(`Updating status for user ID: ${id}, isActive: ${isActive}`);
+    this.logger.log(
+      `Updating status for user ID: ${id}, isActive: ${isActive}`,
+    );
     return this.userManagementService.updateUserStatus(id, isActive);
   }
 
@@ -258,7 +267,9 @@ export class UserManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'User not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async deleteUser(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Deleting user with ID: ${id}`);

@@ -1,5 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength, IsArray, ArrayNotEmpty, ArrayUnique } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayUnique,
+} from 'class-validator';
 import { AdminRole, Permission } from '../../../entities/admin.entity';
 
 export class CreateAdminDto {

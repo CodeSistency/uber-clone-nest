@@ -7,7 +7,7 @@ export class ApplyPromoDto {
     description: 'The promotional code to apply',
     example: 'WELCOME10',
     minLength: 3,
-    maxLength: 20
+    maxLength: 20,
   })
   @IsNotEmpty()
   @IsString()
@@ -17,7 +17,7 @@ export class ApplyPromoDto {
     description: 'The total amount of the ride before discount',
     example: 25.0,
     minimum: 0,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @Transform(({ value }) => parseFloat(value))

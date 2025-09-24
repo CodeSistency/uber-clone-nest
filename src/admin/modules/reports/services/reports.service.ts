@@ -23,9 +23,23 @@ if (typeof pdfFonts === 'function') {
   pdfMake.vfs = pdfFonts.pdfMake.vfs;
 }
 
-export type ReportType = 'sales' | 'users' | 'drivers' | 'stores' | 'rides' | 'custom';
+export type ReportType =
+  | 'sales'
+  | 'users'
+  | 'drivers'
+  | 'stores'
+  | 'rides'
+  | 'custom';
 export type ReportFormat = 'json' | 'csv' | 'pdf' | 'excel';
-export type DateRange = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_year' | 'custom';
+export type DateRange =
+  | 'today'
+  | 'yesterday'
+  | 'this_week'
+  | 'last_week'
+  | 'this_month'
+  | 'last_month'
+  | 'this_year'
+  | 'custom';
 
 export interface ReportParameters {
   dateRange: DateRange;
@@ -174,7 +188,14 @@ export class ReportsService {
             name: 'storeType',
             type: 'select',
             required: false,
-            options: ['all', 'restaurant', 'grocery', 'pharmacy', 'convenience', 'other'],
+            options: [
+              'all',
+              'restaurant',
+              'grocery',
+              'pharmacy',
+              'convenience',
+              'other',
+            ],
             default: 'all',
           },
         ],
@@ -184,7 +205,8 @@ export class ReportsService {
       {
         id: 'rides',
         name: 'Ride Analytics Report',
-        description: 'Detailed analytics on ride requests, completions, and cancellations',
+        description:
+          'Detailed analytics on ride requests, completions, and cancellations',
         parameters: [
           {
             name: 'dateRange',
@@ -281,29 +303,57 @@ export class ReportsService {
     this.logger.log(`Generating ${type} report in ${format} format`);
 
     // Parse and validate date range
-    const { startDate, endDate } = this.getDateRange(parameters.dateRange, parameters.startDate, parameters.endDate);
-    
+    const { startDate, endDate } = this.getDateRange(
+      parameters.dateRange,
+      parameters.startDate,
+      parameters.endDate,
+    );
+
     // Generate the report data based on type
     let reportData: any;
-    
+
     switch (type) {
       case 'sales':
-        reportData = await this.generateSalesReport(startDate, endDate, parameters);
+        reportData = await this.generateSalesReport(
+          startDate,
+          endDate,
+          parameters,
+        );
         break;
       case 'users':
-        reportData = await this.generateUsersReport(startDate, endDate, parameters);
+        reportData = await this.generateUsersReport(
+          startDate,
+          endDate,
+          parameters,
+        );
         break;
       case 'drivers':
-        reportData = await this.generateDriversReport(startDate, endDate, parameters);
+        reportData = await this.generateDriversReport(
+          startDate,
+          endDate,
+          parameters,
+        );
         break;
       case 'stores':
-        reportData = await this.generateStoresReport(startDate, endDate, parameters);
+        reportData = await this.generateStoresReport(
+          startDate,
+          endDate,
+          parameters,
+        );
         break;
       case 'rides':
-        reportData = await this.generateRidesReport(startDate, endDate, parameters);
+        reportData = await this.generateRidesReport(
+          startDate,
+          endDate,
+          parameters,
+        );
         break;
       case 'custom':
-        reportData = await this.generateCustomReport(startDate, endDate, parameters);
+        reportData = await this.generateCustomReport(
+          startDate,
+          endDate,
+          parameters,
+        );
         break;
       default:
         throw new Error(`Unsupported report type: ${type}`);
@@ -370,7 +420,7 @@ export class ReportsService {
   async getScheduledReports() {
     // In a real implementation, this would query the database
     const scheduledReports = [];
-    
+
     return {
       success: true,
       data: scheduledReports,
@@ -382,8 +432,10 @@ export class ReportsService {
    */
   async updateScheduledReportStatus(id: string, isActive: boolean) {
     // In a real implementation, this would update the database
-    this.logger.log(`Updated status for scheduled report ${id} to ${isActive ? 'active' : 'inactive'}`);
-    
+    this.logger.log(
+      `Updated status for scheduled report ${id} to ${isActive ? 'active' : 'inactive'}`,
+    );
+
     return {
       success: true,
       message: 'Scheduled report status updated',
@@ -401,7 +453,7 @@ export class ReportsService {
   async deleteScheduledReport(id: string) {
     // In a real implementation, this would delete from the database
     this.logger.log(`Deleted scheduled report ${id}`);
-    
+
     return {
       success: true,
       message: 'Scheduled report deleted successfully',
@@ -471,7 +523,9 @@ export class ReportsService {
         break;
       case 'custom':
         if (!customStartDate || !customEndDate) {
-          throw new Error('Custom date range requires both startDate and endDate');
+          throw new Error(
+            'Custom date range requires both startDate and endDate',
+          );
         }
         startDate = new Date(customStartDate);
         endDate = new Date(customEndDate);
@@ -489,7 +543,7 @@ export class ReportsService {
    */
   private calculateNextRun(frequency: 'daily' | 'weekly' | 'monthly'): Date {
     const nextRun = new Date();
-    
+
     switch (frequency) {
       case 'daily':
         nextRun.setDate(nextRun.getDate() + 1);
@@ -504,14 +558,18 @@ export class ReportsService {
         nextRun.setHours(0, 0, 0, 0);
         break;
     }
-    
+
     return nextRun;
   }
 
   /**
    * Generate sales report
    */
-  private async generateSalesReport(startDate: Date, endDate: Date, params: any) {
+  private async generateSalesReport(
+    startDate: Date,
+    endDate: Date,
+    params: any,
+  ) {
     // In a real implementation, this would query the database
     // This is a simplified example
     const data = [
@@ -531,7 +589,11 @@ export class ReportsService {
   /**
    * Generate users report
    */
-  private async generateUsersReport(startDate: Date, endDate: Date, params: any) {
+  private async generateUsersReport(
+    startDate: Date,
+    endDate: Date,
+    params: any,
+  ) {
     // In a real implementation, this would query the database
     const data = [
       { date: '2023-01-01', signups: 10, activeUsers: 150, orders: 120 },
@@ -550,7 +612,11 @@ export class ReportsService {
   /**
    * Generate drivers report
    */
-  private async generateDriversReport(startDate: Date, endDate: Date, params: any) {
+  private async generateDriversReport(
+    startDate: Date,
+    endDate: Date,
+    params: any,
+  ) {
     // In a real implementation, this would query the database
     const data = [
       { driver: 'John Doe', trips: 25, rating: 4.8, earnings: 1250 },
@@ -569,7 +635,11 @@ export class ReportsService {
   /**
    * Generate stores report
    */
-  private async generateStoresReport(startDate: Date, endDate: Date, params: any) {
+  private async generateStoresReport(
+    startDate: Date,
+    endDate: Date,
+    params: any,
+  ) {
     // In a real implementation, this would query the database
     const data = [
       { store: 'Pizza Palace', orders: 120, revenue: 3500, rating: 4.5 },
@@ -588,11 +658,27 @@ export class ReportsService {
   /**
    * Generate rides report
    */
-  private async generateRidesReport(startDate: Date, endDate: Date, params: any) {
+  private async generateRidesReport(
+    startDate: Date,
+    endDate: Date,
+    params: any,
+  ) {
     // In a real implementation, this would query the database
     const data = [
-      { date: '2023-01-01', requests: 150, completed: 140, cancelled: 10, revenue: 3500 },
-      { date: '2023-01-02', requests: 160, completed: 155, cancelled: 5, revenue: 3875 },
+      {
+        date: '2023-01-01',
+        requests: 150,
+        completed: 140,
+        cancelled: 10,
+        revenue: 3500,
+      },
+      {
+        date: '2023-01-02',
+        requests: 160,
+        completed: 155,
+        cancelled: 5,
+        revenue: 3875,
+      },
       // ... more data
     ];
 
@@ -607,7 +693,11 @@ export class ReportsService {
   /**
    * Generate custom report
    */
-  private async generateCustomReport(startDate: Date, endDate: Date, params: any) {
+  private async generateCustomReport(
+    startDate: Date,
+    endDate: Date,
+    params: any,
+  ) {
     // This would dynamically generate a report based on the selected metrics
     const data = [
       { metric: 'Total Revenue', value: 12500, change: 12.5 },
@@ -635,16 +725,16 @@ export class ReportsService {
 
     // Use provided columns or get them from the first data object
     const headers = columns || Object.keys(data[0]);
-    
+
     // Create CSV header
     let csv = headers.join(',') + '\n';
-    
+
     // Add data rows
     for (const row of data) {
-      const values = headers.map(header => {
-        let value = row[header];
+      const values = headers.map((header) => {
+        const value = row[header];
         let stringValue: string;
-        
+
         if (value === null || value === undefined) {
           stringValue = '';
         } else if (typeof value === 'object') {
@@ -652,7 +742,7 @@ export class ReportsService {
         } else {
           stringValue = String(value);
         }
-        
+
         // Escape quotes and wrap in quotes if needed
         if (stringValue.includes('"') || stringValue.includes(',')) {
           stringValue = `"${stringValue.replace(/"/g, '""')}"`;
@@ -661,25 +751,28 @@ export class ReportsService {
       });
       csv += values.join(',') + '\n';
     }
-    
+
     return csv;
   }
 
   /**
    * Convert data to PDF format
    */
-  private async convertToPdf(reportData: {
-    data: any[];
-    title: string;
-    description: string;
-    columns?: string[];
-  }, params: Record<string, any> = {}): Promise<Buffer> {
+  private async convertToPdf(
+    reportData: {
+      data: any[];
+      title: string;
+      description: string;
+      columns?: string[];
+    },
+    params: Record<string, any> = {},
+  ): Promise<Buffer> {
     const { data = [], title = 'Report', description = '' } = reportData;
-    
+
     if (!Array.isArray(data) || data.length === 0) {
       throw new Error('No data provided for PDF generation');
     }
-    
+
     // Prepare document definition with proper typing
     interface PdfDocumentDefinition {
       pageSize: string;
@@ -690,22 +783,25 @@ export class ReportsService {
         fontSize: number;
       };
     }
-    
+
     const docDefinition: PdfDocumentDefinition = {
       pageSize: 'A4',
       pageOrientation: 'portrait',
       content: [
         { text: title, style: 'header' },
         { text: description, style: 'subheader' },
-        { text: `Generated on: ${new Date().toLocaleString()}`, style: 'subheader' },
+        {
+          text: `Generated on: ${new Date().toLocaleString()}`,
+          style: 'subheader',
+        },
         { text: '\n' }, // Add some space
         {
           style: 'table',
           table: {
             headerRows: 1,
-            widths: Array.isArray(data[0]) ? 
-              new Array(data[0].length).fill('*') : 
-              Object.keys(data[0]).map(() => '*'),
+            widths: Array.isArray(data[0])
+              ? new Array(data[0].length).fill('*')
+              : Object.keys(data[0]).map(() => '*'),
             body: this.preparePdfTableData(data),
           },
           layout: 'lightHorizontalLines',
@@ -744,7 +840,7 @@ export class ReportsService {
     try {
       // Generate PDF
       const pdfDoc = pdfMake.createPdf(docDefinition);
-      
+
       // Return a promise that resolves with the PDF buffer
       return new Promise<Buffer>((resolve, reject) => {
         pdfDoc.getBuffer((buffer: Buffer) => {
@@ -776,11 +872,11 @@ export class ReportsService {
 
     // If data is an array of objects
     const headers = Object.keys(data[0]);
-    const rows = data.map(row => headers.map(header => row[header]));
-    
+    const rows = data.map((row) => headers.map((header) => row[header]));
+
     // Add header row with styling
     return [
-      headers.map(header => ({ text: header, style: 'tableHeader' })),
+      headers.map((header) => ({ text: header, style: 'tableHeader' })),
       ...rows,
     ];
   }
@@ -833,7 +929,7 @@ export class ReportsService {
     try {
       const now = new Date();
       let startDate: Date;
-      
+
       switch (period.toLowerCase()) {
         case 'day':
           startDate = startOfDay(now);
@@ -865,14 +961,15 @@ export class ReportsService {
       // Get comparison data (previous period)
       let comparisonStartDate: Date;
       let comparisonEndDate = startDate;
-      
+
       if (period === 'day') {
         comparisonStartDate = subDays(startDate, 1);
       } else if (period === 'week') {
         comparisonStartDate = subWeeks(startDate, 1);
       } else if (period === 'month') {
         comparisonStartDate = subMonths(startDate, 1);
-      } else { // year
+      } else {
+        // year
         comparisonStartDate = new Date(now.getFullYear() - 1, 0, 1);
         comparisonEndDate = new Date(now.getFullYear() - 1, 11, 31);
       }
@@ -890,12 +987,17 @@ export class ReportsService {
       `;
 
       // Calculate percentage change
-      const currentAmount = Number(revenueData[0]?.total_amount?.toString() || 0);
-      const previousAmount = Number(comparisonData[0]?.total_amount?.toString() || 0);
+      const currentAmount = Number(
+        revenueData[0]?.total_amount?.toString() || 0,
+      );
+      const previousAmount = Number(
+        comparisonData[0]?.total_amount?.toString() || 0,
+      );
       let percentageChange = 0;
-      
+
       if (previousAmount > 0) {
-        percentageChange = ((currentAmount - previousAmount) / previousAmount) * 100;
+        percentageChange =
+          ((currentAmount - previousAmount) / previousAmount) * 100;
       } else if (currentAmount > 0) {
         percentageChange = 100; // Infinite growth (from 0 to some value)
       }
@@ -915,31 +1017,42 @@ export class ReportsService {
         ORDER BY date ASC
       `;
 
-      const totalTransactions = Number(revenueData[0]?.total_count?.toString() || 0);
-      
+      const totalTransactions = Number(
+        revenueData[0]?.total_count?.toString() || 0,
+      );
+
       return {
         totalRevenue: currentAmount,
         currency: 'USD',
         period: period.toLowerCase(),
         transactionCount: totalTransactions,
-        averageTransactionValue: totalTransactions > 0 
-          ? currentAmount / totalTransactions 
-          : 0,
+        averageTransactionValue:
+          totalTransactions > 0 ? currentAmount / totalTransactions : 0,
         comparison: {
           percentageChange: parseFloat(percentageChange.toFixed(2)),
           isIncrease: percentageChange >= 0,
           previousPeriodAmount: previousAmount,
-          previousPeriod: this.getPreviousPeriodLabel(period)
+          previousPeriod: this.getPreviousPeriodLabel(period),
         },
-        breakdown: (Array.isArray(dailyBreakdown) ? dailyBreakdown : []).map((item) => ({
-          date: new Date(item.date).toISOString().split('T')[0],
-          amount: parseFloat(Number(item.amount || 0).toFixed(2)),
-          transactionCount: parseInt(item.transaction_count || '0', 10),
-          averageValue: parseFloat((Number(item.amount || 0) / (parseInt(item.transaction_count || '0', 10) || 1)).toFixed(2))
-        }))
+        breakdown: (Array.isArray(dailyBreakdown) ? dailyBreakdown : []).map(
+          (item) => ({
+            date: new Date(item.date).toISOString().split('T')[0],
+            amount: parseFloat(Number(item.amount || 0).toFixed(2)),
+            transactionCount: parseInt(item.transaction_count || '0', 10),
+            averageValue: parseFloat(
+              (
+                Number(item.amount || 0) /
+                (parseInt(item.transaction_count || '0', 10) || 1)
+              ).toFixed(2),
+            ),
+          }),
+        ),
       };
     } catch (error) {
-      this.logger.error(`Error getting revenue data: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error getting revenue data: ${error.message}`,
+        error.stack,
+      );
       throw new Error('Failed to fetch revenue data');
     }
   }
@@ -949,26 +1062,26 @@ export class ReportsService {
    */
   private async convertToExcel(reportData: any, params: any): Promise<Buffer> {
     const { data, title, description } = reportData;
-    
+
     // Create a new workbook and worksheet
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Report');
-    
+
     // Add title and description
     worksheet.addRow([title]);
     worksheet.addRow([description]);
     worksheet.addRow([`Generated on: ${new Date().toLocaleString()}`]);
     worksheet.addRow([]);
-    
+
     // Add data to worksheet
     if (data && data.length > 0) {
       // Add headers
-      const headers = Array.isArray(data[0]) ? 
-        data[0].map((_, i) => `Column ${i + 1}`) : 
-        Object.keys(data[0]);
-      
+      const headers = Array.isArray(data[0])
+        ? data[0].map((_, i) => `Column ${i + 1}`)
+        : Object.keys(data[0]);
+
       worksheet.addRow(headers);
-      
+
       // Style header row
       const headerRow = worksheet.getRow(5);
       headerRow.font = { bold: true };
@@ -977,34 +1090,34 @@ export class ReportsService {
         pattern: 'solid',
         fgColor: { argb: 'FFD3D3D3' },
       };
-      
+
       // Add data rows
-      const rows = Array.isArray(data[0]) ? 
-        data : 
-        data.map(row => Object.values(row));
-      
+      const rows = Array.isArray(data[0])
+        ? data
+        : data.map((row) => Object.values(row));
+
       worksheet.addRows(rows);
-      
+
       // Auto-fit columns
-      worksheet.columns.forEach(column => {
+      worksheet.columns.forEach((column) => {
         if (!column) return;
-        
+
         let maxLength = 0;
         if (column.eachCell) {
-          column.eachCell({ includeEmpty: true }, cell => {
+          column.eachCell({ includeEmpty: true }, (cell) => {
             const columnLength = cell?.value ? cell.value.toString().length : 0;
             if (columnLength > maxLength) {
               maxLength = columnLength;
             }
           });
         }
-        
+
         if (typeof column.width === 'number') {
           column.width = Math.min(Math.max(maxLength + 2, 10), 50);
         }
       });
     }
-    
+
     // Generate Excel file
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);

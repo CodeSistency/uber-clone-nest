@@ -43,4 +43,4 @@ import { NotificationsModule } from '../notifications/notifications.module';
     RefreshTokenStrategy,
   ],
 })
-export class AuthModule { }
+export class AuthModule {}

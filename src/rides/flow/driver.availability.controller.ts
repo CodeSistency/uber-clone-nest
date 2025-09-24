@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Put, Param, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -8,7 +17,7 @@ import {
   ApiParam,
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
-  ApiNotFoundResponse
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DriverGuard } from '../../drivers/guards/driver.guard';
@@ -52,27 +61,27 @@ export class DriverAvailabilityController {
 
     **⚠️ NOTA:** Si buscas cambiar el status de OTRO conductor (como admin), usa:
     \`PUT /api/driver/{driverId}/status\`
-    `
+    `,
   })
   @ApiBody({
     type: SetDriverAvailabilityDto,
     examples: {
-      'go_online': {
+      go_online: {
         summary: 'Ponerse en línea (disponible)',
         description: 'Conductor listo para recibir viajes',
-        value: { status: 'online' }
+        value: { status: 'online' },
       },
-      'go_offline': {
+      go_offline: {
         summary: 'Desconectarse',
         description: 'Conductor termina su turno',
-        value: { status: 'offline' }
+        value: { status: 'offline' },
       },
-      'take_break': {
+      take_break: {
         summary: 'Tomar descanso',
         description: 'Conductor ocupado temporalmente',
-        value: { status: 'busy' }
-      }
-    }
+        value: { status: 'busy' },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -88,12 +97,12 @@ export class DriverAvailabilityController {
               type: 'string',
               example: 'online',
               enum: ['online', 'offline', 'busy'],
-              description: 'Nuevo estado de disponibilidad'
-            }
-          }
-        }
-      }
-    }
+              description: 'Nuevo estado de disponibilidad',
+            },
+          },
+        },
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'Token JWT inválido o expirado',
@@ -101,9 +110,9 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Token inválido o expirado' }
-      }
-    }
+        message: { type: 'string', example: 'Token inválido o expirado' },
+      },
+    },
   })
   @ApiForbiddenResponse({
     description: 'Usuario no es un conductor registrado',
@@ -111,11 +120,14 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 403 },
-        message: { type: 'string', example: 'User is not a driver' }
-      }
-    }
+        message: { type: 'string', example: 'User is not a driver' },
+      },
+    },
   })
-  async setAvailability(@Body() body: SetDriverAvailabilityDto, @Req() req: any) {
+  async setAvailability(
+    @Body() body: SetDriverAvailabilityDto,
+    @Req() req: any,
+  ) {
     const driver = await this.prisma.driver.update({
       where: { id: Number(req.user.id) },
       data: { status: body.status },
@@ -144,7 +156,7 @@ export class DriverAvailabilityController {
     - El conductor debe estar autenticado con su token JWT
     - El sistema identifica automáticamente al conductor usando el token
     - **NO es necesario enviar el ID del conductor** (se obtiene del token)
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -160,12 +172,12 @@ export class DriverAvailabilityController {
               type: 'string',
               example: 'online',
               enum: ['online', 'offline', 'busy'],
-              description: 'Estado actual de disponibilidad'
-            }
-          }
-        }
-      }
-    }
+              description: 'Estado actual de disponibilidad',
+            },
+          },
+        },
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'Token JWT inválido o expirado',
@@ -173,9 +185,9 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Token inválido o expirado' }
-      }
-    }
+        message: { type: 'string', example: 'Token inválido o expirado' },
+      },
+    },
   })
   @ApiForbiddenResponse({
     description: 'Usuario no es un conductor registrado',
@@ -183,9 +195,9 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 403 },
-        message: { type: 'string', example: 'User is not a driver' }
-      }
-    }
+        message: { type: 'string', example: 'User is not a driver' },
+      },
+    },
   })
   async getAvailability(@Req() req: any) {
     const driver = await this.prisma.driver.findUnique({
@@ -224,34 +236,34 @@ export class DriverAvailabilityController {
     - \`online\`: Conductor disponible para viajes
     - \`offline\`: Conductor desconectado
     - \`busy\`: Conductor ocupado temporalmente
-    `
+    `,
   })
   @ApiParam({
     name: 'driverId',
     description: 'ID único del conductor a gestionar',
     example: 1,
     type: Number,
-    required: true
+    required: true,
   })
   @ApiBody({
     type: SetDriverAvailabilityDto,
     examples: {
-      'suspend_driver': {
+      suspend_driver: {
         summary: 'Suspender conductor (poner offline)',
         description: 'Cambiar conductor a offline por mantenimiento',
-        value: { status: 'offline' }
+        value: { status: 'offline' },
       },
-      'activate_driver': {
+      activate_driver: {
         summary: 'Activar conductor (poner online)',
         description: 'Reactivar conductor después de verificación',
-        value: { status: 'online' }
+        value: { status: 'online' },
       },
-      'busy_driver': {
+      busy_driver: {
         summary: 'Marcar conductor como ocupado',
         description: 'Poner conductor en estado busy temporalmente',
-        value: { status: 'busy' }
-      }
-    }
+        value: { status: 'busy' },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -267,21 +279,24 @@ export class DriverAvailabilityController {
               type: 'string',
               example: 'offline',
               enum: ['online', 'offline', 'busy'],
-              description: 'Nuevo estado de disponibilidad'
+              description: 'Nuevo estado de disponibilidad',
             },
             updatedBy: {
               type: 'object',
               properties: {
                 adminId: { type: 'number', example: 5 },
                 adminEmail: { type: 'string', example: 'admin@uberclone.com' },
-                timestamp: { type: 'string', format: 'date-time' }
-              }
-            }
-          }
+                timestamp: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
         },
-        message: { type: 'string', example: 'Driver status updated successfully' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'Driver status updated successfully',
+        },
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'Token JWT inválido o expirado',
@@ -289,9 +304,9 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Token inválido o expirado' }
-      }
-    }
+        message: { type: 'string', example: 'Token inválido o expirado' },
+      },
+    },
   })
   @ApiForbiddenResponse({
     description: 'No tienes permisos para gestionar conductores',
@@ -299,9 +314,12 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 403 },
-        message: { type: 'string', example: 'You do not have the required permissions' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'You do not have the required permissions',
+        },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: 'Conductor no encontrado',
@@ -309,16 +327,18 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Driver not found' }
-      }
-    }
+        message: { type: 'string', example: 'Driver not found' },
+      },
+    },
   })
   async adminSetDriverAvailability(
     @Param('driverId') driverId: string,
     @Body() body: SetDriverAvailabilityDto,
-    @Req() req: any
+    @Req() req: any,
   ) {
-    console.log(`👑 Admin setting driver availability: driverId=${driverId}, status=${body.status}`);
+    console.log(
+      `👑 Admin setting driver availability: driverId=${driverId}, status=${body.status}`,
+    );
 
     // Verificar que el driver existe
     const existingDriver = await this.prisma.driver.findUnique({
@@ -335,7 +355,9 @@ export class DriverAvailabilityController {
       data: { status: body.status },
     });
 
-    console.log(`✅ Driver ${driverId} status updated to ${body.status} by admin ${req.admin?.email}`);
+    console.log(
+      `✅ Driver ${driverId} status updated to ${body.status} by admin ${req.admin?.email}`,
+    );
 
     return {
       data: {
@@ -344,10 +366,10 @@ export class DriverAvailabilityController {
         updatedBy: {
           adminId: req.admin?.id,
           adminEmail: req.admin?.email,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       },
-      message: 'Driver status updated successfully'
+      message: 'Driver status updated successfully',
     };
   }
 
@@ -370,14 +392,14 @@ export class DriverAvailabilityController {
     - ID del conductor
     - Estado actual de disponibilidad
     - Información del conductor (opcional)
-    `
+    `,
   })
   @ApiParam({
     name: 'driverId',
     description: 'ID único del conductor a consultar',
     example: 1,
     type: Number,
-    required: true
+    required: true,
   })
   @ApiResponse({
     status: 200,
@@ -393,7 +415,7 @@ export class DriverAvailabilityController {
               type: 'string',
               example: 'online',
               enum: ['online', 'offline', 'busy'],
-              description: 'Estado actual de disponibilidad'
+              description: 'Estado actual de disponibilidad',
             },
             driver: {
               type: 'object',
@@ -402,13 +424,13 @@ export class DriverAvailabilityController {
                 lastName: { type: 'string', example: 'Rodriguez' },
                 carModel: { type: 'string', example: 'Toyota Camry' },
                 verificationStatus: { type: 'string', example: 'verified' },
-                canDoDeliveries: { type: 'boolean', example: true }
-              }
-            }
-          }
-        }
-      }
-    }
+                canDoDeliveries: { type: 'boolean', example: true },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'Token JWT inválido o expirado',
@@ -416,9 +438,9 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Token inválido o expirado' }
-      }
-    }
+        message: { type: 'string', example: 'Token inválido o expirado' },
+      },
+    },
   })
   @ApiForbiddenResponse({
     description: 'No tienes permisos para consultar conductores',
@@ -426,9 +448,12 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 403 },
-        message: { type: 'string', example: 'You do not have the required permissions' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'You do not have the required permissions',
+        },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: 'Conductor no encontrado',
@@ -436,9 +461,9 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Driver not found' }
-      }
-    }
+        message: { type: 'string', example: 'Driver not found' },
+      },
+    },
   })
   async adminGetDriverAvailability(@Param('driverId') driverId: string) {
     console.log(`👀 Admin checking driver availability: driverId=${driverId}`);
@@ -453,7 +478,7 @@ export class DriverAvailabilityController {
         carModel: true,
         verificationStatus: true,
         canDoDeliveries: true,
-        updatedAt: true
+        updatedAt: true,
       },
     });
 
@@ -473,9 +498,9 @@ export class DriverAvailabilityController {
           carModel: driver.carModel,
           verificationStatus: driver.verificationStatus,
           canDoDeliveries: driver.canDoDeliveries,
-          lastUpdated: driver.updatedAt
-        }
-      }
+          lastUpdated: driver.updatedAt,
+        },
+      },
     };
   }
 
@@ -509,17 +534,17 @@ export class DriverAvailabilityController {
     - El usuario podrá usar todos los endpoints de conductores
     - Podrá ver carreras disponibles
     - Podrá aceptar viajes
-    `
+    `,
   })
   @ApiBody({
     type: SetDriverAvailabilityDto,
     examples: {
-      'default': {
+      default: {
         summary: 'Convertir a conductor con configuración por defecto',
         description: 'Se creará un conductor con datos básicos de prueba',
-        value: { status: 'online' }
-      }
-    }
+        value: { status: 'online' },
+      },
+    },
   })
   @ApiResponse({
     status: 201,
@@ -534,11 +559,14 @@ export class DriverAvailabilityController {
             firstName: { type: 'string', example: 'Test' },
             lastName: { type: 'string', example: 'Driver' },
             status: { type: 'string', example: 'online' },
-            message: { type: 'string', example: 'User successfully converted to driver' }
-          }
-        }
-      }
-    }
+            message: {
+              type: 'string',
+              example: 'User successfully converted to driver',
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 409,
@@ -547,30 +575,30 @@ export class DriverAvailabilityController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'User is already a driver' }
-      }
-    }
+        message: { type: 'string', example: 'User is already a driver' },
+      },
+    },
   })
   async becomeDriver(@Req() req: any, @Body() body: SetDriverAvailabilityDto) {
     console.log(`🚗 Converting user ${req.user.id} to driver`);
 
     // Check if user is already a driver
     const existingDriver = await this.prisma.driver.findUnique({
-      where: { id: req.user.id }
+      where: { id: req.user.id },
     });
 
     if (existingDriver) {
       return {
         statusCode: 409,
         message: 'User is already a driver',
-        data: existingDriver
+        data: existingDriver,
       };
     }
 
     // Get user info
     const user = await this.prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { name: true }
+      select: { name: true },
     });
 
     if (!user) {
@@ -588,11 +616,13 @@ export class DriverAvailabilityController {
         carSeats: 4,
         status: body.status,
         verificationStatus: 'verified',
-        canDoDeliveries: true
-      }
+        canDoDeliveries: true,
+      },
     });
 
-    console.log(`✅ User ${req.user.id} converted to driver with ID: ${driver.id}`);
+    console.log(
+      `✅ User ${req.user.id} converted to driver with ID: ${driver.id}`,
+    );
 
     return {
       data: {
@@ -600,10 +630,8 @@ export class DriverAvailabilityController {
         firstName: driver.firstName,
         lastName: driver.lastName,
         status: driver.status,
-        message: 'User successfully converted to driver'
-      }
+        message: 'User successfully converted to driver',
+      },
     };
   }
 }
-
-

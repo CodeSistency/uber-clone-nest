@@ -14,8 +14,7 @@ export const RequirePermissions = (...permissions: Permission[]) =>
 /**
  * Decorator para rutas que requieren un rol específico
  */
-export const RequireRole = (role: string) =>
-  SetMetadata('required_role', role);
+export const RequireRole = (role: string) => SetMetadata('required_role', role);
 
 /**
  * Decorator para rutas que requieren cualquier permiso de una lista

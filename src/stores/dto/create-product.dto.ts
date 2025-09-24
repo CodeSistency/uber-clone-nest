@@ -1,11 +1,18 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber, Min, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsNumber,
+  Min,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class CreateProductDto {
   @ApiProperty({
     description: 'Product name',
-    example: 'Margherita Pizza'
+    example: 'Margherita Pizza',
   })
   @IsNotEmpty()
   @IsString()
@@ -14,7 +21,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Product description',
-    example: 'Classic pizza with tomato sauce, mozzarella, and basil'
+    example: 'Classic pizza with tomato sauce, mozzarella, and basil',
   })
   @IsOptional()
   @IsString()
@@ -22,7 +29,7 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: 'Product price',
-    example: 15.99
+    example: 15.99,
   })
   @IsNumber()
   @Transform(({ value }) => parseFloat(value))
@@ -31,7 +38,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Product image URL',
-    example: 'https://example.com/pizza.jpg'
+    example: 'https://example.com/pizza.jpg',
   })
   @IsOptional()
   @IsString()
@@ -39,7 +46,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Product category',
-    example: 'Pizza'
+    example: 'Pizza',
   })
   @IsOptional()
   @IsString()
@@ -47,7 +54,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Stock quantity',
-    example: 50
+    example: 50,
   })
   @IsOptional()
   @Transform(({ value }) => (value ? parseInt(value) : null))
@@ -56,7 +63,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Preparation time in minutes',
-    example: 15
+    example: 15,
   })
   @IsOptional()
   @Transform(({ value }) => (value ? parseInt(value) : null))

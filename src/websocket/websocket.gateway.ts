@@ -166,9 +166,7 @@ export class WebSocketGatewayClass
 
   // Driver status updates
   @SubscribeMessage('driver:status:update')
-  handleDriverStatusUpdate(
-    @MessageBody() data: DriverStatusUpdateDto,
-  ) {
+  handleDriverStatusUpdate(@MessageBody() data: DriverStatusUpdateDto) {
     const { driverId, status } = data;
 
     // Update driver status

@@ -36,7 +36,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Register/Create a new user' })
   @ApiBody({
     type: CreateUserDto,
-    description: 'User registration data'
+    description: 'User registration data',
   })
   @ApiResponse({
     status: 201,
@@ -58,14 +58,22 @@ export class UsersController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Missing required fields or invalid data' })
-  @ApiResponse({ status: 409, description: 'User already exists with this email' })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing required fields or invalid data',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'User already exists with this email',
+  })
   @ApiResponse({ status: 500, description: 'Database error' })
   async createUser(
     @Body() createUserDto: CreateUserDto,
   ): Promise<{ data: User[] }> {
     // Verificar si el usuario ya existe por email
-    const existingUser = await this.usersService.findUserByEmail(createUserDto.email);
+    const existingUser = await this.usersService.findUserByEmail(
+      createUserDto.email,
+    );
     if (existingUser) {
       throw new Error('User already exists with this email');
     }
@@ -91,9 +99,7 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({ status: 200, description: 'User found' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async findUserProfileById(
-    @Param('id') id: string,
-  ): Promise<User | null> {
+  async findUserProfileById(@Param('id') id: string): Promise<User | null> {
     return this.usersService.findUserByIdWithRelations(Number(id));
   }
 
@@ -119,11 +125,11 @@ export class UsersController {
     - lastLoginFrom/lastLoginTo: rango de fechas de último login
     - sortBy/sortOrder: ordenamiento personalizado
     - page/limit: paginación
-    `
+    `,
   })
   @ApiQuery({
     type: SearchUsersDto,
-    description: 'Parámetros de búsqueda y paginación'
+    description: 'Parámetros de búsqueda y paginación',
   })
   @ApiResponse({
     status: 200,
@@ -150,19 +156,19 @@ export class UsersController {
               wallet: {
                 type: 'object',
                 properties: {
-                  balance: { type: 'number' }
-                }
+                  balance: { type: 'number' },
+                },
               },
               _count: {
                 type: 'object',
                 properties: {
                   rides: { type: 'number' },
                   deliveryOrders: { type: 'number' },
-                  ratings: { type: 'number' }
-                }
-              }
-            }
-          }
+                  ratings: { type: 'number' },
+                },
+              },
+            },
+          },
         },
         pagination: {
           type: 'object',
@@ -172,37 +178,40 @@ export class UsersController {
             total: { type: 'number' },
             totalPages: { type: 'number' },
             hasNext: { type: 'boolean' },
-            hasPrev: { type: 'boolean' }
-          }
+            hasPrev: { type: 'boolean' },
+          },
         },
         filters: {
           type: 'object',
           properties: {
             applied: {
               type: 'array',
-              items: { type: 'string' }
+              items: { type: 'string' },
             },
-            searchTerm: { type: 'string' }
-          }
-        }
-      }
-    }
+            searchTerm: { type: 'string' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Parámetros de búsqueda inválidos' })
   @ApiResponse({ status: 500, description: 'Error interno del servidor' })
-  async searchUsers(@Query() searchDto: SearchUsersDto): Promise<PaginatedUsersResponseDto> {
+  async searchUsers(
+    @Query() searchDto: SearchUsersDto,
+  ): Promise<PaginatedUsersResponseDto> {
     return this.usersService.searchUsers(searchDto);
   }
 
   @Get('email/:email')
   @ApiOperation({
     summary: 'Buscar usuario específico por email',
-    description: 'Busca un usuario específico por su dirección de email completa'
+    description:
+      'Busca un usuario específico por su dirección de email completa',
   })
   @ApiParam({
     name: 'email',
     description: 'Dirección de email del usuario',
-    example: 'usuario@example.com'
+    example: 'usuario@example.com',
   })
   @ApiResponse({
     status: 200,
@@ -220,9 +229,9 @@ export class UsersController {
         isActive: { type: 'boolean' },
         userType: { type: 'string' },
         adminRole: { type: 'string' },
-        createdAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
   @ApiResponse({ status: 500, description: 'Error interno del servidor' })
@@ -233,17 +242,18 @@ export class UsersController {
   @Put(':id')
   @ApiOperation({
     summary: 'Update user information',
-    description: 'Update user profile information. Only provided fields will be updated.'
+    description:
+      'Update user profile information. Only provided fields will be updated.',
   })
   @ApiParam({
     name: 'id',
     description: 'User ID',
     example: '1',
-    type: Number
+    type: Number,
   })
   @ApiBody({
     type: UpdateUserDto,
-    description: 'User fields to update'
+    description: 'User fields to update',
   })
   @ApiResponse({
     status: 200,
@@ -255,14 +265,17 @@ export class UsersController {
         name: { type: 'string', example: 'Updated Name' },
         email: { type: 'string', example: 'updated.email@example.com' },
         created_at: { type: 'string', format: 'date-time' },
-        updated_at: { type: 'string', format: 'date-time' }
-      }
-    }
+        updated_at: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
-  async updateUser(@Param('id') id: string, @Body() data: UpdateUserDto): Promise<User> {
+  async updateUser(
+    @Param('id') id: string,
+    @Body() data: UpdateUserDto,
+  ): Promise<User> {
     return this.usersService.updateUser(Number(id), data);
   }
 
@@ -293,9 +306,7 @@ export class UsersController {
     status: 200,
     description: 'User orders retrieved successfully',
   })
-  async getUserDeliveryOrders(
-    @Param('id') id: string,
-  ): Promise<any[]> {
+  async getUserDeliveryOrders(@Param('id') id: string): Promise<any[]> {
     return this.usersService.getUserDeliveryOrders(Number(id));
   }
 
@@ -307,7 +318,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get current authenticated user',
-    description: 'Retrieves the current user information based on the JWT token'
+    description:
+      'Retrieves the current user information based on the JWT token',
   })
   @ApiResponse({
     status: 200,
@@ -337,7 +349,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Update current authenticated user',
-    description: 'Updates the current user profile information based on the JWT token'
+    description:
+      'Updates the current user profile information based on the JWT token',
   })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({
@@ -368,7 +381,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get current user rides',
-    description: 'Retrieves all rides for the current authenticated user'
+    description: 'Retrieves all rides for the current authenticated user',
   })
   @ApiResponse({
     status: 200,
@@ -383,7 +396,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get current user delivery orders',
-    description: 'Retrieves all delivery orders for the current authenticated user'
+    description:
+      'Retrieves all delivery orders for the current authenticated user',
   })
   @ApiResponse({
     status: 200,
@@ -401,7 +415,8 @@ export class UsersController {
   @Get('debug/token-generator')
   @ApiOperation({
     summary: 'Generate development test tokens',
-    description: 'Generate JWT tokens for development testing (REMOVE IN PRODUCTION)'
+    description:
+      'Generate JWT tokens for development testing (REMOVE IN PRODUCTION)',
   })
   @ApiResponse({
     status: 200,
@@ -418,12 +433,13 @@ export class UsersController {
     return {
       message: 'Development test tokens',
       tokens: tokens,
-      usage: 'Use any of these tokens in the Authorization header: Bearer <token>',
+      usage:
+        'Use any of these tokens in the Authorization header: Bearer <token>',
       example: {
         curl: 'curl -H "Authorization: Bearer dev-test-token" http://localhost:3000/api/user',
-        swagger: 'Click "Authorize" button and enter: Bearer dev-test-token'
+        swagger: 'Click "Authorize" button and enter: Bearer dev-test-token',
       },
-      note: 'These tokens only work in development mode and are handled by JwtAuthGuard'
+      note: 'These tokens only work in development mode and are handled by JwtAuthGuard',
     };
   }
 }

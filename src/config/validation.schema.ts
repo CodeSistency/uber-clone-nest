@@ -13,8 +13,7 @@ export const validationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
 
-  PORT: Joi.number()
-    .default(3000),
+  PORT: Joi.number().default(3000),
 
   // ===============================
   // DATABASE CONFIGURATION
@@ -23,42 +22,34 @@ export const validationSchema = Joi.object({
     .required()
     .pattern(/^postgresql:\/\/.+$/)
     .messages({
-      'string.pattern.base': 'DATABASE_URL debe ser una URL válida de PostgreSQL',
-      'any.required': 'DATABASE_URL es requerido'
+      'string.pattern.base':
+        'DATABASE_URL debe ser una URL válida de PostgreSQL',
+      'any.required': 'DATABASE_URL es requerido',
     }),
 
   // ===============================
   // FIREBASE CONFIGURATION (OPCIONAL)
   // ===============================
-  FIREBASE_PROJECT_ID: Joi.string()
-    .optional(),
+  FIREBASE_PROJECT_ID: Joi.string().optional(),
 
-  FIREBASE_SERVICE_ACCOUNT: Joi.string()
-    .optional(),
+  FIREBASE_SERVICE_ACCOUNT: Joi.string().optional(),
 
-  FIREBASE_STORAGE_BUCKET: Joi.string()
-    .optional(),
+  FIREBASE_STORAGE_BUCKET: Joi.string().optional(),
 
-  FIREBASE_MESSAGING_SENDER_ID: Joi.string()
-    .optional(),
+  FIREBASE_MESSAGING_SENDER_ID: Joi.string().optional(),
 
-  FIREBASE_APP_ID: Joi.string()
-    .optional(),
+  FIREBASE_APP_ID: Joi.string().optional(),
 
-  FIREBASE_MEASUREMENT_ID: Joi.string()
-    .optional(),
+  FIREBASE_MEASUREMENT_ID: Joi.string().optional(),
 
   // ===============================
   // TWILIO CONFIGURATION (OPCIONAL)
   // ===============================
-  TWILIO_ACCOUNT_SID: Joi.string()
-    .optional(),
+  TWILIO_ACCOUNT_SID: Joi.string().optional(),
 
-  TWILIO_AUTH_TOKEN: Joi.string()
-    .optional(),
+  TWILIO_AUTH_TOKEN: Joi.string().optional(),
 
-  TWILIO_PHONE_NUMBER: Joi.string()
-    .optional(),
+  TWILIO_PHONE_NUMBER: Joi.string().optional(),
 
   // ===============================
   // REDIS CONFIGURATION
@@ -67,7 +58,7 @@ export const validationSchema = Joi.object({
     .default('redis://localhost:6379')
     .pattern(/^redis:\/\/.+$/)
     .messages({
-      'string.pattern.base': 'REDIS_URL debe ser una URL válida de Redis'
+      'string.pattern.base': 'REDIS_URL debe ser una URL válida de Redis',
     }),
 
   // ===============================
@@ -77,67 +68,59 @@ export const validationSchema = Joi.object({
     .optional()
     .pattern(/^(sk_test_|sk_live_)[a-zA-Z0-9_-]+$/)
     .messages({
-      'string.pattern.base': 'STRIPE_SECRET_KEY debe comenzar con sk_test_ o sk_live_'
+      'string.pattern.base':
+        'STRIPE_SECRET_KEY debe comenzar con sk_test_ o sk_live_',
     }),
 
-  STRIPE_WEBHOOK_SECRET: Joi.string()
-    .optional(),
+  STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
 
   // ===============================
   // JWT CONFIGURATION
   // ===============================
-  JWT_SECRET: Joi.string()
-    .required()
-    .min(32)
-    .messages({
-      'string.min': 'JWT_SECRET debe tener al menos 32 caracteres',
-      'any.required': 'JWT_SECRET es requerido'
-    }),
+  JWT_SECRET: Joi.string().required().min(32).messages({
+    'string.min': 'JWT_SECRET debe tener al menos 32 caracteres',
+    'any.required': 'JWT_SECRET es requerido',
+  }),
 
   JWT_EXPIRES_IN: Joi.string()
     .default('1h')
     .pattern(/^\d+[smhd]$/)
     .messages({
-      'string.pattern.base': 'JWT_EXPIRES_IN debe tener formato como "1h", "30m", "7d"'
+      'string.pattern.base':
+        'JWT_EXPIRES_IN debe tener formato como "1h", "30m", "7d"',
     }),
 
   JWT_REFRESH_EXPIRES_IN: Joi.string()
     .default('7d')
     .pattern(/^\d+[smhd]$/)
     .messages({
-      'string.pattern.base': 'JWT_REFRESH_EXPIRES_IN debe tener formato como "1h", "30m", "7d"'
+      'string.pattern.base':
+        'JWT_REFRESH_EXPIRES_IN debe tener formato como "1h", "30m", "7d"',
     }),
 
   // ===============================
   // CORS CONFIGURATION
   // ===============================
   CORS_ORIGIN: Joi.alternatives()
-    .try(
-      Joi.string(),
-      Joi.array().items(Joi.string())
-    )
+    .try(Joi.string(), Joi.array().items(Joi.string()))
     .default('*'),
 
-  CORS_CREDENTIALS: Joi.boolean()
-    .default(true),
+  CORS_CREDENTIALS: Joi.boolean().default(true),
 
   // ===============================
   // SWAGGER CONFIGURATION
   // ===============================
-  SWAGGER_ENABLED: Joi.boolean()
-    .default(true),
+  SWAGGER_ENABLED: Joi.boolean().default(true),
 
-  SWAGGER_PATH: Joi.string()
-    .default('api'),
+  SWAGGER_PATH: Joi.string().default('api'),
 
-  SWAGGER_TITLE: Joi.string()
-    .default('Uber Clone API'),
+  SWAGGER_TITLE: Joi.string().default('Uber Clone API'),
 
-  SWAGGER_DESCRIPTION: Joi.string()
-    .default('API para aplicación de transporte compartido'),
+  SWAGGER_DESCRIPTION: Joi.string().default(
+    'API para aplicación de transporte compartido',
+  ),
 
-  SWAGGER_VERSION: Joi.string()
-    .default('1.0'),
+  SWAGGER_VERSION: Joi.string().default('1.0'),
 
   // ===============================
   // CLERK CONFIGURATION (OPCIONAL)
@@ -146,21 +129,23 @@ export const validationSchema = Joi.object({
     .optional()
     .pattern(/^(sk_test_|sk_live_)[a-zA-Z0-9_-]+$/)
     .messages({
-      'string.pattern.base': 'CLERK_SECRET_KEY debe comenzar con sk_test_ o sk_live_'
+      'string.pattern.base':
+        'CLERK_SECRET_KEY debe comenzar con sk_test_ o sk_live_',
     }),
 
   CLERK_PUBLISHABLE_KEY: Joi.string()
     .optional()
     .pattern(/^(pk_test_|pk_live_)[a-zA-Z0-9_-]+$/)
     .messages({
-      'string.pattern.base': 'CLERK_PUBLISHABLE_KEY debe comenzar con pk_test_ o pk_live_'
+      'string.pattern.base':
+        'CLERK_PUBLISHABLE_KEY debe comenzar con pk_test_ o pk_live_',
     }),
 
   CLERK_JWT_PUBLIC_KEY: Joi.string()
     .optional()
     .min(20) // Mínima longitud razonable para una clave
     .messages({
-      'string.min': 'CLERK_JWT_PUBLIC_KEY debe tener al menos 20 caracteres'
+      'string.min': 'CLERK_JWT_PUBLIC_KEY debe tener al menos 20 caracteres',
     }),
 
   CLERK_API_URL: Joi.string()
@@ -168,16 +153,12 @@ export const validationSchema = Joi.object({
     .default('https://api.clerk.com/v1')
     .pattern(/^https:\/\/.+$/)
     .messages({
-      'string.pattern.base': 'CLERK_API_URL debe ser una URL HTTPS válida'
+      'string.pattern.base': 'CLERK_API_URL debe ser una URL HTTPS válida',
     }),
 
-  CLERK_FRONTEND_API: Joi.string()
-    .optional()
-    .default('clerk.your-domain.com'),
+  CLERK_FRONTEND_API: Joi.string().optional().default('clerk.your-domain.com'),
 
-  CLERK_DOMAIN: Joi.string()
-    .optional()
-    .default('your-domain.com'),
+  CLERK_DOMAIN: Joi.string().optional().default('your-domain.com'),
 
   // ===============================
   // NOTIFICATION CONFIGURATION
@@ -188,7 +169,7 @@ export const validationSchema = Joi.object({
     .default(100)
     .messages({
       'number.min': 'NOTIFICATION_RATE_LIMIT_PER_HOUR debe ser mayor a 0',
-      'number.max': 'NOTIFICATION_RATE_LIMIT_PER_HOUR debe ser menor a 10000'
+      'number.max': 'NOTIFICATION_RATE_LIMIT_PER_HOUR debe ser menor a 10000',
     }),
 
   NOTIFICATION_RATE_LIMIT_PER_MINUTE: Joi.number()
@@ -197,11 +178,10 @@ export const validationSchema = Joi.object({
     .default(10)
     .messages({
       'number.min': 'NOTIFICATION_RATE_LIMIT_PER_MINUTE debe ser mayor a 0',
-      'number.max': 'NOTIFICATION_RATE_LIMIT_PER_MINUTE debe ser menor a 1000'
+      'number.max': 'NOTIFICATION_RATE_LIMIT_PER_MINUTE debe ser menor a 1000',
     }),
 
-  NOTIFICATION_ANALYTICS_ENABLED: Joi.boolean()
-    .default(true),
+  NOTIFICATION_ANALYTICS_ENABLED: Joi.boolean().default(true),
 
   NOTIFICATION_ANALYTICS_RETENTION_DAYS: Joi.number()
     .min(1)
@@ -209,6 +189,7 @@ export const validationSchema = Joi.object({
     .default(30)
     .messages({
       'number.min': 'NOTIFICATION_ANALYTICS_RETENTION_DAYS debe ser mayor a 0',
-      'number.max': 'NOTIFICATION_ANALYTICS_RETENTION_DAYS debe ser menor a 365'
+      'number.max':
+        'NOTIFICATION_ANALYTICS_RETENTION_DAYS debe ser menor a 365',
     }),
 });

@@ -6,7 +6,7 @@ export class ConfirmReferenceDto {
     description: 'Número de referencia bancaria de 20 dígitos',
     example: '12345678901234567890',
     minLength: 20,
-    maxLength: 20
+    maxLength: 20,
   })
   @IsNotEmpty()
   @IsString()
@@ -14,11 +14,12 @@ export class ConfirmReferenceDto {
   referenceNumber: string;
 
   @ApiProperty({
-    description: 'Código del banco venezolano (opcional, se infiere de la referencia si no se proporciona)',
+    description:
+      'Código del banco venezolano (opcional, se infiere de la referencia si no se proporciona)',
     example: '0102',
     minLength: 4,
     maxLength: 4,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()

@@ -14,7 +14,7 @@ export class CreatePromotionDto {
     description: 'Unique promotional code that users can enter',
     example: 'WELCOME10',
     minLength: 3,
-    maxLength: 20
+    maxLength: 20,
   })
   @IsNotEmpty()
   @IsString()
@@ -25,7 +25,7 @@ export class CreatePromotionDto {
     example: 10.0,
     minimum: 0,
     maximum: 100,
-    type: Number
+    type: Number,
   })
   @IsOptional()
   @Transform(({ value }) => (value ? parseFloat(value) : value))
@@ -36,7 +36,7 @@ export class CreatePromotionDto {
     description: 'Fixed discount amount in dollars',
     example: 5.0,
     minimum: 0,
-    type: Number
+    type: Number,
   })
   @IsOptional()
   @Transform(({ value }) => (value ? parseFloat(value) : value))
@@ -46,7 +46,7 @@ export class CreatePromotionDto {
   @ApiPropertyOptional({
     description: 'Expiration date of the promotion (ISO date string)',
     example: '2024-12-31',
-    format: 'date'
+    format: 'date',
   })
   @IsOptional()
   @IsDateString()
@@ -55,7 +55,7 @@ export class CreatePromotionDto {
   @ApiPropertyOptional({
     description: 'Whether the promotion is currently active',
     example: true,
-    default: true
+    default: true,
   })
   @IsOptional()
   @IsBoolean()

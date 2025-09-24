@@ -31,12 +31,12 @@ export class CartService {
           include: {
             product: {
               include: {
-                store: true
-              }
-            }
-          }
-        }
-      }
+                store: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!cart) {
@@ -47,12 +47,12 @@ export class CartService {
             include: {
               product: {
                 include: {
-                  store: true
-                }
-              }
-            }
-          }
-        }
+                  store: true,
+                },
+              },
+            },
+          },
+        },
       });
       this.logger.log(`Created new cart for user ${userId}`);
     }
@@ -61,12 +61,14 @@ export class CartService {
   }
 
   async addItem(userId: number, dto: AddCartItemDto) {
-    this.logger.log(`Adding item to cart for user ${userId}: product ${dto.productId}, quantity ${dto.quantity}`);
+    this.logger.log(
+      `Adding item to cart for user ${userId}: product ${dto.productId}, quantity ${dto.quantity}`,
+    );
 
     // Verify product exists and is available
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
-      include: { store: true }
+      include: { store: true },
     });
 
     if (!product) {
@@ -85,7 +87,9 @@ export class CartService {
     const cart = await this.getOrCreateCart(userId);
 
     // Check if item already exists in cart
-    const existingItem = cart.items.find(item => item.productId === dto.productId);
+    const existingItem = cart.items.find(
+      (item) => item.productId === dto.productId,
+    );
 
     if (existingItem) {
       // Update quantity
@@ -93,8 +97,8 @@ export class CartService {
         where: { id: existingItem.id },
         data: {
           quantity: existingItem.quantity + dto.quantity,
-          notes: dto.notes || existingItem.notes
-        }
+          notes: dto.notes || existingItem.notes,
+        },
       });
     } else {
       // Add new item
@@ -103,8 +107,8 @@ export class CartService {
           cartId: cart.id,
           productId: dto.productId,
           quantity: dto.quantity,
-          notes: dto.notes
-        }
+          notes: dto.notes,
+        },
       });
     }
 
@@ -113,27 +117,31 @@ export class CartService {
   }
 
   async removeItem(userId: number, dto: RemoveCartItemDto) {
-    this.logger.log(`Removing item from cart for user ${userId}: product ${dto.productId}`);
+    this.logger.log(
+      `Removing item from cart for user ${userId}: product ${dto.productId}`,
+    );
 
     const cart = await this.getOrCreateCart(userId);
-    const item = cart.items.find(item => item.productId === dto.productId);
+    const item = cart.items.find((item) => item.productId === dto.productId);
 
     if (!item) {
       throw new NotFoundException('Item not found in cart');
     }
 
     await this.prisma.cartItem.delete({
-      where: { id: item.id }
+      where: { id: item.id },
     });
 
     return this.getOrCreateCart(userId);
   }
 
   async updateItem(userId: number, dto: UpdateCartItemDto) {
-    this.logger.log(`Updating cart item for user ${userId}: product ${dto.productId}, quantity ${dto.quantity}`);
+    this.logger.log(
+      `Updating cart item for user ${userId}: product ${dto.productId}, quantity ${dto.quantity}`,
+    );
 
     const cart = await this.getOrCreateCart(userId);
-    const item = cart.items.find(item => item.productId === dto.productId);
+    const item = cart.items.find((item) => item.productId === dto.productId);
 
     if (!item) {
       throw new NotFoundException('Item not found in cart');
@@ -141,7 +149,7 @@ export class CartService {
 
     // Verify stock availability
     const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId }
+      where: { id: dto.productId },
     });
 
     if (!product || product.stock < dto.quantity) {
@@ -152,8 +160,8 @@ export class CartService {
       where: { id: item.id },
       data: {
         quantity: dto.quantity,
-        notes: dto.notes
-      }
+        notes: dto.notes,
+      },
     });
 
     return this.getOrCreateCart(userId);
@@ -163,7 +171,7 @@ export class CartService {
     const cart = await this.getOrCreateCart(userId);
 
     const summary = {
-      items: cart.items.map(item => ({
+      items: cart.items.map((item) => ({
         id: item.id,
         productId: item.productId,
         productName: item.product.name,
@@ -173,11 +181,14 @@ export class CartService {
         price: Number(item.product.price),
         quantity: item.quantity,
         notes: item.notes,
-        subtotal: Number(item.product.price) * item.quantity
+        subtotal: Number(item.product.price) * item.quantity,
       })),
       totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
-      totalPrice: cart.items.reduce((sum, item) => sum + (Number(item.product.price) * item.quantity), 0),
-      stores: [...new Set(cart.items.map(item => item.product.storeId))]
+      totalPrice: cart.items.reduce(
+        (sum, item) => sum + Number(item.product.price) * item.quantity,
+        0,
+      ),
+      stores: [...new Set(cart.items.map((item) => item.product.storeId))],
     };
 
     return summary;
@@ -189,7 +200,7 @@ export class CartService {
     const cart = await this.getOrCreateCart(userId);
 
     await this.prisma.cartItem.deleteMany({
-      where: { cartId: cart.id }
+      where: { cartId: cart.id },
     });
 
     return this.getOrCreateCart(userId);
@@ -200,7 +211,9 @@ export class CartService {
     return cart.items.reduce((sum, item) => sum + item.quantity, 0);
   }
 
-  async validateCartForOrder(userId: number): Promise<{ valid: boolean; errors: string[] }> {
+  async validateCartForOrder(
+    userId: number,
+  ): Promise<{ valid: boolean; errors: string[] }> {
     const cart = await this.getOrCreateCart(userId);
     const errors: string[] = [];
 
@@ -212,7 +225,7 @@ export class CartService {
     // Check stock availability
     for (const item of cart.items) {
       const product = await this.prisma.product.findUnique({
-        where: { id: item.productId }
+        where: { id: item.productId },
       });
 
       if (!product) {
@@ -220,7 +233,9 @@ export class CartService {
       } else if (!product.isAvailable) {
         errors.push(`Product ${product.name} is no longer available`);
       } else if (product.stock < item.quantity) {
-        errors.push(`Insufficient stock for ${product.name}. Available: ${product.stock}`);
+        errors.push(
+          `Insufficient stock for ${product.name}. Available: ${product.stock}`,
+        );
       }
     }
 
@@ -233,7 +248,9 @@ export class CartService {
     // Validate cart
     const validation = await this.validateCartForOrder(userId);
     if (!validation.valid) {
-      throw new Error(`Cart validation failed: ${validation.errors.join(', ')}`);
+      throw new Error(
+        `Cart validation failed: ${validation.errors.join(', ')}`,
+      );
     }
 
     // Create delivery order with cart items
@@ -244,10 +261,13 @@ export class CartService {
         deliveryAddress: orderData.deliveryAddress,
         deliveryLatitude: orderData.deliveryLatitude,
         deliveryLongitude: orderData.deliveryLongitude,
-        totalPrice: cart.items.reduce((sum, item) => sum + (Number(item.product.price) * item.quantity), 0),
-        deliveryFee: orderData.deliveryFee || 5.00,
-        status: 'pending'
-      }
+        totalPrice: cart.items.reduce(
+          (sum, item) => sum + Number(item.product.price) * item.quantity,
+          0,
+        ),
+        deliveryFee: orderData.deliveryFee || 5.0,
+        status: 'pending',
+      },
     });
 
     // Create order items from cart
@@ -257,8 +277,8 @@ export class CartService {
           orderId: order.orderId,
           productId: item.productId,
           quantity: item.quantity,
-          priceAtPurchase: item.product.price
-        }
+          priceAtPurchase: item.product.price,
+        },
       });
     }
 

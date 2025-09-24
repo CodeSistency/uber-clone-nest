@@ -23,7 +23,8 @@ export class AdminManagementService {
    * @returns El administrador creado
    */
   async createAdmin(createAdminDto: CreateAdminDto) {
-    const { email, password, name, adminRole, adminPermissions } = createAdminDto;
+    const { email, password, name, adminRole, adminPermissions } =
+      createAdminDto;
 
     // Verificar si el correo ya está en uso
     const existingUser = await this.prisma.user.findUnique({
@@ -156,7 +157,10 @@ export class AdminManagementService {
 
     // Si se está actualizando la contraseña, hashearla
     if (updateAdminDto.password) {
-      updateData.password = await bcrypt.hash(updateAdminDto.password, this.SALT_ROUNDS);
+      updateData.password = await bcrypt.hash(
+        updateAdminDto.password,
+        this.SALT_ROUNDS,
+      );
     }
 
     // Actualizar el administrador

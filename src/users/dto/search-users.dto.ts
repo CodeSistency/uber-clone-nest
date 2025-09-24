@@ -161,24 +161,10 @@ export class SearchUsersDto {
   @ApiPropertyOptional({
     description: 'Campo por el cual ordenar',
     example: 'createdAt',
-    enum: [
-      'id',
-      'name',
-      'email',
-      'createdAt',
-      'updatedAt',
-      'lastLogin',
-    ],
+    enum: ['id', 'name', 'email', 'createdAt', 'updatedAt', 'lastLogin'],
   })
   @IsOptional()
-  @IsEnum([
-    'id',
-    'name',
-    'email',
-    'createdAt',
-    'updatedAt',
-    'lastLogin',
-  ])
+  @IsEnum(['id', 'name', 'email', 'createdAt', 'updatedAt', 'lastLogin'])
   sortBy?: 'id' | 'name' | 'email' | 'createdAt' | 'updatedAt' | 'lastLogin';
 
   @ApiPropertyOptional({

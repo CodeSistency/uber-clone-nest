@@ -49,7 +49,11 @@ export class ScheduleRideDto {
   @IsNumber()
   tier_id: number;
 
-  @ApiProperty({ example: 1, description: 'Tipo de vehículo solicitado (1=Carro, 2=Moto, 3=Bicicleta)', required: false })
+  @ApiProperty({
+    example: 1,
+    description: 'Tipo de vehículo solicitado (1=Carro, 2=Moto, 3=Bicicleta)',
+    required: false,
+  })
   @Transform(({ value }) => (value ? parseInt(value) : null))
   @IsNumber()
   vehicle_type_id?: number;

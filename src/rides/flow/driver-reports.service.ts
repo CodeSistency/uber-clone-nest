@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
-import { NotificationType, NotificationChannel } from '../../notifications/interfaces/notification.interface';
+import {
+  NotificationType,
+  NotificationChannel,
+} from '../../notifications/interfaces/notification.interface';
 
 export interface IssueReport {
   type: 'traffic_jam' | 'breakdown' | 'accident' | 'passenger_issue' | 'other';
@@ -42,14 +45,16 @@ export class DriverReportsService {
   async reportIssue(
     rideId: number,
     driverId: number,
-    report: IssueReport
+    report: IssueReport,
   ): Promise<ReportResponse> {
-    this.logger.log(`🔔 Conductor ${driverId} reportando problema en viaje ${rideId}: ${report.type}`);
+    this.logger.log(
+      `🔔 Conductor ${driverId} reportando problema en viaje ${rideId}: ${report.type}`,
+    );
 
     // Verificar que el viaje existe y pertenece al conductor
     const ride = await this.prisma.ride.findUnique({
       where: { rideId },
-      include: { user: true }
+      include: { user: true },
     });
 
     if (!ride) {
@@ -77,8 +82,8 @@ export class DriverReportsService {
         estimatedDelay: report.estimatedDelay,
         requiresCancellation: report.requiresCancellation || false,
         status: 'reported',
-        reportedAt: new Date()
-      }
+        reportedAt: new Date(),
+      },
     });
 
     // Notificar al administrador/soporte
@@ -91,7 +96,9 @@ export class DriverReportsService {
 
     // Si requiere cancelación, marcar para procesamiento
     if (report.requiresCancellation) {
-      this.logger.log(`⚠️ Reporte requiere cancelación automática para viaje ${rideId}`);
+      this.logger.log(
+        `⚠️ Reporte requiere cancelación automática para viaje ${rideId}`,
+      );
       // Aquí podríamos disparar un proceso automático de cancelación
     }
 
@@ -102,9 +109,10 @@ export class DriverReportsService {
       severity: report.severity,
       status: 'reported',
       adminNotified: true,
-      passengerNotified: report.severity === 'high' || report.requiresCancellation || false,
+      passengerNotified:
+        report.severity === 'high' || report.requiresCancellation || false,
       requiresCancellation: report.requiresCancellation || false,
-      createdAt: reportRecord.reportedAt
+      createdAt: reportRecord.reportedAt,
     };
   }
 
@@ -120,15 +128,15 @@ export class DriverReportsService {
             rideId: true,
             status: true,
             originAddress: true,
-            destinationAddress: true
-          }
-        }
+            destinationAddress: true,
+          },
+        },
       },
       orderBy: { reportedAt: 'desc' },
-      take: limit
+      take: limit,
     });
 
-    return reports.map(report => ({
+    return reports.map((report) => ({
       reportId: report.id,
       rideId: report.rideId,
       type: report.reportType,
@@ -139,7 +147,7 @@ export class DriverReportsService {
       estimatedDelay: report.estimatedDelay,
       reportedAt: report.reportedAt,
       resolvedAt: report.resolvedAt,
-      ride: report.ride
+      ride: report.ride,
     }));
   }
 
@@ -149,7 +157,7 @@ export class DriverReportsService {
   async getRideReports(rideId: number) {
     const reports = await this.prisma.driverReport.findMany({
       where: { rideId },
-      orderBy: { reportedAt: 'desc' }
+      orderBy: { reportedAt: 'desc' },
     });
 
     return reports;
@@ -158,10 +166,14 @@ export class DriverReportsService {
   /**
    * Actualizar estado de un reporte (para administradores)
    */
-  async updateReportStatus(reportId: number, status: 'acknowledged' | 'resolved', notes?: string) {
+  async updateReportStatus(
+    reportId: number,
+    status: 'acknowledged' | 'resolved',
+    notes?: string,
+  ) {
     const report = await this.prisma.driverReport.findUnique({
       where: { id: reportId },
-      include: { ride: { include: { user: true, driver: true } } }
+      include: { ride: { include: { user: true, driver: true } } },
     });
 
     if (!report) {
@@ -173,8 +185,8 @@ export class DriverReportsService {
       data: {
         status,
         resolvedAt: status === 'resolved' ? new Date() : null,
-        adminNotes: notes
-      }
+        adminNotes: notes,
+      },
     });
 
     // Notificar al conductor sobre la resolución
@@ -184,7 +196,7 @@ export class DriverReportsService {
         type: NotificationType.DRIVER_MESSAGE,
         title: 'Reporte Resuelto',
         message: `Tu reporte sobre "${report.description}" ha sido resuelto.`,
-        data: { reportId, rideId: report.rideId }
+        data: { reportId, rideId: report.rideId },
       });
     }
 
@@ -223,11 +235,13 @@ Requiere cancelación: ${report.requiresCancellation}`);
         break;
       case 'breakdown':
         title = 'Problema con el Vehículo';
-        message = 'Tu conductor reporta un problema con el vehículo. Estamos coordinando una solución.';
+        message =
+          'Tu conductor reporta un problema con el vehículo. Estamos coordinando una solución.';
         break;
       case 'accident':
         title = 'Incidente en Ruta';
-        message = 'Ha ocurrido un incidente en la ruta. Tu conductor está coordinando con las autoridades.';
+        message =
+          'Ha ocurrido un incidente en la ruta. Tu conductor está coordinando con las autoridades.';
         break;
       default:
         title = 'Actualización del Viaje';
@@ -236,7 +250,8 @@ Requiere cancelación: ${report.requiresCancellation}`);
 
     // Agregar información adicional si requiere cancelación
     if (report.requiresCancellation) {
-      message += ' El viaje podría necesitar cancelarse. Te mantendremos informado.';
+      message +=
+        ' El viaje podría necesitar cancelarse. Te mantendremos informado.';
     }
 
     await this.notifications.sendNotification({
@@ -249,9 +264,9 @@ Requiere cancelación: ${report.requiresCancellation}`);
         reportType: report.reportType,
         severity: report.severity,
         estimatedDelay: report.estimatedDelay,
-        requiresCancellation: report.requiresCancellation
+        requiresCancellation: report.requiresCancellation,
       },
-      channels: [NotificationChannel.PUSH]
+      channels: [NotificationChannel.PUSH],
     });
   }
 

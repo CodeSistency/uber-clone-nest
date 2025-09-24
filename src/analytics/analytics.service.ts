@@ -6,7 +6,10 @@ import { StoreAnalytics } from './dto/store-analytics.dto';
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
-  async getStoreAnalytics(storeId: number, ownerId: number): Promise<StoreAnalytics> {
+  async getStoreAnalytics(
+    storeId: number,
+    ownerId: number,
+  ): Promise<StoreAnalytics> {
     // Verify store ownership
     const store = await this.prisma.store.findUnique({
       where: { id: storeId },
@@ -37,7 +40,10 @@ export class AnalyticsService {
     });
 
     // Calculate basic metrics
-    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.totalPrice), 0);
+    const totalRevenue = orders.reduce(
+      (sum, order) => sum + Number(order.totalPrice),
+      0,
+    );
     const ordersCount = orders.length;
     const averageOrderValue = ordersCount > 0 ? totalRevenue / ordersCount : 0;
 
@@ -52,16 +58,19 @@ export class AnalyticsService {
     });
 
     // Process order items for product sales
-    orders.forEach(order => {
-      order.orderItems.forEach(item => {
-        const existing = productSales.get(item.productId) || { name: item.product.name, sold: 0 };
+    orders.forEach((order) => {
+      order.orderItems.forEach((item) => {
+        const existing = productSales.get(item.productId) || {
+          name: item.product.name,
+          sold: 0,
+        };
         existing.sold += item.quantity;
         productSales.set(item.productId, existing);
       });
     });
 
     // Get low stock products
-    products.forEach(product => {
+    products.forEach((product) => {
       if (product.stock !== null && product.stock <= 5) {
         lowStockProducts.push({
           id: product.id,
@@ -87,9 +96,11 @@ export class AnalyticsService {
       select: { ratingValue: true },
     });
 
-    const customerSatisfaction = ratings.length > 0
-      ? ratings.reduce((sum, rating) => sum + rating.ratingValue, 0) / ratings.length
-      : 0;
+    const customerSatisfaction =
+      ratings.length > 0
+        ? ratings.reduce((sum, rating) => sum + rating.ratingValue, 0) /
+          ratings.length
+        : 0;
 
     // Revenue by day (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -159,12 +170,16 @@ export class AnalyticsService {
     });
 
     const totalDeliveries = deliveries.length;
-    const totalEarnings = deliveries.reduce((sum, delivery) =>
-      sum + Number(delivery.deliveryFee) + Number(delivery.tip), 0
+    const totalEarnings = deliveries.reduce(
+      (sum, delivery) =>
+        sum + Number(delivery.deliveryFee) + Number(delivery.tip),
+      0,
     );
-    const averageTip = deliveries.length > 0
-      ? deliveries.reduce((sum, delivery) => sum + Number(delivery.tip), 0) / deliveries.length
-      : 0;
+    const averageTip =
+      deliveries.length > 0
+        ? deliveries.reduce((sum, delivery) => sum + Number(delivery.tip), 0) /
+          deliveries.length
+        : 0;
 
     // Ratings
     const ratings = await this.prisma.rating.findMany({
@@ -175,13 +190,15 @@ export class AnalyticsService {
       select: { ratingValue: true },
     });
 
-    const averageRating = ratings.length > 0
-      ? ratings.reduce((sum, rating) => sum + rating.ratingValue, 0) / ratings.length
-      : 0;
+    const averageRating =
+      ratings.length > 0
+        ? ratings.reduce((sum, rating) => sum + rating.ratingValue, 0) /
+          ratings.length
+        : 0;
 
-    const ratingDistribution = [1, 2, 3, 4, 5].map(stars => ({
+    const ratingDistribution = [1, 2, 3, 4, 5].map((stars) => ({
       stars,
-      count: ratings.filter(r => r.ratingValue === stars).length,
+      count: ratings.filter((r) => r.ratingValue === stars).length,
     }));
 
     // Earnings by day (last 30 days)

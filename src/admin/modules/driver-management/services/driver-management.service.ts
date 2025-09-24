@@ -96,7 +96,8 @@ export class DriverManagementService {
 
     // Apply verification status filter
     if (verificationStatus && verificationStatus !== 'all') {
-      where.verificationStatus = verificationStatus.toUpperCase() as VerificationStatus;
+      where.verificationStatus =
+        verificationStatus.toUpperCase() as VerificationStatus;
     }
 
     try {
@@ -109,41 +110,47 @@ export class DriverManagementService {
       });
 
       // Then get the full driver details with documents
-      const drivers = await Promise.all(driverIds.map(async ({ id }) => {
-        return await this.getDriverById(id);
-      }));
+      const drivers = await Promise.all(
+        driverIds.map(async ({ id }) => {
+          return await this.getDriverById(id);
+        }),
+      );
 
       // Get counts for each driver
-      const driversWithCounts = await Promise.all(drivers.map(async (driver) => {
-        const [ridesCount, documentsCount] = await Promise.all([
-          this.prisma.ride.count({ where: { driverId: driver.id } }),
-          this.prisma.driverDocument.count({ where: { driverId: driver.id } }),
-        ]);
+      const driversWithCounts = await Promise.all(
+        drivers.map(async (driver) => {
+          const [ridesCount, documentsCount] = await Promise.all([
+            this.prisma.ride.count({ where: { driverId: driver.id } }),
+            this.prisma.driverDocument.count({
+              where: { driverId: driver.id },
+            }),
+          ]);
 
-        return {
-          ...driver,
-          _count: {
-            rides: ridesCount,
-            documents: documentsCount,
-          }
-        };
-      }));
+          return {
+            ...driver,
+            _count: {
+              rides: ridesCount,
+              documents: documentsCount,
+            },
+          };
+        }),
+      );
 
       // Get the total count for pagination
       const total = await this.prisma.driver.count({ where });
 
       // Get user details for the filtered drivers
       const userIds = drivers
-        .map(d => {
+        .map((d) => {
           const driverWithUser = d as any;
           return driverWithUser.user?.id;
         })
         .filter((id): id is number => id !== undefined);
 
       const users = await this.prisma.user.findMany({
-        where: { 
+        where: {
           id: { in: userIds },
-          userType: 'driver' 
+          userType: 'driver',
         },
         select: {
           id: true,
@@ -157,19 +164,19 @@ export class DriverManagementService {
       });
 
       // Create a map of user ID to user data
-      const userMap = new Map(users.map(user => [user.id, user]));
+      const userMap = new Map(users.map((user) => [user.id, user]));
 
       // Combine driver and user data
-      const driversWithUsers = drivers.map(driver => {
+      const driversWithUsers = drivers.map((driver) => {
         const driverWithUser = driver as any;
         return {
           ...driverWithUser,
-          user: userMap.get(driverWithUser.userId) || null
+          user: userMap.get(driverWithUser.userId) || null,
         };
       });
 
       // Apply search and status filters
-      const filteredDrivers = driversWithUsers.filter(driver => {
+      const filteredDrivers = driversWithUsers.filter((driver) => {
         const user = driver.user;
         if (!user) return false;
 
@@ -185,11 +192,11 @@ export class DriverManagementService {
         // Apply status filter if provided
         if (status && status !== 'all') {
           if (status === 'suspended') {
-            return (driver as any).isSuspended === true;
+            return driver.isSuspended === true;
           } else if (status === 'active') {
-            return user.isActive === true && (driver as any).isSuspended !== true;
+            return user.isActive === true && driver.isSuspended !== true;
           } else if (status === 'inactive') {
-            return user.isActive === false && (driver as any).isSuspended !== true;
+            return user.isActive === false && driver.isSuspended !== true;
           }
         }
 
@@ -198,11 +205,19 @@ export class DriverManagementService {
 
       // Format the response
       const formattedDrivers = filteredDrivers
-        .filter((driver): driver is typeof driver & { user: NonNullable<typeof driver.user> } => !!driver.user)
-        .map(driver => {
-          const [firstName, ...lastNameParts] = (driver.user.name || '').split(' ');
+        .filter(
+          (
+            driver,
+          ): driver is typeof driver & {
+            user: NonNullable<typeof driver.user>;
+          } => !!driver.user,
+        )
+        .map((driver) => {
+          const [firstName, ...lastNameParts] = (driver.user.name || '').split(
+            ' ',
+          );
           const lastName = lastNameParts.join(' ');
-          
+
           return {
             id: driver.id,
             userId: driver.user.id,
@@ -210,27 +225,32 @@ export class DriverManagementService {
             lastName: lastName || '',
             email: driver.user.email || '',
             phone: driver.user.phone || '',
-            status: (driver as any).isSuspended ? 'suspended' : driver.user.isActive ? 'active' : 'inactive',
-            isOnline: (driver as any).isOnline || false,
-            lastActive: (driver as any).lastActive || null,
-            profileImageUrl: (driver as any).profileImageUrl || null,
-            carImageUrl: (driver as any).carImageUrl || null,
-            carModel: (driver as any).carModel || null,
-            licensePlate: (driver as any).licensePlate || null,
+            status: driver.isSuspended
+              ? 'suspended'
+              : driver.user.isActive
+                ? 'active'
+                : 'inactive',
+            isOnline: driver.isOnline || false,
+            lastActive: driver.lastActive || null,
+            profileImageUrl: driver.profileImageUrl || null,
+            carImageUrl: driver.carImageUrl || null,
+            carModel: driver.carModel || null,
+            licensePlate: driver.licensePlate || null,
             rating: 0, // Will be calculated separately
-            totalRides: (driver as any)._count?.rides || 0,
+            totalRides: driver._count?.rides || 0,
             totalEarnings: 0, // Will be calculated separately
-            documents: ((driver as any).documents || []).map((doc: any) => ({
+            documents: (driver.documents || []).map((doc: any) => ({
               id: doc.id,
               type: doc.documentType,
               status: doc.verificationStatus,
               url: doc.documentUrl,
               uploadedAt: doc.uploadedAt,
-              driverId: doc.driverId
+              driverId: doc.driverId,
             })),
-            verificationStatus: ((driver as any).verificationStatus || '').toLowerCase() || null,
-            verifiedAt: (driver as any).verifiedAt || null,
-            verificationNotes: (driver as any).verificationNotes || null,
+            verificationStatus:
+              (driver.verificationStatus || '').toLowerCase() || null,
+            verifiedAt: driver.verifiedAt || null,
+            verificationNotes: driver.verificationNotes || null,
             createdAt: driver.user.createdAt,
             updatedAt: driver.user.updatedAt,
           };
@@ -259,7 +279,7 @@ export class DriverManagementService {
    */
   async getDriverById(id: number) {
     // Get driver details with documents
-    const driver = await this.prisma.driver.findUnique({
+    const driver = (await this.prisma.driver.findUnique({
       where: { id },
       include: {
         documents: {
@@ -269,16 +289,16 @@ export class DriverManagementService {
             documentUrl: true,
             uploadedAt: true,
             verificationStatus: true,
-            driverId: true
+            driverId: true,
           },
         },
       },
-    }) as unknown as DriverWithUser;
-    
+    })) as unknown as DriverWithUser;
+
     if (!driver) {
       throw new NotFoundException(`Driver with ID ${id} not found`);
     }
-    
+
     // Get user details
     const user = await this.prisma.user.findUnique({
       where: { id: driver.userId },
@@ -291,18 +311,18 @@ export class DriverManagementService {
         updatedAt: true,
       },
     });
-    
+
     if (!user) {
       throw new NotFoundException(`User not found for driver ID ${id}`);
     }
-    
+
     // Combine driver and user data
     const driverWithUser = {
       ...driver,
       user: {
         ...user,
         isActive: user.isActive ?? false,
-      }
+      },
     };
 
     // Calculate average rating
@@ -314,9 +334,9 @@ export class DriverManagementService {
 
     // Calculate total earnings from completed rides
     const earnings = await this.prisma.ride.aggregate({
-      where: { 
-        driverId: id, 
-        paymentStatus: 'COMPLETED' 
+      where: {
+        driverId: id,
+        paymentStatus: 'COMPLETED',
       },
       _sum: { farePrice: true },
     });
@@ -350,23 +370,29 @@ export class DriverManagementService {
    * @param notes Optional notes about the verification
    * @returns Updated driver verification information
    */
-  async updateDriverVerification(id: number, verificationStatus: string, notes?: string) {
+  async updateDriverVerification(
+    id: number,
+    verificationStatus: string,
+    notes?: string,
+  ) {
     // First get the driver with user data using a raw query to avoid type issues
-    const driverData = await this.prisma.$queryRaw<Array<{
-      id: number;
-      status: string;
-      userId: number;
-      verificationStatus: string | null;
-      user: {
+    const driverData = await this.prisma.$queryRaw<
+      Array<{
         id: number;
-        isActive: boolean;
-        name: string | null;
-        email: string;
-        phone: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-      } | null;
-    }>>`
+        status: string;
+        userId: number;
+        verificationStatus: string | null;
+        user: {
+          id: number;
+          isActive: boolean;
+          name: string | null;
+          email: string;
+          phone: string | null;
+          createdAt: Date;
+          updatedAt: Date;
+        } | null;
+      }>
+    >`
       SELECT 
         d.id, 
         d.status, 
@@ -415,12 +441,14 @@ export class DriverManagementService {
           },
         }),
         // Update user's active status if verification is successful and user exists
-        ...(driver.user ? [
-          this.prisma.user.update({
-            where: { id: driver.user.id },
-            data: { isActive: userActiveStatus },
-          })
-        ] : []),
+        ...(driver.user
+          ? [
+              this.prisma.user.update({
+                where: { id: driver.user.id },
+                data: { isActive: userActiveStatus },
+              }),
+            ]
+          : []),
       ]);
 
       this.logger.log(
@@ -439,7 +467,10 @@ export class DriverManagementService {
         },
       };
     } catch (error) {
-      this.logger.error(`Failed to update driver verification status: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update driver verification status: ${error.message}`,
+        error.stack,
+      );
       throw new Error('Failed to update driver verification status');
     }
   }

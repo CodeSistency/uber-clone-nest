@@ -95,15 +95,8 @@ export class RideManagementService {
    * @returns List of rides and pagination info
    */
   async getRides(options: GetRidesOptions) {
-    const {
-      page,
-      limit,
-      paymentStatus,
-      driverId,
-      userId,
-      dateFrom,
-      dateTo,
-    } = options;
+    const { page, limit, paymentStatus, driverId, userId, dateFrom, dateTo } =
+      options;
     const skip = (page - 1) * limit;
 
     // Build the where clause for filtering
@@ -203,14 +196,16 @@ export class RideManagementService {
         scheduledFor: ride.scheduledFor,
         createdAt: ride.createdAt,
         user: ride.user,
-        driver: ride.driver ? {
-          id: ride.driver.id,
-          name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
-          carModel: ride.driver.carModel || '',
-          licensePlate: ride.driver.licensePlate || '',
-          profileImageUrl: ride.driver.profileImageUrl || ''
-        } : null,
-        vehicleType: ride.tier
+        driver: ride.driver
+          ? {
+              id: ride.driver.id,
+              name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
+              carModel: ride.driver.carModel || '',
+              licensePlate: ride.driver.licensePlate || '',
+              profileImageUrl: ride.driver.profileImageUrl || '',
+            }
+          : null,
+        vehicleType: ride.tier,
       }));
 
       return {
@@ -289,13 +284,15 @@ export class RideManagementService {
       scheduledFor: ride.scheduledFor,
       createdAt: ride.createdAt,
       user: ride.user,
-      driver: ride.driver ? {
-        id: ride.driver.id,
-        name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
-        carModel: ride.driver.carModel || '',
-        licensePlate: ride.driver.licensePlate || '',
-        profileImageUrl: ride.driver.profileImageUrl || ''
-      } : null
+      driver: ride.driver
+        ? {
+            id: ride.driver.id,
+            name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
+            carModel: ride.driver.carModel || '',
+            licensePlate: ride.driver.licensePlate || '',
+            profileImageUrl: ride.driver.profileImageUrl || '',
+          }
+        : null,
     };
   }
 
@@ -316,43 +313,43 @@ export class RideManagementService {
       ] = await Promise.all([
         // Total rides
         this.prisma.ride.count(),
-        
+
         // Completed rides (using payment status as a proxy for completion)
-        this.prisma.ride.count({ 
-          where: { 
+        this.prisma.ride.count({
+          where: {
             paymentStatus: 'PAID',
-            rideTime: { gt: 0 } // Assuming rideTime is a number representing seconds
-          } 
+            rideTime: { gt: 0 }, // Assuming rideTime is a number representing seconds
+          },
         }),
-        
+
         // Cancelled rides
-        this.prisma.ride.count({ 
-          where: { 
-            paymentStatus: 'CANCELLED' 
-          } 
+        this.prisma.ride.count({
+          where: {
+            paymentStatus: 'CANCELLED',
+          },
         }),
-        
+
         // Total revenue (only from paid rides)
         this.prisma.ride.aggregate({
-          where: { 
+          where: {
             paymentStatus: 'PAID',
-            rideTime: { gt: 0 } // Assuming rideTime is a number representing seconds
+            rideTime: { gt: 0 }, // Assuming rideTime is a number representing seconds
           },
           _sum: { farePrice: true },
         }),
-        
+
         // Average rating
         this.prisma.rating.aggregate({
           _avg: { ratingValue: true },
           _count: true,
         }),
-        
+
         // Rides by payment status
         this.prisma.ride.groupBy({
           by: ['paymentStatus'],
           _count: { _all: true },
         }),
-        
+
         // Rides by day for the last 30 days
         this.prisma.$queryRaw`
           SELECT DATE("createdAt") as date, COUNT(*) as count
@@ -375,13 +372,16 @@ export class RideManagementService {
           totalRides,
           completedRides,
           cancelledRides,
-          completionRate: totalRides > 0 ? (completedRides / totalRides) * 100 : 0,
-          totalRevenue: totalRevenue._sum?.farePrice ? Number(totalRevenue._sum.farePrice) : 0,
+          completionRate:
+            totalRides > 0 ? (completedRides / totalRides) * 100 : 0,
+          totalRevenue: totalRevenue._sum?.farePrice
+            ? Number(totalRevenue._sum.farePrice)
+            : 0,
           averageRating: averageRating._avg?.ratingValue || 0,
           totalRatings: averageRating._count || 0,
           ridesByStatus: statusCounts,
-          ridesByDay: Array.isArray(ridesByDay) 
-            ? ridesByDay.map(item => ({
+          ridesByDay: Array.isArray(ridesByDay)
+            ? ridesByDay.map((item) => ({
                 date: item.date.toISOString().split('T')[0],
                 count: Number(item.count),
               }))

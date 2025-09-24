@@ -28,11 +28,12 @@ export class PromotionsController {
   @Post('apply')
   @ApiOperation({
     summary: 'Apply a promo code and calculate the discount',
-    description: 'Validate and apply a promotional code to calculate the discount on a ride fare'
+    description:
+      'Validate and apply a promotional code to calculate the discount on a ride fare',
   })
   @ApiBody({
     type: ApplyPromoDto,
-    description: 'Promotion application details'
+    description: 'Promotion application details',
   })
   @ApiResponse({
     status: 200,
@@ -46,27 +47,27 @@ export class PromotionsController {
             promoCode: {
               type: 'string',
               example: 'WELCOME10',
-              description: 'The applied promo code'
+              description: 'The applied promo code',
             },
             discountAmount: {
               type: 'number',
-              example: 2.50,
-              description: 'Calculated discount amount in dollars'
+              example: 2.5,
+              description: 'Calculated discount amount in dollars',
             },
             discountPercentage: {
               type: 'number',
               example: 10.0,
-              description: 'Discount percentage applied'
+              description: 'Discount percentage applied',
             },
             originalAmount: {
               type: 'number',
               example: 25.0,
-              description: 'Original ride amount before discount'
+              description: 'Original ride amount before discount',
             },
             finalAmount: {
               type: 'number',
-              example: 22.50,
-              description: 'Final amount after discount'
+              example: 22.5,
+              description: 'Final amount after discount',
             },
           },
         },
@@ -79,7 +80,7 @@ export class PromotionsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Promotion code not found'
+    description: 'Promotion code not found',
   })
   @ApiResponse({ status: 500, description: 'Database error' })
   async applyPromo(
@@ -92,7 +93,8 @@ export class PromotionsController {
   @Get('active')
   @ApiOperation({
     summary: 'Get all active promotions',
-    description: 'Retrieve all currently active promotional codes that can be used by customers'
+    description:
+      'Retrieve all currently active promotional codes that can be used by customers',
   })
   @ApiResponse({
     status: 200,
@@ -109,10 +111,10 @@ export class PromotionsController {
           expiryDate: { type: 'string', format: 'date', example: '2024-12-31' },
           isActive: { type: 'boolean', example: true },
           created_at: { type: 'string', format: 'date-time' },
-          updated_at: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
+          updated_at: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getActivePromotions(): Promise<Promotion[]> {
@@ -122,11 +124,11 @@ export class PromotionsController {
   @Post()
   @ApiOperation({
     summary: 'Create a new promotion',
-    description: 'Create a new promotional code for customers to use on rides'
+    description: 'Create a new promotional code for customers to use on rides',
   })
   @ApiBody({
     type: CreatePromotionDto,
-    description: 'Promotion creation details'
+    description: 'Promotion creation details',
   })
   @ApiResponse({
     status: 201,
@@ -141,17 +143,17 @@ export class PromotionsController {
         expiryDate: { type: 'string', format: 'date', example: '2024-12-31' },
         isActive: { type: 'boolean', example: true },
         created_at: { type: 'string', format: 'date-time' },
-        updated_at: { type: 'string', format: 'date-time' }
-      }
-    }
+        updated_at: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'Missing required fields or invalid data'
+    description: 'Missing required fields or invalid data',
   })
   @ApiResponse({
     status: 409,
-    description: 'Promotion code already exists'
+    description: 'Promotion code already exists',
   })
   @ApiResponse({ status: 500, description: 'Database error' })
   async createPromotion(
@@ -163,17 +165,18 @@ export class PromotionsController {
   @Put(':id')
   @ApiOperation({
     summary: 'Update a promotion',
-    description: 'Update an existing promotion\'s details. Only provided fields will be updated.'
+    description:
+      "Update an existing promotion's details. Only provided fields will be updated.",
   })
   @ApiParam({
     name: 'id',
     description: 'Unique identifier of the promotion',
     example: '1',
-    type: Number
+    type: Number,
   })
   @ApiBody({
     type: UpdatePromotionDto,
-    description: 'Fields to update in the promotion'
+    description: 'Fields to update in the promotion',
   })
   @ApiResponse({
     status: 200,
@@ -188,13 +191,13 @@ export class PromotionsController {
         expiryDate: { type: 'string', format: 'date', example: '2024-12-31' },
         isActive: { type: 'boolean', example: true },
         created_at: { type: 'string', format: 'date-time' },
-        updated_at: { type: 'string', format: 'date-time' }
-      }
-    }
+        updated_at: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid data or promotion code already exists'
+    description: 'Invalid data or promotion code already exists',
   })
   @ApiResponse({ status: 404, description: 'Promotion not found' })
   @ApiResponse({ status: 500, description: 'Database error' })
@@ -211,13 +214,14 @@ export class PromotionsController {
   @Delete(':id')
   @ApiOperation({
     summary: 'Delete a promotion',
-    description: 'Permanently delete a promotion. This action cannot be undone.'
+    description:
+      'Permanently delete a promotion. This action cannot be undone.',
   })
   @ApiParam({
     name: 'id',
     description: 'Unique identifier of the promotion to delete',
     example: '1',
-    type: Number
+    type: Number,
   })
   @ApiResponse({
     status: 200,
@@ -232,9 +236,9 @@ export class PromotionsController {
         expiryDate: { type: 'string', format: 'date', example: '2024-12-31' },
         isActive: { type: 'boolean', example: false },
         created_at: { type: 'string', format: 'date-time' },
-        updated_at: { type: 'string', format: 'date-time' }
-      }
-    }
+        updated_at: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Promotion not found' })
   @ApiResponse({ status: 500, description: 'Database error' })

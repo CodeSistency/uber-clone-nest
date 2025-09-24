@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsString, IsNumber, IsEmail, Min, MaxLength, MinLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsEmail,
+  Min,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -7,7 +15,7 @@ export class CreatePaymentIntentDto {
     description: 'Full name of the customer making the payment',
     example: 'John Doe',
     minLength: 2,
-    maxLength: 100
+    maxLength: 100,
   })
   @IsNotEmpty()
   @IsString()
@@ -18,7 +26,7 @@ export class CreatePaymentIntentDto {
   @ApiProperty({
     description: 'Email address of the customer',
     example: 'john.doe@example.com',
-    format: 'email'
+    format: 'email',
   })
   @IsNotEmpty()
   @IsString()
@@ -28,13 +36,13 @@ export class CreatePaymentIntentDto {
   @ApiProperty({
     description: 'Payment amount in USD (minimum $0.50, maximum $999.99)',
     example: 15.75,
-    minimum: 0.50,
+    minimum: 0.5,
     maximum: 999.99,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @Transform(({ value }) => parseFloat(value))
   @IsNumber()
-  @Min(0.50)
+  @Min(0.5)
   amount: number;
 }

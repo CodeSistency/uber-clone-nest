@@ -6,7 +6,7 @@ export class SendMessageDto {
     description: 'Clerk ID of the user sending the message',
     example: 'user_2abc123def456',
     minLength: 10,
-    maxLength: 50
+    maxLength: 50,
   })
   @IsNotEmpty()
   @IsString()
@@ -16,7 +16,7 @@ export class SendMessageDto {
     description: 'The content of the chat message',
     example: "I'll be there in 2 minutes.",
     minLength: 1,
-    maxLength: 1000
+    maxLength: 1000,
   })
   @IsNotEmpty()
   @IsString()

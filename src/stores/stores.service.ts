@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -36,14 +40,14 @@ export class StoresService {
         AND: [
           {
             latitude: {
-              gte: lat - (radius / 111.32), // Rough conversion km to degrees
-              lte: lat + (radius / 111.32),
+              gte: lat - radius / 111.32, // Rough conversion km to degrees
+              lte: lat + radius / 111.32,
             },
           },
           {
             longitude: {
-              gte: lng - (radius / (111.32 * Math.cos(lat * Math.PI / 180))),
-              lte: lng + (radius / (111.32 * Math.cos(lat * Math.PI / 180))),
+              gte: lng - radius / (111.32 * Math.cos((lat * Math.PI) / 180)),
+              lte: lng + radius / (111.32 * Math.cos((lat * Math.PI) / 180)),
             },
           },
         ],
@@ -111,7 +115,11 @@ export class StoresService {
     return store;
   }
 
-  async addProduct(storeId: number, createProductDto: CreateProductDto, ownerId: number) {
+  async addProduct(
+    storeId: number,
+    createProductDto: CreateProductDto,
+    ownerId: number,
+  ) {
     // Verify store ownership
     await this.isStoreOwner(storeId, ownerId);
 
@@ -166,7 +174,11 @@ export class StoresService {
     return true;
   }
 
-  async updateStore(storeId: number, updateData: Partial<CreateStoreDto>, ownerId: number) {
+  async updateStore(
+    storeId: number,
+    updateData: Partial<CreateStoreDto>,
+    ownerId: number,
+  ) {
     await this.isStoreOwner(storeId, ownerId);
 
     const store = await this.prisma.store.update({
@@ -187,7 +199,12 @@ export class StoresService {
     return { message: 'Store deleted successfully' };
   }
 
-  async updateProduct(storeId: number, productId: number, updateData: Partial<CreateProductDto>, ownerId: number) {
+  async updateProduct(
+    storeId: number,
+    productId: number,
+    updateData: Partial<CreateProductDto>,
+    ownerId: number,
+  ) {
     await this.isStoreOwner(storeId, ownerId);
 
     const product = await this.prisma.product.update({

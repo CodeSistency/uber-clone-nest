@@ -30,7 +30,9 @@ export class LocationsService {
     const isLngValid = lng >= -180 && lng <= 180;
 
     if (!isLatValid || !isLngValid) {
-      this.logger.warn(`Invalid coordinates: lat=${lat} (${isLatValid ? 'valid' : 'invalid'}), lng=${lng} (${isLngValid ? 'valid' : 'invalid'})`);
+      this.logger.warn(
+        `Invalid coordinates: lat=${lat} (${isLatValid ? 'valid' : 'invalid'}), lng=${lng} (${isLngValid ? 'valid' : 'invalid'})`,
+      );
       return false;
     }
 
@@ -43,7 +45,10 @@ export class LocationsService {
     return true;
   }
 
-  async getAddressSuggestions(query: string, location?: { lat: number; lng: number }): Promise<AddressSuggestion[]> {
+  async getAddressSuggestions(
+    query: string,
+    location?: { lat: number; lng: number },
+  ): Promise<AddressSuggestion[]> {
     this.logger.log(`Getting address suggestions for query: "${query}"`);
 
     // For now, return mock suggestions
@@ -54,50 +59,57 @@ export class LocationsService {
         description: `${query} - Centro, Caracas`,
         structuredFormatting: {
           mainText: query,
-          secondaryText: 'Centro, Caracas'
+          secondaryText: 'Centro, Caracas',
         },
         geometry: {
           lat: 10.5061,
-          lng: -66.9146
-        }
+          lng: -66.9146,
+        },
       },
       {
         placeId: '2',
         description: `${query} - La Castellana, Caracas`,
         structuredFormatting: {
           mainText: query,
-          secondaryText: 'La Castellana, Caracas'
+          secondaryText: 'La Castellana, Caracas',
         },
         geometry: {
           lat: 10.4998,
-          lng: -66.8517
-        }
+          lng: -66.8517,
+        },
       },
       {
         placeId: '3',
         description: `${query} - Altamira, Caracas`,
         structuredFormatting: {
           mainText: query,
-          secondaryText: 'Altamira, Caracas'
+          secondaryText: 'Altamira, Caracas',
         },
         geometry: {
           lat: 10.5028,
-          lng: -66.8529
-        }
-      }
+          lng: -66.8529,
+        },
+      },
     ];
 
     // Filter suggestions based on query
-    const filtered = suggestions.filter(suggestion =>
-      suggestion.description.toLowerCase().includes(query.toLowerCase()) ||
-      suggestion.structuredFormatting.mainText.toLowerCase().includes(query.toLowerCase())
+    const filtered = suggestions.filter(
+      (suggestion) =>
+        suggestion.description.toLowerCase().includes(query.toLowerCase()) ||
+        suggestion.structuredFormatting.mainText
+          .toLowerCase()
+          .includes(query.toLowerCase()),
     );
 
-    this.logger.log(`Found ${filtered.length} address suggestions for query "${query}"`);
+    this.logger.log(
+      `Found ${filtered.length} address suggestions for query "${query}"`,
+    );
     return filtered.slice(0, 5); // Limit to 5 suggestions
   }
 
-  async geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  async geocodeAddress(
+    address: string,
+  ): Promise<{ lat: number; lng: number } | null> {
     this.logger.log(`Geocoding address: "${address}"`);
 
     // Mock geocoding - in production, use Google Geocoding API
@@ -106,21 +118,25 @@ export class LocationsService {
       'La Castellana, Caracas': { lat: 10.4998, lng: -66.8517 },
       'Altamira, Caracas': { lat: 10.5028, lng: -66.8529 },
       'Chacao, Caracas': { lat: 10.4969, lng: -66.8529 },
-      'Sabana Grande, Caracas': { lat: 10.5038, lng: -66.9211 }
+      'Sabana Grande, Caracas': { lat: 10.5038, lng: -66.9211 },
     };
 
     const result = Object.entries(mockResults).find(([key]) =>
-      address.toLowerCase().includes(key.toLowerCase())
+      address.toLowerCase().includes(key.toLowerCase()),
     );
 
     if (result) {
-      this.logger.log(`Geocoding successful for "${address}": ${JSON.stringify(result[1])}`);
+      this.logger.log(
+        `Geocoding successful for "${address}": ${JSON.stringify(result[1])}`,
+      );
       return result[1];
     }
 
     // Fallback coordinates for Caracas
     const fallback = { lat: 10.5061, lng: -66.9146 };
-    this.logger.log(`Geocoding fallback for "${address}": ${JSON.stringify(fallback)}`);
+    this.logger.log(
+      `Geocoding fallback for "${address}": ${JSON.stringify(fallback)}`,
+    );
     return fallback;
   }
 
@@ -133,7 +149,7 @@ export class LocationsService {
       '10.4998,-66.8517': 'La Castellana, Caracas, Venezuela',
       '10.5028,-66.8529': 'Altamira, Caracas, Venezuela',
       '10.4969,-66.8529': 'Chacao, Caracas, Venezuela',
-      '10.5038,-66.9211': 'Sabana Grande, Caracas, Venezuela'
+      '10.5038,-66.9211': 'Sabana Grande, Caracas, Venezuela',
     };
 
     const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
@@ -145,7 +161,7 @@ export class LocationsService {
 
   async calculateDistance(
     origin: { lat: number; lng: number },
-    destination: { lat: number; lng: number }
+    destination: { lat: number; lng: number },
   ): Promise<number> {
     // Haversine formula for calculating distance between two points
     const R = 6371; // Earth's radius in kilometers
@@ -154,8 +170,10 @@ export class LocationsService {
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(origin.lat)) * Math.cos(this.toRadians(destination.lat)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(this.toRadians(origin.lat)) *
+        Math.cos(this.toRadians(destination.lat)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
@@ -166,7 +184,7 @@ export class LocationsService {
   async estimateTravelTime(
     origin: { lat: number; lng: number },
     destination: { lat: number; lng: number },
-    transportMode: 'driving' | 'walking' = 'driving'
+    transportMode: 'driving' | 'walking' = 'driving',
   ): Promise<number> {
     const distance = await this.calculateDistance(origin, destination);
 
@@ -182,15 +200,19 @@ export class LocationsService {
     return degrees * (Math.PI / 180);
   }
 
-  async validateServiceArea(lat: number, lng: number): Promise<{ valid: boolean; message?: string }> {
+  async validateServiceArea(
+    lat: number,
+    lng: number,
+  ): Promise<{ valid: boolean; message?: string }> {
     // Check if location is within service area (Caracas metropolitan area)
     const caracasCenter = { lat: 10.5061, lng: -66.9146 };
     const distance = await this.calculateDistance({ lat, lng }, caracasCenter);
 
-    if (distance > 50) { // 50km radius
+    if (distance > 50) {
+      // 50km radius
       return {
         valid: false,
-        message: 'Location is outside our current service area'
+        message: 'Location is outside our current service area',
       };
     }
 
@@ -201,7 +223,7 @@ export class LocationsService {
     lat: number,
     lng: number,
     type: 'restaurant' | 'store' | 'pharmacy' = 'store',
-    radius: number = 1000
+    radius: number = 1000,
   ): Promise<any[]> {
     // Mock nearby places - in production, use Google Places API
     const mockPlaces = [
@@ -210,24 +232,24 @@ export class LocationsService {
         name: 'Supermercado Éxito',
         address: 'Centro, Caracas',
         distance: 0.5,
-        rating: 4.2
+        rating: 4.2,
       },
       {
         id: '2',
         name: 'Farmacia Caracas',
         address: 'La Castellana, Caracas',
         distance: 1.2,
-        rating: 4.5
+        rating: 4.5,
       },
       {
         id: '3',
         name: 'Restaurant El Patio',
         address: 'Altamira, Caracas',
         distance: 0.8,
-        rating: 4.1
-      }
+        rating: 4.1,
+      },
     ];
 
-    return mockPlaces.filter(place => place.distance <= (radius / 1000));
+    return mockPlaces.filter((place) => place.distance <= radius / 1000);
   }
 }

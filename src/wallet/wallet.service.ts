@@ -114,8 +114,11 @@ export class WalletService {
     userId: number,
     amount: number,
     reason: string,
-    referenceType: 'ride_cancellation' | 'order_cancellation' | 'payment_refund',
-    referenceId: string
+    referenceType:
+      | 'ride_cancellation'
+      | 'order_cancellation'
+      | 'payment_refund',
+    referenceId: string,
   ): Promise<{ wallet: Wallet; transaction: WalletTransaction }> {
     // Find or create wallet
     let wallet = await this.prisma.wallet.findUnique({
@@ -162,8 +165,12 @@ export class WalletService {
     amount: number,
     description: string,
     referenceType: string,
-    referenceId: string
-  ): Promise<{ fromWallet: Wallet; toWallet: Wallet; transaction: WalletTransaction }> {
+    referenceId: string,
+  ): Promise<{
+    fromWallet: Wallet;
+    toWallet: Wallet;
+    transaction: WalletTransaction;
+  }> {
     // Deduct from sender
     await this.deductFunds(fromUserId, amount, description);
 
@@ -173,7 +180,7 @@ export class WalletService {
       amount,
       description,
       referenceType as any,
-      referenceId
+      referenceId,
     );
 
     // Get updated from wallet

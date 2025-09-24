@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { BankApiInterface, BankInfo } from '../payments/interfaces/bank-api.interface';
+import {
+  BankApiInterface,
+  BankInfo,
+} from '../payments/interfaces/bank-api.interface';
 import { BancoVenezuelaApi } from './mock-bank-apis/banco-venezuela.api';
 import { MercantilApi } from './mock-bank-apis/mercantil.api';
 import { BNCApi } from './mock-bank-apis/bnc.api';
@@ -25,7 +28,9 @@ export class BanksService {
   getBankApi(bankCode: string): BankApiInterface {
     const api = this.bankApis.get(bankCode);
     if (!api) {
-      throw new Error(`Banco no soportado: ${bankCode}. Bancos disponibles: ${Array.from(this.bankApis.keys()).join(', ')}`);
+      throw new Error(
+        `Banco no soportado: ${bankCode}. Bancos disponibles: ${Array.from(this.bankApis.keys()).join(', ')}`,
+      );
     }
     return api;
   }

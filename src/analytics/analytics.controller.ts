@@ -4,13 +4,13 @@ import {
   Param,
   UseGuards,
   Req,
-  ParseIntPipe
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { StoreOwnerGuard } from '../stores/guards/store-owner.guard';
@@ -27,19 +27,19 @@ export class AnalyticsController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get store analytics',
-    description: 'Get detailed analytics for a store (store owner only)'
+    description: 'Get detailed analytics for a store (store owner only)',
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns store analytics data'
+    description: 'Returns store analytics data',
   })
   @ApiResponse({
     status: 404,
-    description: 'Store not found or not owned by user'
+    description: 'Store not found or not owned by user',
   })
   async getStoreSummary(
     @Param('storeId', ParseIntPipe) storeId: number,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.analyticsService.getStoreAnalytics(storeId, req.user.id);
   }
@@ -49,15 +49,15 @@ export class AnalyticsController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get driver analytics',
-    description: 'Get detailed analytics for a driver (driver only)'
+    description: 'Get detailed analytics for a driver (driver only)',
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns driver analytics data'
+    description: 'Returns driver analytics data',
   })
   @ApiResponse({
     status: 404,
-    description: 'Driver not found'
+    description: 'Driver not found',
   })
   async getDriverSummary(@Param('driverId', ParseIntPipe) driverId: number) {
     return this.analyticsService.getDriverAnalytics(driverId);
@@ -68,11 +68,11 @@ export class AnalyticsController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get platform analytics',
-    description: 'Get overall platform analytics (admin only)'
+    description: 'Get overall platform analytics (admin only)',
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns platform analytics data'
+    description: 'Returns platform analytics data',
   })
   async getPlatformOverview(@Req() req: any) {
     // Check if user is admin

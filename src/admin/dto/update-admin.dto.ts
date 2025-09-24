@@ -17,7 +17,7 @@ export class UpdateAdminDto {
     example: 'John Doe Updated',
     type: 'string',
     minLength: 2,
-    maxLength: 100
+    maxLength: 100,
   })
   @IsOptional()
   @IsString()
@@ -29,7 +29,7 @@ export class UpdateAdminDto {
     description: 'Admin email address',
     example: 'updated-admin@uberclone.com',
     type: 'string',
-    format: 'email'
+    format: 'email',
   })
   @IsOptional()
   @IsEmail()
@@ -39,7 +39,7 @@ export class UpdateAdminDto {
     description: 'Admin password (minimum 6 characters)',
     example: 'NewPassword123!',
     type: 'string',
-    minLength: 6
+    minLength: 6,
   })
   @IsOptional()
   @IsString()
@@ -50,7 +50,7 @@ export class UpdateAdminDto {
     description: 'Admin role',
     example: 'moderator',
     enum: AdminRole,
-    enumName: 'AdminRole'
+    enumName: 'AdminRole',
   })
   @IsOptional()
   @IsEnum(AdminRole)
@@ -62,8 +62,8 @@ export class UpdateAdminDto {
     type: 'array',
     items: {
       type: 'string',
-      enum: Object.values(Permission)
-    }
+      enum: Object.values(Permission),
+    },
   })
   @IsOptional()
   @IsArray()
@@ -73,7 +73,7 @@ export class UpdateAdminDto {
   @ApiPropertyOptional({
     description: 'Whether the admin account should be active',
     example: true,
-    type: 'boolean'
+    type: 'boolean',
   })
   @IsOptional()
   @IsBoolean()
@@ -84,14 +84,14 @@ export class UpdateAdminResponseDto {
   @ApiProperty({
     description: 'Admin ID',
     example: 1,
-    type: 'number'
+    type: 'number',
   })
   id: number;
 
   @ApiProperty({
     description: 'Admin full name',
     example: 'John Doe Updated',
-    type: 'string'
+    type: 'string',
   })
   name: string;
 
@@ -99,14 +99,14 @@ export class UpdateAdminResponseDto {
     description: 'Admin email address',
     example: 'updated-admin@uberclone.com',
     type: 'string',
-    format: 'email'
+    format: 'email',
   })
   email: string;
 
   @ApiProperty({
     description: 'User type',
     example: 'admin',
-    enum: ['user', 'admin']
+    enum: ['user', 'admin'],
   })
   userType: 'user' | 'admin';
 
@@ -114,7 +114,7 @@ export class UpdateAdminResponseDto {
     description: 'Admin role',
     example: 'moderator',
     enum: AdminRole,
-    enumName: 'AdminRole'
+    enumName: 'AdminRole',
   })
   adminRole: AdminRole;
 
@@ -124,15 +124,15 @@ export class UpdateAdminResponseDto {
     type: 'array',
     items: {
       type: 'string',
-      enum: Object.values(Permission)
-    }
+      enum: Object.values(Permission),
+    },
   })
   adminPermissions: Permission[];
 
   @ApiProperty({
     description: 'Whether the admin account is active',
     example: true,
-    type: 'boolean'
+    type: 'boolean',
   })
   isActive: boolean;
 
@@ -141,7 +141,7 @@ export class UpdateAdminResponseDto {
     example: '2024-01-15T10:30:00Z',
     type: 'string',
     format: 'date-time',
-    nullable: true
+    nullable: true,
   })
   adminUpdatedAt: Date | null;
 }

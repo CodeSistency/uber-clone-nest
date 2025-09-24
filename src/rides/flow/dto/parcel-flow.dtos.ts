@@ -1,4 +1,13 @@
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, Max } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -8,7 +17,7 @@ export class CreateParcelDto {
     example: 'Oficina Principal, Calle 100 #15-30, Torre A Piso 5, Oficina 501',
     minLength: 10,
     maxLength: 255,
-    type: 'string'
+    type: 'string',
   })
   @IsNotEmpty()
   @IsString()
@@ -20,7 +29,7 @@ export class CreateParcelDto {
     minimum: -90,
     maximum: 90,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-90)
@@ -34,7 +43,7 @@ export class CreateParcelDto {
     minimum: -180,
     maximum: 180,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-180)
@@ -47,7 +56,7 @@ export class CreateParcelDto {
     example: 'Casa del destinatario, Carrera 7 #45-67, Apartamento 802, Bogotá',
     minLength: 10,
     maxLength: 255,
-    type: 'string'
+    type: 'string',
   })
   @IsNotEmpty()
   @IsString()
@@ -55,11 +64,11 @@ export class CreateParcelDto {
 
   @ApiProperty({
     description: 'Latitud del punto de entrega del paquete (coordenadas GPS)',
-    example: 4.6150,
+    example: 4.615,
     minimum: -90,
     maximum: 90,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-90)
@@ -69,11 +78,11 @@ export class CreateParcelDto {
 
   @ApiProperty({
     description: 'Longitud del punto de entrega del paquete (coordenadas GPS)',
-    example: -74.0750,
+    example: -74.075,
     minimum: -180,
     maximum: 180,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-180)
@@ -85,16 +94,18 @@ export class CreateParcelDto {
     description: 'Tipo de paquete para determinar el manejo especial requerido',
     example: 'electronics',
     enum: ['documents', 'electronics', 'fragile', 'other'],
-    enumName: 'ParcelType'
+    enumName: 'ParcelType',
   })
   @IsIn(['documents', 'electronics', 'fragile', 'other'])
   type: 'documents' | 'electronics' | 'fragile' | 'other';
 
   @ApiPropertyOptional({
-    description: 'Descripción detallada del contenido del paquete para manejo adecuado',
-    example: 'Laptop Dell XPS 13 con accesorios: cargador original, mouse inalámbrico, maletín protector',
+    description:
+      'Descripción detallada del contenido del paquete para manejo adecuado',
+    example:
+      'Laptop Dell XPS 13 con accesorios: cargador original, mouse inalámbrico, maletín protector',
     maxLength: 300,
-    type: 'string'
+    type: 'string',
   })
   @IsOptional()
   @IsString()
@@ -104,10 +115,11 @@ export class CreateParcelDto {
 
 export class ProofOfDeliveryDto {
   @ApiPropertyOptional({
-    description: 'URL de la imagen de la firma digital del destinatario como prueba de entrega',
+    description:
+      'URL de la imagen de la firma digital del destinatario como prueba de entrega',
     example: 'https://storage.googleapis.com/signatures/parcel_sig_123456.png',
     type: 'string',
-    format: 'uri'
+    format: 'uri',
   })
   @IsOptional()
   @IsString()
@@ -115,13 +127,12 @@ export class ProofOfDeliveryDto {
 
   @ApiPropertyOptional({
     description: 'URL de la foto del paquete entregado como prueba adicional',
-    example: 'https://storage.googleapis.com/deliveries/parcel_proof_123456.jpg',
+    example:
+      'https://storage.googleapis.com/deliveries/parcel_proof_123456.jpg',
     type: 'string',
-    format: 'uri'
+    format: 'uri',
   })
   @IsOptional()
   @IsString()
   photoUrl?: string;
 }
-
-

@@ -46,7 +46,9 @@ export class PromotionsService {
     return {
       promoCode: promotion.promoCode,
       discountAmount,
-      discountPercentage: promotion.discountPercentage ? Number(promotion.discountPercentage) : null,
+      discountPercentage: promotion.discountPercentage
+        ? Number(promotion.discountPercentage)
+        : null,
       originalAmount: rideAmount,
       finalAmount: Math.max(0, finalAmount), // Ensure final amount is not negative
     };

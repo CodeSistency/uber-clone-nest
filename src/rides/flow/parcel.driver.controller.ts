@@ -31,7 +31,7 @@ export class ParcelDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async accept(@Param('id') id: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
@@ -39,7 +39,10 @@ export class ParcelDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const p = await this.flow.driverAcceptParcel(Number(id), Number(req.user.id));
+    const p = await this.flow.driverAcceptParcel(
+      Number(id),
+      Number(req.user.id),
+    );
     if (key) this.idemp.set(key, 200, p);
     return { data: p };
   }
@@ -60,7 +63,7 @@ export class ParcelDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async pickup(@Param('id') id: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
@@ -68,7 +71,10 @@ export class ParcelDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const p = await this.flow.driverPickupParcel(Number(id), Number(req.user.id));
+    const p = await this.flow.driverPickupParcel(
+      Number(id),
+      Number(req.user.id),
+    );
     if (key) this.idemp.set(key, 200, p);
     return { data: p };
   }
@@ -90,7 +96,7 @@ export class ParcelDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async deliver(
     @Param('id') id: string,
@@ -102,10 +108,12 @@ export class ParcelDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const p = await this.flow.driverDeliverParcel(Number(id), Number(req.user.id), body);
+    const p = await this.flow.driverDeliverParcel(
+      Number(id),
+      Number(req.user.id),
+      body,
+    );
     if (key) this.idemp.set(key, 200, p);
     return { data: p };
   }
 }
-
-

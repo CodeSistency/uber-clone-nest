@@ -18,7 +18,7 @@ export class CreateAdminDto {
     example: 'John Doe',
     type: 'string',
     minLength: 2,
-    maxLength: 100
+    maxLength: 100,
   })
   @IsNotEmpty()
   @IsString()
@@ -30,7 +30,7 @@ export class CreateAdminDto {
     description: 'Admin email address',
     example: 'admin@uberclone.com',
     type: 'string',
-    format: 'email'
+    format: 'email',
   })
   @IsNotEmpty()
   @IsEmail()
@@ -40,7 +40,7 @@ export class CreateAdminDto {
     description: 'Admin password (minimum 6 characters)',
     example: 'Admin123!',
     type: 'string',
-    minLength: 6
+    minLength: 6,
   })
   @IsNotEmpty()
   @IsString()
@@ -51,20 +51,21 @@ export class CreateAdminDto {
     description: 'Admin role',
     example: 'admin',
     enum: AdminRole,
-    enumName: 'AdminRole'
+    enumName: 'AdminRole',
   })
   @IsNotEmpty()
   @IsEnum(AdminRole)
   adminRole: AdminRole;
 
   @ApiPropertyOptional({
-    description: 'Custom permissions array (optional - will use default permissions for role if not provided)',
+    description:
+      'Custom permissions array (optional - will use default permissions for role if not provided)',
     example: ['user:read', 'user:write', 'driver:read'],
     type: 'array',
     items: {
       type: 'string',
-      enum: Object.values(Permission)
-    }
+      enum: Object.values(Permission),
+    },
   })
   @IsOptional()
   @IsArray()
@@ -75,7 +76,7 @@ export class CreateAdminDto {
     description: 'Whether the admin account should be active',
     example: true,
     type: 'boolean',
-    default: true
+    default: true,
   })
   @IsOptional()
   @IsBoolean()
@@ -86,14 +87,14 @@ export class CreateAdminResponseDto {
   @ApiProperty({
     description: 'Admin ID',
     example: 1,
-    type: 'number'
+    type: 'number',
   })
   id: number;
 
   @ApiProperty({
     description: 'Admin full name',
     example: 'John Doe',
-    type: 'string'
+    type: 'string',
   })
   name: string;
 
@@ -101,14 +102,14 @@ export class CreateAdminResponseDto {
     description: 'Admin email address',
     example: 'admin@uberclone.com',
     type: 'string',
-    format: 'email'
+    format: 'email',
   })
   email: string;
 
   @ApiProperty({
     description: 'User type',
     example: 'admin',
-    enum: ['user', 'admin']
+    enum: ['user', 'admin'],
   })
   userType: 'user' | 'admin';
 
@@ -116,7 +117,7 @@ export class CreateAdminResponseDto {
     description: 'Admin role',
     example: 'admin',
     enum: AdminRole,
-    enumName: 'AdminRole'
+    enumName: 'AdminRole',
   })
   adminRole: AdminRole;
 
@@ -126,15 +127,15 @@ export class CreateAdminResponseDto {
     type: 'array',
     items: {
       type: 'string',
-      enum: Object.values(Permission)
-    }
+      enum: Object.values(Permission),
+    },
   })
   adminPermissions: Permission[];
 
   @ApiProperty({
     description: 'Whether the admin account is active',
     example: true,
-    type: 'boolean'
+    type: 'boolean',
   })
   isActive: boolean;
 
@@ -143,7 +144,7 @@ export class CreateAdminResponseDto {
     example: '2024-01-15T10:30:00Z',
     type: 'string',
     format: 'date-time',
-    nullable: true
+    nullable: true,
   })
   adminCreatedAt: Date | null;
 }

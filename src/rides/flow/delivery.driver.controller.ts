@@ -30,7 +30,7 @@ export class DeliveryDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async accept(@Param('orderId') orderId: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
@@ -38,7 +38,10 @@ export class DeliveryDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const order = await this.flow.driverAcceptDelivery(Number(orderId), Number(req.user.id));
+    const order = await this.flow.driverAcceptDelivery(
+      Number(orderId),
+      Number(req.user.id),
+    );
     if (key) this.idemp.set(key, 200, order);
     return { data: order };
   }
@@ -60,10 +63,11 @@ export class DeliveryDriverController {
     - Conductor consulta órdenes disponibles
     - Selecciona una orden para aceptar
     - Usa el endpoint 'accept' con el orderId correspondiente
-    `
+    `,
   })
   async available() {
-    const orders = await this.flow['ordersService'].getAvailableOrdersForDelivery();
+    const orders =
+      await this.flow['ordersService'].getAvailableOrdersForDelivery();
     return { data: orders };
   }
 
@@ -83,7 +87,7 @@ export class DeliveryDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async pickup(@Param('orderId') orderId: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
@@ -91,7 +95,10 @@ export class DeliveryDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const order = await this.flow.driverPickupDelivery(Number(orderId), Number(req.user.id));
+    const order = await this.flow.driverPickupDelivery(
+      Number(orderId),
+      Number(req.user.id),
+    );
     if (key) this.idemp.set(key, 200, order);
     return { data: order };
   }
@@ -113,7 +120,7 @@ export class DeliveryDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async deliver(@Param('orderId') orderId: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
@@ -121,10 +128,11 @@ export class DeliveryDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const order = await this.flow.driverDeliverDelivery(Number(orderId), Number(req.user.id));
+    const order = await this.flow.driverDeliverDelivery(
+      Number(orderId),
+      Number(req.user.id),
+    );
     if (key) this.idemp.set(key, 200, order);
     return { data: order };
   }
 }
-
-

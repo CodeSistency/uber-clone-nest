@@ -32,7 +32,8 @@ export class RealtimeController {
   @Get('health/websocket')
   @ApiOperation({
     summary: 'Get WebSocket system health status',
-    description: 'Monitor the health and performance of the WebSocket real-time communication system'
+    description:
+      'Monitor the health and performance of the WebSocket real-time communication system',
   })
   @ApiResponse({
     status: 200,
@@ -43,31 +44,31 @@ export class RealtimeController {
         connectedClients: {
           type: 'number',
           example: 45,
-          description: 'Total number of active WebSocket connections'
+          description: 'Total number of active WebSocket connections',
         },
         activeRides: {
           type: 'number',
           example: 12,
-          description: 'Number of rides currently being tracked'
+          description: 'Number of rides currently being tracked',
         },
         onlineDrivers: {
           type: 'number',
           example: 28,
-          description: 'Number of drivers currently online'
+          description: 'Number of drivers currently online',
         },
         totalDriverLocations: {
           type: 'number',
           example: 156,
-          description: 'Total driver location records stored'
+          description: 'Total driver location records stored',
         },
         timestamp: {
           type: 'string',
           format: 'date-time',
           example: '2024-01-15T10:30:00Z',
-          description: 'Timestamp of the health check'
-        }
-      }
-    }
+          description: 'Timestamp of the health check',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 503,
@@ -76,9 +77,9 @@ export class RealtimeController {
       type: 'object',
       properties: {
         error: { type: 'string', example: 'WebSocket service is down' },
-        timestamp: { type: 'string', format: 'date-time' }
-      }
-    }
+        timestamp: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   getWebSocketHealth() {
     return this.realTimeService.getHealthStatus();
@@ -87,42 +88,44 @@ export class RealtimeController {
   @Get('health/redis')
   @ApiOperation({
     summary: 'Get Redis Pub/Sub system health status',
-    description: 'Monitor the health and performance of the Redis Pub/Sub messaging system'
+    description:
+      'Monitor the health and performance of the Redis Pub/Sub messaging system',
   })
   @ApiResponse({
     status: 200,
-    description: 'Redis Pub/Sub system health information retrieved successfully',
+    description:
+      'Redis Pub/Sub system health information retrieved successfully',
     schema: {
       type: 'object',
       properties: {
         redisConnected: {
           type: 'boolean',
           example: true,
-          description: 'Whether Redis connection is active'
+          description: 'Whether Redis connection is active',
         },
         activeDrivers: {
           type: 'number',
           example: 28,
-          description: 'Number of drivers with active location tracking'
+          description: 'Number of drivers with active location tracking',
         },
         activeRides: {
           type: 'number',
           example: 12,
-          description: 'Number of rides with active subscribers'
+          description: 'Number of rides with active subscribers',
         },
         totalSubscribers: {
           type: 'number',
           example: 45,
-          description: 'Total number of active subscribers across all channels'
+          description: 'Total number of active subscribers across all channels',
         },
         timestamp: {
           type: 'string',
           format: 'date-time',
           example: '2024-01-15T10:30:00Z',
-          description: 'Timestamp of the health check'
-        }
-      }
-    }
+          description: 'Timestamp of the health check',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 503,
@@ -132,9 +135,9 @@ export class RealtimeController {
       properties: {
         error: { type: 'string', example: 'Redis connection failed' },
         redisConnected: { type: 'boolean', example: false },
-        timestamp: { type: 'string', format: 'date-time' }
-      }
-    }
+        timestamp: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   getRedisHealth() {
     return this.locationTrackingService.getHealthStatus();
@@ -143,7 +146,8 @@ export class RealtimeController {
   @Post('test/driver-location')
   @ApiOperation({
     summary: 'Test driver location update via Redis',
-    description: 'Test endpoint to simulate driver location updates through Redis Pub/Sub system'
+    description:
+      'Test endpoint to simulate driver location updates through Redis Pub/Sub system',
   })
   @ApiBody({
     description: 'Driver location update data',
@@ -154,7 +158,7 @@ export class RealtimeController {
         driverId: {
           type: 'number',
           example: 1,
-          description: 'Unique identifier of the driver'
+          description: 'Unique identifier of the driver',
         },
         location: {
           type: 'object',
@@ -165,22 +169,23 @@ export class RealtimeController {
               example: 40.7128,
               minimum: -90,
               maximum: 90,
-              description: 'Latitude coordinate'
+              description: 'Latitude coordinate',
             },
             lng: {
               type: 'number',
               example: -74.006,
               minimum: -180,
               maximum: 180,
-              description: 'Longitude coordinate'
+              description: 'Longitude coordinate',
             },
           },
-          required: ['lat', 'lng']
+          required: ['lat', 'lng'],
         },
         rideId: {
           type: 'number',
           example: 123,
-          description: 'Optional: ID of the active ride for targeted notifications'
+          description:
+            'Optional: ID of the active ride for targeted notifications',
         },
       },
     },
@@ -193,23 +198,23 @@ export class RealtimeController {
       properties: {
         message: {
           type: 'string',
-          example: 'Driver location updated via Redis Pub/Sub'
+          example: 'Driver location updated via Redis Pub/Sub',
         },
         timestamp: {
           type: 'string',
           format: 'date-time',
-          description: 'Time when the location was published'
-        }
-      }
-    }
+          description: 'Time when the location was published',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid location data or driver ID'
+    description: 'Invalid location data or driver ID',
   })
   @ApiResponse({
     status: 503,
-    description: 'Redis service unavailable'
+    description: 'Redis service unavailable',
   })
   async testDriverLocation(
     @Body()
@@ -226,14 +231,15 @@ export class RealtimeController {
     );
     return {
       message: 'Driver location updated via Redis Pub/Sub',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
   @Post('test/ride-subscribe')
   @ApiOperation({
     summary: 'Test ride subscription via Redis',
-    description: 'Test endpoint to subscribe a user to ride updates through Redis Pub/Sub'
+    description:
+      'Test endpoint to subscribe a user to ride updates through Redis Pub/Sub',
   })
   @ApiBody({
     description: 'Ride subscription data',
@@ -244,12 +250,12 @@ export class RealtimeController {
         rideId: {
           type: 'number',
           example: 123,
-          description: 'Unique identifier of the ride to subscribe to'
+          description: 'Unique identifier of the ride to subscribe to',
         },
         userId: {
           type: 'string',
           example: 'user_2abc123def456',
-          description: 'Clerk ID of the user subscribing to ride updates'
+          description: 'Clerk ID of the user subscribing to ride updates',
         },
       },
     },
@@ -262,22 +268,22 @@ export class RealtimeController {
       properties: {
         message: {
           type: 'string',
-          example: 'User user_2abc123def456 subscribed to ride 123'
+          example: 'User user_2abc123def456 subscribed to ride 123',
         },
         timestamp: {
           type: 'string',
-          format: 'date-time'
-        }
-      }
-    }
+          format: 'date-time',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid ride ID or user ID'
+    description: 'Invalid ride ID or user ID',
   })
   @ApiResponse({
     status: 404,
-    description: 'Ride not found'
+    description: 'Ride not found',
   })
   async testRideSubscribe(@Body() data: { rideId: number; userId: string }) {
     await this.locationTrackingService.subscribeToRide(
@@ -286,14 +292,15 @@ export class RealtimeController {
     );
     return {
       message: `User ${data.userId} subscribed to ride ${data.rideId}`,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
   @Post('test/emergency-alert')
   @ApiOperation({
     summary: 'Test emergency alert via Redis',
-    description: 'Test endpoint to simulate emergency alerts through Redis Pub/Sub system'
+    description:
+      'Test endpoint to simulate emergency alerts through Redis Pub/Sub system',
   })
   @ApiBody({
     description: 'Emergency alert data',
@@ -304,29 +311,29 @@ export class RealtimeController {
         userId: {
           type: 'string',
           example: 'user_2abc123def456',
-          description: 'Clerk ID of the user sending the emergency alert'
+          description: 'Clerk ID of the user sending the emergency alert',
         },
         rideId: {
           type: 'number',
           example: 123,
-          description: 'ID of the ride where the emergency occurred'
+          description: 'ID of the ride where the emergency occurred',
         },
         location: {
           type: 'object',
           description: 'Location coordinates where the emergency occurred',
           properties: {
             lat: { type: 'number', example: 40.7128 },
-            lng: { type: 'number', example: -74.006 }
+            lng: { type: 'number', example: -74.006 },
           },
-          required: ['lat', 'lng']
+          required: ['lat', 'lng'],
         },
         message: {
           type: 'string',
           example: 'I need immediate medical assistance!',
-          description: 'Description of the emergency situation'
-        }
-      }
-    }
+          description: 'Description of the emergency situation',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -336,11 +343,11 @@ export class RealtimeController {
       properties: {
         message: {
           type: 'string',
-          example: 'Emergency alert sent via Redis Pub/Sub'
+          example: 'Emergency alert sent via Redis Pub/Sub',
         },
-        timestamp: { type: 'string', format: 'date-time' }
-      }
-    }
+        timestamp: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   async testEmergencyAlert(
     @Body()
@@ -354,7 +361,7 @@ export class RealtimeController {
     await this.locationTrackingService.sendEmergencyAlert(data);
     return {
       message: 'Emergency alert sent via Redis Pub/Sub',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -540,7 +547,7 @@ export class RealtimeController {
     - Centro: La Castellana, Caracas (10.4998, -66.8517)
     - Radio: 5km
     - Conductores: 20
-    `
+    `,
   })
   @ApiBody({
     description: 'Parámetros para simular ubicaciones de conductores',
@@ -553,37 +560,38 @@ export class RealtimeController {
           example: 10.4998,
           minimum: -90,
           maximum: 90,
-          description: 'Latitud del centro del área a simular'
+          description: 'Latitud del centro del área a simular',
         },
         centerLng: {
           type: 'number',
           example: -66.8517,
           minimum: -180,
           maximum: 180,
-          description: 'Longitud del centro del área a simular'
+          description: 'Longitud del centro del área a simular',
         },
         radiusKm: {
           type: 'number',
           example: 5,
           minimum: 0.1,
           maximum: 10,
-          description: 'Radio en kilómetros para distribuir conductores'
+          description: 'Radio en kilómetros para distribuir conductores',
         },
         driverCount: {
           type: 'number',
           example: 20,
           minimum: 1,
           maximum: 50,
-          description: 'Número de conductores a simular'
+          description: 'Número de conductores a simular',
         },
         vehicleTypeIds: {
           type: 'array',
           items: { type: 'number' },
           example: [1, 2, 3],
-          description: 'Tipos de vehículo a asignar (opcional, si no se especifica se asignan aleatoriamente)'
-        }
-      }
-    }
+          description:
+            'Tipos de vehículo a asignar (opcional, si no se especifica se asignan aleatoriamente)',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -593,7 +601,7 @@ export class RealtimeController {
       properties: {
         message: {
           type: 'string',
-          example: 'Successfully simulated 20 driver locations'
+          example: 'Successfully simulated 20 driver locations',
         },
         simulatedDrivers: {
           type: 'array',
@@ -606,34 +614,38 @@ export class RealtimeController {
                 type: 'object',
                 properties: {
                   lat: { type: 'number' },
-                  lng: { type: 'number' }
-                }
+                  lng: { type: 'number' },
+                },
               },
               distanceFromCenter: { type: 'number' },
-              vehicleType: { type: 'string' }
-            }
-          }
+              vehicleType: { type: 'string' },
+            },
+          },
         },
         center: {
           type: 'object',
           properties: {
             lat: { type: 'number' },
-            lng: { type: 'number' }
-          }
+            lng: { type: 'number' },
+          },
         },
         radiusKm: { type: 'number' },
-        timestamp: { type: 'string', format: 'date-time' }
-      }
-    }
+        timestamp: { type: 'string', format: 'date-time' },
+      },
+    },
   })
-  async simulateDriverLocations(@Body() data: {
-    centerLat: number;
-    centerLng: number;
-    radiusKm: number;
-    driverCount: number;
-    vehicleTypeIds?: number[];
-  }) {
-    const { centerLat, centerLng, radiusKm, driverCount, vehicleTypeIds } = data;
+  async simulateDriverLocations(
+    @Body()
+    data: {
+      centerLat: number;
+      centerLng: number;
+      radiusKm: number;
+      driverCount: number;
+      vehicleTypeIds?: number[];
+    },
+  ) {
+    const { centerLat, centerLng, radiusKm, driverCount, vehicleTypeIds } =
+      data;
 
     // Validaciones
     if (radiusKm > 10) {
@@ -642,7 +654,12 @@ export class RealtimeController {
     if (driverCount > 50) {
       throw new Error('Cannot simulate more than 50 drivers at once');
     }
-    if (centerLat < -90 || centerLat > 90 || centerLng < -180 || centerLng > 180) {
+    if (
+      centerLat < -90 ||
+      centerLat > 90 ||
+      centerLng < -180 ||
+      centerLng > 180
+    ) {
       throw new Error('Invalid center coordinates');
     }
 
@@ -659,24 +676,26 @@ export class RealtimeController {
             select: {
               id: true,
               name: true,
-              displayName: true
-            }
-          }
+              displayName: true,
+            },
+          },
         },
-        orderBy: { id: 'asc' }
+        orderBy: { id: 'asc' },
       });
 
       if (existingDrivers.length === 0) {
-        throw new Error('No drivers found in database. Please create some drivers first.');
+        throw new Error(
+          'No drivers found in database. Please create some drivers first.',
+        );
       }
 
       // Obtener tipos de vehículo disponibles si no se especificaron
       let availableVehicleTypes = vehicleTypeIds;
       if (!availableVehicleTypes || availableVehicleTypes.length === 0) {
         const vehicleTypes = await this.prisma.vehicleType.findMany({
-          select: { id: true }
+          select: { id: true },
         });
-        availableVehicleTypes = vehicleTypes.map(vt => vt.id);
+        availableVehicleTypes = vehicleTypes.map((vt) => vt.id);
       }
 
       const simulatedDrivers: any[] = [];
@@ -691,7 +710,9 @@ export class RealtimeController {
 
         // Convertir coordenadas polares a cartesianas y luego a lat/lng
         const latOffset = (distance / 111.32) * Math.cos(angle); // 1 grado lat ≈ 111.32 km
-        const lngOffset = (distance / (111.32 * Math.cos(centerLat * Math.PI / 180))) * Math.sin(angle);
+        const lngOffset =
+          (distance / (111.32 * Math.cos((centerLat * Math.PI) / 180))) *
+          Math.sin(angle);
 
         const newLat = centerLat + latOffset;
         const newLng = centerLng + lngOffset;
@@ -699,7 +720,10 @@ export class RealtimeController {
         // Asignar tipo de vehículo si no tiene uno
         let vehicleTypeId = driver.vehicleTypeId;
         if (!vehicleTypeId && availableVehicleTypes.length > 0) {
-          vehicleTypeId = availableVehicleTypes[Math.floor(Math.random() * availableVehicleTypes.length)];
+          vehicleTypeId =
+            availableVehicleTypes[
+              Math.floor(Math.random() * availableVehicleTypes.length)
+            ];
         }
 
         // Actualizar ubicación del conductor
@@ -711,8 +735,8 @@ export class RealtimeController {
             accuracy: Math.random() * 20 + 5, // 5-25 meters accuracy
             speed: Math.random() * 60 + 10, // 10-70 km/h
             heading: Math.random() * 360, // 0-360 degrees
-            source: 'simulated'
-          }
+            source: 'simulated',
+          },
         );
 
         // Cambiar estado a online si no lo está
@@ -721,14 +745,18 @@ export class RealtimeController {
           data: {
             status: 'online',
             vehicleTypeId: vehicleTypeId,
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
 
         // Calcular distancia desde el centro
-        const distanceFromCenter = this.locationTrackingService.calculateDistance(
-          centerLat, centerLng, newLat, newLng
-        );
+        const distanceFromCenter =
+          this.locationTrackingService.calculateDistance(
+            centerLat,
+            centerLng,
+            newLat,
+            newLng,
+          );
 
         simulatedDrivers.push({
           driverId: driver.id,
@@ -737,7 +765,7 @@ export class RealtimeController {
           distanceFromCenter: Math.round(distanceFromCenter * 100) / 100,
           vehicleType: driver.vehicleType?.displayName || 'Unknown',
           status: 'online',
-          locationActive: true
+          locationActive: true,
         });
       }
 
@@ -746,9 +774,8 @@ export class RealtimeController {
         simulatedDrivers,
         center: { lat: centerLat, lng: centerLng },
         radiusKm,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-
     } catch (error) {
       console.error('Error simulating driver locations:', error);
       throw error;
@@ -769,7 +796,7 @@ export class RealtimeController {
     - Estado online/offline
     - Información del vehículo
     - Última actualización de ubicación
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -789,19 +816,19 @@ export class RealtimeController {
                 type: 'object',
                 properties: {
                   lat: { type: 'number' },
-                  lng: { type: 'number' }
-                }
+                  lng: { type: 'number' },
+                },
               },
               lastLocationUpdate: { type: 'string', format: 'date-time' },
               vehicleType: { type: 'string' },
-              locationActive: { type: 'boolean' }
-            }
-          }
+              locationActive: { type: 'boolean' },
+            },
+          },
         },
         total: { type: 'number' },
-        timestamp: { type: 'string', format: 'date-time' }
-      }
-    }
+        timestamp: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   async getSimulatedDrivers() {
     const drivers = await this.prisma.driver.findMany({
@@ -809,7 +836,7 @@ export class RealtimeController {
         status: 'online',
         isLocationActive: true,
         currentLatitude: { not: null },
-        currentLongitude: { not: null }
+        currentLongitude: { not: null },
       },
       select: {
         id: true,
@@ -823,29 +850,31 @@ export class RealtimeController {
         vehicleType: {
           select: {
             id: true,
-            displayName: true
-          }
-        }
+            displayName: true,
+          },
+        },
       },
-      orderBy: { lastLocationUpdate: 'desc' }
+      orderBy: { lastLocationUpdate: 'desc' },
     });
 
     return {
-      drivers: drivers.map(driver => ({
+      drivers: drivers.map((driver) => ({
         id: driver.id,
         name: `${driver.firstName} ${driver.lastName}`,
         status: driver.status,
         currentLocation: {
           lat: Number(driver.currentLatitude),
-          lng: Number(driver.currentLongitude)
+          lng: Number(driver.currentLongitude),
         },
         lastLocationUpdate: driver.lastLocationUpdate,
-        locationAccuracy: driver.locationAccuracy ? Number(driver.locationAccuracy) : null,
+        locationAccuracy: driver.locationAccuracy
+          ? Number(driver.locationAccuracy)
+          : null,
         vehicleType: driver.vehicleType?.displayName || 'Unknown',
-        locationActive: true
+        locationActive: true,
       })),
       total: drivers.length,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 }

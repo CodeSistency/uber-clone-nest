@@ -143,7 +143,14 @@ export class SearchDriversDto {
     'createdAt',
     'updatedAt',
   ])
-  sortBy?: 'id' | 'firstName' | 'lastName' | 'status' | 'verificationStatus' | 'createdAt' | 'updatedAt';
+  sortBy?:
+    | 'id'
+    | 'firstName'
+    | 'lastName'
+    | 'status'
+    | 'verificationStatus'
+    | 'createdAt'
+    | 'updatedAt';
 
   @ApiPropertyOptional({
     description: 'Dirección del ordenamiento',

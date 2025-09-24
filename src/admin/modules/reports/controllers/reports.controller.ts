@@ -26,13 +26,13 @@ import { AdminAuthGuard } from '../../../guards/admin-auth.guard';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { RequirePermissions } from '../../../decorators/permissions.decorator';
 import { Permission } from '../../../entities/admin.entity';
-import { 
-  ReportsService, 
-  ReportTypeDefinition, 
+import {
+  ReportsService,
+  ReportTypeDefinition,
   ReportParameters,
   ReportType,
   ReportFormat,
-  DateRange 
+  DateRange,
 } from '../services/reports.service';
 
 @Controller()
@@ -46,19 +46,19 @@ export class ReportsController {
 
   @Get('revenue')
   @RequirePermissions(Permission.REPORTS_READ)
-  @ApiOperation({ 
-    summary: 'Get Revenue Statistics', 
+  @ApiOperation({
+    summary: 'Get Revenue Statistics',
     description: `Retrieves revenue statistics for the specified time period. 
-    Data can be filtered by day, week, month, or year.`
+    Data can be filtered by day, week, month, or year.`,
   })
-  @ApiQuery({ 
-    name: 'period', 
-    required: false, 
-    enum: ['day', 'week', 'month', 'year'], 
+  @ApiQuery({
+    name: 'period',
+    required: false,
+    enum: ['day', 'week', 'month', 'year'],
     description: 'Time period for aggregating revenue data',
-    example: 'month'
+    example: 'month',
   })
-  @ApiResponse({ 
+  @ApiResponse({
     status: HttpStatus.OK,
     description: 'Revenue data retrieved successfully',
     schema: {
@@ -68,54 +68,56 @@ export class ReportsController {
         data: {
           type: 'object',
           properties: {
-            totalRevenue: { 
-              type: 'number', 
-              example: 125000.50,
-              description: 'Total revenue for the specified period'
+            totalRevenue: {
+              type: 'number',
+              example: 125000.5,
+              description: 'Total revenue for the specified period',
             },
             currency: {
               type: 'string',
               example: 'USD',
-              description: 'Currency code for the revenue amounts'
+              description: 'Currency code for the revenue amounts',
             },
             period: {
               type: 'string',
               example: 'month',
-              description: 'The time period for the data'
+              description: 'The time period for the data',
             },
             breakdown: {
               type: 'array',
-              description: 'Revenue breakdown by time interval within the period',
+              description:
+                'Revenue breakdown by time interval within the period',
               items: {
                 type: 'object',
                 properties: {
                   date: { type: 'string', format: 'date' },
                   amount: { type: 'number', example: 4500.75 },
                   rides: { type: 'number', example: 120 },
-                  averageOrderValue: { type: 'number', example: 37.50 }
-                }
-              }
+                  averageOrderValue: { type: 'number', example: 37.5 },
+                },
+              },
             },
             comparison: {
               type: 'object',
               description: 'Comparison with previous period',
               properties: {
-                percentageChange: { 
-                  type: 'number', 
+                percentageChange: {
+                  type: 'number',
                   example: 15.5,
-                  description: 'Percentage change from previous period'
+                  description: 'Percentage change from previous period',
                 },
-                isIncrease: { 
-                  type: 'boolean', 
+                isIncrease: {
+                  type: 'boolean',
                   example: true,
-                  description: 'Whether the revenue increased compared to previous period'
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  description:
+                    'Whether the revenue increased compared to previous period',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -125,9 +127,9 @@ export class ReportsController {
       properties: {
         statusCode: { type: 'number', example: 400 },
         message: { type: 'string', example: 'Invalid period parameter' },
-        error: { type: 'string', example: 'Bad Request' }
-      }
-    }
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
   })
   async getRevenue(@Query('period') period = 'month') {
     try {
@@ -142,7 +144,8 @@ export class ReportsController {
   @RequirePermissions(Permission.REPORTS_READ)
   @ApiOperation({
     summary: 'Get available report types',
-    description: 'Retrieve a list of available report types and their parameters',
+    description:
+      'Retrieve a list of available report types and their parameters',
   })
   @ApiResponse({
     status: 200,
@@ -158,7 +161,10 @@ export class ReportsController {
             properties: {
               id: { type: 'string', example: 'sales' },
               name: { type: 'string', example: 'Sales Report' },
-              description: { type: 'string', example: 'Detailed sales report with revenue breakdown' },
+              description: {
+                type: 'string',
+                example: 'Detailed sales report with revenue breakdown',
+              },
               parameters: {
                 type: 'array',
                 items: {
@@ -177,18 +183,29 @@ export class ReportsController {
               },
               formats: {
                 type: 'array',
-                items: { type: 'string', enum: ['json', 'csv', 'pdf', 'excel'] },
+                items: {
+                  type: 'string',
+                  enum: ['json', 'csv', 'pdf', 'excel'],
+                },
               },
-              defaultFormat: { type: 'string', enum: ['json', 'csv', 'pdf', 'excel'] },
+              defaultFormat: {
+                type: 'string',
+                enum: ['json', 'csv', 'pdf', 'excel'],
+              },
             },
           },
         },
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
-  async getReportTypes(): Promise<{ success: boolean; data: ReportTypeDefinition[] }> {
+  async getReportTypes(): Promise<{
+    success: boolean;
+    data: ReportTypeDefinition[];
+  }> {
     this.logger.log('Fetching available report types');
     return this.reportsService.getReportTypes();
   }
@@ -215,7 +232,16 @@ export class ReportsController {
   })
   @ApiQuery({
     name: 'dateRange',
-    enum: ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'custom'],
+    enum: [
+      'today',
+      'yesterday',
+      'this_week',
+      'last_week',
+      'this_month',
+      'last_month',
+      'this_year',
+      'custom',
+    ],
     required: false,
     description: 'Date range for the report',
     example: 'this_month',
@@ -264,7 +290,8 @@ export class ReportsController {
       'text/csv': {
         schema: {
           type: 'string',
-          example: 'Date,Revenue,Orders\n2023-01-01,1500,25\n2023-01-02,1800,30',
+          example:
+            'Date,Revenue,Orders\n2023-01-01,1500,25\n2023-01-02,1800,30',
         },
       },
       'application/pdf': {
@@ -281,7 +308,9 @@ export class ReportsController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async generateReport(
     @Query('type') type: ReportType,
@@ -292,7 +321,7 @@ export class ReportsController {
     @Res({ passthrough: true }) res?: Response,
   ): Promise<any> {
     this.logger.log(`Generating ${type} report in ${format} format`);
-    
+
     const params = {
       dateRange,
       startDate,
@@ -300,7 +329,11 @@ export class ReportsController {
       // Add other parameters as needed
     };
 
-    const result = await this.reportsService.generateReport(type, format, params);
+    const result = await this.reportsService.generateReport(
+      type,
+      format,
+      params,
+    );
 
     // If format is JSON, return as JSON
     if (format === 'json') {
@@ -311,7 +344,7 @@ export class ReportsController {
     if (res) {
       let contentType = 'text/plain';
       let extension = 'txt';
-      let filename = `report-${type}-${new Date().toISOString().split('T')[0]}`;
+      const filename = `report-${type}-${new Date().toISOString().split('T')[0]}`;
 
       switch (format) {
         case 'csv':
@@ -323,19 +356,23 @@ export class ReportsController {
           extension = 'pdf';
           break;
         case 'excel':
-          contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          contentType =
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
           extension = 'xlsx';
           break;
       }
 
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}.${extension}"`);
-      
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}.${extension}"`,
+      );
+
       // If the result is a buffer (PDF, Excel), send it directly
       if (Buffer.isBuffer(result)) {
         return result;
       }
-      
+
       // For CSV/text, send as string
       return String(result);
     }
@@ -345,7 +382,7 @@ export class ReportsController {
     if (typeof result === 'object' && result !== null && 'success' in result) {
       return result as { success: boolean; data: any; metadata: any };
     }
-    
+
     // Fallback for unexpected response types
     return {
       success: true,
@@ -362,7 +399,8 @@ export class ReportsController {
   @RequirePermissions(Permission.REPORTS_SCHEDULE)
   @ApiOperation({
     summary: 'Schedule a recurring report',
-    description: 'Schedule a report to be generated and delivered on a recurring basis',
+    description:
+      'Schedule a report to be generated and delivered on a recurring basis',
   })
   @ApiResponse({
     status: 201,
@@ -392,7 +430,9 @@ export class ReportsController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async scheduleReport(
     @Body('type') type: ReportType,
@@ -401,7 +441,9 @@ export class ReportsController {
     @Body('recipients') recipients: string[],
     @Body('parameters') parameters: ReportParameters,
   ): Promise<{ success: boolean; data: any }> {
-    this.logger.log(`Scheduling ${frequency} ${type} report in ${format} format`);
+    this.logger.log(
+      `Scheduling ${frequency} ${type} report in ${format} format`,
+    );
     return this.reportsService.scheduleReport({
       type,
       format,
@@ -447,7 +489,9 @@ export class ReportsController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getScheduledReports() {
     this.logger.log('Fetching scheduled reports');
@@ -479,13 +523,17 @@ export class ReportsController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateScheduledReportStatus(
     @Param('id') id: string,
     @Body('isActive') isActive: boolean,
   ) {
-    this.logger.log(`Updating status for scheduled report ${id} to ${isActive ? 'active' : 'inactive'}`);
+    this.logger.log(
+      `Updating status for scheduled report ${id} to ${isActive ? 'active' : 'inactive'}`,
+    );
     return this.reportsService.updateScheduledReportStatus(id, isActive);
   }
 
@@ -502,11 +550,16 @@ export class ReportsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Scheduled report deleted successfully' },
+        message: {
+          type: 'string',
+          example: 'Scheduled report deleted successfully',
+        },
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async deleteScheduledReport(@Param('id') id: string) {
     this.logger.log(`Deleting scheduled report ${id}`);

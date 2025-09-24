@@ -5,17 +5,10 @@ export class UpdateDriverStatusDto {
   @ApiProperty({
     description: 'Driver availability status',
     example: 'online',
-    enum: ['online', 'offline', 'busy']
+    enum: ['online', 'offline', 'busy'],
   })
   @IsNotEmpty()
   @IsString()
   @IsIn(['online', 'offline', 'busy'])
   status: string;
 }
-
-
-
-
-
-
-

@@ -5,7 +5,7 @@ import { Transform, Type } from 'class-transformer';
 export class GetNearbyStoresDto {
   @ApiPropertyOptional({
     description: 'User latitude',
-    example: 40.7128
+    example: 40.7128,
   })
   @IsOptional()
   @Type(() => Number)
@@ -14,7 +14,7 @@ export class GetNearbyStoresDto {
 
   @ApiPropertyOptional({
     description: 'User longitude',
-    example: -74.0060
+    example: -74.006,
   })
   @IsOptional()
   @Type(() => Number)
@@ -23,7 +23,7 @@ export class GetNearbyStoresDto {
 
   @ApiPropertyOptional({
     description: 'Search radius in kilometers',
-    example: 5
+    example: 5,
   })
   @IsOptional()
   @Type(() => Number)
@@ -34,7 +34,7 @@ export class GetNearbyStoresDto {
 
   @ApiPropertyOptional({
     description: 'Store category filter',
-    example: 'restaurant'
+    example: 'restaurant',
   })
   @IsOptional()
   @IsString()
@@ -42,7 +42,7 @@ export class GetNearbyStoresDto {
 
   @ApiPropertyOptional({
     description: 'Search query for store name',
-    example: 'pizza'
+    example: 'pizza',
   })
   @IsOptional()
   @IsString()

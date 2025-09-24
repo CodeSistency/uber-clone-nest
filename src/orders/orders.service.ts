@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -11,7 +15,16 @@ export class OrdersService {
   ) {}
 
   async createOrder(createOrderDto: CreateOrderDto, userId: number) {
-    const { storeId, items, deliveryAddress, deliveryLatitude, deliveryLongitude, specialInstructions, paymentMethod, promoCode } = createOrderDto;
+    const {
+      storeId,
+      items,
+      deliveryAddress,
+      deliveryLatitude,
+      deliveryLongitude,
+      specialInstructions,
+      paymentMethod,
+      promoCode,
+    } = createOrderDto;
 
     // Verify store exists and is open
     const store = await this.prisma.store.findUnique({
@@ -34,7 +47,13 @@ export class OrdersService {
     for (const item of items) {
       const product = await this.prisma.product.findUnique({
         where: { id: item.productId },
-        select: { id: true, price: true, isAvailable: true, storeId: true, name: true },
+        select: {
+          id: true,
+          price: true,
+          isAvailable: true,
+          storeId: true,
+          name: true,
+        },
       });
 
       if (!product) {
@@ -42,11 +61,15 @@ export class OrdersService {
       }
 
       if (!product.isAvailable) {
-        throw new BadRequestException(`Product ${product.name} is not available`);
+        throw new BadRequestException(
+          `Product ${product.name} is not available`,
+        );
       }
 
       if (product.storeId !== storeId) {
-        throw new BadRequestException(`Product ${item.productId} does not belong to store ${storeId}`);
+        throw new BadRequestException(
+          `Product ${item.productId} does not belong to store ${storeId}`,
+        );
       }
 
       const itemTotal = Number(product.price) * item.quantity;
@@ -70,7 +93,12 @@ export class OrdersService {
         where: { promoCode },
       });
 
-      if (promotion && promotion.isActive && promotion.expiryDate && promotion.expiryDate > new Date()) {
+      if (
+        promotion &&
+        promotion.isActive &&
+        promotion.expiryDate &&
+        promotion.expiryDate > new Date()
+      ) {
         if (promotion.discountPercentage) {
           discount = subtotal * (Number(promotion.discountPercentage) / 100);
         } else if (promotion.discountAmount) {
@@ -104,12 +132,14 @@ export class OrdersService {
 
       // Create order items
       await tx.orderItem.createMany({
-        data: orderItems.map(item => ({
+        data: orderItems.map((item) => ({
           orderId: newOrder.orderId,
           productId: item.productId,
           quantity: item.quantity,
           priceAtPurchase: item.priceAtPurchase,
-          ...(item.specialInstructions && { specialInstructions: item.specialInstructions }),
+          ...(item.specialInstructions && {
+            specialInstructions: item.specialInstructions,
+          }),
         })),
       });
 
@@ -136,7 +166,12 @@ export class OrdersService {
           select: { id: true, name: true, logoUrl: true },
         },
         courier: {
-          select: { id: true, firstName: true, lastName: true, profileImageUrl: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImageUrl: true,
+          },
         },
         orderItems: {
           include: {
@@ -208,7 +243,7 @@ export class OrdersService {
       where: {
         orderId,
         status: 'pending', // Only accept pending orders
-        courierId: null,   // Only orders without driver
+        courierId: null, // Only orders without driver
       },
       data: {
         courierId: driverId,
@@ -289,7 +324,12 @@ export class OrdersService {
       include: {
         store: true,
         courier: {
-          select: { id: true, firstName: true, lastName: true, profileImageUrl: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImageUrl: true,
+          },
         },
         orderItems: {
           include: {
@@ -308,7 +348,11 @@ export class OrdersService {
     }
 
     // Check if user owns the order or is the courier or store owner
-    if (order.userId !== userId && order.courierId !== userId && order.store.ownerId !== userId) {
+    if (
+      order.userId !== userId &&
+      order.courierId !== userId &&
+      order.store.ownerId !== userId
+    ) {
       throw new NotFoundException('Order not found');
     }
 
@@ -323,7 +367,9 @@ export class OrdersService {
 
   private async notifyOrderAccepted(order: any) {
     // Implementation for order accepted notification
-    console.log(`Order ${order.orderId} accepted by driver ${order.courier.firstName}`);
+    console.log(
+      `Order ${order.orderId} accepted by driver ${order.courier.firstName}`,
+    );
   }
 
   private async notifyOrderPickedUp(order: any) {

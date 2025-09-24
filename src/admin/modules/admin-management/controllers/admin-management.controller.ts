@@ -37,17 +37,21 @@ import { UpdateAdminDto } from '../dtos/update-admin.dto';
 export class AdminManagementController {
   private readonly logger = new Logger(AdminManagementController.name);
 
-  constructor(private readonly adminManagementService: AdminManagementService) {}
+  constructor(
+    private readonly adminManagementService: AdminManagementService,
+  ) {}
 
   @Post()
   @RequirePermissions(Permission.SYSTEM_CONFIG)
   @ApiOperation({
     summary: 'Create new admin',
-    description: 'Create a new administrator account with specified role and permissions'
+    description:
+      'Create a new administrator account with specified role and permissions',
   })
   @ApiBody({
     type: CreateAdminDto,
-    description: 'Admin creation data including name, email, password, role and permissions'
+    description:
+      'Admin creation data including name, email, password, role and permissions',
   })
   @ApiResponse({
     status: 201,
@@ -63,15 +67,19 @@ export class AdminManagementController {
         adminPermissions: {
           type: 'array',
           items: { type: 'string' },
-          example: ['user:read', 'user:write']
+          example: ['user:read', 'user:write'],
         },
         isActive: { type: 'boolean', example: true },
-        adminCreatedAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        adminCreatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
-  @ApiBadRequestResponse({ description: 'Bad request - Invalid data or validation error' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiBadRequestResponse({
+    description: 'Bad request - Invalid data or validation error',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async createAdmin(@Body() createAdminDto: CreateAdminDto) {
     this.logger.log(`Creating new admin: ${createAdminDto.email}`);
@@ -82,7 +90,8 @@ export class AdminManagementController {
   @RequirePermissions(Permission.SYSTEM_CONFIG)
   @ApiOperation({
     summary: 'Get all admins',
-    description: 'Retrieve a list of all administrator accounts with their roles and permissions'
+    description:
+      'Retrieve a list of all administrator accounts with their roles and permissions',
   })
   @ApiResponse({
     status: 200,
@@ -99,15 +108,17 @@ export class AdminManagementController {
           adminPermissions: {
             type: 'array',
             items: { type: 'string' },
-            example: ['user:read', 'user:write']
+            example: ['user:read', 'user:write'],
           },
           isActive: { type: 'boolean', example: true },
-          lastAdminLogin: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
+          lastAdminLogin: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getAllAdmins() {
     this.logger.log('Fetching all admins');
@@ -118,13 +129,14 @@ export class AdminManagementController {
   @RequirePermissions(Permission.SYSTEM_CONFIG)
   @ApiOperation({
     summary: 'Get admin by ID',
-    description: 'Retrieve detailed information about a specific administrator account'
+    description:
+      'Retrieve detailed information about a specific administrator account',
   })
   @ApiParam({
     name: 'id',
     type: 'number',
     description: 'Admin ID to retrieve',
-    example: 1
+    example: 1,
   })
   @ApiResponse({
     status: 200,
@@ -139,16 +151,18 @@ export class AdminManagementController {
         adminPermissions: {
           type: 'array',
           items: { type: 'string' },
-          example: ['user:read', 'user:write']
+          example: ['user:read', 'user:write'],
         },
         isActive: { type: 'boolean', example: true },
         lastAdminLogin: { type: 'string', format: 'date-time' },
-        adminCreatedAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        adminCreatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiNotFoundResponse({ description: 'Admin not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getAdminById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching admin by ID: ${id}`);
@@ -159,17 +173,18 @@ export class AdminManagementController {
   @RequirePermissions(Permission.SYSTEM_CONFIG)
   @ApiOperation({
     summary: 'Update admin',
-    description: 'Update an administrator account information, role, or permissions'
+    description:
+      'Update an administrator account information, role, or permissions',
   })
   @ApiParam({
     name: 'id',
     type: 'number',
     description: 'Admin ID to update',
-    example: 1
+    example: 1,
   })
   @ApiBody({
     type: UpdateAdminDto,
-    description: 'Admin update data'
+    description: 'Admin update data',
   })
   @ApiResponse({
     status: 200,
@@ -184,16 +199,20 @@ export class AdminManagementController {
         adminPermissions: {
           type: 'array',
           items: { type: 'string' },
-          example: ['user:read', 'user:write', 'user:delete']
+          example: ['user:read', 'user:write', 'user:delete'],
         },
         isActive: { type: 'boolean', example: true },
-        adminUpdatedAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        adminUpdatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiNotFoundResponse({ description: 'Admin not found' })
-  @ApiBadRequestResponse({ description: 'Bad request - Invalid data or validation error' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiBadRequestResponse({
+    description: 'Bad request - Invalid data or validation error',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateAdmin(
     @Param('id', ParseIntPipe) id: number,
@@ -207,13 +226,14 @@ export class AdminManagementController {
   @RequirePermissions(Permission.SYSTEM_CONFIG)
   @ApiOperation({
     summary: 'Delete admin',
-    description: 'Convert an administrator account to a regular user account (soft delete)'
+    description:
+      'Convert an administrator account to a regular user account (soft delete)',
   })
   @ApiParam({
     name: 'id',
     type: 'number',
     description: 'Admin ID to delete',
-    example: 1
+    example: 1,
   })
   @ApiResponse({
     status: 200,
@@ -221,12 +241,14 @@ export class AdminManagementController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Admin deleted successfully' }
-      }
-    }
+        message: { type: 'string', example: 'Admin deleted successfully' },
+      },
+    },
   })
   @ApiNotFoundResponse({ description: 'Admin not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async deleteAdmin(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Deleting admin ID: ${id}`);

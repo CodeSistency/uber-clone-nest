@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebSocketGatewayClass } from '../websocket/websocket.gateway';
-import { CreateErrandDto, ErrandShoppingUpdateDto } from '../rides/flow/dto/errand-flow.dtos';
+import {
+  CreateErrandDto,
+  ErrandShoppingUpdateDto,
+} from '../rides/flow/dto/errand-flow.dtos';
 
 @Injectable()
 export class ErrandsService {
@@ -28,17 +31,17 @@ export class ErrandsService {
         dropoffAddress: dto.dropoffAddress,
         dropoffLat: dto.dropoffLat,
         dropoffLng: dto.dropoffLng,
-        status: 'requested'
+        status: 'requested',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -63,18 +66,18 @@ export class ErrandsService {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         driver: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
-            profileImageUrl: true
-          }
-        }
-      }
+            profileImageUrl: true,
+          },
+        },
+      },
     });
   }
 
@@ -85,24 +88,24 @@ export class ErrandsService {
       where: { id: errandId },
       data: {
         driverId,
-        status: 'accepted'
+        status: 'accepted',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         driver: {
           select: {
             id: true,
             firstName: true,
-            lastName: true
-          }
-        }
-      }
+            lastName: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -119,7 +122,10 @@ export class ErrandsService {
     return errand;
   }
 
-  async updateErrandShopping(errandId: number, update: ErrandShoppingUpdateDto) {
+  async updateErrandShopping(
+    errandId: number,
+    update: ErrandShoppingUpdateDto,
+  ) {
     this.logger.log(`Updating shopping for errand ${errandId}`);
 
     const errand = await this.prisma.errand.update({
@@ -127,30 +133,32 @@ export class ErrandsService {
       data: {
         itemsCost: update.itemsCost,
         shoppingNotes: update.notes,
-        status: 'shopping_in_progress'
+        status: 'shopping_in_progress',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
-    this.gateway.server?.to(`errand-${errandId}`).emit('errand:shopping_update', {
-      id: errand.id,
-      status: errand.status,
-      shoppingUpdate: {
-        itemsCost: update.itemsCost,
-        notes: update.notes,
-        photos: [] // Could be extended to include photo URLs
-      },
-      timestamp: new Date(),
-    });
+    this.gateway.server
+      ?.to(`errand-${errandId}`)
+      .emit('errand:shopping_update', {
+        id: errand.id,
+        status: errand.status,
+        shoppingUpdate: {
+          itemsCost: update.itemsCost,
+          notes: update.notes,
+          photos: [], // Could be extended to include photo URLs
+        },
+        timestamp: new Date(),
+      });
 
     this.logger.log(`Shopping updated for errand ${errandId}`);
     return errand;
@@ -163,20 +171,20 @@ export class ErrandsService {
       where: { id: errandId },
       data: {
         status: 'en_route',
-        serviceFee: 5.00, // Base service fee
+        serviceFee: 5.0, // Base service fee
         totalAmount: {
-          increment: 5.00 // Add to existing itemsCost if any
-        }
+          increment: 5.0, // Add to existing itemsCost if any
+        },
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -198,24 +206,24 @@ export class ErrandsService {
     const errand = await this.prisma.errand.update({
       where: { id: errandId },
       data: {
-        status: 'completed'
+        status: 'completed',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         driver: {
           select: {
             id: true,
             firstName: true,
-            lastName: true
-          }
-        }
-      }
+            lastName: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -233,22 +241,24 @@ export class ErrandsService {
   }
 
   async cancelErrand(errandId: number, reason?: string) {
-    this.logger.log(`Cancelling errand ${errandId}: ${reason || 'No reason provided'}`);
+    this.logger.log(
+      `Cancelling errand ${errandId}: ${reason || 'No reason provided'}`,
+    );
 
     const errand = await this.prisma.errand.update({
       where: { id: errandId },
       data: {
-        status: 'cancelled'
+        status: 'cancelled',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -280,11 +290,11 @@ export class ErrandsService {
             id: true,
             firstName: true,
             lastName: true,
-            profileImageUrl: true
-          }
-        }
+            profileImageUrl: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -296,11 +306,11 @@ export class ErrandsService {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

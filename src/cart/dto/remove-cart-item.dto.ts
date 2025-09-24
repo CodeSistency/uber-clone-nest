@@ -5,7 +5,7 @@ export class RemoveCartItemDto {
   @ApiProperty({
     description: 'ID del producto a remover del carrito',
     example: 123,
-    type: 'number'
+    type: 'number',
   })
   @IsNotEmpty()
   @IsNumber()

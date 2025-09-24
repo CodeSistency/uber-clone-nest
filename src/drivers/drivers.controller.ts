@@ -49,11 +49,11 @@ export class DriversController {
     - updatedFrom/updatedTo: Rango de fechas de actualización
     - sortBy/sortOrder: Ordenamiento personalizado
     - page/limit: Paginación
-    `
+    `,
   })
   @ApiQuery({
     type: SearchDriversDto,
-    description: 'Parámetros de búsqueda y paginación'
+    description: 'Parámetros de búsqueda y paginación',
   })
   @ApiResponse({
     status: 200,
@@ -84,7 +84,7 @@ export class DriversController {
                   id: { type: 'number' },
                   name: { type: 'string' },
                   displayName: { type: 'string' },
-                }
+                },
               },
               documents: {
                 type: 'array',
@@ -95,18 +95,18 @@ export class DriversController {
                     documentType: { type: 'string' },
                     verificationStatus: { type: 'string' },
                     uploadedAt: { type: 'string', format: 'date-time' },
-                  }
-                }
+                  },
+                },
               },
               _count: {
                 type: 'object',
                 properties: {
                   rides: { type: 'number' },
                   deliveryOrders: { type: 'number' },
-                }
-              }
-            }
-          }
+                },
+              },
+            },
+          },
         },
         pagination: {
           type: 'object',
@@ -116,32 +116,34 @@ export class DriversController {
             total: { type: 'number' },
             totalPages: { type: 'number' },
             hasNext: { type: 'boolean' },
-            hasPrev: { type: 'boolean' }
-          }
+            hasPrev: { type: 'boolean' },
+          },
         },
         filters: {
           type: 'object',
           properties: {
             applied: {
               type: 'array',
-              items: { type: 'string' }
+              items: { type: 'string' },
             },
-            searchTerm: { type: 'string' }
-          }
-        }
-      }
-    }
+            searchTerm: { type: 'string' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Parámetros de búsqueda inválidos' })
   @ApiResponse({ status: 500, description: 'Error interno del servidor' })
-  async searchDrivers(@Query() searchDto: SearchDriversDto): Promise<PaginatedDriversResponseDto> {
+  async searchDrivers(
+    @Query() searchDto: SearchDriversDto,
+  ): Promise<PaginatedDriversResponseDto> {
     return this.driversService.searchDrivers(searchDto);
   }
 
   @Get('id/:id')
   @ApiOperation({
     summary: 'Buscar conductor específico por ID',
-    description: 'Busca un conductor específico por su ID único'
+    description: 'Busca un conductor específico por su ID único',
   })
   @ApiParam({
     name: 'id',
@@ -169,8 +171,8 @@ export class DriversController {
         updatedAt: { type: 'string', format: 'date-time' },
         vehicleType: { type: 'object' },
         documents: { type: 'array' },
-      }
-    }
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Conductor no encontrado' })
   @ApiResponse({ status: 500, description: 'Error interno del servidor' })

@@ -49,17 +49,17 @@ export class ParcelsService {
         description: dto.description,
         weight: dto.weight,
         dimensions: dto.dimensions,
-        status: 'requested'
+        status: 'requested',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -84,18 +84,18 @@ export class ParcelsService {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         driver: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
-            profileImageUrl: true
-          }
-        }
-      }
+            profileImageUrl: true,
+          },
+        },
+      },
     });
   }
 
@@ -106,24 +106,24 @@ export class ParcelsService {
       where: { id: parcelId },
       data: {
         driverId,
-        status: 'accepted'
+        status: 'accepted',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         driver: {
           select: {
             id: true,
             firstName: true,
-            lastName: true
-          }
-        }
-      }
+            lastName: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -146,24 +146,24 @@ export class ParcelsService {
     const parcel = await this.prisma.parcel.update({
       where: { id: parcelId },
       data: {
-        status: 'picked_up'
+        status: 'picked_up',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         driver: {
           select: {
             id: true,
             firstName: true,
-            lastName: true
-          }
-        }
-      }
+            lastName: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -189,25 +189,25 @@ export class ParcelsService {
         proofOfDelivery: proof.photoUrl,
         recipientName: proof.recipientName,
         recipientPhone: proof.recipientPhone,
-        serviceFee: 10.00, // Base delivery fee
-        totalAmount: 10.00
+        serviceFee: 10.0, // Base delivery fee
+        totalAmount: 10.0,
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         driver: {
           select: {
             id: true,
             firstName: true,
-            lastName: true
-          }
-        }
-      }
+            lastName: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -218,7 +218,7 @@ export class ParcelsService {
       proofOfDelivery: {
         photoUrl: proof.photoUrl,
         signatureUrl: proof.signatureUrl,
-        recipientName: proof.recipientName
+        recipientName: proof.recipientName,
       },
       finalPrice: parcel.totalAmount,
       timestamp: new Date(),
@@ -229,22 +229,24 @@ export class ParcelsService {
   }
 
   async cancelParcel(parcelId: number, reason?: string) {
-    this.logger.log(`Cancelling parcel ${parcelId}: ${reason || 'No reason provided'}`);
+    this.logger.log(
+      `Cancelling parcel ${parcelId}: ${reason || 'No reason provided'}`,
+    );
 
     const parcel = await this.prisma.parcel.update({
       where: { id: parcelId },
       data: {
-        status: 'cancelled'
+        status: 'cancelled',
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     // Emit WebSocket event
@@ -276,11 +278,11 @@ export class ParcelsService {
             id: true,
             firstName: true,
             lastName: true,
-            profileImageUrl: true
-          }
-        }
+            profileImageUrl: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -292,21 +294,37 @@ export class ParcelsService {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async getParcelTypes() {
     // Return available parcel types
     return [
-      { id: 'documents', name: 'Documentos', description: 'Documentos y papeles importantes' },
-      { id: 'small_package', name: 'Paquete Pequeño', description: 'Hasta 5kg, dimensiones pequeñas' },
-      { id: 'large_package', name: 'Paquete Grande', description: 'Hasta 15kg, dimensiones grandes' },
-      { id: 'fragile', name: 'Frágil', description: 'Artículos delicados que requieren cuidado especial' }
+      {
+        id: 'documents',
+        name: 'Documentos',
+        description: 'Documentos y papeles importantes',
+      },
+      {
+        id: 'small_package',
+        name: 'Paquete Pequeño',
+        description: 'Hasta 5kg, dimensiones pequeñas',
+      },
+      {
+        id: 'large_package',
+        name: 'Paquete Grande',
+        description: 'Hasta 15kg, dimensiones grandes',
+      },
+      {
+        id: 'fragile',
+        name: 'Frágil',
+        description: 'Artículos delicados que requieren cuidado especial',
+      },
     ];
   }
 }

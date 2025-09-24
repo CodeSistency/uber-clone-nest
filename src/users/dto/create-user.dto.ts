@@ -6,7 +6,7 @@ export class CreateUserDto {
     description: 'Full name of the user',
     example: 'John Doe',
     minLength: 2,
-    maxLength: 100
+    maxLength: 100,
   })
   @IsNotEmpty()
   @IsString()
@@ -15,7 +15,7 @@ export class CreateUserDto {
   @ApiProperty({
     description: 'Email address of the user',
     example: 'john.doe@example.com',
-    format: 'email'
+    format: 'email',
   })
   @IsNotEmpty()
   @IsEmail()
@@ -25,7 +25,7 @@ export class CreateUserDto {
     description: 'Clerk authentication user ID',
     example: 'user_2abc123def456ghi789jkl012',
     minLength: 10,
-    maxLength: 50
+    maxLength: 50,
   })
   @IsNotEmpty()
   @IsString()

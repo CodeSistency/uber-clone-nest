@@ -1,4 +1,15 @@
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min, Length, ValidateNested, IsBoolean } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  Length,
+  ValidateNested,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -8,7 +19,7 @@ export class DefineRideDto {
     example: 'Calle 123 #45-67, Bogotá, Colombia',
     minLength: 10,
     maxLength: 255,
-    type: 'string'
+    type: 'string',
   })
   @IsNotEmpty()
   @IsString()
@@ -20,7 +31,7 @@ export class DefineRideDto {
     minimum: -90,
     maximum: 90,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-90)
@@ -34,7 +45,7 @@ export class DefineRideDto {
     minimum: -180,
     maximum: 180,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-180)
@@ -47,7 +58,7 @@ export class DefineRideDto {
     example: 'Carrera 7 #23-45, Medellín, Colombia',
     minLength: 10,
     maxLength: 255,
-    type: 'string'
+    type: 'string',
   })
   @IsNotEmpty()
   @IsString()
@@ -59,7 +70,7 @@ export class DefineRideDto {
     minimum: -90,
     maximum: 90,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-90)
@@ -73,7 +84,7 @@ export class DefineRideDto {
     minimum: -180,
     maximum: 180,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-180)
@@ -86,7 +97,7 @@ export class DefineRideDto {
     example: 25,
     minimum: 1,
     maximum: 300,
-    type: 'number'
+    type: 'number',
   })
   @IsNumber()
   @Min(1)
@@ -94,11 +105,12 @@ export class DefineRideDto {
   minutes: number;
 
   @ApiPropertyOptional({
-    description: 'ID del nivel de servicio (tier) solicitado. Si no se especifica, se asignará automáticamente.',
+    description:
+      'ID del nivel de servicio (tier) solicitado. Si no se especifica, se asignará automáticamente.',
     example: 1,
     minimum: 1,
     type: 'number',
-    enum: [1, 2, 3] // Ejemplo de tiers disponibles
+    enum: [1, 2, 3], // Ejemplo de tiers disponibles
   })
   @IsOptional()
   @IsNumber()
@@ -106,11 +118,12 @@ export class DefineRideDto {
   tierId?: number;
 
   @ApiPropertyOptional({
-    description: 'ID del tipo de vehículo solicitado. Si no se especifica, se asignará automáticamente.',
+    description:
+      'ID del tipo de vehículo solicitado. Si no se especifica, se asignará automáticamente.',
     example: 1,
     minimum: 1,
     type: 'number',
-    enum: [1, 2, 3, 4] // 1=Carro, 2=Moto, 3=Bicicleta, 4=Camión
+    enum: [1, 2, 3, 4], // 1=Carro, 2=Moto, 3=Bicicleta, 4=Camión
   })
   @IsOptional()
   @IsNumber()
@@ -123,17 +136,18 @@ export class ConfirmRidePaymentDto {
     description: 'Método de pago venezolano para el viaje',
     example: 'transfer',
     enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
-    enumName: 'VenezuelanPaymentMethod'
+    enumName: 'VenezuelanPaymentMethod',
   })
   @IsIn(['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'])
   method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin';
 
   @ApiPropertyOptional({
-    description: 'Código del banco venezolano (requerido para transfer y pago_movil)',
+    description:
+      'Código del banco venezolano (requerido para transfer y pago_movil)',
     example: '0102',
     minLength: 4,
     maxLength: 4,
-    enum: ['0102', '0105', '0196', '0108'] // Banco Venezuela, Mercantil, BNC, Provincial
+    enum: ['0102', '0105', '0196', '0108'], // Banco Venezuela, Mercantil, BNC, Provincial
   })
   @IsOptional()
   @IsString()
@@ -143,13 +157,14 @@ export class ConfirmRidePaymentDto {
 
 export class SelectVehicleDto {
   @ApiPropertyOptional({
-    description: 'ID del nivel de servicio (tier) a seleccionar. Si no se especifica, mantiene el valor actual.',
+    description:
+      'ID del nivel de servicio (tier) a seleccionar. Si no se especifica, mantiene el valor actual.',
     example: 1,
     minimum: 1,
     type: 'number',
     enum: [1, 2, 3],
     required: false,
-    nullable: true
+    nullable: true,
   })
   @IsOptional()
   @IsNumber()
@@ -158,13 +173,14 @@ export class SelectVehicleDto {
   tierId?: number | null;
 
   @ApiPropertyOptional({
-    description: 'ID del tipo de vehículo a seleccionar. Si no se especifica, mantiene el valor actual.',
+    description:
+      'ID del tipo de vehículo a seleccionar. Si no se especifica, mantiene el valor actual.',
     example: 1,
     minimum: 1,
     type: 'number',
     enum: [1, 2, 3, 4],
     required: false,
-    nullable: true
+    nullable: true,
   })
   @IsOptional()
   @IsNumber()
@@ -178,7 +194,7 @@ export class SetDriverAvailabilityDto {
     description: 'Estado de disponibilidad del conductor',
     example: 'online',
     enum: ['online', 'offline', 'busy'],
-    type: 'string'
+    type: 'string',
   })
   @IsIn(['online', 'offline', 'busy'])
   status: 'online' | 'offline' | 'busy';
@@ -190,7 +206,7 @@ export class RateRideFlowDto {
     example: 5,
     minimum: 1,
     maximum: 5,
-    type: 'number'
+    type: 'number',
   })
   @IsNumber()
   @Min(1)
@@ -202,7 +218,7 @@ export class RateRideFlowDto {
     description: 'Comentario opcional sobre la experiencia del viaje',
     example: 'Excelente conductor, muy amable y puntual',
     maxLength: 500,
-    type: 'string'
+    type: 'string',
   })
   @IsOptional()
   @IsString()
@@ -219,7 +235,7 @@ export class MatchBestDriverDto {
     minimum: -90,
     maximum: 90,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-90)
@@ -233,7 +249,7 @@ export class MatchBestDriverDto {
     minimum: -180,
     maximum: 180,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(-180)
@@ -246,7 +262,7 @@ export class MatchBestDriverDto {
     example: 1,
     minimum: 1,
     type: 'number',
-    enum: [1, 2, 3]
+    enum: [1, 2, 3],
   })
   @IsOptional()
   @IsNumber()
@@ -259,7 +275,7 @@ export class MatchBestDriverDto {
     example: 1,
     minimum: 1,
     type: 'number',
-    enum: [1, 2, 3, 4]
+    enum: [1, 2, 3, 4],
   })
   @IsOptional()
   @IsNumber()
@@ -273,7 +289,7 @@ export class MatchBestDriverDto {
     minimum: 0.1,
     maximum: 20,
     type: 'number',
-    default: 5
+    default: 5,
   })
   @IsOptional()
   @IsNumber()
@@ -294,8 +310,8 @@ export class MatchedDriverDto {
       profileImageUrl: { type: 'string', example: 'https://...' },
       rating: { type: 'number', example: 4.8 },
       totalRides: { type: 'number', example: 1250 },
-      memberSince: { type: 'string', format: 'date-time' }
-    }
+      memberSince: { type: 'string', format: 'date-time' },
+    },
   })
   driver: {
     driverId: number;
@@ -320,10 +336,10 @@ export class MatchedDriverDto {
           id: { type: 'number', example: 1 },
           name: { type: 'string', example: 'car' },
           displayName: { type: 'string', example: 'Carro' },
-          icon: { type: 'string', example: '🚗' }
-        }
-      }
-    }
+          icon: { type: 'string', example: '🚗' },
+        },
+      },
+    },
   })
   vehicle: {
     carModel: string;
@@ -341,16 +357,24 @@ export class MatchedDriverDto {
     description: 'Información de ubicación y tiempo estimado',
     type: 'object',
     properties: {
-      distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
-      estimatedArrival: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
+      distance: {
+        type: 'number',
+        example: 1.2,
+        description: 'Distancia en km',
+      },
+      estimatedArrival: {
+        type: 'number',
+        example: 5,
+        description: 'Tiempo estimado en minutos',
+      },
       currentLocation: {
         type: 'object',
         properties: {
           lat: { type: 'number', example: 4.6097 },
-          lng: { type: 'number', example: -74.0817 }
-        }
-      }
-    }
+          lng: { type: 'number', example: -74.0817 },
+        },
+      },
+    },
   })
   location: {
     distance: number;
@@ -367,8 +391,8 @@ export class MatchedDriverDto {
     properties: {
       tierId: { type: 'number', example: 1 },
       tierName: { type: 'string', example: 'Economy' },
-      estimatedFare: { type: 'number', example: 15.50 }
-    }
+      estimatedFare: { type: 'number', example: 15.5 },
+    },
   })
   pricing: {
     tierId: number;
@@ -381,14 +405,14 @@ export class MatchedDriverDto {
     type: 'number',
     example: 85.5,
     minimum: 0,
-    maximum: 100
+    maximum: 100,
   })
   matchScore: number;
 
   @ApiProperty({
     description: 'Timestamp de cuando se encontró el conductor',
     type: 'string',
-    format: 'date-time'
+    format: 'date-time',
   })
   matchedAt: Date;
 }
@@ -398,7 +422,7 @@ export class ConfirmDriverDto {
     description: 'ID del conductor que el usuario confirma',
     example: 1,
     minimum: 1,
-    type: 'number'
+    type: 'number',
   })
   @IsNumber()
   @Min(1)
@@ -409,7 +433,7 @@ export class ConfirmDriverDto {
     description: 'Notas adicionales del usuario para el conductor',
     example: 'Por favor llegue rápido, tengo prisa',
     maxLength: 200,
-    type: 'string'
+    type: 'string',
   })
   @IsOptional()
   @IsString()
@@ -422,7 +446,7 @@ export class DriverRideRequestDto {
     description: 'ID del viaje solicitado',
     example: 123,
     minimum: 1,
-    type: 'number'
+    type: 'number',
   })
   rideId: number;
 
@@ -431,8 +455,8 @@ export class DriverRideRequestDto {
     type: 'object',
     properties: {
       name: { type: 'string', example: 'Juan Pérez' },
-      rating: { type: 'number', example: 4.9 }
-    }
+      rating: { type: 'number', example: 4.9 },
+    },
   })
   passenger: {
     name: string;
@@ -444,11 +468,22 @@ export class DriverRideRequestDto {
     type: 'object',
     properties: {
       originAddress: { type: 'string', example: 'Calle 123, Bogotá' },
-      destinationAddress: { type: 'string', example: 'Centro Comercial, Medellín' },
-      distance: { type: 'number', example: 15.5, description: 'Distancia en km' },
-      estimatedDuration: { type: 'number', example: 25, description: 'Duración estimada en minutos' },
-      fareAmount: { type: 'number', example: 25.50 }
-    }
+      destinationAddress: {
+        type: 'string',
+        example: 'Centro Comercial, Medellín',
+      },
+      distance: {
+        type: 'number',
+        example: 15.5,
+        description: 'Distancia en km',
+      },
+      estimatedDuration: {
+        type: 'number',
+        example: 25,
+        description: 'Duración estimada en minutos',
+      },
+      fareAmount: { type: 'number', example: 25.5 },
+    },
   })
   ride: {
     originAddress: string;
@@ -463,8 +498,8 @@ export class DriverRideRequestDto {
     type: 'object',
     properties: {
       lat: { type: 'number', example: 4.6097 },
-      lng: { type: 'number', example: -74.0817 }
-    }
+      lng: { type: 'number', example: -74.0817 },
+    },
   })
   pickupLocation: {
     lat: number;
@@ -474,7 +509,7 @@ export class DriverRideRequestDto {
   @ApiPropertyOptional({
     description: 'Notas del pasajero',
     example: 'Por favor llegue rápido',
-    type: 'string'
+    type: 'string',
   })
   notes?: string;
 
@@ -482,14 +517,14 @@ export class DriverRideRequestDto {
     description: 'Tiempo límite para responder (minutos)',
     example: 2,
     minimum: 1,
-    type: 'number'
+    type: 'number',
   })
   responseTimeoutMinutes: number = 2;
 
   @ApiProperty({
     description: 'Timestamp de la solicitud',
     type: 'string',
-    format: 'date-time'
+    format: 'date-time',
   })
   requestedAt: Date;
 }
@@ -499,7 +534,7 @@ export class DriverResponseDto {
     description: 'Respuesta del conductor',
     example: 'accept',
     enum: ['accept', 'reject'],
-    enumName: 'DriverResponse'
+    enumName: 'DriverResponse',
   })
   @IsIn(['accept', 'reject'])
   response: 'accept' | 'reject';
@@ -508,7 +543,7 @@ export class DriverResponseDto {
     description: 'Razón de rechazo (solo si response es "reject")',
     example: 'Estoy muy lejos del punto de recogida',
     maxLength: 200,
-    type: 'string'
+    type: 'string',
   })
   @IsOptional()
   @IsString()
@@ -516,11 +551,12 @@ export class DriverResponseDto {
   reason?: string;
 
   @ApiPropertyOptional({
-    description: 'Tiempo estimado de llegada en minutos (solo si response es "accept")',
+    description:
+      'Tiempo estimado de llegada en minutos (solo si response es "accept")',
     example: 5,
     minimum: 1,
     maximum: 60,
-    type: 'number'
+    type: 'number',
   })
   @IsOptional()
   @IsNumber()
@@ -536,7 +572,7 @@ export class ReportIssueDto {
   @ApiProperty({
     description: 'Tipo de problema reportado',
     example: 'traffic_jam',
-    enum: ['traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other']
+    enum: ['traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other'],
   })
   @IsIn(['traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other'])
   type: 'traffic_jam' | 'breakdown' | 'accident' | 'passenger_issue' | 'other';
@@ -545,7 +581,7 @@ export class ReportIssueDto {
     description: 'Descripción detallada del problema',
     example: 'Hay un accidente bloqueando la ruta principal',
     minLength: 10,
-    maxLength: 500
+    maxLength: 500,
   })
   @IsNotEmpty()
   @IsString()
@@ -555,7 +591,7 @@ export class ReportIssueDto {
   @ApiProperty({
     description: 'Severidad del problema',
     example: 'medium',
-    enum: ['low', 'medium', 'high']
+    enum: ['low', 'medium', 'high'],
   })
   @IsIn(['low', 'medium', 'high'])
   severity: 'low' | 'medium' | 'high';
@@ -565,8 +601,8 @@ export class ReportIssueDto {
     type: 'object',
     properties: {
       lat: { type: 'number', example: 4.6097 },
-      lng: { type: 'number', example: -74.0817 }
-    }
+      lng: { type: 'number', example: -74.0817 },
+    },
   })
   @IsOptional()
   @ValidateNested()
@@ -579,7 +615,7 @@ export class ReportIssueDto {
     description: 'Tiempo estimado de retraso en minutos',
     example: 15,
     minimum: 1,
-    maximum: 120
+    maximum: 120,
   })
   @IsOptional()
   @IsNumber()
@@ -591,7 +627,7 @@ export class ReportIssueDto {
   @ApiPropertyOptional({
     description: 'Indica si el problema requiere cancelación del viaje',
     example: false,
-    default: false
+    default: false,
   })
   @IsOptional()
   @IsBoolean()
@@ -604,7 +640,7 @@ export class CancelRideDto {
     description: 'Razón de la cancelación',
     example: 'Vehículo averiado en el motor',
     minLength: 10,
-    maxLength: 200
+    maxLength: 200,
   })
   @IsNotEmpty()
   @IsString()
@@ -616,8 +652,8 @@ export class CancelRideDto {
     type: 'object',
     properties: {
       lat: { type: 'number', example: 4.6097 },
-      lng: { type: 'number', example: -74.0817 }
-    }
+      lng: { type: 'number', example: -74.0817 },
+    },
   })
   @IsOptional()
   @ValidateNested()
@@ -629,7 +665,7 @@ export class CancelRideDto {
   @ApiPropertyOptional({
     description: 'Notas adicionales para el pasajero',
     example: 'Lamento las molestias, estoy coordinando asistencia',
-    maxLength: 200
+    maxLength: 200,
   })
   @IsOptional()
   @IsString()
@@ -643,7 +679,7 @@ export class RefundRideDto {
   @ApiProperty({
     description: 'ID del viaje a reembolsar',
     example: 123,
-    minimum: 1
+    minimum: 1,
   })
   @IsNumber()
   @Min(1)
@@ -653,15 +689,30 @@ export class RefundRideDto {
   @ApiProperty({
     description: 'Razón del reembolso',
     example: 'driver_cancellation',
-    enum: ['driver_cancellation', 'passenger_cancellation', 'system_cancellation', 'technical_issue']
+    enum: [
+      'driver_cancellation',
+      'passenger_cancellation',
+      'system_cancellation',
+      'technical_issue',
+    ],
   })
-  @IsIn(['driver_cancellation', 'passenger_cancellation', 'system_cancellation', 'technical_issue'])
-  reason: 'driver_cancellation' | 'passenger_cancellation' | 'system_cancellation' | 'technical_issue';
+  @IsIn([
+    'driver_cancellation',
+    'passenger_cancellation',
+    'system_cancellation',
+    'technical_issue',
+  ])
+  reason:
+    | 'driver_cancellation'
+    | 'passenger_cancellation'
+    | 'system_cancellation'
+    | 'technical_issue';
 
   @ApiPropertyOptional({
-    description: 'Monto a reembolsar (si no se especifica, se usa el monto completo del viaje)',
-    example: 25.50,
-    minimum: 0.01
+    description:
+      'Monto a reembolsar (si no se especifica, se usa el monto completo del viaje)',
+    example: 25.5,
+    minimum: 0.01,
   })
   @IsOptional()
   @IsNumber()
@@ -672,7 +723,7 @@ export class RefundRideDto {
   @ApiPropertyOptional({
     description: 'Notas administrativas sobre el reembolso',
     example: 'Cancelación por avería del vehículo',
-    maxLength: 300
+    maxLength: 300,
   })
   @IsOptional()
   @IsString()
@@ -680,16 +731,15 @@ export class RefundRideDto {
   notes?: string;
 }
 
-
 // === NUEVOS DTOS PARA SISTEMA DE PAGOS COMPLETO ===
 
 export class PayWithMultipleMethodsDto {
   @ApiProperty({
     description: 'Monto total del viaje a pagar',
-    example: 25.50,
+    example: 25.5,
     minimum: 0.01,
     type: 'number',
-    format: 'float'
+    format: 'float',
   })
   @IsNumber()
   @Min(0.01)
@@ -697,7 +747,8 @@ export class PayWithMultipleMethodsDto {
   totalAmount: number;
 
   @ApiProperty({
-    description: 'Array de métodos de pago. Puede contener un solo método o múltiples.',
+    description:
+      'Array de métodos de pago. Puede contener un solo método o múltiples.',
     type: 'array',
     items: {
       type: 'object',
@@ -706,23 +757,23 @@ export class PayWithMultipleMethodsDto {
           type: 'string',
           enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
           example: 'transfer',
-          description: 'Método de pago venezolano'
+          description: 'Método de pago venezolano',
         },
         amount: {
           type: 'number',
-          example: 25.50,
-          description: 'Monto a pagar con este método'
+          example: 25.5,
+          description: 'Monto a pagar con este método',
         },
         bankCode: {
           type: 'string',
           example: '0102',
           description: 'Código de banco (requerido para transfer y pago_movil)',
           minLength: 4,
-          maxLength: 4
-        }
-      }
+          maxLength: 4,
+        },
+      },
     },
-    minItems: 1
+    minItems: 1,
   })
   payments: Array<{
     method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin';
@@ -736,17 +787,18 @@ export class GeneratePaymentReferenceDto {
     description: 'Método de pago para generar la referencia',
     example: 'transfer',
     enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
-    enumName: 'VenezuelanPaymentMethod'
+    enumName: 'VenezuelanPaymentMethod',
   })
   @IsIn(['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'])
   method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin';
 
   @ApiPropertyOptional({
-    description: 'Código del banco venezolano (requerido para transfer y pago_movil)',
+    description:
+      'Código del banco venezolano (requerido para transfer y pago_movil)',
     example: '0102',
     minLength: 4,
     maxLength: 4,
-    enum: ['0102', '0105', '0196', '0108']
+    enum: ['0102', '0105', '0196', '0108'],
   })
   @IsOptional()
   @IsString()
@@ -760,18 +812,19 @@ export class ConfirmPaymentWithReferenceDto {
     example: '12345678901234567890',
     minLength: 20,
     maxLength: 20,
-    type: 'string'
+    type: 'string',
   })
   @IsString()
   @Length(20, 20)
   referenceNumber: string;
 
   @ApiPropertyOptional({
-    description: 'Código del banco donde se realizó el pago (opcional, se infiere de la referencia)',
+    description:
+      'Código del banco donde se realizó el pago (opcional, se infiere de la referencia)',
     example: '0102',
     minLength: 4,
     maxLength: 4,
-    enum: ['0102', '0105', '0196', '0108']
+    enum: ['0102', '0105', '0196', '0108'],
   })
   @IsOptional()
   @IsString()
@@ -782,5 +835,3 @@ export class ConfirmPaymentWithReferenceDto {
 export class SimulateRequestDto {
   // No requiere parámetros - todo se genera automáticamente para testing
 }
-
-

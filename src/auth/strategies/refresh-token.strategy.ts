@@ -6,10 +6,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RefreshTokenPayload } from '../interfaces/jwt-payload.interface';
 
 @Injectable()
-export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'refresh') {
-  constructor(
-    private prisma: PrismaService,
-  ) {
+export class RefreshTokenStrategy extends PassportStrategy(
+  Strategy,
+  'refresh',
+) {
+  constructor(private prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,

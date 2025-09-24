@@ -184,7 +184,11 @@ export class DriversService {
       distance: number | null;
       duration: number;
       user: { name: string; userId: number } | null;
-      ratings: { ratingValue: number; comment: string | null; createdAt: Date }[];
+      ratings: {
+        ratingValue: number;
+        comment: string | null;
+        createdAt: Date;
+      }[];
     }[];
     summary: {
       totalRides: number;
@@ -333,7 +337,9 @@ export class DriversService {
   /**
    * Buscar conductores con filtros dinámicos y paginación
    */
-  async searchDrivers(searchDto: SearchDriversDto): Promise<PaginatedDriversResponseDto> {
+  async searchDrivers(
+    searchDto: SearchDriversDto,
+  ): Promise<PaginatedDriversResponseDto> {
     const {
       page = 1,
       limit = 10,
@@ -495,10 +501,13 @@ export class DriversService {
         hasNext,
         hasPrev,
       },
-      filters: appliedFilters.length > 0 ? {
-        applied: appliedFilters,
-        ...filters,
-      } : undefined,
+      filters:
+        appliedFilters.length > 0
+          ? {
+              applied: appliedFilters,
+              ...filters,
+            }
+          : undefined,
     };
   }
 }

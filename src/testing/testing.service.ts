@@ -34,67 +34,85 @@ export class TestingService {
         where: {
           paymentStatus: { in: ['pending', 'paid'] },
           createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-          }
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+          },
         },
         include: {
           user: { select: { id: true, name: true, email: true } },
           driver: { select: { id: true, firstName: true, lastName: true } },
-          tier: true
+          tier: true,
         },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: 50,
       }),
       this.prisma.deliveryOrder.findMany({
         where: {
           status: { in: ['pending', 'accepted', 'picked_up'] },
           createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          },
         },
         include: {
           user: { select: { id: true, name: true, email: true } },
           courier: { select: { id: true, firstName: true, lastName: true } },
-          store: { select: { id: true, name: true } }
+          store: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: 50,
       }),
       this.prisma.errand.findMany({
         where: {
-          status: { in: ['requested', 'accepted', 'shopping_in_progress', 'en_route'] },
+          status: {
+            in: ['requested', 'accepted', 'shopping_in_progress', 'en_route'],
+          },
           createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          },
         },
         include: {
           user: { select: { id: true, name: true, email: true } },
-          driver: { select: { id: true, firstName: true, lastName: true } }
+          driver: { select: { id: true, firstName: true, lastName: true } },
         },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: 50,
       }),
       this.prisma.parcel.findMany({
         where: {
           status: { in: ['requested', 'accepted', 'picked_up'] },
           createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          }
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          },
         },
         include: {
           user: { select: { id: true, name: true, email: true } },
-          driver: { select: { id: true, firstName: true, lastName: true } }
+          driver: { select: { id: true, firstName: true, lastName: true } },
         },
         orderBy: { createdAt: 'desc' },
-        take: 50
-      })
+        take: 50,
+      }),
     ]);
 
     const services = [
-      ...rides.map(ride => ({ ...ride, serviceType: 'ride', serviceId: ride.rideId })),
-      ...deliveries.map(delivery => ({ ...delivery, serviceType: 'delivery', serviceId: delivery.orderId })),
-      ...errands.map(errand => ({ ...errand, serviceType: 'errand', serviceId: errand.id })),
-      ...parcels.map(parcel => ({ ...parcel, serviceType: 'parcel', serviceId: parcel.id }))
+      ...rides.map((ride) => ({
+        ...ride,
+        serviceType: 'ride',
+        serviceId: ride.rideId,
+      })),
+      ...deliveries.map((delivery) => ({
+        ...delivery,
+        serviceType: 'delivery',
+        serviceId: delivery.orderId,
+      })),
+      ...errands.map((errand) => ({
+        ...errand,
+        serviceType: 'errand',
+        serviceId: errand.id,
+      })),
+      ...parcels.map((parcel) => ({
+        ...parcel,
+        serviceType: 'parcel',
+        serviceId: parcel.id,
+      })),
     ];
 
     this.logger.log(`Found ${services.length} active services`);
@@ -111,18 +129,19 @@ export class TestingService {
         service = await this.prisma.ride.create({
           data: {
             originAddress: dto.data.originAddress || 'Test Origin',
-            destinationAddress: dto.data.destinationAddress || 'Test Destination',
+            destinationAddress:
+              dto.data.destinationAddress || 'Test Destination',
             originLatitude: dto.data.originLat || 10.5,
             originLongitude: dto.data.originLng || -66.9,
             destinationLatitude: dto.data.destLat || 10.49,
             destinationLongitude: dto.data.destLng || -66.91,
             rideTime: dto.data.rideTime || 15,
-            farePrice: dto.data.farePrice || 10.00,
+            farePrice: dto.data.farePrice || 10.0,
             paymentStatus: 'pending',
             userId: dto.userId || 1,
             driverId: dto.driverId,
-            tierId: dto.data.tierId || 1
-          }
+            tierId: dto.data.tierId || 1,
+          },
         });
         break;
 
@@ -132,13 +151,14 @@ export class TestingService {
             userId: dto.userId || 1,
             storeId: dto.data.storeId || 1,
             courierId: dto.driverId,
-            deliveryAddress: dto.data.deliveryAddress || 'Test Delivery Address',
+            deliveryAddress:
+              dto.data.deliveryAddress || 'Test Delivery Address',
             deliveryLatitude: dto.data.deliveryLat || 10.5,
             deliveryLongitude: dto.data.deliveryLng || -66.9,
-            totalPrice: dto.data.totalPrice || 25.00,
-            deliveryFee: dto.data.deliveryFee || 5.00,
-            status: 'pending'
-          }
+            totalPrice: dto.data.totalPrice || 25.0,
+            deliveryFee: dto.data.deliveryFee || 5.0,
+            status: 'pending',
+          },
         });
         break;
 
@@ -155,8 +175,8 @@ export class TestingService {
             dropoffAddress: dto.data.dropoffAddress || 'Test Dropoff',
             dropoffLat: dto.data.dropoffLat || 10.49,
             dropoffLng: dto.data.dropoffLng || -66.91,
-            status: 'requested'
-          }
+            status: 'requested',
+          },
         });
         break;
 
@@ -173,8 +193,8 @@ export class TestingService {
             dropoffLng: dto.data.dropoffLng || -66.91,
             type: dto.data.type || 'documents',
             description: dto.data.description,
-            status: 'requested'
-          }
+            status: 'requested',
+          },
         });
         break;
 
@@ -182,12 +202,20 @@ export class TestingService {
         throw new Error(`Unsupported service type: ${dto.serviceType}`);
     }
 
-    this.logger.log(`Created test ${dto.serviceType} with ID: ${service.id || service.rideId || service.orderId}`);
+    this.logger.log(
+      `Created test ${dto.serviceType} with ID: ${service.id || service.rideId || service.orderId}`,
+    );
     return service;
   }
 
-  async setServiceState(serviceId: number, serviceType: string, newState: string) {
-    this.logger.log(`Setting ${serviceType} ${serviceId} state to: ${newState}`);
+  async setServiceState(
+    serviceId: number,
+    serviceType: string,
+    newState: string,
+  ) {
+    this.logger.log(
+      `Setting ${serviceType} ${serviceId} state to: ${newState}`,
+    );
 
     let result;
 
@@ -195,28 +223,28 @@ export class TestingService {
       case 'ride':
         result = await this.prisma.ride.update({
           where: { rideId: serviceId },
-          data: { paymentStatus: newState }
+          data: { paymentStatus: newState },
         });
         break;
 
       case 'delivery':
         result = await this.prisma.deliveryOrder.update({
           where: { orderId: serviceId },
-          data: { status: newState }
+          data: { status: newState },
         });
         break;
 
       case 'errand':
         result = await this.prisma.errand.update({
           where: { id: serviceId },
-          data: { status: newState }
+          data: { status: newState },
         });
         break;
 
       case 'parcel':
         result = await this.prisma.parcel.update({
           where: { id: serviceId },
-          data: { status: newState }
+          data: { status: newState },
         });
         break;
 
@@ -229,7 +257,9 @@ export class TestingService {
   }
 
   async simulateEvent(dto: SimulateEventDto) {
-    this.logger.log(`Simulating ${dto.eventType} event for ${dto.serviceType} ${dto.serviceId}`);
+    this.logger.log(
+      `Simulating ${dto.eventType} event for ${dto.serviceType} ${dto.serviceId}`,
+    );
 
     // This would emit WebSocket events for testing
     // Implementation depends on WebSocket gateway setup
@@ -240,7 +270,7 @@ export class TestingService {
       eventType: dto.eventType,
       data: dto.data,
       timestamp: new Date(),
-      simulated: true
+      simulated: true,
     };
 
     // Emit to testing namespace
@@ -251,31 +281,36 @@ export class TestingService {
   }
 
   async getServiceStats() {
-    const [rideStats, deliveryStats, errandStats, parcelStats] = await Promise.all([
-      this.prisma.ride.groupBy({
-        by: ['paymentStatus'],
-        _count: true
-      }),
-      this.prisma.deliveryOrder.groupBy({
-        by: ['status'],
-        _count: true
-      }),
-      this.prisma.errand.groupBy({
-        by: ['status'],
-        _count: true
-      }),
-      this.prisma.parcel.groupBy({
-        by: ['status'],
-        _count: true
-      })
-    ]);
+    const [rideStats, deliveryStats, errandStats, parcelStats] =
+      await Promise.all([
+        this.prisma.ride.groupBy({
+          by: ['paymentStatus'],
+          _count: true,
+        }),
+        this.prisma.deliveryOrder.groupBy({
+          by: ['status'],
+          _count: true,
+        }),
+        this.prisma.errand.groupBy({
+          by: ['status'],
+          _count: true,
+        }),
+        this.prisma.parcel.groupBy({
+          by: ['status'],
+          _count: true,
+        }),
+      ]);
 
     return {
       rides: rideStats,
       deliveries: deliveryStats,
       errands: errandStats,
       parcels: parcelStats,
-      totalActive: rideStats.length + deliveryStats.length + errandStats.length + parcelStats.length
+      totalActive:
+        rideStats.length +
+        deliveryStats.length +
+        errandStats.length +
+        parcelStats.length,
     };
   }
 
@@ -285,39 +320,42 @@ export class TestingService {
     // Only delete services created in the last hour to avoid deleting real data
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
-    const [deletedRides, deletedDeliveries, deletedErrands, deletedParcels] = await Promise.all([
-      this.prisma.ride.deleteMany({
-        where: {
-          createdAt: { gte: oneHourAgo },
-          paymentStatus: 'pending'
-        }
-      }),
-      this.prisma.deliveryOrder.deleteMany({
-        where: {
-          createdAt: { gte: oneHourAgo },
-          status: 'pending'
-        }
-      }),
-      this.prisma.errand.deleteMany({
-        where: {
-          createdAt: { gte: oneHourAgo },
-          status: 'requested'
-        }
-      }),
-      this.prisma.parcel.deleteMany({
-        where: {
-          createdAt: { gte: oneHourAgo },
-          status: 'requested'
-        }
-      })
-    ]);
+    const [deletedRides, deletedDeliveries, deletedErrands, deletedParcels] =
+      await Promise.all([
+        this.prisma.ride.deleteMany({
+          where: {
+            createdAt: { gte: oneHourAgo },
+            paymentStatus: 'pending',
+          },
+        }),
+        this.prisma.deliveryOrder.deleteMany({
+          where: {
+            createdAt: { gte: oneHourAgo },
+            status: 'pending',
+          },
+        }),
+        this.prisma.errand.deleteMany({
+          where: {
+            createdAt: { gte: oneHourAgo },
+            status: 'requested',
+          },
+        }),
+        this.prisma.parcel.deleteMany({
+          where: {
+            createdAt: { gte: oneHourAgo },
+            status: 'requested',
+          },
+        }),
+      ]);
 
-    this.logger.log(`Cleaned up: ${deletedRides.count} rides, ${deletedDeliveries.count} deliveries, ${deletedErrands.count} errands, ${deletedParcels.count} parcels`);
+    this.logger.log(
+      `Cleaned up: ${deletedRides.count} rides, ${deletedDeliveries.count} deliveries, ${deletedErrands.count} errands, ${deletedParcels.count} parcels`,
+    );
     return {
       rides: deletedRides.count,
       deliveries: deletedDeliveries.count,
       errands: deletedErrands.count,
-      parcels: deletedParcels.count
+      parcels: deletedParcels.count,
     };
   }
 }

@@ -1,10 +1,40 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards, Query, NotFoundException, ConflictException } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+  Query,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiTags,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LocationTrackingService } from '../../redis/location-tracking.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
-import { ConfirmRidePaymentDto, DefineRideDto, RateRideFlowDto, SelectVehicleDto, MatchBestDriverDto, MatchedDriverDto, ConfirmDriverDto, PayWithMultipleMethodsDto, GeneratePaymentReferenceDto, ConfirmPaymentWithReferenceDto } from './dto/transport-flow.dtos';
+import {
+  ConfirmRidePaymentDto,
+  DefineRideDto,
+  RateRideFlowDto,
+  SelectVehicleDto,
+  MatchBestDriverDto,
+  MatchedDriverDto,
+  ConfirmDriverDto,
+  PayWithMultipleMethodsDto,
+  GeneratePaymentReferenceDto,
+  ConfirmPaymentWithReferenceDto,
+} from './dto/transport-flow.dtos';
 import { PaymentsService } from '../../payments/payments.service';
 
 @ApiTags('rides-flow-client')
@@ -22,7 +52,8 @@ export class TransportClientController {
   @Get('tiers')
   @ApiOperation({
     summary: 'Get ride tiers organized by vehicle type',
-    description: 'Retrieve all available ride tiers grouped by compatible vehicle types for easy frontend consumption.',
+    description:
+      'Retrieve all available ride tiers grouped by compatible vehicle types for easy frontend consumption.',
   })
   @ApiResponse({
     status: 200,
@@ -40,7 +71,7 @@ export class TransportClientController {
                 properties: {
                   id: { type: 'number', example: 1 },
                   name: { type: 'string', example: 'Economy' },
-                  baseFare: { type: 'number', example: 2.50 },
+                  baseFare: { type: 'number', example: 2.5 },
                   perMinuteRate: { type: 'number', example: 0.15 },
                   perMileRate: { type: 'number', example: 1.25 },
                   imageUrl: { type: 'string', example: 'https://...' },
@@ -57,7 +88,7 @@ export class TransportClientController {
                 properties: {
                   id: { type: 'number', example: 1 },
                   name: { type: 'string', example: 'Economy' },
-                  baseFare: { type: 'number', example: 2.50 },
+                  baseFare: { type: 'number', example: 2.5 },
                   vehicleTypeId: { type: 'number', example: 2 },
                   vehicleTypeName: { type: 'string', example: 'Moto' },
                   vehicleTypeIcon: { type: 'string', example: '🏍️' },
@@ -71,7 +102,8 @@ export class TransportClientController {
   })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getRideTiers(): Promise<{ data: any }> {
-    const tiersByVehicleType = await this.flow.getAvailableRideTiersByVehicleType();
+    const tiersByVehicleType =
+      await this.flow.getAvailableRideTiersByVehicleType();
     return { data: tiersByVehicleType };
   }
 
@@ -91,12 +123,12 @@ export class TransportClientController {
     - \`ride:requested\` - Broadcast to nearby drivers
     - \`ride:accepted\` - When driver accepts the ride
     - \`ride:location\` - Live driver location updates
-    `
+    `,
   })
   @ApiBody({
     type: DefineRideDto,
     examples: {
-      'city_ride': {
+      city_ride: {
         summary: 'Basic city ride',
         value: {
           originAddress: 'Calle 123 #45-67, Bogotá, Colombia',
@@ -106,10 +138,10 @@ export class TransportClientController {
           destinationLat: 6.2518,
           destinationLng: -75.5636,
           minutes: 25,
-          tierId: 1
-        }
+          tierId: 1,
+        },
       },
-      'airport_pickup': {
+      airport_pickup: {
         summary: 'Airport pickup with vehicle type',
         value: {
           originAddress: 'Aeropuerto El Dorado, Bogotá',
@@ -120,16 +152,24 @@ export class TransportClientController {
           destinationLng: -74.0548,
           minutes: 45,
           tierId: 2,
-          vehicleTypeId: 1
-        }
-      }
-    }
+          vehicleTypeId: 1,
+        },
+      },
+    },
   })
   async defineRide(@Body() body: DefineRideDto, @Req() req: any) {
     const ride = await this.flow.defineTransportRide({
       userId: Number(req.user.id),
-      origin: { address: body.originAddress, lat: body.originLat, lng: body.originLng },
-      destination: { address: body.destinationAddress, lat: body.destinationLat, lng: body.destinationLng },
+      origin: {
+        address: body.originAddress,
+        lat: body.originLat,
+        lng: body.originLng,
+      },
+      destination: {
+        address: body.destinationAddress,
+        lat: body.destinationLat,
+        lng: body.destinationLng,
+      },
       minutes: body.minutes,
       tierId: body.tierId,
       vehicleTypeId: body.vehicleTypeId,
@@ -168,36 +208,38 @@ export class TransportClientController {
     - Los campos son opcionales, puedes enviar un objeto vacío {}
     - Si quieres mantener un campo sin cambios, simplemente no lo incluyas en el JSON
     - El endpoint maneja automáticamente valores null como undefined
-    `
+    `,
   })
   @ApiBody({
     type: SelectVehicleDto,
     examples: {
-      'no_changes': {
-        summary: 'Sin cambios (retorna datos actuales) - RECOMENDADO PARA PRUEBAS',
-        description: 'Envía un objeto vacío para obtener los datos actuales sin hacer cambios',
-        value: {}
+      no_changes: {
+        summary:
+          'Sin cambios (retorna datos actuales) - RECOMENDADO PARA PRUEBAS',
+        description:
+          'Envía un objeto vacío para obtener los datos actuales sin hacer cambios',
+        value: {},
       },
-      'update_tier': {
+      update_tier: {
         summary: 'Actualizar solo el tier',
         value: {
-          tierId: 2
-        }
+          tierId: 2,
+        },
       },
-      'update_vehicle': {
+      update_vehicle: {
         summary: 'Actualizar solo el tipo de vehículo',
         value: {
-          vehicleTypeId: 1
-        }
+          vehicleTypeId: 1,
+        },
       },
-      'update_both': {
+      update_both: {
         summary: 'Actualizar tier y vehículo',
         value: {
           tierId: 2,
-          vehicleTypeId: 1
-        }
-      }
-    }
+          vehicleTypeId: 1,
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -209,10 +251,20 @@ export class TransportClientController {
           type: 'object',
           properties: {
             rideId: { type: 'number', example: 5 },
-            originAddress: { type: 'string', example: 'Calle 123 #45-67, Bogotá, Colombia' },
-            destinationAddress: { type: 'string', example: 'Carrera 7 #23-45, Medellín, Colombia' },
+            originAddress: {
+              type: 'string',
+              example: 'Calle 123 #45-67, Bogotá, Colombia',
+            },
+            destinationAddress: {
+              type: 'string',
+              example: 'Carrera 7 #23-45, Medellín, Colombia',
+            },
             tierId: { type: 'number', example: 2 },
-            requestedVehicleTypeId: { type: 'number', example: 1, nullable: true },
+            requestedVehicleTypeId: {
+              type: 'number',
+              example: 1,
+              nullable: true,
+            },
             tier: {
               type: 'object',
               properties: {
@@ -220,8 +272,8 @@ export class TransportClientController {
                 name: { type: 'string', example: 'Premium' },
                 baseFare: { type: 'string', example: '6' },
                 perMinuteRate: { type: 'string', example: '0.35' },
-                perMileRate: { type: 'string', example: '3' }
-              }
+                perMileRate: { type: 'string', example: '3' },
+              },
             },
             requestedVehicleType: {
               type: 'object',
@@ -229,23 +281,29 @@ export class TransportClientController {
               properties: {
                 id: { type: 'number', example: 1 },
                 name: { type: 'string', example: 'Carro' },
-                displayName: { type: 'string', example: 'Carro' }
-              }
-            }
-          }
-        }
-      }
-    }
+                displayName: { type: 'string', example: 'Carro' },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  @ApiResponse({ status: 401, description: 'No autorizado - Token JWT requerido' })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado - Token JWT requerido',
+  })
   @ApiResponse({ status: 404, description: 'Viaje no encontrado' })
   async selectVehicle(
     @Param('rideId') rideId: string,
     @Body() body: SelectVehicleDto,
   ) {
     console.log(`🚗 Transport Client Controller - selectVehicle called`);
-    console.log(`📊 Parameters: rideId=${rideId}, body=`, JSON.stringify(body, null, 2));
+    console.log(
+      `📊 Parameters: rideId=${rideId}, body=`,
+      JSON.stringify(body, null, 2),
+    );
     console.log(`📝 Body type:`, typeof body);
     console.log(`🔍 Body keys:`, Object.keys(body || {}));
     console.log(`❓ tierId defined:`, body?.tierId !== undefined);
@@ -255,13 +313,25 @@ export class TransportClientController {
     console.log(`🔢 Converted rideId: ${numericRideId}`);
 
     // Handle Swagger sending null values instead of undefined
-    const tierId = (body?.tierId !== null && body?.tierId !== undefined) ? body.tierId : undefined;
-    const vehicleTypeId = (body?.vehicleTypeId !== null && body?.vehicleTypeId !== undefined) ? body.vehicleTypeId : undefined;
+    const tierId =
+      body?.tierId !== null && body?.tierId !== undefined
+        ? body.tierId
+        : undefined;
+    const vehicleTypeId =
+      body?.vehicleTypeId !== null && body?.vehicleTypeId !== undefined
+        ? body.vehicleTypeId
+        : undefined;
 
-    console.log(`🔧 Processed values: tierId=${tierId}, vehicleTypeId=${vehicleTypeId}`);
+    console.log(
+      `🔧 Processed values: tierId=${tierId}, vehicleTypeId=${vehicleTypeId}`,
+    );
 
     try {
-      const ride = await this.flow.selectTransportVehicle(numericRideId, tierId, vehicleTypeId);
+      const ride = await this.flow.selectTransportVehicle(
+        numericRideId,
+        tierId,
+        vehicleTypeId,
+      );
       console.log(`✅ selectVehicle completed successfully`);
       return { data: ride };
     } catch (error) {
@@ -303,40 +373,40 @@ export class TransportClientController {
     - \`matching\`: Buscando conductor óptimo
     - \`found\`: Conductor encontrado exitosamente
     - \`no_drivers\`: No hay conductores disponibles
-    `
+    `,
   })
   @ApiBody({
     type: MatchBestDriverDto,
     examples: {
-      'basic_matching': {
+      basic_matching: {
         summary: 'Matching básico con ubicación',
         description: 'Busca el mejor conductor en un radio de 5km',
         value: {
           lat: 4.6097,
-          lng: -74.0817
-        }
+          lng: -74.0817,
+        },
       },
-      'tier_specific': {
+      tier_specific: {
         summary: 'Matching con tier específico',
         description: 'Busca conductor Economy (tier 1) en zona específica',
         value: {
           lat: 4.6097,
           lng: -74.0817,
           tierId: 1,
-          radiusKm: 3
-        }
+          radiusKm: 3,
+        },
       },
-      'vehicle_specific': {
+      vehicle_specific: {
         summary: 'Matching con tipo de vehículo específico',
         description: 'Busca conductor con moto (vehicleType 2)',
         value: {
           lat: 10.4998,
           lng: -66.8517,
           vehicleTypeId: 2,
-          radiusKm: 8
-        }
-      }
-    }
+          radiusKm: 8,
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -345,48 +415,55 @@ export class TransportClientController {
       type: 'object',
       properties: {
         data: {
-            type: 'object',
-            properties: {
+          type: 'object',
+          properties: {
             matchedDriver: {
-              $ref: '#/components/schemas/MatchedDriverDto'
+              $ref: '#/components/schemas/MatchedDriverDto',
             },
             searchCriteria: {
-                type: 'object',
-                properties: {
+              type: 'object',
+              properties: {
                 lat: { type: 'number', example: 4.6097 },
                 lng: { type: 'number', example: -74.0817 },
                 tierId: { type: 'number', example: 1, nullable: true },
                 vehicleTypeId: { type: 'number', example: 1, nullable: true },
                 radiusKm: { type: 'number', example: 5 },
-                searchDuration: { type: 'number', example: 1.2, description: 'Tiempo de búsqueda en segundos' }
-              }
-            }
-          }
-        }
-      }
-    }
+                searchDuration: {
+                  type: 'number',
+                  example: 1.2,
+                  description: 'Tiempo de búsqueda en segundos',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Parámetros de búsqueda inválidos' })
   @ApiResponse({
     status: 404,
     description: 'No se encontraron conductores disponibles',
     schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'NO_DRIVERS_AVAILABLE' },
+        message: {
+          type: 'string',
+          example: 'No hay conductores disponibles en tu área',
+        },
+        searchCriteria: {
           type: 'object',
           properties: {
-        error: { type: 'string', example: 'NO_DRIVERS_AVAILABLE' },
-        message: { type: 'string', example: 'No hay conductores disponibles en tu área' },
-        searchCriteria: {
-              type: 'object',
-              properties: {
             lat: { type: 'number' },
             lng: { type: 'number' },
             radiusKm: { type: 'number' },
             triedTierIds: { type: 'array', items: { type: 'number' } },
-            triedVehicleTypeIds: { type: 'array', items: { type: 'number' } }
-          }
-        }
-      }
-    }
+            triedVehicleTypeIds: { type: 'array', items: { type: 'number' } },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 500, description: 'Error interno del servidor' })
   async matchBestDriver(@Body() body: MatchBestDriverDto) {
@@ -396,7 +473,7 @@ export class TransportClientController {
         lng: body.lng,
         tierId: body.tierId,
         vehicleTypeId: body.vehicleTypeId,
-        radiusKm: body.radiusKm || 5
+        radiusKm: body.radiusKm || 5,
       });
 
       return { data: result };
@@ -410,17 +487,16 @@ export class TransportClientController {
             lng: body.lng,
             radiusKm: body.radiusKm || 5,
             triedTierIds: body.tierId ? [body.tierId] : [],
-            triedVehicleTypeIds: body.vehicleTypeId ? [body.vehicleTypeId] : []
-          }
+            triedVehicleTypeIds: body.vehicleTypeId ? [body.vehicleTypeId] : [],
+          },
         });
       }
       throw error;
     }
   }
 
-
   @Post(':rideId/confirm-driver')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Confirmar conductor encontrado y enviar solicitud',
     description: `
     **CONFIRMACIÓN DEL MATCHING AUTOMÁTICO**
@@ -447,27 +523,28 @@ export class TransportClientController {
     - Push notification al conductor
     - SMS al conductor (si habilitado)
     - WebSocket event al conductor: \`driver:ride-request\`
-    `
+    `,
   })
   @ApiBody({
     type: ConfirmDriverDto,
     examples: {
-      'basic_confirmation': {
+      basic_confirmation: {
         summary: 'Confirmación básica',
         description: 'Confirma el conductor encontrado sin notas adicionales',
         value: {
-          driverId: 1
-        }
+          driverId: 1,
+        },
       },
-      'confirmation_with_notes': {
+      confirmation_with_notes: {
         summary: 'Confirmación con notas',
         description: 'Confirma conductor con instrucciones especiales',
         value: {
           driverId: 1,
-          notes: 'Por favor llegue rápido, tengo prisa por llegar al aeropuerto'
-        }
-      }
-    }
+          notes:
+            'Por favor llegue rápido, tengo prisa por llegar al aeropuerto',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -481,14 +558,17 @@ export class TransportClientController {
             rideId: { type: 'number', example: 123 },
             driverId: { type: 'number', example: 1 },
             status: { type: 'string', example: 'driver_confirmed' },
-            message: { type: 'string', example: 'Conductor notificado exitosamente' },
+            message: {
+              type: 'string',
+              example: 'Conductor notificado exitosamente',
+            },
             notificationSent: { type: 'boolean', example: true },
             responseTimeoutMinutes: { type: 'number', example: 2 },
-            expiresAt: { type: 'string', format: 'date-time' }
-          }
-        }
-      }
-    }
+            expiresAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Datos de confirmación inválidos' })
   @ApiResponse({
@@ -498,9 +578,12 @@ export class TransportClientController {
       type: 'object',
       properties: {
         error: { type: 'string', example: 'DRIVER_NOT_AVAILABLE' },
-        message: { type: 'string', example: 'El conductor ya no está disponible' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'El conductor ya no está disponible',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 409,
@@ -509,21 +592,24 @@ export class TransportClientController {
       type: 'object',
       properties: {
         error: { type: 'string', example: 'RIDE_ALREADY_HAS_DRIVER' },
-        message: { type: 'string', example: 'Este viaje ya tiene un conductor asignado' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'Este viaje ya tiene un conductor asignado',
+        },
+      },
+    },
   })
   async confirmDriver(
     @Param('rideId') rideId: string,
     @Body() body: ConfirmDriverDto,
-    @Req() req: any
+    @Req() req: any,
   ) {
     try {
       const result = await this.flow.confirmDriverForRide(
         Number(rideId),
         body.driverId,
         req.user.id,
-        body.notes
+        body.notes,
       );
 
       return { data: result };
@@ -531,21 +617,18 @@ export class TransportClientController {
       if (error.message === 'DRIVER_NOT_AVAILABLE') {
         throw new NotFoundException({
           error: 'DRIVER_NOT_AVAILABLE',
-          message: 'El conductor ya no está disponible'
+          message: 'El conductor ya no está disponible',
         });
       }
       if (error.message === 'RIDE_ALREADY_HAS_DRIVER') {
         throw new ConflictException({
           error: 'RIDE_ALREADY_HAS_DRIVER',
-          message: 'Este viaje ya tiene un conductor asignado'
+          message: 'Este viaje ya tiene un conductor asignado',
         });
       }
       throw error;
     }
   }
-
-
-
 
   @Post(':rideId/confirm-payment')
   @ApiOperation({
@@ -575,49 +658,54 @@ export class TransportClientController {
     3. Usuario confirma pago realizado
     4. Sistema valida con el banco
     5. Viaje se confirma cuando pago es validado
-    `
+    `,
   })
   @ApiBody({
     type: ConfirmRidePaymentDto,
     examples: {
-      'transfer_banco_venezuela': {
+      transfer_banco_venezuela: {
         summary: '💳 Transferencia bancaria - Banco de Venezuela',
-        description: 'Pago mediante transferencia bancaria tradicional en Banco de Venezuela',
+        description:
+          'Pago mediante transferencia bancaria tradicional en Banco de Venezuela',
         value: {
           method: 'transfer',
-          bankCode: '0102'
-        }
+          bankCode: '0102',
+        },
       },
-      'pago_movil_mercantil': {
+      pago_movil_mercantil: {
         summary: '📱 Pago móvil - Banco Mercantil',
-        description: 'Pago mediante Pago Móvil venezolano usando Banco Mercantil',
+        description:
+          'Pago mediante Pago Móvil venezolano usando Banco Mercantil',
         value: {
           method: 'pago_movil',
-          bankCode: '0105'
-        }
+          bankCode: '0105',
+        },
       },
-      'zelle_payment': {
+      zelle_payment: {
         summary: '💰 Pago Zelle',
-        description: 'Transferencia internacional mediante Zelle (sin código bancario)',
+        description:
+          'Transferencia internacional mediante Zelle (sin código bancario)',
         value: {
-          method: 'zelle'
-        }
+          method: 'zelle',
+        },
       },
-      'bitcoin_payment': {
+      bitcoin_payment: {
         summary: '₿ Pago Bitcoin',
-        description: 'Pago en criptomonedas Bitcoin (la referencia será la dirección wallet)',
+        description:
+          'Pago en criptomonedas Bitcoin (la referencia será la dirección wallet)',
         value: {
-          method: 'bitcoin'
-        }
+          method: 'bitcoin',
+        },
       },
-      'cash_payment': {
+      cash_payment: {
         summary: '💵 Pago en efectivo',
-        description: 'Pago directo en efectivo al conductor (no genera referencia bancaria)',
+        description:
+          'Pago directo en efectivo al conductor (no genera referencia bancaria)',
         value: {
-          method: 'cash'
-        }
-      }
-    }
+          method: 'cash',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -633,17 +721,23 @@ export class TransportClientController {
             reference: {
               type: 'object',
               properties: {
-                referenceNumber: { type: 'string', example: '12345678901234567890' },
+                referenceNumber: {
+                  type: 'string',
+                  example: '12345678901234567890',
+                },
                 bankCode: { type: 'string', example: '0102' },
-                amount: { type: 'number', example: 25.50 },
+                amount: { type: 'number', example: 25.5 },
                 expiresAt: { type: 'string', format: 'date-time' },
-                instructions: { type: 'string', example: 'Realice la transferencia...' }
-              }
-            }
-          }
-        }
-      }
-    }
+                instructions: {
+                  type: 'string',
+                  example: 'Realice la transferencia...',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   async confirmPayment(
     @Param('rideId') rideId: string,
@@ -663,7 +757,10 @@ export class TransportClientController {
 
     // Para pagos en efectivo, no necesitamos generar referencia
     if (body.method === 'cash') {
-      const updated = await this.flow.confirmTransportPayment(Number(rideId), body.method);
+      const updated = await this.flow.confirmTransportPayment(
+        Number(rideId),
+        body.method,
+      );
       return { data: { ...updated, paymentMethod: 'cash' } };
     }
 
@@ -674,7 +771,7 @@ export class TransportClientController {
       amount: Number(ride.farePrice || 0),
       paymentMethod: body.method,
       bankCode: body.bankCode,
-      userId: req.user.id
+      userId: req.user.id,
     });
 
     return {
@@ -682,8 +779,11 @@ export class TransportClientController {
         rideId: Number(rideId),
         paymentStatus: 'pending_reference',
         reference: reference,
-        instructions: this.paymentsService.getPaymentInstructions(body.method, reference.referenceNumber)
-      }
+        instructions: this.paymentsService.getPaymentInstructions(
+          body.method,
+          reference.referenceNumber,
+        ),
+      },
     };
   }
 
@@ -703,7 +803,10 @@ export class TransportClientController {
 
   @Post(':rideId/cancel')
   @ApiOperation({ summary: 'Cancel the ride' })
-  async cancel(@Param('rideId') rideId: string, @Body() body: { reason?: string }) {
+  async cancel(
+    @Param('rideId') rideId: string,
+    @Body() body: { reason?: string },
+  ) {
     return this.flow.cancelTransport(Number(rideId), body?.reason);
   }
 
@@ -714,7 +817,10 @@ export class TransportClientController {
     @Body() body: RateRideFlowDto,
     @Req() req: any,
   ) {
-    const rating = await this.flow.rateTransport(Number(rideId), { ...body, userId: String(req.user.id) });
+    const rating = await this.flow.rateTransport(Number(rideId), {
+      ...body,
+      userId: String(req.user.id),
+    });
     return { data: rating };
   }
 
@@ -751,57 +857,58 @@ export class TransportClientController {
     4. Genera referencias para métodos electrónicos
     5. Usuario confirma cada pago individualmente
     6. Viaje se completa cuando todos los pagos están confirmados
-    `
+    `,
   })
   @ApiBody({
     type: PayWithMultipleMethodsDto,
     examples: {
-      'single_method_transfer': {
+      single_method_transfer: {
         summary: '💳 Pago con un solo método - Transferencia',
-        description: 'Pago completo del viaje usando solo transferencia bancaria',
+        description:
+          'Pago completo del viaje usando solo transferencia bancaria',
         value: {
-          totalAmount: 25.50,
+          totalAmount: 25.5,
           payments: [
             {
               method: 'transfer',
-              amount: 25.50,
-              bankCode: '0102'
-            }
-          ]
-        }
+              amount: 25.5,
+              bankCode: '0102',
+            },
+          ],
+        },
       },
-      'multiple_methods_combined': {
+      multiple_methods_combined: {
         summary: '🔄 Pago combinado - Transferencia + Zelle',
         description: 'Pago dividido entre transferencia bancaria y Zelle',
         value: {
-          totalAmount: 75.50,
+          totalAmount: 75.5,
           payments: [
             {
               method: 'transfer',
-              amount: 50.00,
-              bankCode: '0102'
+              amount: 50.0,
+              bankCode: '0102',
             },
             {
               method: 'zelle',
-              amount: 25.50
-            }
-          ]
-        }
+              amount: 25.5,
+            },
+          ],
+        },
       },
-      'cash_payment_only': {
+      cash_payment_only: {
         summary: '💵 Pago solo en efectivo',
         description: 'Pago directo al conductor en efectivo (sin referencias)',
         value: {
-          totalAmount: 25.50,
+          totalAmount: 25.5,
           payments: [
             {
               method: 'cash',
-              amount: 25.50
-            }
-          ]
-        }
-      }
-    }
+              amount: 25.5,
+            },
+          ],
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -815,48 +922,52 @@ export class TransportClientController {
             groupId: {
               type: 'string',
               example: 'cm1n8x9p40000abcdefghijk',
-              description: 'UUID del grupo de pagos (para pagos múltiples)'
+              description: 'UUID del grupo de pagos (para pagos múltiples)',
             },
             rideId: { type: 'number', example: 123 },
-            totalAmount: { type: 'number', example: 75.50 },
+            totalAmount: { type: 'number', example: 75.5 },
             paymentMethods: {
               type: 'array',
               items: { type: 'string', example: 'transfer' },
-              description: 'Métodos de pago utilizados'
+              description: 'Métodos de pago utilizados',
             },
             references: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  referenceNumber: { type: 'string', example: '12345678901234567890' },
+                  referenceNumber: {
+                    type: 'string',
+                    example: '12345678901234567890',
+                  },
                   method: { type: 'string', example: 'transfer' },
-                  amount: { type: 'number', example: 50.00 },
+                  amount: { type: 'number', example: 50.0 },
                   bankCode: { type: 'string', example: '0102' },
-                  expiresAt: { type: 'string', format: 'date-time' }
-                }
+                  expiresAt: { type: 'string', format: 'date-time' },
+                },
               },
-              description: 'Referencias generadas para pagos electrónicos'
+              description: 'Referencias generadas para pagos electrónicos',
             },
             cashAmount: {
               type: 'number',
               example: 0,
-              description: 'Monto a pagar en efectivo'
+              description: 'Monto a pagar en efectivo',
             },
             status: {
               type: 'string',
               example: 'incomplete',
               enum: ['complete', 'incomplete'],
-              description: 'Estado del grupo de pagos'
+              description: 'Estado del grupo de pagos',
             },
             instructions: {
               type: 'string',
-              example: 'Realiza los pagos electrónicos y confirma cada uno individualmente'
-            }
-          }
-        }
-      }
-    }
+              example:
+                'Realiza los pagos electrónicos y confirma cada uno individualmente',
+            },
+          },
+        },
+      },
+    },
   })
   async payWithMultipleMethods(
     @Param('rideId') rideId: string,
@@ -874,19 +985,28 @@ export class TransportClientController {
 
     // Validar que el viaje esté en estado correcto para pago
     if (ride.paymentStatus !== 'pending') {
-      throw new Error(`El viaje ya tiene estado de pago: ${ride.paymentStatus}`);
+      throw new Error(
+        `El viaje ya tiene estado de pago: ${ride.paymentStatus}`,
+      );
     }
 
     // Validar que los montos sumen el total correcto
     const rideAmount = Number(ride.farePrice || 0);
-    const totalPayments = body.payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalPayments = body.payments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0,
+    );
 
     if (Math.abs(totalPayments - body.totalAmount) > 0.01) {
-      throw new Error('Los montos de los pagos no coinciden con el total especificado');
+      throw new Error(
+        'Los montos de los pagos no coinciden con el total especificado',
+      );
     }
 
     if (Math.abs(body.totalAmount - rideAmount) > 0.01) {
-      throw new Error(`El monto total (${body.totalAmount}) no coincide con el precio del viaje (${rideAmount})`);
+      throw new Error(
+        `El monto total (${body.totalAmount}) no coincide con el precio del viaje (${rideAmount})`,
+      );
     }
 
     // Determinar si es pago único o múltiple
@@ -898,7 +1018,10 @@ export class TransportClientController {
 
       if (payment.method === 'cash') {
         // Pago en efectivo - confirmar inmediatamente
-        const result = await this.flow.confirmTransportPayment(Number(rideId), payment.method);
+        const result = await this.flow.confirmTransportPayment(
+          Number(rideId),
+          payment.method,
+        );
         return {
           data: {
             rideId: Number(rideId),
@@ -906,8 +1029,8 @@ export class TransportClientController {
             paymentMethods: ['cash'],
             status: 'complete',
             message: 'Pago en efectivo confirmado exitosamente',
-            cashAmount: body.totalAmount
-          }
+            cashAmount: body.totalAmount,
+          },
         };
       } else {
         // Pago electrónico único - generar referencia
@@ -917,7 +1040,7 @@ export class TransportClientController {
           amount: payment.amount,
           paymentMethod: payment.method,
           bankCode: payment.bankCode,
-          userId: req.user.id
+          userId: req.user.id,
         });
 
         return {
@@ -925,24 +1048,31 @@ export class TransportClientController {
             rideId: Number(rideId),
             totalAmount: body.totalAmount,
             paymentMethods: [payment.method],
-            references: [{
-              referenceNumber: reference.referenceNumber,
-              method: payment.method,
-              amount: payment.amount,
-              bankCode: payment.bankCode,
-              expiresAt: reference.expiresAt
-            }],
+            references: [
+              {
+                referenceNumber: reference.referenceNumber,
+                method: payment.method,
+                amount: payment.amount,
+                bankCode: payment.bankCode,
+                expiresAt: reference.expiresAt,
+              },
+            ],
             cashAmount: 0,
             status: 'incomplete',
-            instructions: this.paymentsService.getPaymentInstructions(payment.method, reference.referenceNumber)
-          }
+            instructions: this.paymentsService.getPaymentInstructions(
+              payment.method,
+              reference.referenceNumber,
+            ),
+          },
         };
       }
     } else {
       // PAGOS MÚLTIPLES
-      const electronicPayments = body.payments.filter(p => p.method !== 'cash');
+      const electronicPayments = body.payments.filter(
+        (p) => p.method !== 'cash',
+      );
       const cashAmount = body.payments
-        .filter(p => p.method === 'cash')
+        .filter((p) => p.method === 'cash')
         .reduce((sum, p) => sum + p.amount, 0);
 
       // Crear grupo de pagos múltiples
@@ -951,11 +1081,11 @@ export class TransportClientController {
         serviceId: Number(rideId),
         totalAmount: body.totalAmount,
         userId: req.user.id,
-        payments: body.payments.map(p => ({
+        payments: body.payments.map((p) => ({
           method: p.method,
           amount: p.amount,
-          bankCode: p.bankCode
-        }))
+          bankCode: p.bankCode,
+        })),
       });
 
       return {
@@ -963,12 +1093,12 @@ export class TransportClientController {
           groupId: groupResult.groupId,
           rideId: Number(rideId),
           totalAmount: body.totalAmount,
-          paymentMethods: body.payments.map(p => p.method),
+          paymentMethods: body.payments.map((p) => p.method),
           references: groupResult.references,
           cashAmount: groupResult.cashAmount,
           status: 'incomplete',
-          instructions: groupResult.instructions
-        }
+          instructions: groupResult.instructions,
+        },
       };
     }
   }
@@ -993,27 +1123,28 @@ export class TransportClientController {
     3. Usuario comparte la referencia con quien pagará
     4. Pagador usa la referencia en su banco/app
     5. Usuario confirma el pago realizado
-    `
+    `,
   })
   @ApiBody({
     type: GeneratePaymentReferenceDto,
     examples: {
-      'transfer_reference': {
+      transfer_reference: {
         summary: '💳 Referencia para transferencia bancaria',
-        description: 'Generar referencia que alguien puede usar para transferirte dinero',
+        description:
+          'Generar referencia que alguien puede usar para transferirte dinero',
         value: {
           method: 'transfer',
-          bankCode: '0102'
-        }
+          bankCode: '0102',
+        },
       },
-      'zelle_reference': {
+      zelle_reference: {
         summary: '💰 Referencia para Zelle',
         description: 'Generar referencia para pago internacional vía Zelle',
         value: {
-          method: 'zelle'
-        }
-      }
-    }
+          method: 'zelle',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -1025,21 +1156,27 @@ export class TransportClientController {
           type: 'object',
           properties: {
             rideId: { type: 'number', example: 123 },
-            referenceNumber: { type: 'string', example: '12345678901234567890' },
+            referenceNumber: {
+              type: 'string',
+              example: '12345678901234567890',
+            },
             method: { type: 'string', example: 'transfer' },
-            amount: { type: 'number', example: 25.50 },
+            amount: { type: 'number', example: 25.5 },
             bankCode: { type: 'string', example: '0102' },
             expiresAt: { type: 'string', format: 'date-time' },
-            instructions: { type: 'string', example: 'Realice la transferencia...' },
+            instructions: {
+              type: 'string',
+              example: 'Realice la transferencia...',
+            },
             shareableLink: {
               type: 'string',
               example: 'https://app.uber-clone.com/pay/12345678901234567890',
-              description: 'Enlace para compartir con el pagador'
-            }
-          }
-        }
-      }
-    }
+              description: 'Enlace para compartir con el pagador',
+            },
+          },
+        },
+      },
+    },
   })
   async generatePaymentReference(
     @Param('rideId') rideId: string,
@@ -1062,7 +1199,7 @@ export class TransportClientController {
       amount: Number(ride.farePrice || 0),
       paymentMethod: body.method,
       bankCode: body.bankCode,
-      userId: req.user.id
+      userId: req.user.id,
     });
 
     return {
@@ -1073,9 +1210,12 @@ export class TransportClientController {
         amount: Number(ride.farePrice || 0),
         bankCode: body.bankCode,
         expiresAt: reference.expiresAt,
-        instructions: this.paymentsService.getPaymentInstructions(body.method, reference.referenceNumber),
-        shareableLink: `https://app.uber-clone.com/pay/${reference.referenceNumber}`
-      }
+        instructions: this.paymentsService.getPaymentInstructions(
+          body.method,
+          reference.referenceNumber,
+        ),
+        shareableLink: `https://app.uber-clone.com/pay/${reference.referenceNumber}`,
+      },
     };
   }
 
@@ -1097,27 +1237,27 @@ export class TransportClientController {
     **Tiempo de procesamiento:**
     - ✅ Simulación desarrollo: inmediato
     - ⏱️ Producción real: 1-5 minutos por banco venezolano
-    `
+    `,
   })
   @ApiBody({
     type: ConfirmPaymentWithReferenceDto,
     examples: {
-      'confirm_transfer': {
+      confirm_transfer: {
         summary: '✅ Confirmar transferencia realizada',
         description: 'Confirmar que la transferencia bancaria fue procesada',
         value: {
           referenceNumber: '12345678901234567890',
-          bankCode: '0102'
-        }
+          bankCode: '0102',
+        },
       },
-      'confirm_zelle': {
+      confirm_zelle: {
         summary: '✅ Confirmar pago Zelle',
         description: 'Confirmar pago internacional vía Zelle',
         value: {
-          referenceNumber: '09876543210987654321'
-        }
-      }
-    }
+          referenceNumber: '09876543210987654321',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -1130,15 +1270,21 @@ export class TransportClientController {
           properties: {
             success: { type: 'boolean', example: true },
             rideId: { type: 'number', example: 123 },
-            referenceNumber: { type: 'string', example: '12345678901234567890' },
-            amount: { type: 'number', example: 25.50 },
+            referenceNumber: {
+              type: 'string',
+              example: '12345678901234567890',
+            },
+            amount: { type: 'number', example: 25.5 },
             transactionId: { type: 'string', example: 'BV-1725979200000' },
             confirmedAt: { type: 'string', format: 'date-time' },
-            message: { type: 'string', example: 'Pago confirmado exitosamente' }
-          }
-        }
-      }
-    }
+            message: {
+              type: 'string',
+              example: 'Pago confirmado exitosamente',
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -1150,12 +1296,18 @@ export class TransportClientController {
           type: 'object',
           properties: {
             success: { type: 'boolean', example: false },
-            message: { type: 'string', example: 'Pago no encontrado o en proceso de confirmación' },
-            referenceNumber: { type: 'string', example: '12345678901234567890' }
-          }
-        }
-      }
-    }
+            message: {
+              type: 'string',
+              example: 'Pago no encontrado o en proceso de confirmación',
+            },
+            referenceNumber: {
+              type: 'string',
+              example: '12345678901234567890',
+            },
+          },
+        },
+      },
+    },
   })
   async confirmPaymentWithReference(
     @Param('rideId') rideId: string,
@@ -1172,10 +1324,13 @@ export class TransportClientController {
     }
 
     // Confirmar pago con referencia
-    const result = await this.paymentsService.confirmBankReference({
-      referenceNumber: body.referenceNumber,
-      bankCode: body.bankCode
-    }, req.user.id);
+    const result = await this.paymentsService.confirmBankReference(
+      {
+        referenceNumber: body.referenceNumber,
+        bankCode: body.bankCode,
+      },
+      req.user.id,
+    );
 
     return {
       data: {
@@ -1185,8 +1340,8 @@ export class TransportClientController {
         amount: result.success ? result.transaction.amount : null,
         transactionId: result.success ? result.transaction.transactionId : null,
         confirmedAt: result.success ? result.transaction.timestamp : null,
-        message: result.message
-      }
+        message: result.message,
+      },
     };
   }
 
@@ -1207,7 +1362,7 @@ export class TransportClientController {
     - ✅ Grupo se marca como 'complete' cuando todos los pagos están confirmados
     - ✅ Viaje se actualiza cuando el grupo está completo
     - ✅ Notificaciones automáticas al usuario
-    `
+    `,
   })
   @ApiBody({
     schema: {
@@ -1219,27 +1374,27 @@ export class TransportClientController {
           example: '12345678901234567890',
           description: 'Referencia del pago parcial a confirmar',
           minLength: 20,
-          maxLength: 20
+          maxLength: 20,
         },
         bankCode: {
           type: 'string',
           example: '0102',
           description: 'Código del banco (opcional)',
           minLength: 4,
-          maxLength: 4
-        }
-      }
+          maxLength: 4,
+        },
+      },
     },
     examples: {
-      'confirm_partial_transfer': {
+      confirm_partial_transfer: {
         summary: '✅ Confirmar transferencia parcial',
         description: 'Confirmar una de las transferencias en un pago múltiple',
         value: {
           referenceNumber: '12345678901234567890',
-          bankCode: '0102'
-        }
-      }
-    }
+          bankCode: '0102',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -1253,20 +1408,26 @@ export class TransportClientController {
             success: { type: 'boolean', example: true },
             groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
             rideId: { type: 'number', example: 123 },
-            referenceNumber: { type: 'string', example: '12345678901234567890' },
-            amount: { type: 'number', example: 25.00 },
+            referenceNumber: {
+              type: 'string',
+              example: '12345678901234567890',
+            },
+            amount: { type: 'number', example: 25.0 },
             groupStatus: {
               type: 'string',
               example: 'incomplete',
-              enum: ['incomplete', 'complete']
+              enum: ['incomplete', 'complete'],
             },
-            paidAmount: { type: 'number', example: 25.00 },
-            remainingAmount: { type: 'number', example: 50.50 },
-            message: { type: 'string', example: 'Pago parcial confirmado. Grupo: incomplete' }
-          }
-        }
-      }
-    }
+            paidAmount: { type: 'number', example: 25.0 },
+            remainingAmount: { type: 'number', example: 50.5 },
+            message: {
+              type: 'string',
+              example: 'Pago parcial confirmado. Grupo: incomplete',
+            },
+          },
+        },
+      },
+    },
   })
   async confirmPartialPayment(
     @Param('rideId') rideId: string,
@@ -1283,10 +1444,13 @@ export class TransportClientController {
     }
 
     // Confirmar pago parcial
-    const result = await this.paymentsService.confirmPartialPayment({
-      referenceNumber: body.referenceNumber,
-      bankCode: body.bankCode
-    }, req.user.id);
+    const result = await this.paymentsService.confirmPartialPayment(
+      {
+        referenceNumber: body.referenceNumber,
+        bankCode: body.bankCode,
+      },
+      req.user.id,
+    );
 
     return {
       data: {
@@ -1297,8 +1461,8 @@ export class TransportClientController {
         amount: result.success ? result.transaction?.amount : null,
         groupStatus: result.groupId ? 'updated' : 'unknown',
         isPartial: result.isPartial,
-        message: result.message
-      }
+        message: result.message,
+      },
     };
   }
 
@@ -1321,7 +1485,7 @@ export class TransportClientController {
     - Mostrar progreso en la UI
     - Depurar pagos pendientes
     - Historial de transacciones múltiples
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -1334,13 +1498,13 @@ export class TransportClientController {
           properties: {
             rideId: { type: 'number', example: 123 },
             groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
-            totalAmount: { type: 'number', example: 75.50 },
-            paidAmount: { type: 'number', example: 25.00 },
-            remainingAmount: { type: 'number', example: 50.50 },
+            totalAmount: { type: 'number', example: 75.5 },
+            paidAmount: { type: 'number', example: 25.0 },
+            remainingAmount: { type: 'number', example: 50.5 },
             status: {
               type: 'string',
               example: 'incomplete',
-              enum: ['incomplete', 'complete', 'cancelled', 'expired']
+              enum: ['incomplete', 'complete', 'cancelled', 'expired'],
             },
             expiresAt: { type: 'string', format: 'date-time' },
             createdAt: { type: 'string', format: 'date-time' },
@@ -1350,33 +1514,33 @@ export class TransportClientController {
                 totalReferences: { type: 'number', example: 3 },
                 confirmedReferences: { type: 'number', example: 1 },
                 pendingReferences: { type: 'number', example: 2 },
-                confirmationRate: { type: 'number', example: 33.33 }
-              }
+                confirmationRate: { type: 'number', example: 33.33 },
+              },
             },
             payments: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  referenceNumber: { type: 'string', example: '12345678901234567890' },
+                  referenceNumber: {
+                    type: 'string',
+                    example: '12345678901234567890',
+                  },
                   method: { type: 'string', example: 'transfer' },
-                  amount: { type: 'number', example: 25.00 },
+                  amount: { type: 'number', example: 25.0 },
                   status: { type: 'string', example: 'confirmed' },
                   bankCode: { type: 'string', example: '0102' },
                   createdAt: { type: 'string', format: 'date-time' },
-                  confirmedAt: { type: 'string', format: 'date-time' }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  confirmedAt: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
-  async getPaymentStatus(
-    @Param('rideId') rideId: string,
-    @Req() req: any,
-  ) {
+  async getPaymentStatus(@Param('rideId') rideId: string, @Req() req: any) {
     // Validar viaje y usuario
     const ride = await this.flow.getTransportRideStatus(Number(rideId));
     if (!ride) {
@@ -1391,15 +1555,15 @@ export class TransportClientController {
       where: {
         serviceType: 'ride',
         serviceId: Number(rideId),
-        userId: req.user.id
+        userId: req.user.id,
       },
       include: {
         paymentReferences: {
-          orderBy: { createdAt: 'asc' }
-        }
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { createdAt: 'desc' },
-      take: 1
+      take: 1,
     });
 
     if (!paymentGroup) {
@@ -1408,20 +1572,28 @@ export class TransportClientController {
         data: {
           rideId: Number(rideId),
           totalAmount: Number(ride.farePrice || 0),
-          paidAmount: ride.paymentStatus === 'paid' ? Number(ride.farePrice || 0) : 0,
-          remainingAmount: ride.paymentStatus === 'paid' ? 0 : Number(ride.farePrice || 0),
+          paidAmount:
+            ride.paymentStatus === 'paid' ? Number(ride.farePrice || 0) : 0,
+          remainingAmount:
+            ride.paymentStatus === 'paid' ? 0 : Number(ride.farePrice || 0),
           status: ride.paymentStatus === 'paid' ? 'complete' : 'pending',
           hasPaymentGroup: false,
-          message: 'Viaje sin grupo de pagos múltiples'
-        }
+          message: 'Viaje sin grupo de pagos múltiples',
+        },
       };
     }
 
     // Calcular estadísticas
     const totalReferences = paymentGroup.paymentReferences.length;
-    const confirmedReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'confirmed').length;
-    const pendingReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'pending').length;
-    const expiredReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'expired').length;
+    const confirmedReferences = paymentGroup.paymentReferences.filter(
+      (ref) => ref.status === 'confirmed',
+    ).length;
+    const pendingReferences = paymentGroup.paymentReferences.filter(
+      (ref) => ref.status === 'pending',
+    ).length;
+    const expiredReferences = paymentGroup.paymentReferences.filter(
+      (ref) => ref.status === 'expired',
+    ).length;
 
     return {
       data: {
@@ -1440,9 +1612,12 @@ export class TransportClientController {
           confirmedReferences,
           pendingReferences,
           expiredReferences,
-          confirmationRate: totalReferences > 0 ? (confirmedReferences / totalReferences) * 100 : 0
+          confirmationRate:
+            totalReferences > 0
+              ? (confirmedReferences / totalReferences) * 100
+              : 0,
         },
-        payments: paymentGroup.paymentReferences.map(ref => ({
+        payments: paymentGroup.paymentReferences.map((ref) => ({
           referenceNumber: ref.referenceNumber,
           method: ref.paymentMethod,
           amount: Number(ref.amount),
@@ -1450,9 +1625,9 @@ export class TransportClientController {
           bankCode: ref.bankCode,
           createdAt: ref.createdAt,
           confirmedAt: ref.confirmedAt,
-          expiresAt: ref.expiresAt
-        }))
-      }
+          expiresAt: ref.expiresAt,
+        })),
+      },
     };
   }
 
@@ -1482,7 +1657,7 @@ export class TransportClientController {
     - Centro: La Castellana, Caracas (10.4998, -66.8517)
     - Radio: 5km
     - Conductores: 20
-    `
+    `,
   })
   @ApiBody({
     description: 'Parámetros para simular ubicaciones de conductores',
@@ -1495,41 +1670,43 @@ export class TransportClientController {
           example: 10.4998,
           minimum: -90,
           maximum: 90,
-          description: 'Latitud del centro del área a simular'
+          description: 'Latitud del centro del área a simular',
         },
         centerLng: {
           type: 'number',
           example: -66.8517,
           minimum: -180,
           maximum: 180,
-          description: 'Longitud del centro del área a simular'
+          description: 'Longitud del centro del área a simular',
         },
         radiusKm: {
           type: 'number',
           example: 5,
           minimum: 0.1,
           maximum: 10,
-          description: 'Radio en kilómetros para distribuir conductores'
+          description: 'Radio en kilómetros para distribuir conductores',
         },
         driverCount: {
           type: 'number',
           example: 20,
           minimum: 1,
           maximum: 50,
-          description: 'Número de conductores a simular'
+          description: 'Número de conductores a simular',
         },
         vehicleTypeIds: {
           type: 'array',
           items: { type: 'number' },
           example: [1, 2, 3],
-          description: 'Tipos de vehículo a asignar (opcional, si no se especifica se asignan aleatoriamente)'
-        }
-      }
-    }
+          description:
+            'Tipos de vehículo a asignar (opcional, si no se especifica se asignan aleatoriamente)',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
-    description: 'Conductores simulados encontrados (misma estructura que el endpoint real)',
+    description:
+      'Conductores simulados encontrados (misma estructura que el endpoint real)',
     schema: {
       type: 'object',
       properties: {
@@ -1551,35 +1728,47 @@ export class TransportClientController {
                   id: { type: 'number', example: 1 },
                   name: { type: 'string', example: 'car' },
                   displayName: { type: 'string', example: 'Carro' },
-                  icon: { type: 'string', example: '🚗' }
-                }
+                  icon: { type: 'string', example: '🚗' },
+                },
               },
               currentLocation: {
                 type: 'object',
                 properties: {
                   lat: { type: 'number', example: 10.4998 },
-                  lng: { type: 'number', example: -66.8517 }
-                }
+                  lng: { type: 'number', example: -66.8517 },
+                },
               },
               lastLocationUpdate: { type: 'string', format: 'date-time' },
               locationAccuracy: { type: 'number', example: 5.0 },
-              distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
-              estimatedMinutes: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
-              rating: { type: 'number', example: 4.5 }
-            }
-          }
-        }
-      }
-    }
+              distance: {
+                type: 'number',
+                example: 1.2,
+                description: 'Distancia en km',
+              },
+              estimatedMinutes: {
+                type: 'number',
+                example: 5,
+                description: 'Tiempo estimado en minutos',
+              },
+              rating: { type: 'number', example: 4.5 },
+            },
+          },
+        },
+      },
+    },
   })
-  async simulateDriverLocations(@Body() data: {
-    centerLat: number;
-    centerLng: number;
-    radiusKm: number;
-    driverCount: number;
-    vehicleTypeIds?: number[];
-  }) {
-    const { centerLat, centerLng, radiusKm, driverCount, vehicleTypeIds } = data;
+  async simulateDriverLocations(
+    @Body()
+    data: {
+      centerLat: number;
+      centerLng: number;
+      radiusKm: number;
+      driverCount: number;
+      vehicleTypeIds?: number[];
+    },
+  ) {
+    const { centerLat, centerLng, radiusKm, driverCount, vehicleTypeIds } =
+      data;
 
     // Validaciones
     if (radiusKm > 10) {
@@ -1588,7 +1777,12 @@ export class TransportClientController {
     if (driverCount > 50) {
       throw new Error('Cannot simulate more than 50 drivers at once');
     }
-    if (centerLat < -90 || centerLat > 90 || centerLng < -180 || centerLng > 180) {
+    if (
+      centerLat < -90 ||
+      centerLat > 90 ||
+      centerLng < -180 ||
+      centerLng > 180
+    ) {
       throw new Error('Invalid center coordinates');
     }
 
@@ -1611,24 +1805,26 @@ export class TransportClientController {
             select: {
               id: true,
               name: true,
-              displayName: true
-            }
-          }
+              displayName: true,
+            },
+          },
         },
-        orderBy: { id: 'asc' }
+        orderBy: { id: 'asc' },
       });
 
       if (existingDrivers.length === 0) {
-        throw new Error('No drivers found in database. Please create some drivers first.');
+        throw new Error(
+          'No drivers found in database. Please create some drivers first.',
+        );
       }
 
       // Obtener tipos de vehículo disponibles si no se especificaron
       let availableVehicleTypes = vehicleTypeIds;
       if (!availableVehicleTypes || availableVehicleTypes.length === 0) {
         const vehicleTypes = await this.prisma.vehicleType.findMany({
-          select: { id: true }
+          select: { id: true },
         });
-        availableVehicleTypes = vehicleTypes.map(vt => vt.id);
+        availableVehicleTypes = vehicleTypes.map((vt) => vt.id);
       }
 
       const simulatedDrivers: any[] = [];
@@ -1643,7 +1839,9 @@ export class TransportClientController {
 
         // Convertir coordenadas polares a cartesianas y luego a lat/lng
         const latOffset = (distance / 111.32) * Math.cos(angle); // 1 grado lat ≈ 111.32 km
-        const lngOffset = (distance / (111.32 * Math.cos(centerLat * Math.PI / 180))) * Math.sin(angle);
+        const lngOffset =
+          (distance / (111.32 * Math.cos((centerLat * Math.PI) / 180))) *
+          Math.sin(angle);
 
         const newLat = centerLat + latOffset;
         const newLng = centerLng + lngOffset;
@@ -1651,7 +1849,10 @@ export class TransportClientController {
         // Asignar tipo de vehículo si no tiene uno
         let vehicleTypeId = driver.vehicleTypeId;
         if (!vehicleTypeId && availableVehicleTypes.length > 0) {
-          vehicleTypeId = availableVehicleTypes[Math.floor(Math.random() * availableVehicleTypes.length)];
+          vehicleTypeId =
+            availableVehicleTypes[
+              Math.floor(Math.random() * availableVehicleTypes.length)
+            ];
         }
 
         // Actualizar ubicación del conductor usando el LocationTrackingService
@@ -1663,8 +1864,8 @@ export class TransportClientController {
             accuracy: Math.random() * 20 + 5, // 5-25 meters accuracy
             speed: Math.random() * 60 + 10, // 10-70 km/h
             heading: Math.random() * 360, // 0-360 degrees
-            source: 'simulated'
-          }
+            source: 'simulated',
+          },
         );
 
         // Cambiar estado a online si no lo está
@@ -1673,12 +1874,18 @@ export class TransportClientController {
           data: {
             status: 'online',
             vehicleTypeId: vehicleTypeId,
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
 
         // Calcular distancia desde el centro usando el método del LocationTrackingService
-        const distanceFromCenter = this.locationTrackingService.calculateDistance(centerLat, centerLng, newLat, newLng);
+        const distanceFromCenter =
+          this.locationTrackingService.calculateDistance(
+            centerLat,
+            centerLng,
+            newLat,
+            newLng,
+          );
 
         // Calculate estimated time (assuming average speed of 30 km/h in city)
         const estimatedMinutes = Math.round((distanceFromCenter / 30) * 60);
@@ -1697,7 +1904,9 @@ export class TransportClientController {
             lng: newLng,
           },
           lastLocationUpdate: driver.lastLocationUpdate,
-          locationAccuracy: driver.locationAccuracy ? Number(driver.locationAccuracy) : null,
+          locationAccuracy: driver.locationAccuracy
+            ? Number(driver.locationAccuracy)
+            : null,
           distance: Math.round(distanceFromCenter * 100) / 100, // Round to 2 decimal places
           estimatedMinutes,
           rating: 4.5, // Simulated rating
@@ -1705,12 +1914,9 @@ export class TransportClientController {
       }
 
       return { data: simulatedDrivers };
-
     } catch (error) {
       console.error('Error simulating driver locations:', error);
       throw error;
     }
   }
 }
-
-

@@ -1,6 +1,15 @@
 import { PartialType } from '@nestjs/swagger';
 import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength, IsArray, ArrayUnique, IsBoolean } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+  IsArray,
+  ArrayUnique,
+  IsBoolean,
+} from 'class-validator';
 import { CreateAdminDto } from './create-admin.dto';
 import { AdminRole, Permission } from '../../../../admin/entities/admin.entity';
 

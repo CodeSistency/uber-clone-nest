@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RidesFlowService } from './rides-flow.service';
@@ -30,38 +38,42 @@ export class ErrandClientController {
     - \`errand:shopping_update\` - Driver updates shopping costs
     - \`errand:started\` - Driver starts delivery back
     - \`errand:completed\` - Errand completed successfully
-    `
+    `,
   })
   @ApiBody({
     type: CreateErrandDto,
     examples: {
-      'grocery_shopping': {
+      grocery_shopping: {
         summary: 'Grocery shopping errand',
         value: {
-          description: 'Comprar víveres en el supermercado cercano y medicamentos en la farmacia',
-          itemsList: '• 2 kg de arroz\n• 1 litro de leche\n• Pan integral\n• Jabón para platos\n• Paracetamol 500mg',
+          description:
+            'Comprar víveres en el supermercado cercano y medicamentos en la farmacia',
+          itemsList:
+            '• 2 kg de arroz\n• 1 litro de leche\n• Pan integral\n• Jabón para platos\n• Paracetamol 500mg',
           pickupAddress: 'Centro Comercial Gran Estación, Local 123, Nivel 2',
           pickupLat: 4.6097,
           pickupLng: -74.0817,
           dropoffAddress: 'Casa del cliente, Calle 45 #123-45, Bogotá',
-          dropoffLat: 4.6150,
-          dropoffLng: -74.0750
-        }
+          dropoffLat: 4.615,
+          dropoffLng: -74.075,
+        },
       },
-      'pharmacy_pickup': {
+      pharmacy_pickup: {
         summary: 'Pharmacy and store errand',
         value: {
-          description: 'Ir a la farmacia por medicamentos recetados y comprar algunos artículos personales',
-          itemsList: '• Medicamento: Amoxicilina 500mg (receta adjunta)\n• Crema dental\n• Shampoo\n• Vitaminas',
+          description:
+            'Ir a la farmacia por medicamentos recetados y comprar algunos artículos personales',
+          itemsList:
+            '• Medicamento: Amoxicilina 500mg (receta adjunta)\n• Crema dental\n• Shampoo\n• Vitaminas',
           pickupAddress: 'Parque de la 93, Bogotá',
           pickupLat: 4.6584,
           pickupLng: -74.0548,
           dropoffAddress: 'Apartamento cliente, Carrera 11 #93-45',
-          dropoffLat: 4.6610,
-          dropoffLng: -74.0520
-        }
-      }
-    }
+          dropoffLat: 4.661,
+          dropoffLng: -74.052,
+        },
+      },
+    },
   })
   async create(@Body() body: CreateErrandDto, @Req() req: any) {
     const errand = await this.flow.createErrand(Number(req.user.id), body);
@@ -87,5 +99,3 @@ export class ErrandClientController {
     return this.flow.cancelErrand(Number(id), body?.reason);
   }
 }
-
-

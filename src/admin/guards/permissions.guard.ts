@@ -20,7 +20,7 @@ export class PermissionsGuard implements CanActivate {
     // Obtener los permisos requeridos del metadata
     const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(
       PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()]
+      [context.getHandler(), context.getClass()],
     );
 
     // Si no hay permisos requeridos, permitir acceso
@@ -37,30 +37,33 @@ export class PermissionsGuard implements CanActivate {
       adminEmail: admin?.email,
       adminRole: admin?.adminRole,
       permissionsCount: admin?.adminPermissions?.length || 0,
-      requestKeys: Object.keys(request)
+      requestKeys: Object.keys(request),
     });
 
     if (!admin) {
-      this.logger.warn('No admin found in request - available request properties:', Object.keys(request));
+      this.logger.warn(
+        'No admin found in request - available request properties:',
+        Object.keys(request),
+      );
       throw new ForbiddenException('Admin not authenticated');
     }
 
     // Verificar si el admin tiene todos los permisos requeridos
-    const hasAllPermissions = requiredPermissions.every(permission =>
-      admin.adminPermissions?.includes(permission) ?? false
+    const hasAllPermissions = requiredPermissions.every(
+      (permission) => admin.adminPermissions?.includes(permission) ?? false,
     );
 
     if (!hasAllPermissions) {
       this.logger.warn(
-        `Admin ${admin.email} lacks required permissions: ${requiredPermissions.join(', ')}`
+        `Admin ${admin.email} lacks required permissions: ${requiredPermissions.join(', ')}`,
       );
       throw new ForbiddenException(
-        'You do not have the required permissions to access this resource'
+        'You do not have the required permissions to access this resource',
       );
     }
 
     this.logger.debug(
-      `Admin ${admin.email} has required permissions: ${requiredPermissions.join(', ')}`
+      `Admin ${admin.email} has required permissions: ${requiredPermissions.join(', ')}`,
     );
 
     return true;

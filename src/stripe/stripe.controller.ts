@@ -12,11 +12,12 @@ export class StripeController {
   @Post('create')
   @ApiOperation({
     summary: 'Create a Stripe payment intent',
-    description: 'Create a new payment intent for processing a ride payment through Stripe'
+    description:
+      'Create a new payment intent for processing a ride payment through Stripe',
   })
   @ApiBody({
     type: CreatePaymentIntentDto,
-    description: 'Customer information and payment amount'
+    description: 'Customer information and payment amount',
   })
   @ApiResponse({
     status: 200,
@@ -31,37 +32,41 @@ export class StripeController {
             client_secret: {
               type: 'string',
               example: 'pi_1N2B3C4D5E6F7G8H_secret_ABC123DEF456',
-              description: 'Secret key for client-side payment confirmation'
+              description: 'Secret key for client-side payment confirmation',
             },
-            amount: { type: 'number', example: 1575, description: 'Amount in cents' },
+            amount: {
+              type: 'number',
+              example: 1575,
+              description: 'Amount in cents',
+            },
             currency: { type: 'string', example: 'usd' },
-            status: { type: 'string', example: 'requires_payment_method' }
+            status: { type: 'string', example: 'requires_payment_method' },
           },
         },
         ephemeralKey: {
           type: 'object',
-          description: 'Ephemeral key for secure client communication'
+          description: 'Ephemeral key for secure client communication',
         },
         customer: {
           type: 'string',
           example: 'cus_1N2B3C4D5E6F7G8H',
-          description: 'Stripe customer ID'
+          description: 'Stripe customer ID',
         },
         publishableKey: {
           type: 'string',
           example: 'pk_test_...',
-          description: 'Stripe publishable key for client-side use'
-        }
+          description: 'Stripe publishable key for client-side use',
+        },
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description: 'Missing required fields or invalid payment amount'
+    description: 'Missing required fields or invalid payment amount',
   })
   @ApiResponse({
     status: 402,
-    description: 'Payment required - amount too low or invalid currency'
+    description: 'Payment required - amount too low or invalid currency',
   })
   @ApiResponse({ status: 500, description: 'Stripe service error' })
   async createPaymentIntent(
@@ -73,11 +78,12 @@ export class StripeController {
   @Post('pay')
   @ApiOperation({
     summary: 'Confirm a Stripe payment',
-    description: 'Confirm and process a payment using Stripe payment method and intent'
+    description:
+      'Confirm and process a payment using Stripe payment method and intent',
   })
   @ApiBody({
     type: ConfirmPaymentDto,
-    description: 'Stripe payment confirmation details'
+    description: 'Stripe payment confirmation details',
   })
   @ApiResponse({
     status: 200,
@@ -93,8 +99,8 @@ export class StripeController {
             status: { type: 'string', example: 'succeeded' },
             amount: { type: 'number', example: 1575 },
             currency: { type: 'string', example: 'usd' },
-            receipt_email: { type: 'string', example: 'john.doe@example.com' }
-          }
+            receipt_email: { type: 'string', example: 'john.doe@example.com' },
+          },
         },
         charge: {
           type: 'object',
@@ -102,23 +108,23 @@ export class StripeController {
             id: { type: 'string', example: 'ch_1N2B3C4D5E6F7G8H' },
             amount: { type: 'number', example: 1575 },
             currency: { type: 'string', example: 'usd' },
-            status: { type: 'string', example: 'succeeded' }
-          }
-        }
-      }
-    }
+            status: { type: 'string', example: 'succeeded' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'Missing required fields or invalid Stripe IDs'
+    description: 'Missing required fields or invalid Stripe IDs',
   })
   @ApiResponse({
     status: 402,
-    description: 'Payment failed - card declined or insufficient funds'
+    description: 'Payment failed - card declined or insufficient funds',
   })
   @ApiResponse({
     status: 409,
-    description: 'Payment already processed or expired'
+    description: 'Payment already processed or expired',
   })
   @ApiResponse({ status: 500, description: 'Stripe service error' })
   async confirmPayment(
@@ -130,7 +136,8 @@ export class StripeController {
   @Post('refund')
   @ApiOperation({
     summary: 'Create a refund',
-    description: 'Process a refund for a completed payment. Full or partial refunds are supported.'
+    description:
+      'Process a refund for a completed payment. Full or partial refunds are supported.',
   })
   @ApiBody({
     schema: {
@@ -140,25 +147,26 @@ export class StripeController {
           type: 'string',
           example: 'pi_1N2B3C4D5E6F7G8H',
           description: 'Stripe payment intent ID to refund',
-          pattern: '^pi_'
+          pattern: '^pi_',
         },
         amount: {
           type: 'number',
           example: 15.75,
-          description: 'Refund amount in dollars (optional - full refund if not specified)',
-          minimum: 0.50,
-          maximum: 999.99
+          description:
+            'Refund amount in dollars (optional - full refund if not specified)',
+          minimum: 0.5,
+          maximum: 999.99,
         },
         reason: {
           type: 'string',
           example: 'requested_by_customer',
           description: 'Reason for the refund',
-          enum: ['duplicate', 'fraudulent', 'requested_by_customer']
-        }
+          enum: ['duplicate', 'fraudulent', 'requested_by_customer'],
+        },
       },
       required: ['paymentIntentId'],
     },
-    description: 'Refund request details'
+    description: 'Refund request details',
   })
   @ApiResponse({
     status: 200,
@@ -171,38 +179,43 @@ export class StripeController {
           type: 'object',
           properties: {
             id: { type: 'string', example: 're_1N2B3C4D5E6F7G8H' },
-            amount: { type: 'number', example: 1575, description: 'Amount in cents' },
+            amount: {
+              type: 'number',
+              example: 1575,
+              description: 'Amount in cents',
+            },
             currency: { type: 'string', example: 'usd' },
             status: { type: 'string', example: 'succeeded' },
             payment_intent: { type: 'string', example: 'pi_1N2B3C4D5E6F7G8H' },
-            reason: { type: 'string', example: 'requested_by_customer' }
-          }
+            reason: { type: 'string', example: 'requested_by_customer' },
+          },
         },
         charge: {
           type: 'object',
           properties: {
             id: { type: 'string', example: 'ch_1N2B3C4D5E6F7G8H' },
-            amount_refunded: { type: 'number', example: 1575 }
-          }
-        }
-      }
-    }
+            amount_refunded: { type: 'number', example: 1575 },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'Missing payment intent ID or invalid refund amount'
+    description: 'Missing payment intent ID or invalid refund amount',
   })
   @ApiResponse({
     status: 402,
-    description: 'Refund failed - insufficient funds or payment not eligible for refund'
+    description:
+      'Refund failed - insufficient funds or payment not eligible for refund',
   })
   @ApiResponse({
     status: 404,
-    description: 'Payment intent not found'
+    description: 'Payment intent not found',
   })
   @ApiResponse({
     status: 409,
-    description: 'Refund already processed or payment not in refundable state'
+    description: 'Refund already processed or payment not in refundable state',
   })
   @ApiResponse({ status: 500, description: 'Stripe service error' })
   async createRefund(

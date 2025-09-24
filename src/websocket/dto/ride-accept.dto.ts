@@ -5,7 +5,7 @@ export class RideAcceptDto {
   @ApiProperty({
     description: 'Unique identifier of the ride being accepted',
     example: 1,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -14,7 +14,7 @@ export class RideAcceptDto {
   @ApiProperty({
     description: 'Unique identifier of the driver accepting the ride',
     example: 5,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -22,16 +22,9 @@ export class RideAcceptDto {
 
   @ApiProperty({
     description: 'Clerk ID of the passenger whose ride is being accepted',
-    example: 'user_2abc123def456'
+    example: 'user_2abc123def456',
   })
   @IsNotEmpty()
   @IsString()
   userId: string;
 }
-
-
-
-
-
-
-

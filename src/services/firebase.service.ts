@@ -32,7 +32,9 @@ export class FirebaseService {
   private initializeFirebase(): void {
     try {
       if (!this.appConfigService.firebase) {
-        this.logger.warn('Firebase configuration not found. Push notifications will be disabled.');
+        this.logger.warn(
+          'Firebase configuration not found. Push notifications will be disabled.',
+        );
         return;
       }
 
@@ -41,20 +43,28 @@ export class FirebaseService {
       const serviceAccount = firebaseConfig.serviceAccount;
 
       if (!projectId || !serviceAccount) {
-        this.logger.warn('Firebase configuration incomplete. Push notifications will be disabled.');
+        this.logger.warn(
+          'Firebase configuration incomplete. Push notifications will be disabled.',
+        );
         return;
       }
 
       let serviceAccountJson;
       try {
         // Try to parse service account (it might be a JSON string or already an object)
-        serviceAccountJson = typeof serviceAccount === 'string' 
-          ? JSON.parse(serviceAccount) 
-          : serviceAccount;
-        
+        serviceAccountJson =
+          typeof serviceAccount === 'string'
+            ? JSON.parse(serviceAccount)
+            : serviceAccount;
+
         // Validate required service account fields
-        if (!serviceAccountJson.private_key || !serviceAccountJson.client_email) {
-          throw new Error('Service account is missing required fields (private_key or client_email)');
+        if (
+          !serviceAccountJson.private_key ||
+          !serviceAccountJson.client_email
+        ) {
+          throw new Error(
+            'Service account is missing required fields (private_key or client_email)',
+          );
         }
       } catch (error) {
         this.logger.error('Failed to initialize Firebase:', error);
@@ -64,7 +74,9 @@ export class FirebaseService {
       try {
         // Initialize Firebase Admin SDK
         const firebaseAppConfig: admin.AppOptions = {
-          credential: admin.credential.cert(serviceAccountJson as admin.ServiceAccount),
+          credential: admin.credential.cert(
+            serviceAccountJson as admin.ServiceAccount,
+          ),
           projectId: projectId,
         };
 
@@ -90,10 +102,12 @@ export class FirebaseService {
     payload: PushNotificationPayload,
   ): Promise<string | null> {
     if (!this.firebaseApp) {
-      this.logger.debug('Firebase not initialized, push notifications are disabled');
+      this.logger.debug(
+        'Firebase not initialized, push notifications are disabled',
+      );
       return null;
     }
-    
+
     if (!token) {
       this.logger.warn('Cannot send push notification: missing token');
       return null;

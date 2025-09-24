@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
-import { NotificationType, NotificationChannel } from '../../notifications/interfaces/notification.interface';
+import {
+  NotificationType,
+  NotificationChannel,
+} from '../../notifications/interfaces/notification.interface';
 import { WebSocketGatewayClass } from '../../websocket/websocket.gateway';
 import { WalletService } from '../../wallet/wallet.service';
 import { RidesService } from '../rides.service';
@@ -42,7 +45,7 @@ export class RidesFlowService {
       },
       orderBy: [
         { vehicleType: { displayName: 'asc' } },
-        { tier: { baseFare: 'asc' } }
+        { tier: { baseFare: 'asc' } },
       ],
     });
 
@@ -73,7 +76,10 @@ export class RidesFlowService {
   }
 
   // Método para validar si una combinación tier + vehicleType es válida
-  async isValidTierVehicleCombination(tierId: number, vehicleTypeId: number): Promise<boolean> {
+  async isValidTierVehicleCombination(
+    tierId: number,
+    vehicleTypeId: number,
+  ): Promise<boolean> {
     const combination = await this.prisma.tierVehicleType.findFirst({
       where: {
         tierId,
@@ -97,12 +103,12 @@ export class RidesFlowService {
     if (payload.tierId && payload.vehicleTypeId) {
       const isValidCombination = await this.isValidTierVehicleCombination(
         payload.tierId,
-        payload.vehicleTypeId
+        payload.vehicleTypeId,
       );
 
       if (!isValidCombination) {
         throw new Error(
-          `Invalid combination: Tier ${payload.tierId} is not available for vehicle type ${payload.vehicleTypeId}`
+          `Invalid combination: Tier ${payload.tierId} is not available for vehicle type ${payload.vehicleTypeId}`,
         );
       }
     }
@@ -133,8 +139,14 @@ export class RidesFlowService {
     return ride;
   }
 
-  async selectTransportVehicle(rideId: number, tierId?: number, vehicleTypeId?: number) {
-    console.log(`🔍 selectTransportVehicle called with rideId: ${rideId}, tierId: ${tierId}, vehicleTypeId: ${vehicleTypeId}`);
+  async selectTransportVehicle(
+    rideId: number,
+    tierId?: number,
+    vehicleTypeId?: number,
+  ) {
+    console.log(
+      `🔍 selectTransportVehicle called with rideId: ${rideId}, tierId: ${tierId}, vehicleTypeId: ${vehicleTypeId}`,
+    );
 
     try {
       // First check if ride exists
@@ -150,18 +162,21 @@ export class RidesFlowService {
 
       // Determinar los valores finales (usar existentes si no se proporcionan)
       const finalTierId = tierId !== undefined ? tierId : existingRide.tierId;
-      const finalVehicleTypeId = vehicleTypeId !== undefined ? vehicleTypeId : existingRide.requestedVehicleTypeId;
+      const finalVehicleTypeId =
+        vehicleTypeId !== undefined
+          ? vehicleTypeId
+          : existingRide.requestedVehicleTypeId;
 
       // Validar combinación si ambos valores están definidos
       if (finalTierId && finalVehicleTypeId) {
         const isValidCombination = await this.isValidTierVehicleCombination(
           finalTierId,
-          finalVehicleTypeId
+          finalVehicleTypeId,
         );
 
         if (!isValidCombination) {
           throw new Error(
-            `Invalid combination: Tier ${finalTierId} is not available for vehicle type ${finalVehicleTypeId}`
+            `Invalid combination: Tier ${finalTierId} is not available for vehicle type ${finalVehicleTypeId}`,
           );
         }
       }
@@ -199,7 +214,7 @@ export class RidesFlowService {
       console.log(`📊 Ride data:`, {
         rideId: ride?.rideId,
         tierId: ride?.tierId,
-        requestedVehicleTypeId: ride?.requestedVehicleTypeId
+        requestedVehicleTypeId: ride?.requestedVehicleTypeId,
       });
 
       if (ride) {
@@ -218,14 +233,17 @@ export class RidesFlowService {
     }
   }
 
-
-  async confirmTransportPayment(rideId: number, method: 'cash' | 'card', _clientSecret?: string) {
+  async confirmTransportPayment(
+    rideId: number,
+    method: 'cash' | 'card',
+    _clientSecret?: string,
+  ) {
     let payment:
       | { clientSecret?: string; paymentIntentId?: string }
       | undefined;
     const ride = await this.prisma.ride.findUnique({
       where: { rideId },
-      include: { user: true }
+      include: { user: true },
     });
     if (!ride) throw new Error('Ride not found');
 
@@ -264,7 +282,12 @@ export class RidesFlowService {
   async getTransportStatus(rideId: number) {
     return this.prisma.ride.findUnique({
       where: { rideId },
-      include: { driver: true, tier: true, requestedVehicleType: true, ratings: true },
+      include: {
+        driver: true,
+        tier: true,
+        requestedVehicleType: true,
+        ratings: true,
+      },
     });
   }
 
@@ -279,11 +302,16 @@ export class RidesFlowService {
       'cancelled',
       { reason },
     );
-    this.gateway.server?.to(`ride-${rideId}`).emit('ride:cancelled', { rideId, reason });
+    this.gateway.server
+      ?.to(`ride-${rideId}`)
+      .emit('ride:cancelled', { rideId, reason });
     return { ok: true };
   }
 
-  async rateTransport(rideId: number, data: { rating: number; comment?: string; userId: string }) {
+  async rateTransport(
+    rideId: number,
+    data: { rating: number; comment?: string; userId: string },
+  ) {
     return this.prisma.rating.create({
       data: {
         rideId,
@@ -295,35 +323,77 @@ export class RidesFlowService {
   }
 
   // Driver actions
-  async driverAcceptTransport(rideId: number, driverId: number, userId: string) {
+  async driverAcceptTransport(
+    rideId: number,
+    driverId: number,
+    userId: string,
+  ) {
     const ride = await this.prisma.ride.update({
       where: { rideId },
       data: { driverId },
     });
-    await this.notifications.notifyRideStatusUpdate(rideId, userId, driverId, 'accepted');
-    this.gateway.server?.to(`ride-${rideId}`).emit('ride:accepted', { rideId, driverId });
+    await this.notifications.notifyRideStatusUpdate(
+      rideId,
+      userId,
+      driverId,
+      'accepted',
+    );
+    this.gateway.server
+      ?.to(`ride-${rideId}`)
+      .emit('ride:accepted', { rideId, driverId });
     return ride;
   }
 
-  async driverArrivedTransport(rideId: number, driverId: number, userId: string) {
-    await this.notifications.notifyRideStatusUpdate(rideId, userId, driverId, 'arrived');
-    this.gateway.server?.to(`ride-${rideId}`).emit('ride:arrived', { rideId, driverId });
+  async driverArrivedTransport(
+    rideId: number,
+    driverId: number,
+    userId: string,
+  ) {
+    await this.notifications.notifyRideStatusUpdate(
+      rideId,
+      userId,
+      driverId,
+      'arrived',
+    );
+    this.gateway.server
+      ?.to(`ride-${rideId}`)
+      .emit('ride:arrived', { rideId, driverId });
     return { ok: true };
   }
 
   async driverStartTransport(rideId: number, driverId: number, userId: string) {
-    await this.notifications.notifyRideStatusUpdate(rideId, userId, driverId, 'in_progress');
-    this.gateway.server?.to(`ride-${rideId}`).emit('ride:started', { rideId, driverId });
+    await this.notifications.notifyRideStatusUpdate(
+      rideId,
+      userId,
+      driverId,
+      'in_progress',
+    );
+    this.gateway.server
+      ?.to(`ride-${rideId}`)
+      .emit('ride:started', { rideId, driverId });
     return { ok: true };
   }
 
-  async driverCompleteTransport(rideId: number, driverId: number, userId: string, fare: number) {
+  async driverCompleteTransport(
+    rideId: number,
+    driverId: number,
+    userId: string,
+    fare: number,
+  ) {
     const ride = await this.prisma.ride.update({
       where: { rideId },
       data: { farePrice: fare, paymentStatus: 'paid' },
     });
-    await this.notifications.notifyRideStatusUpdate(rideId, userId, driverId, 'completed', { fare });
-    this.gateway.server?.to(`ride-${rideId}`).emit('ride:completed', { rideId, driverId, fare });
+    await this.notifications.notifyRideStatusUpdate(
+      rideId,
+      userId,
+      driverId,
+      'completed',
+      { fare },
+    );
+    this.gateway.server
+      ?.to(`ride-${rideId}`)
+      .emit('ride:completed', { rideId, driverId, fare });
     return ride;
   }
 
@@ -337,10 +407,13 @@ export class RidesFlowService {
     return order;
   }
 
-  async confirmDeliveryPayment(orderId: number, method: 'cash' | 'card' | 'wallet') {
+  async confirmDeliveryPayment(
+    orderId: number,
+    method: 'cash' | 'card' | 'wallet',
+  ) {
     const order = await this.prisma.deliveryOrder.findUnique({
       where: { orderId },
-      include: { user: true }
+      include: { user: true },
     });
     if (!order) throw new Error('Order not found');
 
@@ -351,11 +424,13 @@ export class RidesFlowService {
       data: { paymentStatus: 'pending' },
     });
 
-    this.gateway.server?.to(`order-${orderId}`).emit('order:payment:initiated', {
-      orderId,
-      method,
-      message: 'Esperando confirmación de pago venezolano'
-    });
+    this.gateway.server
+      ?.to(`order-${orderId}`)
+      .emit('order:payment:initiated', {
+        orderId,
+        method,
+        message: 'Esperando confirmación de pago venezolano',
+      });
 
     return updated;
   }
@@ -363,12 +438,19 @@ export class RidesFlowService {
   async getDeliveryStatus(orderId: number) {
     return this.prisma.deliveryOrder.findUnique({
       where: { orderId },
-      include: { store: true, courier: true, orderItems: { include: { product: true } }, ratings: true },
+      include: {
+        store: true,
+        courier: true,
+        orderItems: { include: { product: true } },
+        ratings: true,
+      },
     });
   }
 
   async cancelDelivery(orderId: number, reason?: string) {
-    const order = await this.prisma.deliveryOrder.findUnique({ where: { orderId } });
+    const order = await this.prisma.deliveryOrder.findUnique({
+      where: { orderId },
+    });
     if (!order) throw new Error('Order not found');
     await this.notifications.sendNotification({
       userId: order.userId.toString(),
@@ -378,25 +460,39 @@ export class RidesFlowService {
       data: { orderId },
       channels: [1 as any],
     } as any);
-    this.gateway.server?.to(`order-${orderId}`).emit('order:cancelled', { orderId, reason });
+    this.gateway.server
+      ?.to(`order-${orderId}`)
+      .emit('order:cancelled', { orderId, reason });
     return { ok: true };
   }
 
   async driverAcceptDelivery(orderId: number, driverId: number) {
-    const order = await this.ordersService.acceptOrderForDelivery(orderId, driverId);
-    this.gateway.server?.to(`order-${orderId}`).emit('order:accepted', { orderId, driverId });
+    const order = await this.ordersService.acceptOrderForDelivery(
+      orderId,
+      driverId,
+    );
+    this.gateway.server
+      ?.to(`order-${orderId}`)
+      .emit('order:accepted', { orderId, driverId });
     return order;
   }
 
   async driverPickupDelivery(orderId: number, driverId: number) {
     const order = await this.ordersService.markOrderPickedUp(orderId, driverId);
-    this.gateway.server?.to(`order-${orderId}`).emit('order:picked_up', { orderId, driverId });
+    this.gateway.server
+      ?.to(`order-${orderId}`)
+      .emit('order:picked_up', { orderId, driverId });
     return order;
   }
 
   async driverDeliverDelivery(orderId: number, driverId: number) {
-    const order = await this.ordersService.markOrderDelivered(orderId, driverId);
-    this.gateway.server?.to(`order-${orderId}`).emit('order:delivered', { orderId, driverId });
+    const order = await this.ordersService.markOrderDelivered(
+      orderId,
+      driverId,
+    );
+    this.gateway.server
+      ?.to(`order-${orderId}`)
+      .emit('order:delivered', { orderId, driverId });
     return order;
   }
 
@@ -405,10 +501,13 @@ export class RidesFlowService {
     return this.errandsService.createErrand(userId, dto);
   }
 
-  async updateErrandShopping(errandId: number, data: { itemsCost: number; notes?: string }) {
+  async updateErrandShopping(
+    errandId: number,
+    data: { itemsCost: number; notes?: string },
+  ) {
     return this.errandsService.updateErrandShopping(errandId, {
       itemsCost: data.itemsCost,
-      notes: data.notes
+      notes: data.notes,
     });
   }
 
@@ -436,8 +535,8 @@ export class RidesFlowService {
         rideId: true,
         userId: true,
         farePrice: true,
-        paymentStatus: true
-      }
+        paymentStatus: true,
+      },
     });
   }
 
@@ -458,10 +557,14 @@ export class RidesFlowService {
     return this.parcelsService.pickupParcel(parcelId);
   }
 
-  async driverDeliverParcel(parcelId: number, driverId: number, proof?: { signatureImageUrl?: string; photoUrl?: string }) {
+  async driverDeliverParcel(
+    parcelId: number,
+    driverId: number,
+    proof?: { signatureImageUrl?: string; photoUrl?: string },
+  ) {
     return this.parcelsService.deliverParcel(parcelId, {
       photoUrl: proof?.photoUrl,
-      signatureUrl: proof?.signatureImageUrl
+      signatureUrl: proof?.signatureImageUrl,
     });
   }
 
@@ -477,23 +580,28 @@ export class RidesFlowService {
   // NUEVOS MÉTODOS PARA BÚSQUEDA DE CONDUCTORES
   // =========================================
 
-
-
   // Método auxiliar para calcular distancia entre dos puntos
-  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  private calculateDistance(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
     const R = 6371; // Radio de la Tierra en km
     const dLat = this.deg2rad(lat2 - lat1);
     const dLng = this.deg2rad(lng2 - lng1);
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) *
+        Math.cos(this.deg2rad(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Distancia en km
   }
 
   private deg2rad(deg: number): number {
-    return deg * (Math.PI/180);
+    return deg * (Math.PI / 180);
   }
 
   // === NUEVOS MÉTODOS PARA MATCHING AUTOMÁTICO ===
@@ -513,35 +621,42 @@ export class RidesFlowService {
 
     try {
       // 1. Obtener conductores candidatos con filtros básicos
-    let filters: any = {
-      status: 'online',
+      const filters: any = {
+        status: 'online',
         verificationStatus: 'approved',
-    };
+      };
 
       // 2. Aplicar filtros de compatibilidad si se especifican
-    if (tierId) {
-      const compatibleVehicleTypes = await this.prisma.tierVehicleType.findMany({
-          where: { tierId, isActive: true },
-        select: { vehicleTypeId: true },
-      });
+      if (tierId) {
+        const compatibleVehicleTypes =
+          await this.prisma.tierVehicleType.findMany({
+            where: { tierId, isActive: true },
+            select: { vehicleTypeId: true },
+          });
 
-      if (compatibleVehicleTypes.length > 0) {
-        const vehicleTypeIds = compatibleVehicleTypes.map(vt => vt.vehicleTypeId);
-        filters.vehicleTypeId = vehicleTypeIds.length === 1 ? vehicleTypeIds[0] : { in: vehicleTypeIds };
+        if (compatibleVehicleTypes.length > 0) {
+          const vehicleTypeIds = compatibleVehicleTypes.map(
+            (vt) => vt.vehicleTypeId,
+          );
+          filters.vehicleTypeId =
+            vehicleTypeIds.length === 1
+              ? vehicleTypeIds[0]
+              : { in: vehicleTypeIds };
+        }
       }
-    }
 
-    if (vehicleTypeId) {
-      filters.vehicleTypeId = vehicleTypeId;
-    }
+      if (vehicleTypeId) {
+        filters.vehicleTypeId = vehicleTypeId;
+      }
 
       // 3. Buscar conductores usando LocationTrackingService
-      const candidateDrivers = await this.locationTrackingService.findNearbyDrivers(
-      lat,
-      lng,
-        radiusKm / 1000, // Convertir a metros para el servicio
-      filters
-    );
+      const candidateDrivers =
+        await this.locationTrackingService.findNearbyDrivers(
+          lat,
+          lng,
+          radiusKm / 1000, // Convertir a metros para el servicio
+          filters,
+        );
 
       if (candidateDrivers.length === 0) {
         throw new Error('NO_DRIVERS_AVAILABLE');
@@ -552,7 +667,7 @@ export class RidesFlowService {
         candidateDrivers.map(async (driver) => {
           const score = await this.calculateDriverScore(driver, lat, lng);
           return { ...driver, score };
-        })
+        }),
       );
 
       // 5. Ordenar por score descendente y tomar el mejor
@@ -563,7 +678,10 @@ export class RidesFlowService {
       const driverDetails = await this.getDriverDetailedInfo(bestDriver.id);
 
       // 7. Calcular tiempo estimado de llegada (velocidad promedio 30 km/h en ciudad)
-      const estimatedMinutes = Math.max(1, Math.round((bestDriver.distance * 1000 / 30) * 60)); // Convertir km a minutos
+      const estimatedMinutes = Math.max(
+        1,
+        Math.round(((bestDriver.distance * 1000) / 30) * 60),
+      ); // Convertir km a minutos
 
       // 8. Preparar respuesta
       const result = {
@@ -591,7 +709,11 @@ export class RidesFlowService {
           pricing: {
             tierId: tierId || 1,
             tierName: await this.getTierName(tierId || 1),
-            estimatedFare: await this.calculateEstimatedFare(tierId || 1, estimatedMinutes, bestDriver.distance),
+            estimatedFare: await this.calculateEstimatedFare(
+              tierId || 1,
+              estimatedMinutes,
+              bestDriver.distance,
+            ),
           },
           matchScore: Math.round(bestDriver.score * 100) / 100,
           matchedAt: new Date(),
@@ -603,11 +725,10 @@ export class RidesFlowService {
           vehicleTypeId,
           radiusKm,
           searchDuration: (Date.now() - startTime) / 1000, // En segundos
-        }
+        },
       };
 
       return result;
-
     } catch (error) {
       console.error('Error in findBestDriverMatch:', error);
       throw error;
@@ -617,18 +738,25 @@ export class RidesFlowService {
   /**
    * Calcula el score de un conductor basado en múltiples factores
    */
-  private async calculateDriverScore(driver: any, userLat: number, userLng: number): Promise<number> {
+  private async calculateDriverScore(
+    driver: any,
+    userLat: number,
+    userLng: number,
+  ): Promise<number> {
     try {
       // Pesos para cada factor (suman 100)
       const WEIGHTS = {
-        DISTANCE: 40,      // 40% - Más cercano = mejor
-        RATING: 35,        // 35% - Mejor rating = mejor
-        ETA: 25,          // 25% - Menor tiempo de llegada = mejor
+        DISTANCE: 40, // 40% - Más cercano = mejor
+        RATING: 35, // 35% - Mejor rating = mejor
+        ETA: 25, // 25% - Menor tiempo de llegada = mejor
       };
 
       // 1. Factor de distancia (inverso - más cercano = score más alto)
       const distanceKm = driver.distance;
-      const distanceScore = Math.max(0, Math.min(WEIGHTS.DISTANCE, WEIGHTS.DISTANCE * (1 / (1 + distanceKm))));
+      const distanceScore = Math.max(
+        0,
+        Math.min(WEIGHTS.DISTANCE, WEIGHTS.DISTANCE * (1 / (1 + distanceKm))),
+      );
 
       // 2. Factor de rating (directo - mejor rating = score más alto)
       const driverDetails = await this.getDriverDetailedInfo(driver.driverId);
@@ -636,15 +764,20 @@ export class RidesFlowService {
 
       // 3. Factor de tiempo estimado (inverso - menor tiempo = score más alto)
       const estimatedMinutes = Math.max(1, Math.round((distanceKm / 30) * 60)); // 30 km/h promedio
-      const etaScore = Math.max(0, Math.min(WEIGHTS.ETA, WEIGHTS.ETA * (1 / (1 + estimatedMinutes / 10))));
+      const etaScore = Math.max(
+        0,
+        Math.min(WEIGHTS.ETA, WEIGHTS.ETA * (1 / (1 + estimatedMinutes / 10))),
+      );
 
       // Score total
       const totalScore = distanceScore + ratingScore + etaScore;
 
       return Math.min(100, Math.max(0, totalScore)); // Asegurar rango 0-100
-
     } catch (error) {
-      console.error(`Error calculating score for driver ${driver.driverId}:`, error);
+      console.error(
+        `Error calculating score for driver ${driver.driverId}:`,
+        error,
+      );
       return 0; // Score mínimo si hay error
     }
   }
@@ -662,17 +795,17 @@ export class RidesFlowService {
             status: 'completed',
             paymentStatus: 'paid',
             createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Últimos 30 días
-            }
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Últimos 30 días
+            },
           },
           select: {
             rideId: true,
             ratings: {
-              select: { ratingValue: true }
-            }
-          }
-        }
-      }
+              select: { ratingValue: true },
+            },
+          },
+        },
+      },
     });
 
     if (!driver) {
@@ -680,10 +813,14 @@ export class RidesFlowService {
     }
 
     // Calcular rating promedio de los últimos 30 días
-    const recentRatings = driver.rides.flatMap(ride => ride.ratings.map(r => r.ratingValue));
-    const avgRating = recentRatings.length > 0
-      ? recentRatings.reduce((sum, rating) => sum + rating, 0) / recentRatings.length
-      : 4.5; // Rating por defecto si no hay calificaciones recientes
+    const recentRatings = driver.rides.flatMap((ride) =>
+      ride.ratings.map((r) => r.ratingValue),
+    );
+    const avgRating =
+      recentRatings.length > 0
+        ? recentRatings.reduce((sum, rating) => sum + rating, 0) /
+          recentRatings.length
+        : 4.5; // Rating por defecto si no hay calificaciones recientes
 
     return {
       ...driver,
@@ -698,7 +835,7 @@ export class RidesFlowService {
   private async getTierName(tierId: number): Promise<string> {
     const tier = await this.prisma.rideTier.findUnique({
       where: { id: tierId },
-      select: { name: true }
+      select: { name: true },
     });
     return tier?.name || 'Economy';
   }
@@ -706,9 +843,13 @@ export class RidesFlowService {
   /**
    * Calcula tarifa estimada
    */
-  private async calculateEstimatedFare(tierId: number, minutes: number, distanceKm: number): Promise<number> {
+  private async calculateEstimatedFare(
+    tierId: number,
+    minutes: number,
+    distanceKm: number,
+  ): Promise<number> {
     const tier = await this.prisma.rideTier.findUnique({
-      where: { id: tierId }
+      where: { id: tierId },
     });
 
     if (!tier) return 0;
@@ -717,7 +858,7 @@ export class RidesFlowService {
     const perMinuteRate = Number(tier.perMinuteRate);
     const perMileRate = Number(tier.perMileRate);
 
-    const fare = baseFare + (minutes * perMinuteRate) + (distanceKm * perMileRate);
+    const fare = baseFare + minutes * perMinuteRate + distanceKm * perMileRate;
     return Math.round(fare * 100) / 100; // Redondear a 2 decimales
   }
 
@@ -728,18 +869,18 @@ export class RidesFlowService {
     rideId: number,
     driverId: number,
     userId: number,
-    notes?: string
+    notes?: string,
   ) {
     try {
       // 1. Verificar que el viaje existe y pertenece al usuario
       const ride = await this.prisma.ride.findUnique({
         where: { rideId },
-        include: { user: true }
+        include: { user: true },
       });
 
-    if (!ride) {
-      throw new Error('Ride not found');
-    }
+      if (!ride) {
+        throw new Error('Ride not found');
+      }
 
       if (ride.userId !== userId) {
         throw new Error('Ride does not belong to user');
@@ -750,26 +891,26 @@ export class RidesFlowService {
       }
 
       // 2. Verificar que el conductor esté disponible
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: driverId },
+      const driver = await this.prisma.driver.findUnique({
+        where: { id: driverId },
         select: {
           id: true,
           status: true,
           verificationStatus: true,
           firstName: true,
-          lastName: true
-        }
-    });
+          lastName: true,
+        },
+      });
 
-    if (!driver) {
-      throw new Error('Driver not found');
-    }
+      if (!driver) {
+        throw new Error('Driver not found');
+      }
 
-    if (driver.status !== 'online') {
+      if (driver.status !== 'online') {
         throw new Error('DRIVER_NOT_AVAILABLE');
-    }
+      }
 
-    if (driver.verificationStatus !== 'approved') {
+      if (driver.verificationStatus !== 'approved') {
         throw new Error('Driver not verified');
       }
 
@@ -779,8 +920,8 @@ export class RidesFlowService {
         data: {
           driverId: driverId,
           status: 'driver_confirmed',
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       // 4. Calcular tiempo de expiración (2 minutos)
@@ -791,27 +932,29 @@ export class RidesFlowService {
         driverId,
         rideId,
         ride,
-        notes
+        notes,
       );
 
       // 6. Emitir evento WebSocket
-      this.gateway.server?.to(`driver-${driverId}`).emit('driver:ride-request', {
-        rideId,
-        userName: ride.user?.name || 'Usuario',
-        userRating: 4.9, // TODO: Calcular rating real del usuario
-        pickupAddress: ride.originAddress,
-        dropoffAddress: ride.destinationAddress,
-        estimatedFare: ride.farePrice,
-        distance: 0, // TODO: Calcular distancia real
-        duration: ride.rideTime,
-        pickupLocation: {
-          lat: Number(ride.originLatitude),
-          lng: Number(ride.originLongitude)
-        },
-        notes: notes || null,
-        expiresAt: expiresAt.toISOString(),
-        requestedAt: new Date().toISOString()
-      });
+      this.gateway.server
+        ?.to(`driver-${driverId}`)
+        .emit('driver:ride-request', {
+          rideId,
+          userName: ride.user?.name || 'Usuario',
+          userRating: 4.9, // TODO: Calcular rating real del usuario
+          pickupAddress: ride.originAddress,
+          dropoffAddress: ride.destinationAddress,
+          estimatedFare: ride.farePrice,
+          distance: 0, // TODO: Calcular distancia real
+          duration: ride.rideTime,
+          pickupLocation: {
+            lat: Number(ride.originLatitude),
+            lng: Number(ride.originLongitude),
+          },
+          notes: notes || null,
+          expiresAt: expiresAt.toISOString(),
+          requestedAt: new Date().toISOString(),
+        });
 
       return {
         rideId,
@@ -820,9 +963,8 @@ export class RidesFlowService {
         message: 'Conductor notificado exitosamente',
         notificationSent,
         responseTimeoutMinutes: 2,
-        expiresAt
+        expiresAt,
       };
-
     } catch (error) {
       console.error('Error confirming driver for ride:', error);
       throw error;
@@ -836,37 +978,37 @@ export class RidesFlowService {
     driverId: number,
     rideId: number,
     ride: any,
-    notes?: string
+    notes?: string,
   ): Promise<boolean> {
     try {
       // Calcular distancia aproximada (simplificada)
       const distance = 5; // TODO: Calcular distancia real
       const duration = ride.rideTime || 15;
 
-    await this.notifications.sendNotification({
+      await this.notifications.sendNotification({
         userId: `driver_${driverId}`, // Placeholder - debería ser el userId real del conductor
-      type: 'RIDE_REQUEST' as any,
+        type: 'RIDE_REQUEST' as any,
         title: 'Nueva Solicitud de Viaje',
         message: `Tienes una solicitud de viaje desde ${ride.originAddress} hasta ${ride.destinationAddress}`,
-      data: {
-        rideId,
+        data: {
+          rideId,
           isDirectRequest: true,
-        pickupLocation: {
-          lat: Number(ride.originLatitude),
-          lng: Number(ride.originLongitude)
+          pickupLocation: {
+            lat: Number(ride.originLatitude),
+            lng: Number(ride.originLongitude),
           },
           dropoffLocation: {
             lat: Number(ride.destinationLatitude),
-            lng: Number(ride.destinationLongitude)
+            lng: Number(ride.destinationLongitude),
           },
           estimatedFare: ride.farePrice,
           distance,
           duration,
           notes: notes || null,
-          expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString()
-      },
-      channels: ['push' as any],
-      priority: 'high'
+          expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+        },
+        channels: ['push' as any],
+        priority: 'high',
       });
 
       return true;
@@ -884,7 +1026,7 @@ export class RidesFlowService {
     driverId: number,
     response: 'accept' | 'reject',
     reason?: string,
-    estimatedArrivalMinutes?: number
+    estimatedArrivalMinutes?: number,
   ) {
     try {
       // 1. Verificar que el viaje existe y está en estado driver_confirmed
@@ -892,8 +1034,8 @@ export class RidesFlowService {
         where: { rideId },
         include: {
           user: true,
-          driver: true
-        }
+          driver: true,
+        },
       });
 
       if (!ride) {
@@ -921,8 +1063,8 @@ export class RidesFlowService {
           data: {
             driverId: null,
             status: 'pending',
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
 
         // Notificar al usuario que el tiempo expiró
@@ -930,9 +1072,10 @@ export class RidesFlowService {
           userId: ride.userId.toString(),
           type: 'RIDE_REQUEST_EXPIRED' as any,
           title: 'Tiempo Agotado',
-          message: 'El conductor no respondió a tiempo. Puedes buscar otro conductor.',
+          message:
+            'El conductor no respondió a tiempo. Puedes buscar otro conductor.',
           data: { rideId },
-          channels: ['push' as any]
+          channels: ['push' as any],
         });
 
         throw new Error('REQUEST_EXPIRED');
@@ -944,8 +1087,8 @@ export class RidesFlowService {
           where: { rideId },
           data: {
             status: 'accepted',
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
 
         // Notificar al usuario
@@ -958,30 +1101,29 @@ export class RidesFlowService {
             rideId,
             driverId,
             driverName: `${ride.driver?.firstName} ${ride.driver?.lastName}`,
-            estimatedArrivalMinutes: estimatedArrivalMinutes || 5
+            estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
           },
-          channels: ['push' as any]
-    });
+          channels: ['push' as any],
+        });
 
-    // Emitir evento WebSocket
+        // Emitir evento WebSocket
         this.gateway.server?.to(`ride-${rideId}`).emit('ride:accepted', {
-      rideId,
+          rideId,
           driverId,
           driverName: `${ride.driver?.firstName} ${ride.driver?.lastName}`,
           estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
-          timestamp: new Date()
-    });
+          timestamp: new Date(),
+        });
 
-    return {
-      rideId,
-      driverId,
+        return {
+          rideId,
+          driverId,
           response: 'accept',
           status: 'accepted',
           message: 'Viaje aceptado exitosamente',
           userNotified: true,
-          estimatedArrivalMinutes: estimatedArrivalMinutes || 5
+          estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
         };
-
       } else if (response === 'reject') {
         // 3b. RECHAZAR: Liberar el viaje para otros conductores
         await this.prisma.ride.update({
@@ -989,8 +1131,8 @@ export class RidesFlowService {
           data: {
             driverId: null,
             status: 'pending',
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
 
         // Notificar al usuario
@@ -1002,9 +1144,9 @@ export class RidesFlowService {
           data: {
             rideId,
             driverId,
-            reason: reason || 'Conductor no disponible'
+            reason: reason || 'Conductor no disponible',
           },
-          channels: ['push' as any]
+          channels: ['push' as any],
         });
 
         // Emitir evento WebSocket
@@ -1012,7 +1154,7 @@ export class RidesFlowService {
           rideId,
           driverId,
           reason: reason || 'Conductor no disponible',
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         return {
@@ -1022,13 +1164,11 @@ export class RidesFlowService {
           status: 'pending',
           message: 'Viaje liberado para otros conductores',
           userNotified: true,
-          reason: reason || 'Conductor no disponible'
+          reason: reason || 'Conductor no disponible',
         };
-
       } else {
         throw new Error('INVALID_RESPONSE');
       }
-
     } catch (error) {
       console.error('Error handling driver ride response:', error);
       throw error;
@@ -1045,8 +1185,11 @@ export class RidesFlowService {
       reason: string;
       location?: { lat: number; lng: number };
       notes?: string;
-      refundType: 'driver_cancellation' | 'passenger_cancellation' | 'system_cancellation';
-    }
+      refundType:
+        | 'driver_cancellation'
+        | 'passenger_cancellation'
+        | 'system_cancellation';
+    },
   ) {
     try {
       // 1. Verificar que el viaje existe y pertenece al conductor
@@ -1055,8 +1198,8 @@ export class RidesFlowService {
         include: {
           user: true,
           driver: true,
-          tier: true
-        }
+          tier: true,
+        },
       });
 
       if (!ride) {
@@ -1078,7 +1221,9 @@ export class RidesFlowService {
       }
 
       const refundAmount = Number(ride.farePrice);
-      this.logger.log(`💰 Procesando reembolso de $${refundAmount} para viaje ${rideId}`);
+      this.logger.log(
+        `💰 Procesando reembolso de $${refundAmount} para viaje ${rideId}`,
+      );
 
       // 4. Procesar reembolso en wallet del pasajero
       const { wallet, transaction } = await this.walletService.processRefund(
@@ -1086,7 +1231,7 @@ export class RidesFlowService {
         refundAmount,
         `Cancelación por conductor: ${cancellationData.reason}`,
         'ride_cancellation',
-        rideId.toString()
+        rideId.toString(),
       );
 
       // 5. Actualizar estado del viaje
@@ -1098,8 +1243,8 @@ export class RidesFlowService {
           cancelledBy: 'driver',
           cancellationReason: cancellationData.reason,
           cancellationNotes: cancellationData.notes,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       // 6. Crear registro de cancelación
@@ -1113,8 +1258,8 @@ export class RidesFlowService {
           refundProcessed: true,
           locationLat: cancellationData.location?.lat,
           locationLng: cancellationData.location?.lng,
-          cancelledAt: new Date()
-        }
+          cancelledAt: new Date(),
+        },
       });
 
       // 7. Notificar al pasajero sobre el reembolso
@@ -1129,9 +1274,9 @@ export class RidesFlowService {
           newBalance: wallet.balance,
           reason: cancellationData.reason,
           driverName: ride.driver?.firstName + ' ' + ride.driver?.lastName,
-          cancellationNotes: cancellationData.notes
+          cancellationNotes: cancellationData.notes,
         },
-        channels: [NotificationChannel.PUSH]
+        channels: [NotificationChannel.PUSH],
       });
 
       // 8. Notificar al conductor sobre la cancelación exitosa
@@ -1144,9 +1289,9 @@ export class RidesFlowService {
           rideId,
           refundAmount,
           passengerNotified: true,
-          reason: cancellationData.reason
+          reason: cancellationData.reason,
         },
-        channels: [NotificationChannel.PUSH]
+        channels: [NotificationChannel.PUSH],
       });
 
       // 9. Emitir evento WebSocket
@@ -1156,10 +1301,12 @@ export class RidesFlowService {
         reason: cancellationData.reason,
         refundAmount,
         newBalance: wallet.balance,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
-      this.logger.log(`✅ Viaje ${rideId} cancelado por conductor con reembolso procesado`);
+      this.logger.log(
+        `✅ Viaje ${rideId} cancelado por conductor con reembolso procesado`,
+      );
 
       return {
         rideId,
@@ -1170,9 +1317,8 @@ export class RidesFlowService {
         passengerNotified: true,
         driverNotified: true,
         cancellationReason: cancellationData.reason,
-        transactionId: transaction.id
+        transactionId: transaction.id,
       };
-
     } catch (error) {
       this.logger.error(`❌ Error cancelando viaje ${rideId}:`, error);
       throw error;
@@ -1181,19 +1327,21 @@ export class RidesFlowService {
 
   async simulateRideRequest(driverId: number) {
     try {
-      this.logger.log(`🎯 Simulando solicitud de viaje para conductor ${driverId}`);
+      this.logger.log(
+        `🎯 Simulando solicitud de viaje para conductor ${driverId}`,
+      );
 
       // 1. Buscar un usuario aleatorio (excluyendo al conductor)
       const randomUser = await this.prisma.user.findFirst({
         where: {
           id: { not: driverId }, // Excluir al conductor
-          isActive: true
+          isActive: true,
         },
         select: {
           id: true,
           name: true,
-          email: true
-        }
+          email: true,
+        },
       });
 
       if (!randomUser) {
@@ -1209,27 +1357,31 @@ export class RidesFlowService {
         destination_latitude: 4.6567,
         destination_longitude: -74.0583,
         ride_time: 20, // 20 minutos
-        fare_price: 18.50,
+        fare_price: 18.5,
         payment_status: 'pending',
         user_id: randomUser.id,
         tier_id: 1, // Premium
-        vehicle_type_id: 1 // Carro
+        vehicle_type_id: 1, // Carro
       };
 
       // 3. Crear el viaje usando el servicio de rides
       const ride = await this.ridesService.createRide(rideData as any);
 
-      this.logger.log(`✅ Viaje simulado creado: ${ride.rideId} para usuario ${randomUser.name}`);
+      this.logger.log(
+        `✅ Viaje simulado creado: ${ride.rideId} para usuario ${randomUser.name}`,
+      );
 
       // 4. Confirmar conductor para el viaje (esto pone status: 'driver_confirmed')
       const confirmation = await this.confirmDriverForRide(
         ride.rideId,
         driverId,
         randomUser.id,
-        'Solicitud simulada para testing'
+        'Solicitud simulada para testing',
       );
 
-      this.logger.log(`✅ Conductor ${driverId} asignado al viaje ${ride.rideId}`);
+      this.logger.log(
+        `✅ Conductor ${driverId} asignado al viaje ${ride.rideId}`,
+      );
 
       return {
         rideId: ride.rideId,
@@ -1243,9 +1395,8 @@ export class RidesFlowService {
         status: 'driver_confirmed',
         message: 'Solicitud simulada creada exitosamente',
         expiresAt: confirmation.expiresAt,
-        notificationSent: confirmation.notificationSent
+        notificationSent: confirmation.notificationSent,
       };
-
     } catch (error) {
       this.logger.error(`❌ Error simulando solicitud de viaje:`, error);
       throw error;
@@ -1254,7 +1405,9 @@ export class RidesFlowService {
 
   async getDriverPendingRequests(driverId: number) {
     try {
-      this.logger.log(`📋 Obteniendo solicitudes pendientes para conductor ${driverId}`);
+      this.logger.log(
+        `📋 Obteniendo solicitudes pendientes para conductor ${driverId}`,
+      );
 
       // Buscar rides donde el conductor está asignado y status es 'driver_confirmed'
       const pendingRequests = await this.prisma.ride.findMany({
@@ -1263,36 +1416,39 @@ export class RidesFlowService {
           status: 'driver_confirmed',
           // Opcional: filtrar por tiempo de expiración
           updatedAt: {
-            gte: new Date(Date.now() - 5 * 60 * 1000) // Últimos 5 minutos para evitar rides muy antiguos
-          }
+            gte: new Date(Date.now() - 5 * 60 * 1000), // Últimos 5 minutos para evitar rides muy antiguos
+          },
         },
         include: {
           user: {
             select: {
               id: true,
               name: true,
-              email: true
-            }
+              email: true,
+            },
           },
           tier: {
             select: {
               id: true,
-              name: true
-            }
-          }
+              name: true,
+            },
+          },
         },
         orderBy: {
-          updatedAt: 'desc' // Más recientes primero
-        }
+          updatedAt: 'desc', // Más recientes primero
+        },
       });
 
       // Formatear respuesta
-      const formattedRequests = pendingRequests.map(ride => {
+      const formattedRequests = pendingRequests.map((ride) => {
         // Calcular tiempo restante para expiración (2 minutos desde la asignación)
         const assignedAt = new Date(ride.updatedAt);
         const expiresAt = new Date(assignedAt.getTime() + 2 * 60 * 1000);
         const now = new Date();
-        const timeRemainingSeconds = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+        const timeRemainingSeconds = Math.max(
+          0,
+          Math.floor((expiresAt.getTime() - now.getTime()) / 1000),
+        );
 
         return {
           rideId: ride.rideId,
@@ -1305,30 +1461,32 @@ export class RidesFlowService {
           passenger: {
             name: ride.user?.name || 'Usuario',
             phone: '+57xxxxxxxxxx', // TODO: Agregar teléfono real del usuario
-            rating: 4.9 // TODO: Calcular rating real del pasajero
+            rating: 4.9, // TODO: Calcular rating real del pasajero
           },
           tier: {
-            name: ride.tier?.name || 'Standard'
+            name: ride.tier?.name || 'Standard',
           },
           requestedAt: assignedAt.toISOString(),
           expiresAt: expiresAt.toISOString(),
           timeRemainingSeconds: timeRemainingSeconds,
           pickupLocation: {
             lat: Number(ride.originLatitude),
-            lng: Number(ride.originLongitude)
-          }
+            lng: Number(ride.originLongitude),
+          },
         };
       });
 
-      this.logger.log(`✅ Encontradas ${formattedRequests.length} solicitudes pendientes para conductor ${driverId}`);
+      this.logger.log(
+        `✅ Encontradas ${formattedRequests.length} solicitudes pendientes para conductor ${driverId}`,
+      );
 
       return formattedRequests;
-
     } catch (error) {
-      this.logger.error(`❌ Error obteniendo solicitudes pendientes para conductor ${driverId}:`, error);
+      this.logger.error(
+        `❌ Error obteniendo solicitudes pendientes para conductor ${driverId}:`,
+        error,
+      );
       throw error;
     }
   }
 }
-
-

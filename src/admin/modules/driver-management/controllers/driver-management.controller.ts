@@ -43,7 +43,8 @@ export class DriverManagementController {
   @RequirePermissions(Permission.DRIVER_READ)
   @ApiOperation({
     summary: 'Get drivers with filters',
-    description: 'Retrieve a paginated list of drivers with advanced filtering options',
+    description:
+      'Retrieve a paginated list of drivers with advanced filtering options',
   })
   @ApiQuery({
     name: 'page',
@@ -123,7 +124,9 @@ export class DriverManagementController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getDrivers(
     @Query('page') page: number = 1,
@@ -196,7 +199,10 @@ export class DriverManagementController {
               id: { type: 'number', example: 1 },
               type: { type: 'string', example: 'LICENSE' },
               status: { type: 'string', example: 'APPROVED' },
-              url: { type: 'string', example: 'https://example.com/documents/license.jpg' },
+              url: {
+                type: 'string',
+                example: 'https://example.com/documents/license.jpg',
+              },
               verifiedAt: { type: 'string', format: 'date-time' },
               verifiedBy: { type: 'number', example: 1 },
               rejectionReason: { type: 'string', example: 'Expired document' },
@@ -207,7 +213,9 @@ export class DriverManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'Driver not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async getDriverById(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Fetching driver by ID: ${id}`);
@@ -246,7 +254,10 @@ export class DriverManagementController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Driver status updated successfully' },
+        message: {
+          type: 'string',
+          example: 'Driver status updated successfully',
+        },
         data: {
           $ref: '#/components/schemas/Driver',
         },
@@ -255,19 +266,23 @@ export class DriverManagementController {
   })
   @ApiBadRequestResponse({ description: 'Invalid status provided' })
   @ApiNotFoundResponse({ description: 'Driver not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateDriverStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: string,
   ) {
     this.logger.log(`Updating status for driver ID: ${id}, status: ${status}`);
-    
+
     // Validate the status is a valid DriverStatus
     if (!['active', 'inactive', 'suspended'].includes(status)) {
-      throw new BadRequestException('Invalid status. Must be one of: active, inactive, suspended');
+      throw new BadRequestException(
+        'Invalid status. Must be one of: active, inactive, suspended',
+      );
     }
-    
+
     // Use the verification status update since that's what's available in the service
     // This assumes that verification status and driver status are related in your business logic
     return this.driverService.updateDriverVerification(id, status);
@@ -277,7 +292,8 @@ export class DriverManagementController {
   @RequirePermissions(Permission.DRIVER_APPROVE)
   @ApiOperation({
     summary: 'Update driver verification status',
-    description: 'Update the verification status of a driver and optionally add notes',
+    description:
+      'Update the verification status of a driver and optionally add notes',
   })
   @ApiParam({
     name: 'id',
@@ -292,7 +308,10 @@ export class DriverManagementController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Driver verification status updated' },
+        message: {
+          type: 'string',
+          example: 'Driver verification status updated',
+        },
         data: {
           type: 'object',
           properties: {
@@ -307,11 +326,14 @@ export class DriverManagementController {
     },
   })
   @ApiNotFoundResponse({ description: 'Driver not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateDriverVerification(
     @Param('id', ParseIntPipe) id: number,
-    @Body('verificationStatus') verificationStatus: 'pending' | 'verified' | 'rejected',
+    @Body('verificationStatus')
+    verificationStatus: 'pending' | 'verified' | 'rejected',
     @Body('notes') notes?: string,
   ) {
     this.logger.log(

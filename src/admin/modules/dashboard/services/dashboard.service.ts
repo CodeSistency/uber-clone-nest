@@ -56,7 +56,7 @@ export class DashboardService {
     try {
       const now = new Date();
       let startDate: Date;
-      
+
       switch (period.toLowerCase()) {
         case 'day':
           startDate = startOfDay(now);
@@ -88,14 +88,15 @@ export class DashboardService {
       // Get comparison data (previous period)
       let comparisonStartDate: Date;
       let comparisonEndDate = startDate;
-      
+
       if (period === 'day') {
         comparisonStartDate = subDays(startDate, 1);
       } else if (period === 'week') {
         comparisonStartDate = subWeeks(startDate, 1);
       } else if (period === 'month') {
         comparisonStartDate = subMonths(startDate, 1);
-      } else { // year
+      } else {
+        // year
         comparisonStartDate = new Date(now.getFullYear() - 1, 0, 1);
         comparisonEndDate = new Date(now.getFullYear() - 1, 11, 31);
       }
@@ -113,12 +114,17 @@ export class DashboardService {
       `;
 
       // Calculate percentage change
-      const currentAmount = Number(revenueData[0]?.total_amount?.toString() || 0);
-      const previousAmount = Number(comparisonData[0]?.total_amount?.toString() || 0);
+      const currentAmount = Number(
+        revenueData[0]?.total_amount?.toString() || 0,
+      );
+      const previousAmount = Number(
+        comparisonData[0]?.total_amount?.toString() || 0,
+      );
       let percentageChange = 0;
-      
+
       if (previousAmount > 0) {
-        percentageChange = ((currentAmount - previousAmount) / previousAmount) * 100;
+        percentageChange =
+          ((currentAmount - previousAmount) / previousAmount) * 100;
       } else if (currentAmount > 0) {
         percentageChange = 100; // Infinite growth (from 0 to some value)
       }
@@ -138,31 +144,42 @@ export class DashboardService {
         ORDER BY date ASC
       `;
 
-      const totalTransactions = Number(revenueData[0]?.total_count?.toString() || 0);
-      
+      const totalTransactions = Number(
+        revenueData[0]?.total_count?.toString() || 0,
+      );
+
       return {
         totalRevenue: currentAmount,
         currency: 'USD',
         period: period.toLowerCase(),
         transactionCount: totalTransactions,
-        averageTransactionValue: totalTransactions > 0 
-          ? currentAmount / totalTransactions 
-          : 0,
+        averageTransactionValue:
+          totalTransactions > 0 ? currentAmount / totalTransactions : 0,
         comparison: {
           percentageChange: parseFloat(percentageChange.toFixed(2)),
           isIncrease: percentageChange >= 0,
           previousPeriodAmount: previousAmount,
-          previousPeriod: this.getPreviousPeriodLabel(period)
+          previousPeriod: this.getPreviousPeriodLabel(period),
         },
-        breakdown: (Array.isArray(dailyBreakdown) ? dailyBreakdown : []).map((item) => ({
-          date: new Date(item.date).toISOString().split('T')[0],
-          amount: parseFloat(Number(item.amount || 0).toFixed(2)),
-          transactionCount: parseInt(item.transaction_count || '0', 10),
-          averageValue: parseFloat((Number(item.amount || 0) / (parseInt(item.transaction_count || '0', 10) || 1)).toFixed(2))
-        }))
+        breakdown: (Array.isArray(dailyBreakdown) ? dailyBreakdown : []).map(
+          (item) => ({
+            date: new Date(item.date).toISOString().split('T')[0],
+            amount: parseFloat(Number(item.amount || 0).toFixed(2)),
+            transactionCount: parseInt(item.transaction_count || '0', 10),
+            averageValue: parseFloat(
+              (
+                Number(item.amount || 0) /
+                (parseInt(item.transaction_count || '0', 10) || 1)
+              ).toFixed(2),
+            ),
+          }),
+        ),
       };
     } catch (error) {
-      this.logger.error(`Error getting revenue data: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error getting revenue data: ${error.message}`,
+        error.stack,
+      );
       throw new Error('Failed to fetch revenue data');
     }
   }
@@ -173,8 +190,12 @@ export class DashboardService {
       const now = new Date();
       const today = new Date(now.setHours(0, 0, 0, 0));
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      
+      const monthAgo = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        now.getDate(),
+      );
+
       // Execute all queries in parallel
       const [
         totalUsers,
@@ -211,7 +232,7 @@ export class DashboardService {
         this.prisma.user.count({
           where: { userType: 'user' },
         }),
-        
+
         // Active users (logged in last 30 days)
         this.prisma.user.count({
           where: {
@@ -219,7 +240,7 @@ export class DashboardService {
             lastLogin: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
           },
         }),
-        
+
         // New users today
         this.prisma.user.count({
           where: {
@@ -243,10 +264,10 @@ export class DashboardService {
             createdAt: { gte: monthAgo },
           },
         }),
-        
+
         // Total drivers
         this.prisma.driver.count(),
-        
+
         // Online drivers (based on recent rides)
         this.prisma.driver.count({
           where: {
@@ -272,7 +293,7 @@ export class DashboardService {
         this.prisma.driver.count({
           where: { verificationStatus: 'SUSPENDED' },
         }),
-        
+
         // Active rides
         this.prisma.ride.count({
           where: {
@@ -281,7 +302,7 @@ export class DashboardService {
             },
           },
         }),
-        
+
         // Completed rides today
         this.prisma.ride.count({
           where: {
@@ -336,17 +357,17 @@ export class DashboardService {
 
         // Total orders
         this.prisma.deliveryOrder.count(),
-        
+
         // Total revenue (from completed rides)
         this.prisma.ride.aggregate({
           _sum: { farePrice: true },
           where: { paymentStatus: 'COMPLETED' },
         }),
-        
+
         // Today's revenue
         this.prisma.ride.aggregate({
           _sum: { farePrice: true },
-          where: { 
+          where: {
             paymentStatus: 'COMPLETED',
             createdAt: { gte: today },
           },
@@ -355,7 +376,7 @@ export class DashboardService {
         // This week's revenue
         this.prisma.ride.aggregate({
           _sum: { farePrice: true },
-          where: { 
+          where: {
             paymentStatus: 'COMPLETED',
             createdAt: { gte: weekAgo },
           },
@@ -364,7 +385,7 @@ export class DashboardService {
         // This month's revenue
         this.prisma.ride.aggregate({
           _sum: { farePrice: true },
-          where: { 
+          where: {
             paymentStatus: 'COMPLETED',
             createdAt: { gte: monthAgo },
           },
@@ -373,7 +394,7 @@ export class DashboardService {
         // Pending payments
         this.prisma.ride.aggregate({
           _sum: { farePrice: true },
-          where: { 
+          where: {
             paymentStatus: 'PENDING',
           },
         }),
@@ -388,17 +409,17 @@ export class DashboardService {
 
         // Active stores (assuming active means they have at least one product)
         this.prisma.store.count({
-          where: { 
+          where: {
             products: {
-              some: {}
-            }
+              some: {},
+            },
           },
         }),
 
         // Pending stores (assuming no specific field, using empty string for name as pending)
         this.prisma.store.count({
-          where: { 
-            name: ''
+          where: {
+            name: '',
           },
         }),
 
@@ -440,10 +461,14 @@ export class DashboardService {
         // Financial
         totalRevenue: totalRevenueResult?._sum?.farePrice?.toNumber() || 0,
         revenueToday: revenueTodayResult?._sum?.farePrice?.toNumber() || 0,
-        revenueThisWeek: revenueThisWeekResult?._sum?.farePrice?.toNumber() || 0,
-        revenueThisMonth: revenueThisMonthResult?._sum?.farePrice?.toNumber() || 0,
-        pendingPayments: pendingPaymentsResult?._sum?.farePrice?.toNumber() || 0,
-        totalWalletBalance: totalWalletBalanceResult?._sum?.balance?.toNumber() || 0,
+        revenueThisWeek:
+          revenueThisWeekResult?._sum?.farePrice?.toNumber() || 0,
+        revenueThisMonth:
+          revenueThisMonthResult?._sum?.farePrice?.toNumber() || 0,
+        pendingPayments:
+          pendingPaymentsResult?._sum?.farePrice?.toNumber() || 0,
+        totalWalletBalance:
+          totalWalletBalanceResult?._sum?.balance?.toNumber() || 0,
 
         // Stores
         totalStores,

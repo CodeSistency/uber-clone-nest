@@ -31,7 +31,7 @@ export class ErrandDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async accept(@Param('id') id: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
@@ -39,7 +39,10 @@ export class ErrandDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const e = await this.flow.driverAcceptErrand(Number(id), Number(req.user.id));
+    const e = await this.flow.driverAcceptErrand(
+      Number(id),
+      Number(req.user.id),
+    );
     if (key) this.idemp.set(key, 200, e);
     return { data: e };
   }
@@ -56,7 +59,7 @@ export class ErrandDriverController {
     - Permite al conductor actualizar costos de compras realizadas
     - Actualiza notas adicionales sobre el encargo
     - Mantiene registro de gastos para facturación
-    `
+    `,
   })
   async updateShopping(
     @Param('id') id: string,
@@ -79,10 +82,13 @@ export class ErrandDriverController {
     - Marca el inicio de la entrega del encargo
     - Cambia el status del encargo a 'in_progress'
     - Inicia el seguimiento del tiempo de entrega
-    `
+    `,
   })
   async start(@Param('id') id: string, @Req() req: any) {
-    const e = await this.flow.driverStartErrand(Number(id), Number(req.user.id));
+    const e = await this.flow.driverStartErrand(
+      Number(id),
+      Number(req.user.id),
+    );
     return { data: e };
   }
 
@@ -103,7 +109,7 @@ export class ErrandDriverController {
     **Idempotencia:**
     - Envía header \`Idempotency-Key\` para evitar duplicados
     - TTL de 5 minutos para la misma key
-    `
+    `,
   })
   async complete(@Param('id') id: string, @Req() req: any) {
     const key = req.headers['idempotency-key'] as string | undefined;
@@ -111,10 +117,11 @@ export class ErrandDriverController {
       const cached = this.idemp.get(key);
       if (cached) return { data: cached.value };
     }
-    const e = await this.flow.driverCompleteErrand(Number(id), Number(req.user.id));
+    const e = await this.flow.driverCompleteErrand(
+      Number(id),
+      Number(req.user.id),
+    );
     if (key) this.idemp.set(key, 200, e);
     return { data: e };
   }
 }
-
-

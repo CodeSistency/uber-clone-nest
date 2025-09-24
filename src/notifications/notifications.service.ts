@@ -170,11 +170,11 @@ export class NotificationsService {
         return;
       }
 
-      // For now, we'll send a generic notification to test the system
-      // In a real implementation, you'd get the driver-user mapping from your database
+      // Send notifications to nearby drivers
+      // Note: In this system, drivers share IDs with users (driver.id === user.id)
       const notifications: NotificationPayload[] = nearbyDrivers.map(
         (driver) => ({
-          userId: `driver_${driver.id}`, // Placeholder - replace with actual user ID mapping
+          userId: driver.id.toString(), // Use driver ID as user ID (they share the same ID in this system)
           type: NotificationType.RIDE_REQUEST,
           title: 'New Ride Request',
           message: 'A new ride is available in your area',
@@ -383,8 +383,18 @@ export class NotificationsService {
 
   private async getUserNotificationPreferences(userId: string) {
     try {
+      const parsedUserId = parseInt(userId);
+
+      // Validate that userId is a valid number
+      if (isNaN(parsedUserId)) {
+        this.logger.error(
+          `Invalid userId for notification preferences: ${userId}`,
+        );
+        return null;
+      }
+
       const preferences = await this.prisma.notificationPreferences.findUnique({
-        where: { userId: parseInt(userId) },
+        where: { userId: parsedUserId },
       });
 
       return (
@@ -409,9 +419,17 @@ export class NotificationsService {
 
   private async getUserPushTokens(userId: string) {
     try {
+      const parsedUserId = parseInt(userId);
+
+      // Validate that userId is a valid number
+      if (isNaN(parsedUserId)) {
+        this.logger.error(`Invalid userId for push tokens: ${userId}`);
+        return [];
+      }
+
       const tokens = await this.prisma.pushToken.findMany({
         where: {
-          userId: parseInt(userId),
+          userId: parsedUserId,
           isActive: true,
         },
         select: {
@@ -560,9 +578,19 @@ export class NotificationsService {
     smsSentAt?: Date;
   }): Promise<void> {
     try {
+      const userId = parseInt(data.userId);
+
+      // Validate that userId is a valid number
+      if (isNaN(userId)) {
+        this.logger.error(
+          `Invalid userId for notification history: ${data.userId}`,
+        );
+        throw new Error(`Invalid userId: ${data.userId}`);
+      }
+
       await this.prisma.notification.create({
         data: {
-          userId: parseInt(data.userId),
+          userId: userId,
           type: data.type,
           title: data.title,
           message: data.message,

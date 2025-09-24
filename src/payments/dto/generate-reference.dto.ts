@@ -1,4 +1,14 @@
-import { IsNotEmpty, IsIn, IsNumber, IsOptional, IsString, Min, IsBoolean, IsUUID, Length } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  IsBoolean,
+  IsUUID,
+  Length,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -6,7 +16,7 @@ export class GenerateReferenceDto {
   @ApiProperty({
     description: 'Tipo de servicio para el pago',
     example: 'ride',
-    enum: ['ride', 'delivery', 'errand', 'parcel']
+    enum: ['ride', 'delivery', 'errand', 'parcel'],
   })
   @IsNotEmpty()
   @IsIn(['ride', 'delivery', 'errand', 'parcel'])
@@ -15,7 +25,7 @@ export class GenerateReferenceDto {
   @ApiProperty({
     description: 'ID del servicio (rideId, orderId, etc.)',
     example: 123,
-    minimum: 1
+    minimum: 1,
   })
   @IsNumber()
   @Min(1)
@@ -24,8 +34,8 @@ export class GenerateReferenceDto {
 
   @ApiProperty({
     description: 'Monto del pago en VES',
-    example: 25.50,
-    minimum: 0.01
+    example: 25.5,
+    minimum: 0.01,
   })
   @IsNumber()
   @Min(0.01)
@@ -35,7 +45,7 @@ export class GenerateReferenceDto {
   @ApiPropertyOptional({
     description: 'Método de pago',
     example: 'transfer',
-    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash']
+    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'],
   })
   @IsOptional()
   @IsIn(['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'])
@@ -45,7 +55,7 @@ export class GenerateReferenceDto {
     description: 'Código del banco venezolano',
     example: '0102',
     minLength: 4,
-    maxLength: 4
+    maxLength: 4,
   })
   @IsOptional()
   @IsString()
@@ -54,7 +64,7 @@ export class GenerateReferenceDto {
   @ApiProperty({
     description: 'ID del usuario que realiza el pago',
     example: 1,
-    minimum: 1
+    minimum: 1,
   })
   @IsNumber()
   @Min(1)
@@ -64,7 +74,7 @@ export class GenerateReferenceDto {
   @ApiPropertyOptional({
     description: 'Indica si este es un pago parcial de un grupo',
     example: true,
-    default: false
+    default: false,
   })
   @IsOptional()
   @IsBoolean()
@@ -73,7 +83,7 @@ export class GenerateReferenceDto {
 
   @ApiPropertyOptional({
     description: 'ID del grupo de pagos múltiples (UUID)',
-    example: 'cm1n8x9p40000abcdefghijk'
+    example: 'cm1n8x9p40000abcdefghijk',
   })
   @IsOptional()
   @IsString()
@@ -85,7 +95,7 @@ export class InitiateMultiplePaymentsDto {
   @ApiProperty({
     description: 'Tipo de servicio',
     example: 'ride',
-    enum: ['ride', 'delivery', 'errand', 'parcel']
+    enum: ['ride', 'delivery', 'errand', 'parcel'],
   })
   @IsNotEmpty()
   @IsIn(['ride', 'delivery', 'errand', 'parcel'])
@@ -94,7 +104,7 @@ export class InitiateMultiplePaymentsDto {
   @ApiProperty({
     description: 'ID del servicio',
     example: 123,
-    minimum: 1
+    minimum: 1,
   })
   @IsNumber()
   @Min(1)
@@ -104,7 +114,7 @@ export class InitiateMultiplePaymentsDto {
   @ApiProperty({
     description: 'ID del usuario que realiza el pago',
     example: 1,
-    minimum: 1
+    minimum: 1,
   })
   @IsNumber()
   @Min(1)
@@ -113,8 +123,8 @@ export class InitiateMultiplePaymentsDto {
 
   @ApiProperty({
     description: 'Monto total a pagar',
-    example: 75.50,
-    minimum: 0.01
+    example: 75.5,
+    minimum: 0.01,
   })
   @IsNumber()
   @Min(0.01)
@@ -124,10 +134,10 @@ export class InitiateMultiplePaymentsDto {
   @ApiProperty({
     description: 'Lista de métodos de pago con montos',
     example: [
-      { method: 'transfer', amount: 25.00, bankCode: '0102' },
-      { method: 'pago_movil', amount: 30.50, bankCode: '0105' },
-      { method: 'cash', amount: 20.00 }
-    ]
+      { method: 'transfer', amount: 25.0, bankCode: '0102' },
+      { method: 'pago_movil', amount: 30.5, bankCode: '0105' },
+      { method: 'cash', amount: 20.0 },
+    ],
   })
   @IsNotEmpty()
   payments: PaymentMethodDto[];
@@ -138,7 +148,7 @@ export class PaymentMethodDto {
   @ApiProperty({
     description: 'Método de pago',
     example: 'transfer',
-    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash']
+    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'],
   })
   @IsNotEmpty()
   @IsIn(['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'])
@@ -146,8 +156,8 @@ export class PaymentMethodDto {
 
   @ApiProperty({
     description: 'Monto para este método de pago',
-    example: 25.50,
-    minimum: 0.01
+    example: 25.5,
+    minimum: 0.01,
   })
   @IsNumber()
   @Min(0.01)
@@ -158,7 +168,7 @@ export class PaymentMethodDto {
     description: 'Código del banco (requerido para transfer y pago_movil)',
     example: '0102',
     minLength: 4,
-    maxLength: 4
+    maxLength: 4,
   })
   @IsOptional()
   @IsString()
@@ -171,7 +181,7 @@ export class ConfirmPartialPaymentDto {
     description: 'Número de referencia bancaria',
     example: '12345678901234567890',
     minLength: 20,
-    maxLength: 20
+    maxLength: 20,
   })
   @IsNotEmpty()
   @IsString()
@@ -180,7 +190,7 @@ export class ConfirmPartialPaymentDto {
 
   @ApiPropertyOptional({
     description: 'Código del banco (requerido para pagos electrónicos)',
-    example: '0102'
+    example: '0102',
   })
   @IsOptional()
   @IsString()
@@ -191,7 +201,7 @@ export class ConfirmPartialPaymentDto {
 export class PaymentGroupStatusDto {
   @ApiProperty({
     description: 'ID del grupo de pagos',
-    example: 'cm1n8x9p40000abcdefghijk'
+    example: 'cm1n8x9p40000abcdefghijk',
   })
   @IsNotEmpty()
   @IsString()

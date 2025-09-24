@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsEmail, IsPhoneNumber, IsIn, IsDateString, IsNotEmpty } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEmail,
+  IsPhoneNumber,
+  IsIn,
+  IsDateString,
+  IsNotEmpty,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // DTO para ubicación (Paso 1 del onboarding)
@@ -51,7 +59,10 @@ export class OnboardingPersonalDto {
     example: '1990-05-15',
   })
   @IsNotEmpty({ message: 'La fecha de nacimiento es requerida' })
-  @IsDateString({}, { message: 'La fecha de nacimiento debe tener formato YYYY-MM-DD' })
+  @IsDateString(
+    {},
+    { message: 'La fecha de nacimiento debe tener formato YYYY-MM-DD' },
+  )
   dateOfBirth: string;
 
   @ApiProperty({
@@ -60,7 +71,9 @@ export class OnboardingPersonalDto {
     enum: ['male', 'female', 'other', 'prefer_not_to_say'],
   })
   @IsNotEmpty({ message: 'El género es requerido' })
-  @IsIn(['male', 'female', 'other', 'prefer_not_to_say'], { message: 'Género inválido' })
+  @IsIn(['male', 'female', 'other', 'prefer_not_to_say'], {
+    message: 'Género inválido',
+  })
   gender: string;
 }
 
@@ -157,6 +170,3 @@ export class OnboardingStatusDto {
   })
   progress: number;
 }
-
-
-

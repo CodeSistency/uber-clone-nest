@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { BankApiInterface, PaymentValidation, BankInfo } from '../../payments/interfaces/bank-api.interface';
+import {
+  BankApiInterface,
+  PaymentValidation,
+  BankInfo,
+} from '../../payments/interfaces/bank-api.interface';
 
 @Injectable()
 export class BNCApi implements BankApiInterface {
@@ -15,13 +19,13 @@ export class BNCApi implements BankApiInterface {
         transactionId: `BNC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         amount: simulatedAmount,
         timestamp: new Date(),
-        bankCode: '0196'
+        bankCode: '0196',
       };
     } else {
       return {
         confirmed: false,
         message: 'Transacción no localizada en BNC',
-        bankCode: '0196'
+        bankCode: '0196',
       };
     }
   }
@@ -30,7 +34,7 @@ export class BNCApi implements BankApiInterface {
     return {
       code: '0196',
       name: 'BNC (Banco Nacional de Crédito)',
-      methods: ['transfer'] // Solo transferencias, sin pago móvil
+      methods: ['transfer'], // Solo transferencias, sin pago móvil
     };
   }
 }

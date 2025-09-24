@@ -871,12 +871,16 @@ export class NotificationsController {
     return {
       firebase: {
         initialized: firebaseConfig.initialized,
-        status: firebaseConfig.isConfigured() ? 'configured' : 'missing_credentials',
+        status: firebaseConfig.isConfigured()
+          ? 'configured'
+          : 'missing_credentials',
         projectId: firebaseConfig.projectId || null,
       },
       twilio: {
         initialized: twilioConfig.initialized,
-        status: twilioConfig.isConfigured() ? 'configured' : 'missing_credentials',
+        status: twilioConfig.isConfigured()
+          ? 'configured'
+          : 'missing_credentials',
         phoneNumber: twilioConfig.phoneNumber || null,
       },
       websocket: {

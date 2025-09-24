@@ -5,7 +5,7 @@ export class RideJoinDto {
   @ApiProperty({
     description: 'Unique identifier of the ride to join',
     example: 1,
-    type: Number
+    type: Number,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -13,16 +13,9 @@ export class RideJoinDto {
 
   @ApiProperty({
     description: 'Clerk ID of the user joining the ride tracking',
-    example: 'user_2abc123def456'
+    example: 'user_2abc123def456',
   })
   @IsNotEmpty()
   @IsString()
   userId: string;
 }
-
-
-
-
-
-
-

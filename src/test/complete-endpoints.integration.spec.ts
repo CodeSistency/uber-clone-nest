@@ -220,7 +220,6 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
     });
 
     describe('3. 🚕 Ride Management (6 endpoints)', () => {
-
       it('POST /api/ride/create - Create ride', async () => {
         const createRideDto = {
           origin_address: '123 Test St, Test City',

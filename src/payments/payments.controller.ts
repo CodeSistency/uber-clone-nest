@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, UseGuards, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  UseGuards,
+  Param,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -7,11 +15,16 @@ import {
   ApiParam,
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
-  ApiNotFoundResponse
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaymentsService } from './payments.service';
-import { GenerateReferenceDto, InitiateMultiplePaymentsDto, ConfirmPartialPaymentDto, PaymentGroupStatusDto } from './dto/generate-reference.dto';
+import {
+  GenerateReferenceDto,
+  InitiateMultiplePaymentsDto,
+  ConfirmPartialPaymentDto,
+  PaymentGroupStatusDto,
+} from './dto/generate-reference.dto';
 import { ConfirmReferenceDto } from './dto/confirm-reference.dto';
 import { PaymentReference } from './entities/payment-reference.entity';
 
@@ -40,7 +53,7 @@ export class PaymentsController {
     - 20 dígitos numéricos únicos
     - Expira en 24 horas
     - Vinculada al usuario y servicio específico
-    `
+    `,
   })
   @ApiResponse({
     status: 201,
@@ -51,15 +64,15 @@ export class PaymentsController {
         id: { type: 'number', example: 1 },
         referenceNumber: { type: 'string', example: '12345678901234567890' },
         bankCode: { type: 'string', example: '0102' },
-        amount: { type: 'number', example: 25.50 },
+        amount: { type: 'number', example: 25.5 },
         currency: { type: 'string', example: 'VES' },
         serviceType: { type: 'string', example: 'ride' },
         serviceId: { type: 'number', example: 123 },
         status: { type: 'string', example: 'pending' },
         expiresAt: { type: 'string', format: 'date-time' },
-        createdAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'Token JWT inválido',
@@ -67,20 +80,23 @@ export class PaymentsController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Unauthorized' }
-      }
-    }
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
   })
   async generateReference(@Body() dto: GenerateReferenceDto, @Req() req: any) {
     const reference = await this.paymentsService.generateBankReference({
       ...dto,
-      userId: req.user.id
+      userId: req.user.id,
     });
 
     // Incluir instrucciones de pago en la respuesta
     return {
       ...reference,
-      instructions: this.paymentsService.getPaymentInstructions(dto.paymentMethod || 'transfer', reference.referenceNumber)
+      instructions: this.paymentsService.getPaymentInstructions(
+        dto.paymentMethod || 'transfer',
+        reference.referenceNumber,
+      ),
     };
   }
 
@@ -104,7 +120,7 @@ export class PaymentsController {
     **Tiempo de procesamiento:**
     - Bancos venezolanos: 1-5 minutos
     - Simulación desarrollo: inmediato
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -117,21 +133,24 @@ export class PaymentsController {
         reference: {
           type: 'object',
           properties: {
-            referenceNumber: { type: 'string', example: '12345678901234567890' },
-            amount: { type: 'number', example: 25.50 },
-            status: { type: 'string', example: 'confirmed' }
-          }
+            referenceNumber: {
+              type: 'string',
+              example: '12345678901234567890',
+            },
+            amount: { type: 'number', example: 25.5 },
+            status: { type: 'string', example: 'confirmed' },
+          },
         },
         transaction: {
           type: 'object',
           properties: {
             transactionId: { type: 'string', example: 'BV-1725979200000' },
-            amount: { type: 'number', example: 25.50 },
-            timestamp: { type: 'string', format: 'date-time' }
-          }
-        }
-      }
-    }
+            amount: { type: 'number', example: 25.5 },
+            timestamp: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -144,11 +163,11 @@ export class PaymentsController {
         reference: {
           type: 'object',
           properties: {
-            status: { type: 'string', example: 'pending' }
-          }
-        }
-      }
-    }
+            status: { type: 'string', example: 'pending' },
+          },
+        },
+      },
+    },
   })
   async confirmReference(@Body() dto: ConfirmReferenceDto, @Req() req: any) {
     return this.paymentsService.confirmBankReference(dto, req.user.id);
@@ -167,18 +186,18 @@ export class PaymentsController {
     - Fecha de creación y expiración
     - Información del banco y monto
     - Fecha de confirmación (si aplica)
-    `
+    `,
   })
   @ApiParam({
     name: 'referenceNumber',
     description: 'Número de referencia bancaria de 20 dígitos',
     example: '12345678901234567890',
-    type: 'string'
+    type: 'string',
   })
   @ApiResponse({
     status: 200,
     description: 'Estado de referencia obtenido exitosamente',
-    type: PaymentReference
+    type: PaymentReference,
   })
   @ApiNotFoundResponse({
     description: 'Referencia no encontrada',
@@ -186,12 +205,18 @@ export class PaymentsController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Referencia no encontrada' }
-      }
-    }
+        message: { type: 'string', example: 'Referencia no encontrada' },
+      },
+    },
   })
-  async getReferenceStatus(@Param('referenceNumber') referenceNumber: string, @Req() req: any) {
-    return this.paymentsService.getReferenceStatus(referenceNumber, req.user.id);
+  async getReferenceStatus(
+    @Param('referenceNumber') referenceNumber: string,
+    @Req() req: any,
+  ) {
+    return this.paymentsService.getReferenceStatus(
+      referenceNumber,
+      req.user.id,
+    );
   }
 
   @Get('user-references')
@@ -206,7 +231,7 @@ export class PaymentsController {
     - Todas las referencias (pendientes, confirmadas, expiradas)
     - Ordenadas por fecha de creación (más recientes primero)
     - Información completa de cada referencia
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -217,13 +242,13 @@ export class PaymentsController {
         type: 'object',
         properties: {
           referenceNumber: { type: 'string', example: '12345678901234567890' },
-          amount: { type: 'number', example: 25.50 },
+          amount: { type: 'number', example: 25.5 },
           status: { type: 'string', example: 'confirmed' },
           serviceType: { type: 'string', example: 'ride' },
-          expiresAt: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
+          expiresAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
   })
   async getUserReferences(@Req() req: any) {
     return this.paymentsService.getUserPaymentReferences(req.user.id);
@@ -246,7 +271,7 @@ export class PaymentsController {
     **Métodos por banco:**
     - Transferencias bancarias
     - Pago móvil (según disponibilidad)
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -261,11 +286,11 @@ export class PaymentsController {
           methods: {
             type: 'array',
             items: { type: 'string', example: 'transfer' },
-            example: ['transfer', 'pago_movil']
-          }
-        }
-      }
-    }
+            example: ['transfer', 'pago_movil'],
+          },
+        },
+      },
+    },
   })
   async getSupportedBanks() {
     return this.paymentsService.getSupportedBanks();
@@ -302,7 +327,7 @@ export class PaymentsController {
     - \`complete\`: Todos los pagos confirmados
     - \`cancelled\`: Grupo cancelado por usuario
     - \`expired\`: Tiempo límite excedido
-    `
+    `,
   })
   @ApiResponse({
     status: 201,
@@ -311,29 +336,38 @@ export class PaymentsController {
       type: 'object',
       properties: {
         groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
-        totalAmount: { type: 'number', example: 75.50 },
+        totalAmount: { type: 'number', example: 75.5 },
         electronicPayments: { type: 'number', example: 2 },
-        cashAmount: { type: 'number', example: 20.00 },
+        cashAmount: { type: 'number', example: 20.0 },
         references: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              referenceNumber: { type: 'string', example: '12345678901234567890' },
-              amount: { type: 'number', example: 25.00 },
-              method: { type: 'string', example: 'transfer' }
-            }
-          }
+              referenceNumber: {
+                type: 'string',
+                example: '12345678901234567890',
+              },
+              amount: { type: 'number', example: 25.0 },
+              method: { type: 'string', example: 'transfer' },
+            },
+          },
         },
         expiresAt: { type: 'string', format: 'date-time' },
-        instructions: { type: 'string', example: 'Realiza los pagos electrónicos...' }
-      }
-    }
+        instructions: {
+          type: 'string',
+          example: 'Realiza los pagos electrónicos...',
+        },
+      },
+    },
   })
-  async initiateMultiplePayments(@Body() dto: InitiateMultiplePaymentsDto, @Req() req: any) {
+  async initiateMultiplePayments(
+    @Body() dto: InitiateMultiplePaymentsDto,
+    @Req() req: any,
+  ) {
     return this.paymentsService.initiateMultiplePayments({
       ...dto,
-      userId: req.user.id
+      userId: req.user.id,
     });
   }
 
@@ -357,7 +391,7 @@ export class PaymentsController {
     **Actualización automática:**
     - Grupo se marca como 'complete' cuando todos los pagos son confirmados
     - Servicio correspondiente se actualiza cuando grupo está completo
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -368,11 +402,14 @@ export class PaymentsController {
         success: { type: 'boolean', example: true },
         groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
         isPartial: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Pago confirmado exitosamente' }
-      }
-    }
+        message: { type: 'string', example: 'Pago confirmado exitosamente' },
+      },
+    },
   })
-  async confirmPartialPayment(@Body() dto: ConfirmPartialPaymentDto, @Req() req: any) {
+  async confirmPartialPayment(
+    @Body() dto: ConfirmPartialPaymentDto,
+    @Req() req: any,
+  ) {
     return this.paymentsService.confirmPartialPayment(dto, req.user.id);
   }
 
@@ -397,12 +434,12 @@ export class PaymentsController {
     - Mostrar progreso al usuario en la app
     - Depuración de pagos pendientes
     - Historial de transacciones múltiples
-    `
+    `,
   })
   @ApiParam({
     name: 'groupId',
     description: 'ID del grupo de pagos (UUID)',
-    example: 'cm1n8x9p40000abcdefghijk'
+    example: 'cm1n8x9p40000abcdefghijk',
   })
   @ApiResponse({
     status: 200,
@@ -411,9 +448,9 @@ export class PaymentsController {
       type: 'object',
       properties: {
         groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
-        totalAmount: { type: 'number', example: 75.50 },
-        paidAmount: { type: 'number', example: 55.50 },
-        remainingAmount: { type: 'number', example: 20.00 },
+        totalAmount: { type: 'number', example: 75.5 },
+        paidAmount: { type: 'number', example: 55.5 },
+        remainingAmount: { type: 'number', example: 20.0 },
         status: { type: 'string', example: 'incomplete' },
         statistics: {
           type: 'object',
@@ -421,25 +458,31 @@ export class PaymentsController {
             totalReferences: { type: 'number', example: 3 },
             confirmedReferences: { type: 'number', example: 2 },
             pendingReferences: { type: 'number', example: 1 },
-            confirmationRate: { type: 'number', example: 66.67 }
-          }
+            confirmationRate: { type: 'number', example: 66.67 },
+          },
         },
         payments: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              referenceNumber: { type: 'string', example: '12345678901234567890' },
-              amount: { type: 'number', example: 25.00 },
+              referenceNumber: {
+                type: 'string',
+                example: '12345678901234567890',
+              },
+              amount: { type: 'number', example: 25.0 },
               method: { type: 'string', example: 'transfer' },
-              status: { type: 'string', example: 'confirmed' }
-            }
-          }
-        }
-      }
-    }
+              status: { type: 'string', example: 'confirmed' },
+            },
+          },
+        },
+      },
+    },
   })
-  async getPaymentGroupStatus(@Param('groupId') groupId: string, @Req() req: any) {
+  async getPaymentGroupStatus(
+    @Param('groupId') groupId: string,
+    @Req() req: any,
+  ) {
     return this.paymentsService.getPaymentGroupStatus({ groupId }, req.user.id);
   }
 
@@ -463,12 +506,12 @@ export class PaymentsController {
     **No se puede cancelar:**
     - Grupos ya completados
     - Grupos de otros usuarios
-    `
+    `,
   })
   @ApiParam({
     name: 'groupId',
     description: 'ID del grupo de pagos a cancelar',
-    example: 'cm1n8x9p40000abcdefghijk'
+    example: 'cm1n8x9p40000abcdefghijk',
   })
   @ApiResponse({
     status: 200,
@@ -478,9 +521,12 @@ export class PaymentsController {
       properties: {
         groupId: { type: 'string', example: 'cm1n8x9p40000abcdefghijk' },
         status: { type: 'string', example: 'cancelled' },
-        message: { type: 'string', example: 'Grupo de pagos cancelado exitosamente' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'Grupo de pagos cancelado exitosamente',
+        },
+      },
+    },
   })
   async cancelPaymentGroup(@Param('groupId') groupId: string, @Req() req: any) {
     return this.paymentsService.cancelPaymentGroup(groupId, req.user.id);

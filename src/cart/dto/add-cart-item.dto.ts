@@ -1,11 +1,17 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AddCartItemDto {
   @ApiProperty({
     description: 'ID del producto a agregar al carrito',
     example: 123,
-    type: 'number'
+    type: 'number',
   })
   @IsNotEmpty()
   @IsNumber()
@@ -16,7 +22,7 @@ export class AddCartItemDto {
     example: 2,
     minimum: 1,
     default: 1,
-    type: 'number'
+    type: 'number',
   })
   @IsNotEmpty()
   @IsNumber()
@@ -26,7 +32,7 @@ export class AddCartItemDto {
     description: 'Notas especiales para este producto',
     example: 'Sin cebolla, extra queso',
     maxLength: 255,
-    type: 'string'
+    type: 'string',
   })
   @IsOptional()
   @IsString()

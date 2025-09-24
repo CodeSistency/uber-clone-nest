@@ -21,7 +21,7 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
   private subscriber: RedisClientType;
   private isConnected = false;
 
-  constructor(private configService: ConfigService) { }
+  constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
     // Si no tienes password en Redis, este URL es suficiente

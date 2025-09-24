@@ -43,7 +43,10 @@ export class TwilioService {
       }
 
       this.defaultFromNumber = twilioConfig.phoneNumber!;
-      this.twilioClient = new Twilio(twilioConfig.accountSid!, twilioConfig.authToken!);
+      this.twilioClient = new Twilio(
+        twilioConfig.accountSid,
+        twilioConfig.authToken,
+      );
       this.logger.log('Twilio client initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize Twilio:', error);

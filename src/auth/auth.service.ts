@@ -23,7 +23,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
   /**
    * Registra un nuevo usuario

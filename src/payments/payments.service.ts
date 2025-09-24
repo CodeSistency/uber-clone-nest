@@ -2,7 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BanksService } from '../banks/banks.service';
-import { GenerateReferenceDto, InitiateMultiplePaymentsDto, ConfirmPartialPaymentDto, PaymentGroupStatusDto } from './dto/generate-reference.dto';
+import {
+  GenerateReferenceDto,
+  InitiateMultiplePaymentsDto,
+  ConfirmPartialPaymentDto,
+  PaymentGroupStatusDto,
+} from './dto/generate-reference.dto';
 import { ConfirmReferenceDto } from './dto/confirm-reference.dto';
 import { PaymentReference } from './entities/payment-reference.entity';
 import { PaymentValidation } from './interfaces/bank-api.interface';
@@ -17,16 +22,26 @@ export class PaymentsService {
     private readonly banksService: BanksService,
   ) {}
 
-  private convertPrismaToPaymentReference(prismaReference: any): PaymentReference {
+  private convertPrismaToPaymentReference(
+    prismaReference: any,
+  ): PaymentReference {
     return {
       ...prismaReference,
       amount: Number(prismaReference.amount),
-      serviceType: prismaReference.serviceType as 'ride' | 'delivery' | 'errand' | 'parcel'
+      serviceType: prismaReference.serviceType as
+        | 'ride'
+        | 'delivery'
+        | 'errand'
+        | 'parcel',
     };
   }
 
-  async generateBankReference(dto: GenerateReferenceDto): Promise<PaymentReference> {
-    this.logger.log(`🔄 Generando referencia bancaria para ${dto.serviceType} ${dto.serviceId}`);
+  async generateBankReference(
+    dto: GenerateReferenceDto,
+  ): Promise<PaymentReference> {
+    this.logger.log(
+      `🔄 Generando referencia bancaria para ${dto.serviceType} ${dto.serviceId}`,
+    );
 
     // Generar número de referencia único
     const referenceNumber = this.generateReferenceNumber();
@@ -37,7 +52,10 @@ export class PaymentsService {
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     // Validar código de banco si se proporciona
-    if (dto.bankCode && !(await this.banksService.validateBankCode(dto.bankCode))) {
+    if (
+      dto.bankCode &&
+      !(await this.banksService.validateBankCode(dto.bankCode))
+    ) {
       throw new Error(`Código de banco inválido: ${dto.bankCode}`);
     }
 
@@ -55,8 +73,8 @@ export class PaymentsService {
         isPartial: dto.isPartial || false,
         groupId: dto.groupId,
         expiresAt,
-        status: 'pending'
-      }
+        status: 'pending',
+      },
     });
 
     this.logger.log(`✅ Referencia creada exitosamente: ${reference.id}`);
@@ -73,9 +91,9 @@ export class PaymentsService {
           amount: dto.amount,
           expiresAt,
           bankCode: reference.bankCode,
-          paymentMethod: dto.paymentMethod
+          paymentMethod: dto.paymentMethod,
         },
-        channels: ['push', 'sms']
+        channels: ['push', 'sms'],
       } as any);
     } catch (error) {
       this.logger.error(`❌ Error enviando notificación:`, error);
@@ -84,12 +102,17 @@ export class PaymentsService {
     return this.convertPrismaToPaymentReference(reference);
   }
 
-  async confirmBankReference(dto: ConfirmReferenceDto, userId: number): Promise<any> {
-    this.logger.log(`🔍 Confirmando referencia bancaria: ${dto.referenceNumber}`);
+  async confirmBankReference(
+    dto: ConfirmReferenceDto,
+    userId: number,
+  ): Promise<any> {
+    this.logger.log(
+      `🔍 Confirmando referencia bancaria: ${dto.referenceNumber}`,
+    );
 
     // Buscar la referencia
     const reference = await this.prisma.paymentReference.findUnique({
-      where: { referenceNumber: dto.referenceNumber }
+      where: { referenceNumber: dto.referenceNumber },
     });
 
     if (!reference) {
@@ -101,36 +124,44 @@ export class PaymentsService {
     }
 
     if (reference.status !== 'pending') {
-      throw new Error(`Referencia ya procesada con estado: ${reference.status}`);
+      throw new Error(
+        `Referencia ya procesada con estado: ${reference.status}`,
+      );
     }
 
     if (reference.expiresAt < new Date()) {
       // Marcar como expirada
       await this.prisma.paymentReference.update({
         where: { referenceNumber: dto.referenceNumber },
-        data: { status: 'expired' }
+        data: { status: 'expired' },
       });
       throw new Error('La referencia ha expirado');
     }
 
     // Usar bankCode del DTO o de la referencia almacenada
     const bankCodeToUse = dto.bankCode || reference.bankCode;
-    this.logger.log(`🏦 Consultando banco ${bankCodeToUse} para referencia ${dto.referenceNumber}`);
+    this.logger.log(
+      `🏦 Consultando banco ${bankCodeToUse} para referencia ${dto.referenceNumber}`,
+    );
 
     // Consultar al banco simulado
     const bankApi = this.banksService.getBankApi(bankCodeToUse);
-    const validation: PaymentValidation = await bankApi.verifyPayment(dto.referenceNumber);
+    const validation: PaymentValidation = await bankApi.verifyPayment(
+      dto.referenceNumber,
+    );
 
     if (validation.confirmed) {
-      this.logger.log(`✅ Pago confirmado por banco. Monto: ${validation.amount}`);
+      this.logger.log(
+        `✅ Pago confirmado por banco. Monto: ${validation.amount}`,
+      );
 
       // Actualizar referencia como confirmada
       await this.prisma.paymentReference.update({
         where: { referenceNumber: dto.referenceNumber },
         data: {
           status: 'confirmed',
-          confirmedAt: new Date()
-        }
+          confirmedAt: new Date(),
+        },
       });
 
       // Crear registro de transacción bancaria
@@ -140,12 +171,14 @@ export class PaymentsService {
           bankTransactionId: validation.transactionId!,
           confirmedAmount: validation.amount!,
           bankResponse: JSON.parse(JSON.stringify(validation)),
-          confirmationTimestamp: validation.timestamp!
-        }
+          confirmationTimestamp: validation.timestamp!,
+        },
       });
 
       // Actualizar el servicio correspondiente
-      await this.updateServicePaymentStatus(this.convertPrismaToPaymentReference(reference));
+      await this.updateServicePaymentStatus(
+        this.convertPrismaToPaymentReference(reference),
+      );
 
       // Notificar confirmación exitosa
       await this.notificationsService.sendNotification({
@@ -156,16 +189,16 @@ export class PaymentsService {
         data: {
           referenceNumber: dto.referenceNumber,
           amount: validation.amount,
-          transactionId: validation.transactionId
+          transactionId: validation.transactionId,
         },
-        channels: ['push', 'sms']
+        channels: ['push', 'sms'],
       } as any);
 
       return {
         success: true,
         message: 'Pago confirmado exitosamente',
         reference: reference,
-        transaction: validation
+        transaction: validation,
       };
     } else {
       this.logger.log(`❌ Pago no confirmado por banco: ${validation.message}`);
@@ -173,14 +206,17 @@ export class PaymentsService {
       return {
         success: false,
         message: validation.message || 'Pago no encontrado o en proceso',
-        reference: reference
+        reference: reference,
       };
     }
   }
 
-  async getReferenceStatus(referenceNumber: string, userId: number): Promise<PaymentReference> {
+  async getReferenceStatus(
+    referenceNumber: string,
+    userId: number,
+  ): Promise<PaymentReference> {
     const reference = await this.prisma.paymentReference.findUnique({
-      where: { referenceNumber }
+      where: { referenceNumber },
     });
 
     if (!reference) {
@@ -197,16 +233,19 @@ export class PaymentsService {
   async getUserPaymentReferences(userId: number): Promise<PaymentReference[]> {
     const references = await this.prisma.paymentReference.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
-    return references.map(ref => this.convertPrismaToPaymentReference(ref));
+    return references.map((ref) => this.convertPrismaToPaymentReference(ref));
   }
 
   getSupportedBanks() {
     return this.banksService.getSupportedBanks();
   }
 
-  getPaymentInstructions(paymentMethod: string, referenceNumber: string): string {
+  getPaymentInstructions(
+    paymentMethod: string,
+    referenceNumber: string,
+  ): string {
     const instructions = {
       transfer: `
 Para completar el pago:
@@ -244,10 +283,13 @@ Para completar el pago:
 3. Envía el monto exacto en BTC
 4. Espera la confirmación en la blockchain
 5. Regresa aquí y confirma que realizaste el pago
-      `
+      `,
     };
 
-    return instructions[paymentMethod as keyof typeof instructions] || instructions.transfer;
+    return (
+      instructions[paymentMethod as keyof typeof instructions] ||
+      instructions.transfer
+    );
   }
 
   private generateReferenceNumber(): string {
@@ -258,38 +300,48 @@ Para completar el pago:
     return (timestamp + random).padStart(20, '0');
   }
 
-  private async updateServicePaymentStatus(reference: PaymentReference): Promise<void> {
-    this.logger.log(`🔄 Actualizando status de pago para ${reference.serviceType} ${reference.serviceId}`);
+  private async updateServicePaymentStatus(
+    reference: PaymentReference,
+  ): Promise<void> {
+    this.logger.log(
+      `🔄 Actualizando status de pago para ${reference.serviceType} ${reference.serviceId}`,
+    );
 
     switch (reference.serviceType) {
       case 'ride':
         await this.prisma.ride.update({
           where: { rideId: reference.serviceId },
-          data: { paymentStatus: 'paid' }
+          data: { paymentStatus: 'paid' },
         });
         break;
 
       case 'delivery':
         await this.prisma.deliveryOrder.update({
           where: { orderId: reference.serviceId },
-          data: { paymentStatus: 'paid' }
+          data: { paymentStatus: 'paid' },
         });
         break;
 
       case 'errand':
         // Para errand, actualizar el estado en el servicio correspondiente
         // Esto puede requerir acceso al ErrandService
-        this.logger.warn(`Actualización de errand no implementada aún: ${reference.serviceId}`);
+        this.logger.warn(
+          `Actualización de errand no implementada aún: ${reference.serviceId}`,
+        );
         break;
 
       case 'parcel':
         // Para parcel, actualizar el estado en el servicio correspondiente
         // Esto puede requerir acceso al ParcelService
-        this.logger.warn(`Actualización de parcel no implementada aún: ${reference.serviceId}`);
+        this.logger.warn(
+          `Actualización de parcel no implementada aún: ${reference.serviceId}`,
+        );
         break;
 
       default:
-        this.logger.error(`Tipo de servicio desconocido: ${reference.serviceType}`);
+        this.logger.error(
+          `Tipo de servicio desconocido: ${reference.serviceType}`,
+        );
     }
   }
 
@@ -300,8 +352,12 @@ Para completar el pago:
   /**
    * Inicia un grupo de pagos múltiples
    */
-  async initiateMultiplePayments(dto: InitiateMultiplePaymentsDto): Promise<any> {
-    this.logger.log(`🔄 Iniciando pagos múltiples para ${dto.serviceType} ${dto.serviceId}`);
+  async initiateMultiplePayments(
+    dto: InitiateMultiplePaymentsDto,
+  ): Promise<any> {
+    this.logger.log(
+      `🔄 Iniciando pagos múltiples para ${dto.serviceType} ${dto.serviceId}`,
+    );
 
     // Generar UUID para el grupo
     const groupId = require('crypto').randomUUID();
@@ -319,8 +375,8 @@ Para completar el pago:
         serviceId: dto.serviceId,
         totalAmount: dto.totalAmount,
         remainingAmount: dto.totalAmount,
-        expiresAt
-      }
+        expiresAt,
+      },
     });
 
     // Generar referencias para cada método de pago
@@ -339,22 +395,25 @@ Para completar el pago:
         bankCode: payment.bankCode,
         userId: dto.userId,
         isPartial: true,
-        groupId: groupId
+        groupId: groupId,
       });
 
       paymentReferences.push(reference);
     }
 
     // Actualizar el grupo con las referencias creadas
-    const totalElectronicAmount = paymentReferences.reduce((sum, ref) => sum + Number(ref.amount), 0);
+    const totalElectronicAmount = paymentReferences.reduce(
+      (sum, ref) => sum + Number(ref.amount),
+      0,
+    );
     const cashAmount = dto.totalAmount - totalElectronicAmount;
 
     await this.prisma.paymentGroup.update({
       where: { id: groupId },
       data: {
         paidAmount: 0,
-        remainingAmount: dto.totalAmount
-      }
+        remainingAmount: dto.totalAmount,
+      },
     });
 
     this.logger.log(`✅ Grupo de pagos múltiples creado: ${groupId}`);
@@ -366,20 +425,24 @@ Para completar el pago:
       cashAmount: cashAmount > 0 ? cashAmount : 0,
       references: paymentReferences,
       expiresAt,
-      instructions: 'Realiza los pagos electrónicos y confirma cada uno individualmente'
+      instructions:
+        'Realiza los pagos electrónicos y confirma cada uno individualmente',
     };
   }
 
   /**
    * Confirma un pago parcial dentro de un grupo
    */
-  async confirmPartialPayment(dto: ConfirmPartialPaymentDto, userId: number): Promise<any> {
+  async confirmPartialPayment(
+    dto: ConfirmPartialPaymentDto,
+    userId: number,
+  ): Promise<any> {
     this.logger.log(`🔄 Confirmando pago parcial: ${dto.referenceNumber}`);
 
     // Buscar la referencia
     const reference = await this.prisma.paymentReference.findUnique({
       where: { referenceNumber: dto.referenceNumber },
-      include: { paymentGroup: true }
+      include: { paymentGroup: true },
     });
 
     if (!reference) {
@@ -391,25 +454,30 @@ Para completar el pago:
     }
 
     if (!reference.groupId || !reference.isPartial) {
-      throw new Error('Esta referencia no pertenece a un grupo de pagos múltiples');
+      throw new Error(
+        'Esta referencia no pertenece a un grupo de pagos múltiples',
+      );
     }
 
     // Confirmar el pago individual
-    const confirmationResult = await this.confirmBankReference({
-      referenceNumber: dto.referenceNumber,
-      bankCode: dto.bankCode || reference.bankCode
-    }, userId);
+    const confirmationResult = await this.confirmBankReference(
+      {
+        referenceNumber: dto.referenceNumber,
+        bankCode: dto.bankCode || reference.bankCode,
+      },
+      userId,
+    );
 
     if (confirmationResult.success) {
       // Actualizar el grupo de pagos
       const paymentGroup = await this.prisma.paymentGroup.findUnique({
         where: { id: reference.groupId },
-        include: { paymentReferences: true }
+        include: { paymentReferences: true },
       });
 
       if (paymentGroup) {
         const totalPaid = paymentGroup.paymentReferences
-          .filter(ref => ref.status === 'confirmed')
+          .filter((ref) => ref.status === 'confirmed')
           .reduce((sum, ref) => sum + Number(ref.amount), 0);
 
         const remainingAmount = Number(paymentGroup.totalAmount) - totalPaid;
@@ -423,13 +491,15 @@ Para completar el pago:
             paidAmount: totalPaid,
             remainingAmount: Math.max(0, remainingAmount),
             status: newStatus,
-            completedAt: newStatus === 'complete' ? new Date() : null
-          }
+            completedAt: newStatus === 'complete' ? new Date() : null,
+          },
         });
 
         // Si el grupo está completo, actualizar el servicio correspondiente
         if (newStatus === 'complete') {
-          await this.updateServicePaymentStatus(this.convertPrismaToPaymentReference(reference));
+          await this.updateServicePaymentStatus(
+            this.convertPrismaToPaymentReference(reference),
+          );
         }
       }
     }
@@ -437,24 +507,27 @@ Para completar el pago:
     return {
       ...confirmationResult,
       groupId: reference.groupId,
-      isPartial: true
+      isPartial: true,
     };
   }
 
   /**
    * Obtiene el estado de un grupo de pagos
    */
-  async getPaymentGroupStatus(dto: PaymentGroupStatusDto, userId: number): Promise<any> {
+  async getPaymentGroupStatus(
+    dto: PaymentGroupStatusDto,
+    userId: number,
+  ): Promise<any> {
     this.logger.log(`🔍 Consultando estado del grupo: ${dto.groupId}`);
 
     const paymentGroup = await this.prisma.paymentGroup.findUnique({
       where: { id: dto.groupId },
       include: {
         paymentReferences: {
-          orderBy: { createdAt: 'asc' }
+          orderBy: { createdAt: 'asc' },
         },
-        user: true
-      }
+        user: true,
+      },
     });
 
     if (!paymentGroup) {
@@ -467,9 +540,15 @@ Para completar el pago:
 
     // Calcular estadísticas
     const totalReferences = paymentGroup.paymentReferences.length;
-    const confirmedReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'confirmed').length;
-    const pendingReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'pending').length;
-    const expiredReferences = paymentGroup.paymentReferences.filter(ref => ref.status === 'expired').length;
+    const confirmedReferences = paymentGroup.paymentReferences.filter(
+      (ref) => ref.status === 'confirmed',
+    ).length;
+    const pendingReferences = paymentGroup.paymentReferences.filter(
+      (ref) => ref.status === 'pending',
+    ).length;
+    const expiredReferences = paymentGroup.paymentReferences.filter(
+      (ref) => ref.status === 'expired',
+    ).length;
 
     return {
       groupId: paymentGroup.id,
@@ -489,11 +568,14 @@ Para completar el pago:
         confirmedReferences,
         pendingReferences,
         expiredReferences,
-        confirmationRate: totalReferences > 0 ? (confirmedReferences / totalReferences) * 100 : 0
+        confirmationRate:
+          totalReferences > 0
+            ? (confirmedReferences / totalReferences) * 100
+            : 0,
       },
 
       // Detalles de cada pago
-      payments: paymentGroup.paymentReferences.map(ref => ({
+      payments: paymentGroup.paymentReferences.map((ref) => ({
         id: ref.id,
         referenceNumber: ref.referenceNumber,
         amount: ref.amount,
@@ -501,8 +583,8 @@ Para completar el pago:
         status: ref.status,
         bankCode: ref.bankCode,
         createdAt: ref.createdAt,
-        confirmedAt: ref.confirmedAt
-      }))
+        confirmedAt: ref.confirmedAt,
+      })),
     };
   }
 
@@ -514,7 +596,7 @@ Para completar el pago:
 
     const paymentGroup = await this.prisma.paymentGroup.findUnique({
       where: { id: groupId },
-      include: { paymentReferences: true }
+      include: { paymentReferences: true },
     });
 
     if (!paymentGroup) {
@@ -533,19 +615,19 @@ Para completar el pago:
     await this.prisma.paymentReference.updateMany({
       where: {
         groupId: groupId,
-        status: 'pending'
+        status: 'pending',
       },
       data: {
-        status: 'expired'
-      }
+        status: 'expired',
+      },
     });
 
     // Actualizar el grupo como cancelado
     await this.prisma.paymentGroup.update({
       where: { id: groupId },
       data: {
-        status: 'cancelled'
-      }
+        status: 'cancelled',
+      },
     });
 
     this.logger.log(`✅ Grupo de pagos cancelado: ${groupId}`);
@@ -553,7 +635,7 @@ Para completar el pago:
     return {
       groupId,
       status: 'cancelled',
-      message: 'Grupo de pagos cancelado exitosamente'
+      message: 'Grupo de pagos cancelado exitosamente',
     };
   }
 }

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { BankApiInterface, PaymentValidation, BankInfo } from '../../payments/interfaces/bank-api.interface';
+import {
+  BankApiInterface,
+  PaymentValidation,
+  BankInfo,
+} from '../../payments/interfaces/bank-api.interface';
 
 @Injectable()
 export class BancoVenezuelaApi implements BankApiInterface {
@@ -17,13 +21,13 @@ export class BancoVenezuelaApi implements BankApiInterface {
         transactionId: `BV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         amount: simulatedAmount,
         timestamp: new Date(),
-        bankCode: '0102'
+        bankCode: '0102',
       };
     } else {
       return {
         confirmed: false,
         message: 'Pago no encontrado o aún en proceso de validación',
-        bankCode: '0102'
+        bankCode: '0102',
       };
     }
   }
@@ -32,7 +36,7 @@ export class BancoVenezuelaApi implements BankApiInterface {
     return {
       code: '0102',
       name: 'Banco de Venezuela',
-      methods: ['transfer', 'pago_movil']
+      methods: ['transfer', 'pago_movil'],
     };
   }
 }

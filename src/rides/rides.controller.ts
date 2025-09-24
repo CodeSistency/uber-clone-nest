@@ -473,11 +473,11 @@ export class RidesController {
 
   // ========== NUEVO ENDPOINT PARA TIPOS DE VEHÍCULO ==========
 
-
   @Get('vehicle-types')
   @ApiOperation({
     summary: 'Get available vehicle types',
-    description: 'Retrieve all available vehicle types that users can request for their rides',
+    description:
+      'Retrieve all available vehicle types that users can request for their rides',
   })
   @ApiResponse({
     status: 200,

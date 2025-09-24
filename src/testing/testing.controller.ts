@@ -20,7 +20,7 @@ export class TestingController {
     Returns all active services across all service types (ride, delivery, errand, parcel).
     Useful for testing dashboard to monitor real-time service states.
     Includes service details and participant information.
-    `
+    `,
   })
   async getActiveServices() {
     const services = await this.testingService.getActiveServices();
@@ -34,7 +34,7 @@ export class TestingController {
     Creates a new service for testing purposes.
     Supports all service types: ride, delivery, errand, parcel.
     Will use default users/drivers if not specified.
-    `
+    `,
   })
   async createService(@Body() dto: CreateServiceDto) {
     const service = await this.testingService.createService(dto);
@@ -47,10 +47,14 @@ export class TestingController {
     description: `
     Manually sets the state of a service for testing purposes.
     Useful for simulating different service states without going through normal flow.
-    `
+    `,
   })
   async setServiceState(@Body() dto: SetServiceStateDto) {
-    const result = await this.testingService.setServiceState(dto.serviceId, dto.serviceType, dto.state);
+    const result = await this.testingService.setServiceState(
+      dto.serviceId,
+      dto.serviceType,
+      dto.state,
+    );
     return { data: result };
   }
 
@@ -60,7 +64,7 @@ export class TestingController {
     description: `
     Simulates WebSocket events for testing purposes.
     Useful for testing real-time updates and notifications.
-    `
+    `,
   })
   async simulateEvent(@Body() dto: SimulateEventDto) {
     const result = await this.testingService.simulateEvent(dto);
@@ -73,7 +77,7 @@ export class TestingController {
     description: `
     Returns statistics about active services by type and status.
     Useful for monitoring system health and load.
-    `
+    `,
   })
   async getServiceStats() {
     const stats = await this.testingService.getServiceStats();
@@ -86,13 +90,13 @@ export class TestingController {
     description: `
     Removes test services created in the last hour.
     Helps maintain clean test environment.
-    `
+    `,
   })
   async cleanupTestData() {
     const result = await this.testingService.cleanupTestData();
     return {
       data: result,
-      message: 'Test data cleanup completed'
+      message: 'Test data cleanup completed',
     };
   }
 }

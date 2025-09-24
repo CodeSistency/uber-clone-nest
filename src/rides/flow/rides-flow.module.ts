@@ -53,5 +53,3 @@ import { DriverAvailabilityController } from './driver.availability.controller';
   providers: [RidesFlowService, DriverReportsService, IdempotencyService],
 })
 export class RidesFlowModule {}
-
-

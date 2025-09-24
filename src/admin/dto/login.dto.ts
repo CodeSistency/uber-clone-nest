@@ -7,7 +7,10 @@ export class AdminLoginDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'your-secure-password', description: 'Admin password' })
+  @ApiProperty({
+    example: 'your-secure-password',
+    description: 'Admin password',
+  })
   @IsString()
   @IsNotEmpty()
   password: string;
