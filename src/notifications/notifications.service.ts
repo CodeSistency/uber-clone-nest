@@ -156,19 +156,33 @@ export class NotificationsService {
     pickupLocation: { lat: number; lng: number },
   ): Promise<void> {
     try {
+      this.logger.log(`🔍 Buscando drivers online para ride ${rideId}...`);
+      this.logger.log(`📍 Ubicación pickup: ${pickupLocation.lat}, ${pickupLocation.lng}`);
+
       // Find nearby drivers (within 5km)
       const nearbyDrivers = await this.prisma.driver.findMany({
         where: {
           status: 'online',
           canDoDeliveries: false, // For now, only non-delivery drivers
+          verificationStatus: 'approved',
+        },
+        include: {
+          vehicleType: true,
         },
         take: 10, // Limit to 10 nearby drivers
       });
 
+      this.logger.log(`👥 Drivers encontrados: ${nearbyDrivers.length}`);
+
       if (nearbyDrivers.length === 0) {
-        this.logger.warn('No nearby drivers found for ride notification');
+        this.logger.warn('❌ No nearby drivers found for ride notification');
         return;
       }
+
+      // Log details of found drivers
+      nearbyDrivers.forEach((driver, index) => {
+        this.logger.log(`  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} (${driver.vehicleType?.displayName || 'Sin tipo'})`);
+      });
 
       // Send notifications to nearby drivers
       // Note: In this system, drivers share IDs with users (driver.id === user.id)
@@ -189,13 +203,168 @@ export class NotificationsService {
 
       await this.sendBulkNotifications(notifications);
       this.logger.log(
-        `Notified ${nearbyDrivers.length} drivers about ride ${rideId}`,
+        `📢 Notificaciones enviadas a ${nearbyDrivers.length} drivers sobre ride ${rideId}`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to notify nearby drivers for ride ${rideId}:`,
+        `❌ Error al notificar drivers cercanos para ride ${rideId}:`,
         error,
       );
+      throw error;
+    }
+  }
+
+  async findAndAssignNearbyDriver(
+    rideId: number,
+    pickupLocation: { lat: number; lng: number },
+  ): Promise<{
+    assigned: boolean;
+    driverId?: number;
+    availableDrivers: number;
+    notifiedDrivers: number;
+  }> {
+    try {
+      this.logger.log(`🎯 Iniciando matching automático para ride ${rideId}`);
+      this.logger.log(`📍 Ubicación pickup: ${pickupLocation.lat}, ${pickupLocation.lng}`);
+
+      // 1. Buscar drivers online disponibles
+      const availableDrivers = await this.prisma.driver.findMany({
+        where: {
+          status: 'online',
+          canDoDeliveries: false,
+          verificationStatus: 'approved',
+        },
+        include: {
+          vehicleType: true,
+        },
+        take: 20, // Buscar más drivers para tener mejores opciones
+      });
+
+      this.logger.log(`👥 Drivers online encontrados: ${availableDrivers.length}`);
+
+      if (availableDrivers.length === 0) {
+        this.logger.warn(`⚠️ No hay drivers online disponibles para ride ${rideId}`);
+        return {
+          assigned: false,
+          availableDrivers: 0,
+          notifiedDrivers: 0,
+        };
+      }
+
+      // 2. Calcular distancias simuladas (por ahora, distancia aleatoria entre 0-5km)
+      const driversWithDistance = availableDrivers.map(driver => {
+        // Simular distancia (en producción usaríamos cálculo real con coordenadas GPS)
+        const simulatedDistance = Math.random() * 5; // 0-5km
+        return {
+          ...driver,
+          distance: simulatedDistance,
+        };
+      });
+
+      // 3. Ordenar por distancia (más cercano primero)
+      driversWithDistance.sort((a, b) => a.distance - b.distance);
+
+      this.logger.log(`📊 Drivers ordenados por distancia:`);
+      driversWithDistance.slice(0, 5).forEach((driver, index) => {
+        this.logger.log(`  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} - ${driver.distance.toFixed(2)}km`);
+      });
+
+      // 4. Intentar asignar el driver más cercano
+      const selectedDriver = driversWithDistance[0];
+      this.logger.log(`🎯 Intentando asignar driver ${selectedDriver.id} (${selectedDriver.distance.toFixed(2)}km)`);
+
+      try {
+        // Asignar driver usando el método existente de confirmación
+        await this.confirmDriverForRide(rideId, selectedDriver.id);
+
+        this.logger.log(`✅ Driver ${selectedDriver.id} asignado exitosamente a ride ${rideId}`);
+
+        // 5. Notificar al driver asignado
+        const notification: NotificationPayload = {
+          userId: selectedDriver.id.toString(),
+          type: NotificationType.RIDE_REQUEST,
+          title: 'Ride Assigned - Respond Now!',
+          message: 'You have been automatically assigned to a ride. Check your pending requests.',
+          data: {
+            rideId,
+            pickupLocation,
+            autoAssigned: true,
+          },
+          channels: [NotificationChannel.PUSH],
+          priority: 'critical',
+        };
+
+        await this.sendNotification(notification);
+        this.logger.log(`📱 Notificación enviada al driver ${selectedDriver.id}`);
+
+        return {
+          assigned: true,
+          driverId: selectedDriver.id,
+          availableDrivers: availableDrivers.length,
+          notifiedDrivers: 1,
+        };
+
+      } catch (assignmentError) {
+        this.logger.error(`❌ Error asignando driver ${selectedDriver.id} a ride ${rideId}:`, assignmentError);
+
+        // Si falla la asignación automática, enviar notificaciones a todos los drivers cercanos
+        this.logger.log(`🔄 Fallback: Enviando notificaciones push a ${Math.min(driversWithDistance.length, 5)} drivers`);
+        await this.notifyNearbyDrivers(rideId, pickupLocation);
+
+        return {
+          assigned: false,
+          availableDrivers: availableDrivers.length,
+          notifiedDrivers: Math.min(driversWithDistance.length, 5),
+        };
+      }
+
+    } catch (error) {
+      this.logger.error(`❌ Error en findAndAssignNearbyDriver para ride ${rideId}:`, error);
+      throw error;
+    }
+  }
+
+  async confirmDriverForRide(rideId: number, driverId: number): Promise<void> {
+    try {
+      this.logger.log(`🔄 Confirmando driver ${driverId} para ride ${rideId}`);
+
+      // Buscar el ride
+      const ride = await this.prisma.ride.findUnique({
+        where: { rideId },
+        include: { user: true },
+      });
+
+      if (!ride) {
+        throw new Error('Ride not found');
+      }
+
+      if (ride.driverId) {
+        throw new Error('RIDE_ALREADY_HAS_DRIVER');
+      }
+
+      // Verificar que el driver esté disponible
+      const driver = await this.prisma.driver.findUnique({
+        where: { id: driverId },
+      });
+
+      if (!driver || driver.status !== 'online') {
+        throw new Error('DRIVER_NOT_AVAILABLE');
+      }
+
+      // Asignar driver y cambiar status
+      await this.prisma.ride.update({
+        where: { rideId },
+        data: {
+          driverId: driverId,
+          status: 'driver_confirmed',
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(`✅ Driver ${driverId} confirmado para ride ${rideId} (status: driver_confirmed)`);
+
+    } catch (error) {
+      this.logger.error(`❌ Error confirmando driver ${driverId} para ride ${rideId}:`, error);
       throw error;
     }
   }

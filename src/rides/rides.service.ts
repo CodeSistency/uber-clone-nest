@@ -33,6 +33,15 @@ export class RidesService {
       vehicle_type_id,
     } = createRideDto;
 
+    this.logger.log(`🚗 CREANDO RIDE - Inicio del proceso`);
+    this.logger.log(`📍 Origen: ${origin_address} (${origin_latitude}, ${origin_longitude})`);
+    this.logger.log(`📍 Destino: ${destination_address} (${destination_latitude}, ${destination_longitude})`);
+    this.logger.log(`👤 Usuario ID: ${user_id}`);
+    this.logger.log(`⏱️ Tiempo estimado: ${ride_time} minutos`);
+    this.logger.log(`💰 Precio: ${fare_price}`);
+    this.logger.log(`🚙 Tipo vehículo: ${vehicle_type_id}`);
+    this.logger.log(`🏷️ Tier ID: ${tier_id}`);
+
     const ride = await this.prisma.ride.create({
       data: {
         originAddress: origin_address,
@@ -56,16 +65,27 @@ export class RidesService {
       },
     });
 
+    this.logger.log(`✅ Ride creado exitosamente con ID: ${ride.rideId}`);
+    this.logger.log(`🔄 Estado inicial del ride: ${ride.status}`);
+
     // Notify nearby drivers about the new ride
     try {
-      await this.notificationsService.notifyNearbyDrivers(ride.rideId, {
+      this.logger.log(`🔍 Buscando drivers cercanos para ride ${ride.rideId}...`);
+      const matchingResult = await this.notificationsService.findAndAssignNearbyDriver(ride.rideId, {
         lat: origin_latitude,
         lng: origin_longitude,
       });
-      this.logger.log(`Notified drivers about new ride ${ride.rideId}`);
+
+      if (matchingResult.assigned) {
+        this.logger.log(`✅ Driver asignado automáticamente: ${matchingResult.driverId}`);
+        this.logger.log(`📱 Notificación enviada al driver ${matchingResult.driverId}`);
+      } else {
+        this.logger.warn(`⚠️ No se pudo asignar driver automáticamente. Drivers encontrados: ${matchingResult.availableDrivers}`);
+        this.logger.log(`📢 Enviando notificaciones push a ${matchingResult.notifiedDrivers} drivers`);
+      }
     } catch (error) {
       this.logger.error(
-        `Failed to notify drivers about ride ${ride.rideId}:`,
+        `❌ Error en el proceso de matching para ride ${ride.rideId}:`,
         error,
       );
     }

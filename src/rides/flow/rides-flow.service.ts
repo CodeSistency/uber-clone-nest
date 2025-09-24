@@ -1405,9 +1405,27 @@ export class RidesFlowService {
 
   async getDriverPendingRequests(driverId: number) {
     try {
-      this.logger.log(
-        `📋 Obteniendo solicitudes pendientes para conductor ${driverId}`,
-      );
+      this.logger.log(`📋 Buscando solicitudes pendientes para driver ${driverId}`);
+
+      // Verificar que el driver existe y está online
+      const driver = await this.prisma.driver.findUnique({
+        where: { id: driverId },
+        select: {
+          id: true,
+          status: true,
+          firstName: true,
+          lastName: true,
+          verificationStatus: true,
+        },
+      });
+
+      if (!driver) {
+        this.logger.error(`❌ Driver ${driverId} no encontrado en base de datos`);
+        return [];
+      }
+
+      this.logger.log(`👤 Driver encontrado: ${driver.firstName} ${driver.lastName} (${driver.status})`);
+      this.logger.log(`🔍 Buscando rides con status 'driver_confirmed' asignados a driver ${driverId}`);
 
       // Buscar rides donde el conductor está asignado y status es 'driver_confirmed'
       const pendingRequests = await this.prisma.ride.findMany({
