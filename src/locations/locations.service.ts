@@ -219,6 +219,52 @@ export class LocationsService {
     return { valid: true };
   }
 
+  async checkMatchingDistance(
+    userLocation: { lat: number; lng: number },
+    driverLocation: { lat: number; lng: number },
+    maxRadiusKm: number = 5,
+  ): Promise<{
+    distance: number;
+    isWithinRange: boolean;
+    maxRadius: number;
+    userLocation: { lat: number; lng: number };
+    driverLocation: { lat: number; lng: number };
+    details: {
+      distanceKm: number;
+      maxRadiusKm: number;
+      differenceKm: number;
+      canMatch: boolean;
+    };
+  }> {
+    this.logger.log(`🔍 Checking matching distance between user (${userLocation.lat}, ${userLocation.lng}) and driver (${driverLocation.lat}, ${driverLocation.lng})`);
+
+    const distanceKm = await this.calculateDistance(userLocation, driverLocation);
+    const isWithinRange = distanceKm <= maxRadiusKm;
+    const differenceKm = Math.max(0, distanceKm - maxRadiusKm);
+
+    const result = {
+      distance: distanceKm,
+      isWithinRange,
+      maxRadius: maxRadiusKm,
+      userLocation,
+      driverLocation,
+      details: {
+        distanceKm,
+        maxRadiusKm,
+        differenceKm,
+        canMatch: isWithinRange,
+      },
+    };
+
+    this.logger.log(`📏 Distance check result: ${distanceKm}km (max: ${maxRadiusKm}km) - ${isWithinRange ? '✅ WITHIN RANGE' : '❌ OUT OF RANGE'}`);
+
+    if (!isWithinRange) {
+      this.logger.warn(`🚫 Driver is ${differenceKm}km too far for matching (max allowed: ${maxRadiusKm}km)`);
+    }
+
+    return result;
+  }
+
   async getNearbyPlaces(
     lat: number,
     lng: number,

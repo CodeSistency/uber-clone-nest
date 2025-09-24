@@ -194,6 +194,60 @@ export class LocationsController {
     return { data: { timeMinutes } };
   }
 
+  @Get('check-matching-distance')
+  @ApiOperation({
+    summary: 'Check if two locations are within matching distance',
+    description: `
+    Verifies if two geographic points are within the distance range used for driver-passenger matching.
+    Uses the same distance calculation algorithm as the ride matching system.
+    `,
+  })
+  @ApiQuery({
+    name: 'userLat',
+    description: 'User pickup location latitude',
+    example: 4.6097,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'userLng',
+    description: 'User pickup location longitude',
+    example: -74.0817,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'driverLat',
+    description: 'Driver current location latitude',
+    example: 4.6767,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'driverLng',
+    description: 'Driver current location longitude',
+    example: -74.0483,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'maxRadiusKm',
+    description: 'Maximum matching radius in kilometers (default: 5)',
+    example: 5,
+    required: false,
+    type: 'number',
+  })
+  async checkMatchingDistance(
+    @Query('userLat') userLat: number,
+    @Query('userLng') userLng: number,
+    @Query('driverLat') driverLat: number,
+    @Query('driverLng') driverLng: number,
+    @Query('maxRadiusKm') maxRadiusKm: number = 5,
+  ) {
+    const result = await this.locationsService.checkMatchingDistance(
+      { lat: userLat, lng: userLng },
+      { lat: driverLat, lng: driverLng },
+      maxRadiusKm,
+    );
+    return { data: result };
+  }
+
   @Get('nearby-places')
   @ApiOperation({
     summary: 'Find nearby places',

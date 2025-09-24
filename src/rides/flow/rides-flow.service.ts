@@ -427,10 +427,10 @@ export class RidesFlowService {
     this.gateway.server
       ?.to(`order-${orderId}`)
       .emit('order:payment:initiated', {
-        orderId,
-        method,
+      orderId,
+      method,
         message: 'Esperando confirmación de pago venezolano',
-      });
+    });
 
     return updated;
   }
@@ -619,22 +619,24 @@ export class RidesFlowService {
     const { lat, lng, tierId, vehicleTypeId, radiusKm = 5 } = params;
     const startTime = Date.now();
 
+    this.logger.log(`🎯 [MATCHING] Iniciando búsqueda de conductor - Usuario: (${lat}, ${lng}) - Radio: ${radiusKm}km - Tier: ${tierId || 'auto'} - VehicleType: ${vehicleTypeId || 'auto'}`);
+
     try {
       // 1. Obtener conductores candidatos con filtros básicos
       const filters: any = {
-        status: 'online',
+      status: 'online',
         verificationStatus: 'approved',
-      };
+    };
 
       // 2. Aplicar filtros de compatibilidad si se especifican
-      if (tierId) {
+    if (tierId) {
         const compatibleVehicleTypes =
           await this.prisma.tierVehicleType.findMany({
             where: { tierId, isActive: true },
-            select: { vehicleTypeId: true },
-          });
+        select: { vehicleTypeId: true },
+      });
 
-        if (compatibleVehicleTypes.length > 0) {
+      if (compatibleVehicleTypes.length > 0) {
           const vehicleTypeIds = compatibleVehicleTypes.map(
             (vt) => vt.vehicleTypeId,
           );
@@ -642,30 +644,43 @@ export class RidesFlowService {
             vehicleTypeIds.length === 1
               ? vehicleTypeIds[0]
               : { in: vehicleTypeIds };
-        }
       }
+    }
 
-      if (vehicleTypeId) {
-        filters.vehicleTypeId = vehicleTypeId;
-      }
+    if (vehicleTypeId) {
+      filters.vehicleTypeId = vehicleTypeId;
+    }
 
       // 3. Buscar conductores usando LocationTrackingService
+      this.logger.log(`🔍 [MATCHING] Buscando conductores cercanos - Ubicación: (${lat}, ${lng}) - Radio: ${radiusKm}km - Filtros: ${JSON.stringify(filters)}`);
+
       const candidateDrivers =
         await this.locationTrackingService.findNearbyDrivers(
-          lat,
-          lng,
+      lat,
+      lng,
           radiusKm / 1000, // Convertir a metros para el servicio
           filters,
         );
 
+      this.logger.log(`📊 [MATCHING] Encontrados ${candidateDrivers.length} conductores candidatos`);
+
+      // Log detallado de cada conductor encontrado con su ubicación
+      candidateDrivers.forEach((driver, index) => {
+        this.logger.log(`👤 [MATCHING] Conductor ${index + 1}: ID=${driver.id} - Distancia=${driver.distance}km - Ubicación=(${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`);
+      });
+
       if (candidateDrivers.length === 0) {
+        this.logger.warn(`❌ [MATCHING] No se encontraron conductores disponibles en el área (${lat}, ${lng}) dentro de ${radiusKm}km`);
         throw new Error('NO_DRIVERS_AVAILABLE');
       }
 
       // 4. Calcular scores para cada conductor
+      this.logger.log(`🧮 [MATCHING] Calculando scores para ${candidateDrivers.length} conductores...`);
+
       const scoredDrivers = await Promise.all(
         candidateDrivers.map(async (driver) => {
           const score = await this.calculateDriverScore(driver, lat, lng);
+          this.logger.log(`📈 [MATCHING] Conductor ID=${driver.id} - Score=${score.toFixed(1)} - Distancia=${driver.distance}km`);
           return { ...driver, score };
         }),
       );
@@ -673,6 +688,14 @@ export class RidesFlowService {
       // 5. Ordenar por score descendente y tomar el mejor
       scoredDrivers.sort((a, b) => b.score - a.score);
       const bestDriver = scoredDrivers[0];
+
+      this.logger.log(`🏆 [MATCHING] Mejor conductor seleccionado: ID=${bestDriver.id} - Score=${bestDriver.score.toFixed(1)} - Distancia=${bestDriver.distance}km - Ubicación=(${bestDriver.currentLocation?.lat || 'N/A'}, ${bestDriver.currentLocation?.lng || 'N/A'})`);
+
+      // Log ranking completo
+      this.logger.log(`📊 [MATCHING] Ranking completo:`);
+      scoredDrivers.slice(0, 5).forEach((driver, index) => {
+        this.logger.log(`   ${index + 1}. ID=${driver.id} - Score=${driver.score.toFixed(1)} - Distancia=${driver.distance}km`);
+      });
 
       // 6. Obtener información adicional del conductor
       const driverDetails = await this.getDriverDetailedInfo(bestDriver.id);
@@ -684,6 +707,9 @@ export class RidesFlowService {
       ); // Convertir km a minutos
 
       // 8. Preparar respuesta
+      const processingTime = Date.now() - startTime;
+      this.logger.log(`✅ [MATCHING] Matching completado exitosamente en ${processingTime}ms - Conductor: ${driverDetails.firstName} ${driverDetails.lastName} (ID: ${bestDriver.id}) - Distancia: ${bestDriver.distance}km - ETA: ${estimatedMinutes}min`);
+
       const result = {
         matchedDriver: {
           driver: {
@@ -727,6 +753,8 @@ export class RidesFlowService {
           searchDuration: (Date.now() - startTime) / 1000, // En segundos
         },
       };
+
+      this.logger.log(`📋 [MATCHING] Respuesta final preparada - Score: ${result.matchedDriver.matchScore} - Tiempo de búsqueda: ${result.searchCriteria.searchDuration}s`);
 
       return result;
     } catch (error) {
@@ -878,9 +906,9 @@ export class RidesFlowService {
         include: { user: true },
       });
 
-      if (!ride) {
-        throw new Error('Ride not found');
-      }
+    if (!ride) {
+      throw new Error('Ride not found');
+    }
 
       if (ride.userId !== userId) {
         throw new Error('Ride does not belong to user');
@@ -891,8 +919,8 @@ export class RidesFlowService {
       }
 
       // 2. Verificar que el conductor esté disponible
-      const driver = await this.prisma.driver.findUnique({
-        where: { id: driverId },
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
         select: {
           id: true,
           status: true,
@@ -900,17 +928,17 @@ export class RidesFlowService {
           firstName: true,
           lastName: true,
         },
-      });
+    });
 
-      if (!driver) {
-        throw new Error('Driver not found');
-      }
+    if (!driver) {
+      throw new Error('Driver not found');
+    }
 
-      if (driver.status !== 'online') {
+    if (driver.status !== 'online') {
         throw new Error('DRIVER_NOT_AVAILABLE');
-      }
+    }
 
-      if (driver.verificationStatus !== 'approved') {
+    if (driver.verificationStatus !== 'approved') {
         throw new Error('Driver not verified');
       }
 
@@ -985,16 +1013,16 @@ export class RidesFlowService {
       const distance = 5; // TODO: Calcular distancia real
       const duration = ride.rideTime || 15;
 
-      await this.notifications.sendNotification({
+    await this.notifications.sendNotification({
         userId: `driver_${driverId}`, // Placeholder - debería ser el userId real del conductor
-        type: 'RIDE_REQUEST' as any,
+      type: 'RIDE_REQUEST' as any,
         title: 'Nueva Solicitud de Viaje',
         message: `Tienes una solicitud de viaje desde ${ride.originAddress} hasta ${ride.destinationAddress}`,
-        data: {
-          rideId,
+      data: {
+        rideId,
           isDirectRequest: true,
-          pickupLocation: {
-            lat: Number(ride.originLatitude),
+        pickupLocation: {
+          lat: Number(ride.originLatitude),
             lng: Number(ride.originLongitude),
           },
           dropoffLocation: {
@@ -1075,7 +1103,7 @@ export class RidesFlowService {
           message:
             'El conductor no respondió a tiempo. Puedes buscar otro conductor.',
           data: { rideId },
-          channels: ['push' as any],
+      channels: ['push' as any],
         });
 
         throw new Error('REQUEST_EXPIRED');
@@ -1104,20 +1132,20 @@ export class RidesFlowService {
             estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
           },
           channels: ['push' as any],
-        });
+    });
 
-        // Emitir evento WebSocket
+    // Emitir evento WebSocket
         this.gateway.server?.to(`ride-${rideId}`).emit('ride:accepted', {
-          rideId,
+      rideId,
           driverId,
           driverName: `${ride.driver?.firstName} ${ride.driver?.lastName}`,
           estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
           timestamp: new Date(),
-        });
+    });
 
-        return {
-          rideId,
-          driverId,
+    return {
+      rideId,
+      driverId,
           response: 'accept',
           status: 'accepted',
           message: 'Viaje aceptado exitosamente',
@@ -1425,6 +1453,18 @@ export class RidesFlowService {
       }
 
       this.logger.log(`👤 Driver encontrado: ${driver.firstName} ${driver.lastName} (${driver.status})`);
+
+      // 🔍 Obtener ubicación actual del conductor desde LocationTrackingService
+      let driverLocation: any = null;
+      try {
+        const locationData = await this.locationTrackingService.getDriverLocation(driverId);
+        driverLocation = locationData;
+        this.logger.log(`📍 [PENDING-REQUESTS] Ubicación actual del conductor ${driverId}: (${driverLocation?.lat || 'N/A'}, ${driverLocation?.lng || 'N/A'}) - Última actualización: ${driverLocation?.lastUpdate ? new Date(driverLocation.lastUpdate).toISOString() : 'N/A'}`);
+      } catch (error) {
+        this.logger.warn(`⚠️ [PENDING-REQUESTS] No se pudo obtener ubicación del conductor ${driverId}: ${error.message}`);
+        this.logger.warn(`🔍 Verificar que el conductor esté enviando actualizaciones de ubicación (POST /location)`);
+      }
+
       this.logger.log(`🔍 Buscando rides con status 'driver_confirmed' asignados a driver ${driverId}`);
 
       // Buscar rides donde el conductor está asignado y status es 'driver_confirmed'
@@ -1455,6 +1495,18 @@ export class RidesFlowService {
         orderBy: {
           updatedAt: 'desc', // Más recientes primero
         },
+      });
+
+      this.logger.log(`📊 [PENDING-REQUESTS] Encontrados ${pendingRequests.length} rides pendientes para conductor ${driverId}`);
+
+      // Log detallado de cada ride pendiente
+      pendingRequests.forEach((ride, index) => {
+        const assignedAt = new Date(ride.updatedAt);
+        const expiresAt = new Date(assignedAt.getTime() + 2 * 60 * 1000);
+        const now = new Date();
+        const timeRemainingSeconds = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+
+        this.logger.log(`📋 [PENDING-REQUESTS] Ride ${index + 1}: ID=${ride.rideId} - Usuario: ${ride.user?.name || 'N/A'} - Origen: ${ride.originAddress.substring(0, 30)}... - Asignado: ${assignedAt.toISOString()} - Expira en: ${timeRemainingSeconds}s`);
       });
 
       // Formatear respuesta
@@ -1494,9 +1546,16 @@ export class RidesFlowService {
         };
       });
 
-      this.logger.log(
-        `✅ Encontradas ${formattedRequests.length} solicitudes pendientes para conductor ${driverId}`,
-      );
+      if (formattedRequests.length === 0) {
+        this.logger.log(`📭 [PENDING-REQUESTS] No se encontraron solicitudes pendientes para conductor ${driverId}`);
+        this.logger.log(`💡 [PENDING-REQUESTS] Posibles causas:`);
+        this.logger.log(`   - No hay usuarios solicitando rides en este momento`);
+        this.logger.log(`   - Las solicitudes expiraron (2 minutos máximo)`);
+        this.logger.log(`   - El conductor no fue seleccionado por el algoritmo de matching`);
+        this.logger.log(`   - Verificar ubicación del conductor: ${driverLocation ? `(${driverLocation.lat}, ${driverLocation.lng})` : 'NO DISPONIBLE'}`);
+      } else {
+        this.logger.log(`✅ [PENDING-REQUESTS] Encontradas ${formattedRequests.length} solicitudes pendientes para conductor ${driverId}`);
+      }
 
       return formattedRequests;
     } catch (error) {
