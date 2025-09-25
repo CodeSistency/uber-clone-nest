@@ -31,6 +31,21 @@ export class FirebaseService {
 
   private initializeFirebase(): void {
     try {
+      this.logger.log('🔥 Starting Firebase initialization...');
+
+      // Log environment variables for debugging
+      const envProjectId = process.env.FIREBASE_PROJECT_ID;
+      const envServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+      this.logger.log(`🔍 FIREBASE_PROJECT_ID: ${envProjectId ? '✅ Set' : '❌ Missing'}`);
+      this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT: ${envServiceAccount ? '✅ Set' : '❌ Missing'}`);
+
+      if (envServiceAccount) {
+        this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT length: ${envServiceAccount.length}`);
+        this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT first 100 chars: ${envServiceAccount.substring(0, 100)}`);
+        this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT last 100 chars: ${envServiceAccount.substring(Math.max(0, envServiceAccount.length - 100))}`);
+      }
+
       if (!this.appConfigService.firebase) {
         this.logger.warn(
           'Firebase configuration not found. Push notifications will be disabled.',
@@ -41,6 +56,14 @@ export class FirebaseService {
       const firebaseConfig = this.appConfigService.firebase;
       const projectId = firebaseConfig.projectId;
       const serviceAccount = firebaseConfig.serviceAccount;
+
+      this.logger.log(`🔍 Config service - projectId: ${projectId ? '✅ Set' : '❌ Missing'}`);
+      this.logger.log(`🔍 Config service - serviceAccount: ${serviceAccount ? '✅ Set' : '❌ Missing'}`);
+
+      if (serviceAccount) {
+        this.logger.log(`🔍 Config service - serviceAccount type: ${typeof serviceAccount}`);
+        this.logger.log(`🔍 Config service - serviceAccount length: ${serviceAccount.length}`);
+      }
 
       if (!projectId || !serviceAccount) {
         this.logger.warn(

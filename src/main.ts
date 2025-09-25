@@ -8,9 +8,98 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AppConfigService } from './config/config.service';
 
+async function logEnvironmentConfig(configService: AppConfigService) {
+  console.log('\n🔍 ENVIRONMENT CONFIGURATION DEBUG');
+  console.log('=====================================');
+
+  // App config
+  console.log('\n🏗️  APP CONFIG:');
+  console.log(`- Port: ${configService.app.port}`);
+  console.log(`- Environment: ${configService.app.environment}`);
+  console.log(`- CORS Origin: ${configService.app.cors.origin}`);
+  console.log(`- CORS Credentials: ${configService.app.cors.credentials}`);
+
+  // Database config
+  console.log('\n🗄️  DATABASE CONFIG:');
+  console.log(`- URL: ${configService.database.url ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Host: ${configService.database.host}`);
+  console.log(`- Port: ${configService.database.port}`);
+  console.log(`- Username: ${configService.database.username}`);
+  console.log(`- Password: ${configService.database.password ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Database: ${configService.database.database}`);
+  console.log(`- SSL: ${configService.database.ssl}`);
+
+  // Firebase config
+  console.log('\n🔥 FIREBASE CONFIG:');
+  console.log(`- Project ID: ${configService.firebase.projectId || '❌ Not set'}`);
+  console.log(`- Service Account: ${configService.firebase.serviceAccount ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Initialized: ${configService.firebase.initialized}`);
+  console.log(`- Storage Bucket: ${configService.firebase.storageBucket || 'Not set'}`);
+  console.log(`- Messaging Sender ID: ${configService.firebase.messagingSenderId || 'Not set'}`);
+
+  // Raw environment variables for Firebase
+  console.log('\n🔍 RAW FIREBASE ENV VARS:');
+  const envProjectId = process.env.FIREBASE_PROJECT_ID;
+  const envServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+  console.log(`- FIREBASE_PROJECT_ID: ${envProjectId ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- FIREBASE_SERVICE_ACCOUNT: ${envServiceAccount ? '✅ Set' : '❌ Not set'}`);
+  if (envServiceAccount) {
+    console.log(`- Length: ${envServiceAccount.length}`);
+    console.log(`- First 100 chars: ${envServiceAccount.substring(0, 100)}`);
+    console.log(`- Last 100 chars: ${envServiceAccount.substring(Math.max(0, envServiceAccount.length - 100))}`);
+  }
+
+  // Redis config
+  console.log('\n🔴 REDIS CONFIG:');
+  console.log(`- URL: ${configService.redis.url || '❌ Not set'}`);
+  console.log(`- Host: ${configService.redis.host || '❌ Not set'}`);
+  console.log(`- Port: ${configService.redis.port || '❌ Not set'}`);
+  console.log(`- Password: ${configService.redis.password ? '✅ Set' : 'Not set'}`);
+  console.log(`- DB: ${configService.redis.db || 'Not set'}`);
+
+  // Stripe config
+  console.log('\n💳 STRIPE CONFIG:');
+  console.log(`- Secret Key: ${configService.stripe.secretKey ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Webhook Secret: ${configService.stripe.webhookSecret ? '✅ Set' : '❌ Not set'}`);
+
+  // JWT config
+  console.log('\n🔐 JWT CONFIG:');
+  console.log(`- Secret: ${configService.jwt.secret ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Expires In: ${configService.jwt.expiresIn}`);
+  console.log(`- Refresh Expires In: ${configService.jwt.refreshExpiresIn}`);
+
+  // Twilio config
+  console.log('\n📱 TWILIO CONFIG:');
+  console.log(`- Account SID: ${configService.twilio.accountSid ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Auth Token: ${configService.twilio.authToken ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Phone Number: ${configService.twilio.phoneNumber ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Initialized: ${configService.twilio.initialized}`);
+
+  // Clerk config
+  console.log('\n👤 CLERK CONFIG:');
+  console.log(`- Secret Key: ${configService.clerk.secretKey ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- Publishable Key: ${configService.clerk.publishableKey ? '✅ Set' : '❌ Not set'}`);
+  console.log(`- API URL: ${configService.clerk.apiUrl}`);
+  console.log(`- Frontend API: ${configService.clerk.frontendApi}`);
+  console.log(`- Domain: ${configService.clerk.domain}`);
+  console.log(`- Initialized: ${configService.clerk.isConfigured()}`);
+
+  // Notification config
+  console.log('\n🔔 NOTIFICATION CONFIG:');
+  console.log(`- Rate Limit Per Hour: ${configService.notification.rateLimitPerHour}`);
+  console.log(`- Rate Limit Per Minute: ${configService.notification.rateLimitPerMinute}`);
+  console.log(`- Analytics Enabled: ${configService.notification.analyticsEnabled}`);
+  console.log(`- Retention Days: ${configService.notification.retentionDays}`);
+
+  console.log('\n=====================================\n');
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(AppConfigService);
+
+  // Log all environment configuration
+  logEnvironmentConfig(configService);
 
   // Enable global validation pipes
   app.useGlobalPipes(

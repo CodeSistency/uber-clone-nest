@@ -52,10 +52,26 @@ export class WebSocketGatewayClass
   async afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
 
+    // Log Redis configuration for debugging
+    const redisConfig = this.configService.get('redis');
+    this.logger.log('🔍 Redis Config Debug:');
+    this.logger.log(`- URL: ${redisConfig?.url || 'Not set'}`);
+    this.logger.log(`- Host: ${redisConfig?.host || 'Not set'}`);
+    this.logger.log(`- Port: ${redisConfig?.port || 'Not set'}`);
+    this.logger.log(`- Password: ${redisConfig?.password ? 'Set' : 'Not set'}`);
+    this.logger.log(`- DB: ${redisConfig?.db || 'Not set'}`);
+
+    // Log Socket.IO version and RedisAdapter availability
+    this.logger.log('🔍 Socket.IO Debug:');
+    this.logger.log(`- Server version: ${require('socket.io/package.json').version}`);
+    this.logger.log(`- RedisAdapter available: ${!!RedisAdapter}`);
+    if (RedisAdapter) {
+      this.logger.log(`- RedisAdapter type: ${typeof RedisAdapter}`);
+      this.logger.log(`- RedisAdapter constructor: ${RedisAdapter.constructor.name}`);
+    }
+
     // Configure Redis adapter for scalability if Redis is available
     try {
-      const redisConfig = this.configService.get('redis');
-
       if (redisConfig?.url || (redisConfig?.host && redisConfig?.port)) {
         this.logger.log('🔄 Configuring Redis adapter for WebSocket scalability...');
 
@@ -68,13 +84,15 @@ export class WebSocketGatewayClass
 
         const subClient = pubClient.duplicate();
 
-        // Handle connection events
+        // Handle connection events with detailed logging
         pubClient.on('error', (err) => {
           this.logger.error('❌ Redis pub client error:', err.message);
+          this.logger.error('❌ Redis pub client error details:', err);
         });
 
         subClient.on('error', (err) => {
           this.logger.error('❌ Redis sub client error:', err.message);
+          this.logger.error('❌ Redis sub client error details:', err);
         });
 
         pubClient.on('connect', () => {
@@ -85,44 +103,105 @@ export class WebSocketGatewayClass
           this.logger.log('✅ Redis sub client connected');
         });
 
-        // Connect to Redis
-        await Promise.all([
-          pubClient.connect(),
-          subClient.connect(),
-        ]);
+        pubClient.on('ready', () => {
+          this.logger.log('✅ Redis pub client ready');
+        });
+
+        subClient.on('ready', () => {
+          this.logger.log('✅ Redis sub client ready');
+        });
+
+        // Connect to Redis with timeout
+        try {
+          this.logger.log('🔄 Attempting to connect Redis clients...');
+          await Promise.all([
+            pubClient.connect(),
+            subClient.connect(),
+          ]);
+          this.logger.log('✅ Redis clients connected successfully');
+        } catch (connectError: any) {
+          this.logger.error('❌ Failed to connect Redis clients:', connectError.message);
+          this.logger.error('❌ Redis connection error details:', connectError);
+          throw connectError;
+        }
 
         // Set Redis adapter for the server
-        // Configure Redis adapter for horizontal scaling
         try {
-          // Create and configure Redis adapter
-          const redisAdapter = new (RedisAdapter as any)(pubClient, subClient);
+          this.logger.log('🔄 Creating Redis adapter...');
 
-          // Apply adapter to server (this approach works with most Socket.IO versions)
+          // Check if RedisAdapter is available and properly imported
+          if (!RedisAdapter) {
+            throw new Error('RedisAdapter is not available - check @socket.io/redis-adapter installation');
+          }
+
+          // Try different adapter creation approaches
+          let redisAdapter: any;
+
+          try {
+            // Approach 1: Standard constructor
+            redisAdapter = new RedisAdapter(pubClient, subClient);
+            this.logger.log('✅ Redis adapter created with standard constructor');
+          } catch (constructorError: any) {
+            this.logger.warn('⚠️ Standard constructor failed, trying alternative approach:', constructorError.message);
+
+            try {
+              // Approach 2: Type assertion
+              redisAdapter = new (RedisAdapter as any)(pubClient, subClient);
+              this.logger.log('✅ Redis adapter created with type assertion');
+            } catch (assertionError: any) {
+              this.logger.error('❌ Both adapter creation approaches failed');
+              this.logger.error('❌ Constructor error:', constructorError.message);
+              this.logger.error('❌ Assertion error:', assertionError.message);
+              throw assertionError;
+            }
+          }
+
+          // Verify adapter before applying
+          if (!redisAdapter) {
+            throw new Error('Redis adapter is null or undefined');
+          }
+
+          // Check if adapter has required properties
+          if (typeof redisAdapter !== 'object') {
+            throw new Error('Redis adapter is not an object');
+          }
+
+          this.logger.log('🔄 Applying Redis adapter to server...');
+
+          // Apply adapter to server
           server.adapter(redisAdapter);
 
           this.logger.log('✅ Redis adapter configured successfully for WebSocket horizontal scaling');
           this.logger.log('🚀 Multiple WebSocket server instances can now share connections and rooms');
-        } catch (adapterError) {
-          this.logger.warn('⚠️ Failed to configure Redis adapter:', adapterError.message);
-          this.logger.warn('💡 WebSocket will work in single-instance mode');
+
+        } catch (adapterError: any) {
+          this.logger.error('❌ Failed to configure Redis adapter:', adapterError.message);
+          this.logger.error('❌ Adapter error details:', adapterError);
+          this.logger.error('❌ Adapter error stack:', adapterError.stack);
+
+          // Fallback to in-memory adapter
+          this.logger.warn('⚠️ Falling back to in-memory adapter for WebSocket');
           this.logger.warn('💡 To enable horizontal scaling, check Redis connection and Socket.IO version compatibility');
 
-          // Clean up Redis connections if adapter failed
+          // Try to clean up Redis connections
           try {
-            pubClient.disconnect();
-            subClient.disconnect();
+            pubClient.quit().catch(() => {});
+            subClient.quit().catch(() => {});
           } catch (cleanupError) {
-            this.logger.debug('Error cleaning up Redis connections:', cleanupError.message);
+            this.logger.warn('⚠️ Failed to clean up Redis connections:', cleanupError.message);
           }
         }
 
       } else {
         this.logger.warn('⚠️ Redis not configured. WebSocket will work in single-instance mode only.');
-        this.logger.warn('💡 Configure REDIS_URL in environment variables for horizontal scaling.');
+        this.logger.warn('💡 Configure REDIS_URL or REDIS_HOST/REDIS_PORT to enable horizontal scaling');
       }
-    } catch (error) {
-      this.logger.error('❌ Failed to configure Redis adapter for WebSocket:', error);
+    } catch (error: any) {
+      this.logger.error('❌ Failed to configure Redis adapter for WebSocket:', error.message);
+      this.logger.error('❌ Redis setup error details:', error);
+      this.logger.error('❌ Redis setup error stack:', error.stack);
       this.logger.warn('⚠️ WebSocket will continue in single-instance mode');
+      this.logger.warn('💡 Check Redis server availability and network connectivity');
     }
   }
 
