@@ -69,25 +69,53 @@ export class FirebaseService {
 
         // Fix common PEM formatting issues
         if (serviceAccountJson.private_key) {
-          // Remove any extra quotes and fix line breaks
           let privateKey = serviceAccountJson.private_key;
+
+          this.logger.debug('🔑 Processing private key...');
+          this.logger.debug(`Original private_key length: ${privateKey.length}`);
+          this.logger.debug(`First 50 chars: ${privateKey.substring(0, 50)}`);
+          this.logger.debug(`Contains \\\\n: ${privateKey.includes('\\\\n')}`);
+          this.logger.debug(`Contains \\n: ${privateKey.includes('\\n')}`);
 
           // If it's double-quoted, remove the quotes
           if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
             privateKey = privateKey.slice(1, -1);
+            this.logger.debug('Removed surrounding quotes');
           }
 
-          // Fix escaped newlines
+          // Handle multiple layers of escaping that can happen with environment variables
+          // First replace double backslash + n with single backslash + n
+          privateKey = privateKey.replace(/\\\\n/g, '\\n');
+          // Then replace single backslash + n with actual newlines
           privateKey = privateKey.replace(/\\n/g, '\n');
+
+          // Additional fix for other escape sequences
+          privateKey = privateKey.replace(/\\"/g, '"');
+          privateKey = privateKey.replace(/\\'/g, "'");
+
+          this.logger.debug(`After processing private_key length: ${privateKey.length}`);
+          this.logger.debug(`First 50 chars after processing: ${privateKey.substring(0, 50)}`);
+          this.logger.debug(`Contains newlines: ${privateKey.includes('\n')}`);
 
           // Ensure it starts with BEGIN PRIVATE KEY
           if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-            this.logger.warn('Private key does not appear to be in PEM format');
+            this.logger.warn('❌ Private key does not appear to be in PEM format');
+            this.logger.warn(`Key starts with: ${privateKey.substring(0, 30)}`);
           }
 
           // Ensure it ends with END PRIVATE KEY
           if (!privateKey.includes('-----END PRIVATE KEY-----')) {
-            this.logger.warn('Private key does not appear to be properly closed');
+            this.logger.warn('❌ Private key does not appear to be properly closed');
+            this.logger.warn(`Key ends with: ${privateKey.substring(privateKey.length - 30)}`);
+          }
+
+          // Final validation
+          if (privateKey.includes('-----BEGIN PRIVATE KEY-----') &&
+              privateKey.includes('-----END PRIVATE KEY-----') &&
+              privateKey.includes('\n')) {
+            this.logger.log('✅ Private key appears to be properly formatted');
+          } else {
+            this.logger.error('❌ Private key validation failed');
           }
 
           serviceAccountJson.private_key = privateKey;
