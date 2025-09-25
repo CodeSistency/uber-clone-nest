@@ -63,7 +63,7 @@ export class WebSocketGatewayClass
 
     // Log Socket.IO version and RedisAdapter availability
     this.logger.log('🔍 Socket.IO Debug:');
-    this.logger.log(`- Server version: ${require('socket.io/package.json').version}`);
+    this.logger.log(`- Server version: ${this.getSocketIOVersion()}`);
     this.logger.log(`- RedisAdapter available: ${!!RedisAdapter}`);
     if (RedisAdapter) {
       this.logger.log(`- RedisAdapter type: ${typeof RedisAdapter}`);
@@ -138,15 +138,16 @@ export class WebSocketGatewayClass
           let redisAdapter: any;
 
           try {
-            // Approach 1: Standard constructor
-            redisAdapter = new RedisAdapter(pubClient, subClient);
+            // Approach 1: Standard constructor with server namespace
+            // RedisAdapter expects (nsp, pubClient, subClient, opts?)
+            redisAdapter = new RedisAdapter(server.sockets, pubClient, subClient);
             this.logger.log('✅ Redis adapter created with standard constructor');
           } catch (constructorError: any) {
             this.logger.warn('⚠️ Standard constructor failed, trying alternative approach:', constructorError.message);
 
             try {
-              // Approach 2: Type assertion
-              redisAdapter = new (RedisAdapter as any)(pubClient, subClient);
+              // Approach 2: Type assertion with server namespace
+              redisAdapter = new (RedisAdapter as any)(server.sockets, pubClient, subClient);
               this.logger.log('✅ Redis adapter created with type assertion');
             } catch (assertionError: any) {
               this.logger.error('❌ Both adapter creation approaches failed');
@@ -433,5 +434,18 @@ export class WebSocketGatewayClass
     });
 
     return { status: 'success', message: 'Ride completed' };
+  }
+
+  private getSocketIOVersion(): string {
+    try {
+      // Try to get version from package.json
+      const fs = require('fs');
+      const path = require('path');
+      const packagePath = path.join(process.cwd(), 'node_modules', 'socket.io', 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+      return packageJson.version;
+    } catch (error) {
+      return 'unknown';
+    }
   }
 }

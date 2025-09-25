@@ -44,6 +44,25 @@ export class FirebaseService {
         this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT length: ${envServiceAccount.length}`);
         this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT first 100 chars: ${envServiceAccount.substring(0, 100)}`);
         this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT last 100 chars: ${envServiceAccount.substring(Math.max(0, envServiceAccount.length - 100))}`);
+        this.logger.log(`🔍 FIREBASE_SERVICE_ACCOUNT raw value: "${envServiceAccount}"`);
+
+        // Check for common issues
+        if (envServiceAccount.length < 50) {
+          this.logger.error('❌ FIREBASE_SERVICE_ACCOUNT is too short! Expected a full JSON object, but got:', envServiceAccount);
+          this.logger.error('💡 This usually means the environment variable was not set correctly.');
+          this.logger.error('💡 Make sure to copy the ENTIRE JSON from Firebase Console service account key.');
+        }
+
+        if (!envServiceAccount.trim().startsWith('{')) {
+          this.logger.error('❌ FIREBASE_SERVICE_ACCOUNT does not start with "{" - invalid JSON format');
+        }
+
+        if (!envServiceAccount.trim().endsWith('}')) {
+          this.logger.error('❌ FIREBASE_SERVICE_ACCOUNT does not end with "}" - JSON is truncated');
+        }
+      } else {
+        this.logger.error('❌ FIREBASE_SERVICE_ACCOUNT environment variable is not set at all!');
+        this.logger.error('💡 Set FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT in your environment variables.');
       }
 
       if (!this.appConfigService.firebase) {
