@@ -567,7 +567,7 @@ export class TransportDriverController {
       const user = req.user;
 
       // Buscar información detallada del conductor si existe
-      let driver = null;
+      let driver: any = null;
       if (user.driverId) {
         driver = await this.prisma.driver.findUnique({
           where: { id: user.driverId },
