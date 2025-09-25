@@ -1,12 +1,8 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../prisma/prisma.service';
-import { DriverStatus, VerificationStatus } from '../types/driver.types';
-import { Prisma, Driver, User, DriverDocument } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { SearchDriversDto } from 'src/drivers/dto/search-drivers.dto';
+import { PaginatedDriversResponseDto } from 'src/drivers/dto/paginated-drivers-response.dto';
 
 // Extended driver type with all necessary properties
 // Extended driver type with user information
@@ -70,207 +66,180 @@ export class DriverManagementService {
 
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Get a paginated list of drivers with filters
-   * @param options Pagination and filtering options
-   * @returns List of drivers and pagination info
-   */
-  async getDrivers(options: GetDriversOptions) {
-    const { page, limit, search, status, verificationStatus } = options;
-    const skip = (page - 1) * limit;
+  async searchDrivers(
+    searchDto: SearchDriversDto,
+  ): Promise<PaginatedDriversResponseDto> {
+    const {
+      page = 1,
+      limit = 10,
+      firstName,
+      lastName,
+      carModel,
+      licensePlate,
+      status,
+      verificationStatus,
+      canDoDeliveries,
+      carSeats,
+      vehicleTypeId,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      createdFrom,
+      createdTo,
+      updatedFrom,
+      updatedTo,
+    } = searchDto;
 
-    // Build the where clause for filtering
+    // Construir filtros dinámicamente
     const where: Prisma.DriverWhereInput = {};
 
-    // Apply search filter
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        // User-related searches will be handled after fetching
-      ];
-    }
-
-    // We'll apply the status filter after fetching since we can't directly query the user relation
-    // The actual filtering will be done after we have the driver data
-
-    // Apply verification status filter
-    if (verificationStatus && verificationStatus !== 'all') {
-      where.verificationStatus =
-        verificationStatus.toUpperCase() as VerificationStatus;
-    }
-
-    try {
-      // First get the driver IDs that match the search criteria
-      const driverIds = await this.prisma.driver.findMany({
-        where,
-        select: { id: true },
-        skip,
-        take: limit,
-      });
-
-      // Then get the full driver details with documents
-      const drivers = await Promise.all(
-        driverIds.map(async ({ id }) => {
-          return await this.getDriverById(id);
-        }),
-      );
-
-      // Get counts for each driver
-      const driversWithCounts = await Promise.all(
-        drivers.map(async (driver) => {
-          const [ridesCount, documentsCount] = await Promise.all([
-            this.prisma.ride.count({ where: { driverId: driver.id } }),
-            this.prisma.driverDocument.count({
-              where: { driverId: driver.id },
-            }),
-          ]);
-
-          return {
-            ...driver,
-            _count: {
-              rides: ridesCount,
-              documents: documentsCount,
-            },
-          };
-        }),
-      );
-
-      // Get the total count for pagination
-      const total = await this.prisma.driver.count({ where });
-
-      // Get user details for the filtered drivers
-      const userIds = drivers
-        .map((d) => {
-          const driverWithUser = d as any;
-          return driverWithUser.user?.id;
-        })
-        .filter((id): id is number => id !== undefined);
-
-      const users = await this.prisma.user.findMany({
-        where: {
-          id: { in: userIds },
-          userType: 'driver',
-        },
-        select: {
-          id: true,
-          email: true,
-          phone: true,
-          isActive: true,
-          name: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-
-      // Create a map of user ID to user data
-      const userMap = new Map(users.map((user) => [user.id, user]));
-
-      // Combine driver and user data
-      const driversWithUsers = drivers.map((driver) => {
-        const driverWithUser = driver as any;
-        return {
-          ...driverWithUser,
-          user: userMap.get(driverWithUser.userId) || null,
-        };
-      });
-
-      // Apply search and status filters
-      const filteredDrivers = driversWithUsers.filter((driver) => {
-        const user = driver.user;
-        if (!user) return false;
-
-        // Apply search filter if provided
-        if (search) {
-          const searchLower = search.toLowerCase();
-          const matchesSearch =
-            user.email?.toLowerCase().includes(searchLower) ||
-            user.phone?.includes(search);
-          if (!matchesSearch) return false;
-        }
-
-        // Apply status filter if provided
-        if (status && status !== 'all') {
-          if (status === 'suspended') {
-            return driver.isSuspended === true;
-          } else if (status === 'active') {
-            return user.isActive === true && driver.isSuspended !== true;
-          } else if (status === 'inactive') {
-            return user.isActive === false && driver.isSuspended !== true;
-          }
-        }
-
-        return true;
-      });
-
-      // Format the response
-      const formattedDrivers = filteredDrivers
-        .filter(
-          (
-            driver,
-          ): driver is typeof driver & {
-            user: NonNullable<typeof driver.user>;
-          } => !!driver.user,
-        )
-        .map((driver) => {
-          const [firstName, ...lastNameParts] = (driver.user.name || '').split(
-            ' ',
-          );
-          const lastName = lastNameParts.join(' ');
-
-          return {
-            id: driver.id,
-            userId: driver.user.id,
-            firstName: firstName || '',
-            lastName: lastName || '',
-            email: driver.user.email || '',
-            phone: driver.user.phone || '',
-            status: driver.isSuspended
-              ? 'suspended'
-              : driver.user.isActive
-                ? 'active'
-                : 'inactive',
-            isOnline: driver.isOnline || false,
-            lastActive: driver.lastActive || null,
-            profileImageUrl: driver.profileImageUrl || null,
-            carImageUrl: driver.carImageUrl || null,
-            carModel: driver.carModel || null,
-            licensePlate: driver.licensePlate || null,
-            rating: 0, // Will be calculated separately
-            totalRides: driver._count?.rides || 0,
-            totalEarnings: 0, // Will be calculated separately
-            documents: (driver.documents || []).map((doc: any) => ({
-              id: doc.id,
-              type: doc.documentType,
-              status: doc.verificationStatus,
-              url: doc.documentUrl,
-              uploadedAt: doc.uploadedAt,
-              driverId: doc.driverId,
-            })),
-            verificationStatus:
-              (driver.verificationStatus || '').toLowerCase() || null,
-            verifiedAt: driver.verifiedAt || null,
-            verificationNotes: driver.verificationNotes || null,
-            createdAt: driver.user.createdAt,
-            updatedAt: driver.user.updatedAt,
-          };
-        });
-
-      return {
-        success: true,
-        data: formattedDrivers,
-        pagination: {
-          total: total,
-          page: page,
-          limit: limit,
-          totalPages: Math.ceil(total / limit),
-        },
+    // Filtros de texto (búsqueda parcial case-insensitive)
+    if (firstName) {
+      where.firstName = {
+        contains: firstName,
+        mode: 'insensitive',
       };
-    } catch (error) {
-      this.logger.error('Error fetching drivers:', error);
-      throw error;
     }
+
+    if (lastName) {
+      where.lastName = {
+        contains: lastName,
+        mode: 'insensitive',
+      };
+    }
+
+    if (carModel) {
+      where.carModel = {
+        contains: carModel,
+        mode: 'insensitive',
+      };
+    }
+
+    if (licensePlate) {
+      where.licensePlate = {
+        contains: licensePlate,
+        mode: 'insensitive',
+      };
+    }
+
+    // Filtros exactos
+    if (status !== undefined) {
+      where.status = status;
+    }
+
+    if (verificationStatus !== undefined) {
+      where.verificationStatus = verificationStatus;
+    }
+
+    if (canDoDeliveries !== undefined) {
+      where.canDoDeliveries = canDoDeliveries;
+    }
+
+    if (carSeats !== undefined) {
+      where.carSeats = carSeats;
+    }
+
+    if (vehicleTypeId !== undefined) {
+      where.vehicleTypeId = vehicleTypeId;
+    }
+
+    // Filtros de fecha
+    if (createdFrom || createdTo) {
+      where.createdAt = {};
+      if (createdFrom) {
+        where.createdAt.gte = new Date(createdFrom);
+      }
+      if (createdTo) {
+        where.createdAt.lte = new Date(createdTo);
+      }
+    }
+
+    if (updatedFrom || updatedTo) {
+      where.updatedAt = {};
+      if (updatedFrom) {
+        where.updatedAt.gte = new Date(updatedFrom);
+      }
+      if (updatedTo) {
+        where.updatedAt.lte = new Date(updatedTo);
+      }
+    }
+
+    // Calcular offset para paginación
+    const offset = (page - 1) * limit;
+
+    // Ejecutar consulta de conteo y búsqueda en paralelo
+    const [total, drivers] = await Promise.all([
+      this.prisma.driver.count({ where }),
+      this.prisma.driver.findMany({
+        where,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip: offset,
+        take: limit,
+        include: {
+          vehicleType: true,
+          documents: {
+            select: {
+              id: true,
+              documentType: true,
+              verificationStatus: true,
+              uploadedAt: true,
+            },
+          },
+          _count: {
+            select: {
+              rides: true,
+              deliveryOrders: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Calcular información de paginación
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    // Construir lista de filtros aplicados
+    const appliedFilters: string[] = [];
+    const filters: any = {};
+
+    if (firstName) {
+      appliedFilters.push('firstName');
+      filters.searchTerm = firstName;
+    }
+    if (lastName) appliedFilters.push('lastName');
+    if (carModel) appliedFilters.push('carModel');
+    if (licensePlate) appliedFilters.push('licensePlate');
+    if (status) appliedFilters.push('status');
+    if (verificationStatus) appliedFilters.push('verificationStatus');
+    if (canDoDeliveries !== undefined) appliedFilters.push('canDoDeliveries');
+    if (carSeats !== undefined) appliedFilters.push('carSeats');
+    if (vehicleTypeId !== undefined) appliedFilters.push('vehicleTypeId');
+    if (createdFrom || createdTo) appliedFilters.push('createdDateRange');
+    if (updatedFrom || updatedTo) appliedFilters.push('updatedDateRange');
+
+    return {
+      data: drivers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      },
+      filters:
+        appliedFilters.length > 0
+          ? {
+              applied: appliedFilters,
+              ...filters,
+            }
+          : undefined,
+    };
   }
+
 
   /**
    * Get detailed information about a specific driver

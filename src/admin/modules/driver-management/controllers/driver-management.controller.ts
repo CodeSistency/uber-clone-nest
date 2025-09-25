@@ -28,7 +28,8 @@ import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { RequirePermissions } from '../../../decorators/permissions.decorator';
 import { Permission } from '../../../entities/admin.entity';
 import { DriverManagementService } from '../services/driver-management.service';
-import { DriverStatus, VerificationStatus } from '../types/driver.types';
+import { SearchDriversDto } from 'src/drivers/dto/search-drivers.dto';
+import { PaginatedDriversResponseDto } from 'src/drivers/dto/paginated-drivers-response.dto';
 
 @Controller()
 @UseGuards(AdminAuthGuard, PermissionsGuard)
@@ -128,23 +129,10 @@ export class DriverManagementController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
-  async getDrivers(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('search') search?: string,
-    @Query('status') status?: DriverStatus,
-    @Query('verificationStatus') verificationStatus?: VerificationStatus,
-  ) {
-    this.logger.log(
-      `Fetching drivers - page: ${page}, limit: ${limit}, search: ${search}, status: ${status}, verificationStatus: ${verificationStatus}`,
-    );
-    return this.driverService.getDrivers({
-      page,
-      limit,
-      search,
-      status,
-      verificationStatus,
-    });
+  async searchDrivers(
+    @Query() searchDto: SearchDriversDto,
+  ): Promise<PaginatedDriversResponseDto> {
+    return this.driverService.searchDrivers(searchDto);
   }
 
   @Get(':id')
