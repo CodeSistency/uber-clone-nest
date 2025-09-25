@@ -10,6 +10,7 @@ import {
   UseGuards,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ParseFloatPipe } from '@nestjs/common';
 import {
@@ -386,6 +387,213 @@ export class TransportDriverController {
           timestamp: new Date(),
           accuracy: locationData.accuracy
         }
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Post('go-online')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: '🚗 Conductor se pone online (disponible para rides)',
+    description: `
+    **IMPORTANTE:** Cambia el estado del conductor a 'online' para que aparezca disponible en el sistema de matching.
+
+    **¿Qué hace?**
+    - Cambia status del conductor a 'online'
+    - Verifica que el conductor esté verificado
+    - Actualiza timestamp de última actividad
+
+    **Después de ponerse online:**
+    - El conductor aparecerá en búsquedas de matching
+    - Podrá recibir solicitudes de viaje automáticamente
+    - Debe actualizar su ubicación periódicamente
+
+    **Notas importantes:**
+    - Solo conductores verificados pueden ponerse online
+    - Si hay un ride activo, no se puede poner offline
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Conductor puesto online exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Conductor online exitosamente' },
+        data: {
+          type: 'object',
+          properties: {
+            driverId: { type: 'number', example: 7 },
+            status: { type: 'string', example: 'online' },
+            onlineAt: { type: 'string', format: 'date-time' },
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Conductor no verificado'
+  })
+  async goOnline(@Req() req: any) {
+    try {
+      const driverId = req.user.driverId;
+      if (!driverId) {
+        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+      }
+
+      const result = await this.flow.setDriverOnline(driverId);
+
+      return {
+        success: true,
+        message: 'Conductor online exitosamente',
+        data: result
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Post('go-offline')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: '🔴 Conductor se pone offline (no disponible)',
+    description: `
+    **IMPORTANTE:** Cambia el estado del conductor a 'offline' para dejar de recibir solicitudes.
+
+    **¿Qué hace?**
+    - Cambia status del conductor a 'offline'
+    - Cancela cualquier búsqueda activa
+    - Mantiene ubicación para estadísticas
+
+    **Notas importantes:**
+    - Si hay un ride activo, no se puede poner offline
+    - Las ubicaciones se mantienen para reporting
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Conductor puesto offline exitosamente'
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'No se puede poner offline con ride activo'
+  })
+  async goOffline(@Req() req: any) {
+    try {
+      const driverId = req.user.driverId;
+      if (!driverId) {
+        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+      }
+
+      const result = await this.flow.setDriverOffline(driverId);
+
+      return {
+        success: true,
+        message: 'Conductor offline exitosamente',
+        data: result
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard) // Sin DriverGuard para que funcione aunque no sea conductor
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: '👤 Información del usuario/conductor autenticado',
+    description: `
+    **DEBUGGING:** Endpoint para verificar que el JWT token contiene la información correcta.
+
+    **Muestra:**
+    - Información del usuario del JWT token
+    - Información del conductor si existe
+    - Estado de verificación y online/offline
+    - Diagnóstico completo para debugging
+
+    **Útil para:**
+    - Verificar que el JWT token tiene driverId
+    - Confirmar que el conductor existe en BD
+    - Diagnosticar problemas de autenticación
+    `
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Información del usuario/conductor',
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            email: { type: 'string' },
+            name: { type: 'string' },
+            driverId: { type: 'number', nullable: true },
+            driverStatus: { type: 'string', nullable: true },
+            driverVerificationStatus: { type: 'string', nullable: true },
+          }
+        },
+        driver: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            id: { type: 'number' },
+            status: { type: 'string' },
+            verificationStatus: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+          }
+        },
+        diagnostics: {
+          type: 'object',
+          properties: {
+            hasDriverId: { type: 'boolean' },
+            driverExistsInDb: { type: 'boolean' },
+            isOnline: { type: 'boolean' },
+            isVerified: { type: 'boolean' },
+          }
+        },
+        timestamp: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  async getMe(@Req() req: any) {
+    try {
+      const user = req.user;
+
+      // Buscar información detallada del conductor si existe
+      let driver = null;
+      if (user.driverId) {
+        driver = await this.prisma.driver.findUnique({
+          where: { id: user.driverId },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            status: true,
+            verificationStatus: true,
+          }
+        });
+      }
+
+      // Diagnóstico completo
+      const diagnostics = {
+        hasDriverId: !!user.driverId,
+        driverExistsInDb: !!driver,
+        isOnline: driver?.status === 'online',
+        isVerified: driver?.verificationStatus === 'approved',
+      };
+
+      return {
+        user: user,
+        driver: driver,
+        diagnostics: diagnostics,
+        timestamp: new Date(),
       };
     } catch (error) {
       throw error;

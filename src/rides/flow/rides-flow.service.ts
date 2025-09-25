@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import {
@@ -1566,6 +1566,117 @@ export class RidesFlowService {
 
     } catch (error) {
       this.logger.error(`❌ [LOCATION-UPDATE] Error actualizando ubicación del conductor ${driverId}:`, error);
+      throw error;
+    }
+  }
+
+  async setDriverOnline(driverId: number) {
+    try {
+      this.logger.log(`🚗 [DRIVER-STATUS] Poniendo conductor ${driverId} online`);
+
+      // Verificar que el conductor existe y está verificado
+      const driver = await this.prisma.driver.findUnique({
+        where: { id: driverId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+          verificationStatus: true,
+        }
+      });
+
+      if (!driver) {
+        throw new Error('DRIVER_NOT_FOUND');
+      }
+
+      if (driver.verificationStatus !== 'approved') {
+        throw new Error('DRIVER_NOT_VERIFIED');
+      }
+
+      // Actualizar estado a online
+      const updatedDriver = await this.prisma.driver.update({
+        where: { id: driverId },
+        data: {
+          status: 'online',
+        },
+        select: {
+          id: true,
+          status: true,
+          updatedAt: true,
+        }
+      });
+
+      this.logger.log(`✅ [DRIVER-STATUS] Conductor ${driverId} (${driver.firstName} ${driver.lastName}) está ahora online`);
+
+      return {
+        driverId: updatedDriver.id,
+        status: updatedDriver.status,
+        onlineAt: updatedDriver.updatedAt,
+      };
+
+    } catch (error) {
+      this.logger.error(`❌ [DRIVER-STATUS] Error poniendo conductor ${driverId} online:`, error);
+
+      if (error.message === 'DRIVER_NOT_FOUND') {
+        throw new NotFoundException({ error: 'DRIVER_NOT_FOUND', message: 'Conductor no encontrado' });
+      }
+
+      if (error.message === 'DRIVER_NOT_VERIFIED') {
+        throw new ForbiddenException({ error: 'DRIVER_NOT_VERIFIED', message: 'Conductor no está verificado' });
+      }
+
+      throw error;
+    }
+  }
+
+  async setDriverOffline(driverId: number) {
+    try {
+      this.logger.log(`🔴 [DRIVER-STATUS] Poniendo conductor ${driverId} offline`);
+
+      // Verificar que no tenga rides activos
+      const activeRide = await this.prisma.ride.findFirst({
+        where: {
+          driverId: driverId,
+          status: { in: ['accepted', 'arrived', 'in_progress'] }
+        }
+      });
+
+      if (activeRide) {
+        throw new Error('DRIVER_HAS_ACTIVE_RIDE');
+      }
+
+      // Actualizar estado a offline
+      const updatedDriver = await this.prisma.driver.update({
+        where: { id: driverId },
+        data: {
+          status: 'offline',
+        },
+        select: {
+          id: true,
+          status: true,
+          updatedAt: true,
+        }
+      });
+
+      this.logger.log(`✅ [DRIVER-STATUS] Conductor ${driverId} está ahora offline`);
+
+      return {
+        driverId: updatedDriver.id,
+        status: updatedDriver.status,
+        offlineAt: updatedDriver.updatedAt,
+      };
+
+    } catch (error) {
+      this.logger.error(`❌ [DRIVER-STATUS] Error poniendo conductor ${driverId} offline:`, error);
+
+      if (error.message === 'DRIVER_HAS_ACTIVE_RIDE') {
+        throw new ConflictException({
+          error: 'DRIVER_HAS_ACTIVE_RIDE',
+          message: 'No se puede poner offline con un ride activo'
+        });
+      }
+
       throw error;
     }
   }
