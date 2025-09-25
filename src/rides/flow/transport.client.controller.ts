@@ -466,14 +466,29 @@ export class TransportClientController {
     },
   })
   @ApiResponse({ status: 500, description: 'Error interno del servidor' })
-  async matchBestDriver(@Body() body: MatchBestDriverDto) {
+  async matchBestDriver(@Body() body: MatchBestDriverDto, @Req() req: any) {
+    console.log(`🎯 [CLIENT] === INICIO MATCH BEST DRIVER ===`);
+    console.log(`🎯 [CLIENT] Usuario autenticado:`, {
+      userId: req.user.id,
+      email: req.user.email,
+      driverId: req.user.driverId
+    });
+    console.log(`🎯 [CLIENT] Datos de matching:`, body);
+
     try {
+      console.log(`🎯 [CLIENT] Llamando a findBestDriverMatch...`);
       const result = await this.flow.findBestDriverMatch({
         lat: body.lat,
         lng: body.lng,
         tierId: body.tierId,
         vehicleTypeId: body.vehicleTypeId,
         radiusKm: body.radiusKm || 5,
+      });
+
+      console.log(`✅ [CLIENT] Matching completado exitosamente:`, {
+        matchedDriver: result?.matchedDriver?.driver?.driverId,
+        score: result?.matchedDriver?.score,
+        estimatedMinutes: result?.matchedDriver?.estimatedMinutes
       });
 
       return { data: result };

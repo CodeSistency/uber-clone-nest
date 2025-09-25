@@ -359,11 +359,33 @@ export class TransportDriverController {
     @Body() locationData: UpdateDriverLocationDto,
     @Req() req: any
   ) {
+    console.log(`📍 [LOCATION-UPDATE] === INICIO LOCATION UPDATE ===`);
+    console.log(`📍 [LOCATION-UPDATE] Usuario autenticado:`, {
+      userId: req.user.id,
+      email: req.user.email,
+      driverId: req.user.driverId,
+      hasDriverId: !!req.user.driverId
+    });
+
+    console.log(`📍 [LOCATION-UPDATE] Datos de ubicación recibidos:`, {
+      lat: locationData.lat,
+      lng: locationData.lng,
+      accuracy: locationData.accuracy,
+      speed: locationData.speed,
+      heading: locationData.heading,
+      rideId: locationData.rideId
+    });
+
     try {
       const driverId = req.user.driverId;
+      console.log(`📍 [LOCATION-UPDATE] DriverId obtenido: ${driverId}`);
+
       if (!driverId) {
+        console.log(`❌ [LOCATION-UPDATE] ERROR: Usuario no tiene driverId`);
         throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
       }
+
+      console.log(`📍 [LOCATION-UPDATE] Usando driverId: ${driverId} para actualizar ubicación`);
 
       // Actualizar ubicación usando el location tracking service
       await this.flow.updateDriverLocation(driverId, {
@@ -563,6 +585,9 @@ export class TransportDriverController {
     }
   })
   async getMe(@Req() req: any) {
+    console.log(`👤 [DRIVER-ME] === CONSULTA ESTADO CONDUCTOR ===`);
+    console.log(`👤 [DRIVER-ME] Usuario del JWT:`, req.user);
+
     try {
       const user = req.user;
 
@@ -587,14 +612,30 @@ export class TransportDriverController {
         driverExistsInDb: !!driver,
         isOnline: driver?.status === 'online',
         isVerified: driver?.verificationStatus === 'approved',
+        driverIdFromJwt: user.driverId,
+        driverIdFromDb: driver?.id,
+        driverIdsMatch: user.driverId === driver?.id
       };
 
-      return {
+      const result = {
         user: user,
         driver: driver,
         diagnostics: diagnostics,
         timestamp: new Date(),
       };
+
+      console.log(`👤 [DRIVER-ME] Diagnóstico completo:`, diagnostics);
+      console.log(`👤 [DRIVER-ME] Driver info:`, {
+        id: driver?.id,
+        status: driver?.status,
+        verificationStatus: driver?.verificationStatus,
+        currentLatitude: driver?.currentLatitude,
+        currentLongitude: driver?.currentLongitude,
+        isLocationActive: driver?.isLocationActive,
+        lastLocationUpdate: driver?.lastLocationUpdate
+      });
+
+      return result;
     } catch (error) {
       throw error;
     }

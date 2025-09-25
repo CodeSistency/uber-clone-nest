@@ -624,10 +624,26 @@ export class RidesFlowService {
     try {
       // 0. DEBUG: Verificar estado general del sistema
       this.logger.log(`🔍 [MATCHING] DEBUG - Verificando estado del sistema antes de búsqueda`);
-      const totalDriversOnline = await this.prisma.driver.count({
-        where: { status: 'online', verificationStatus: 'approved' }
+
+      // Detalles completos de conductores online
+      const allOnlineDrivers = await this.prisma.driver.findMany({
+        where: { status: 'online', verificationStatus: 'approved' },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+          verificationStatus: true,
+          createdAt: true
+        }
       });
-      this.logger.log(`📊 [MATCHING] DEBUG - Total conductores online en BD: ${totalDriversOnline}`);
+
+      this.logger.log(`📊 [MATCHING] DEBUG - Conductores online encontrados: ${allOnlineDrivers.length}`);
+      allOnlineDrivers.forEach((driver, index) => {
+        this.logger.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName} - Status: ${driver.status} - Verified: ${driver.verificationStatus}`);
+      });
+
+      const totalDriversOnline = allOnlineDrivers.length;
 
       // Verificar location tracking service
       try {
@@ -680,15 +696,58 @@ export class RidesFlowService {
       // 3. Buscar conductores usando LocationTrackingService
       this.logger.log(`🔍 [MATCHING] Buscando conductores cercanos - Ubicación: (${lat}, ${lng}) - Radio: ${radiusKm}km - Filtros: ${JSON.stringify(filters)}`);
 
-      let candidateDrivers =
-        await this.locationTrackingService.findNearbyDrivers(
-      lat,
-      lng,
+      // Log antes de llamar al location tracking service
+      this.logger.log(`🔍 [MATCHING] DEBUG - Llamando a locationTrackingService.findNearbyDrivers con:`);
+      this.logger.log(`   - Lat: ${lat}`);
+      this.logger.log(`   - Lng: ${lng}`);
+      this.logger.log(`   - Radius (metros): ${radiusKm / 1000}`);
+      this.logger.log(`   - Filters: ${JSON.stringify(filters)}`);
+
+      let candidateDrivers;
+      try {
+        candidateDrivers = await this.locationTrackingService.findNearbyDrivers(
+          lat,
+          lng,
           radiusKm / 1000, // Convertir a metros para el servicio
           filters,
         );
+        this.logger.log(`✅ [MATCHING] locationTrackingService.findNearbyDrivers completado sin errores`);
+      } catch (locationError) {
+        this.logger.error(`❌ [MATCHING] ERROR en locationTrackingService.findNearbyDrivers:`, locationError);
+        throw locationError;
+      }
 
       this.logger.log(`📊 [MATCHING] Encontrados ${candidateDrivers.length} conductores candidatos por ubicación GPS`);
+
+      // Log detallado de cada conductor encontrado
+      if (candidateDrivers.length > 0) {
+        this.logger.log(`👥 [MATCHING] Detalles de conductores candidatos:`);
+        candidateDrivers.forEach((driver, index) => {
+          this.logger.log(`   ${index + 1}. ID=${driver.id || driver.driverId} - Distancia=${driver.distance}km - Nombre=${driver.firstName || 'N/A'} ${driver.lastName || ''}`);
+          this.logger.log(`      Ubicación actual: (${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`);
+          this.logger.log(`      Última actualización GPS: ${driver.lastLocationUpdate || 'N/A'}`);
+        });
+      } else {
+        this.logger.warn(`⚠️ [MATCHING] Ningún conductor encontrado por GPS. Verificando por qué...`);
+
+        // Verificar si hay conductores online pero sin ubicación GPS
+        const onlineDriversWithoutGPS = await this.prisma.driver.findMany({
+          where: {
+            status: 'online',
+            verificationStatus: 'approved'
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        });
+
+        this.logger.log(`🔍 [MATCHING] Conductores online en BD (${onlineDriversWithoutGPS.length}):`);
+        onlineDriversWithoutGPS.forEach((driver, index) => {
+          this.logger.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName}`);
+        });
+      }
 
       // Log detallado de cada conductor encontrado con su ubicación
       candidateDrivers.forEach((driver, index) => {
@@ -1536,8 +1595,19 @@ export class RidesFlowService {
       rideId?: number;
     }
   ) {
+    console.log(`🔄 [RIDES-FLOW] === INICIO updateDriverLocation ===`);
+    console.log(`🔄 [RIDES-FLOW] DriverId recibido: ${driverId}`);
+    console.log(`🔄 [RIDES-FLOW] Datos de ubicación:`, {
+      lat: locationData.lat,
+      lng: locationData.lng,
+      accuracy: locationData.accuracy,
+      speed: locationData.speed,
+      heading: locationData.heading,
+      rideId: locationData.rideId
+    });
+
     try {
-      this.logger.log(`📍 [LOCATION-UPDATE] Actualizando ubicación del conductor ${driverId}: (${locationData.lat}, ${locationData.lng})`);
+      console.log(`🔄 [RIDES-FLOW] Llamando a locationTrackingService.updateDriverLocation...`);
 
       // Actualizar ubicación usando el location tracking service
       await this.locationTrackingService.updateDriverLocation(
@@ -1552,7 +1622,31 @@ export class RidesFlowService {
         }
       );
 
-      this.logger.log(`✅ [LOCATION-UPDATE] Ubicación del conductor ${driverId} actualizada exitosamente`);
+      console.log(`✅ [RIDES-FLOW] locationTrackingService.updateDriverLocation completado para driver ${driverId}`);
+
+      // Verificar que se guardó correctamente en BD
+      const driverAfterUpdate = await this.prisma.driver.findUnique({
+        where: { id: driverId },
+        select: {
+          id: true,
+          currentLatitude: true,
+          currentLongitude: true,
+          isLocationActive: true,
+          lastLocationUpdate: true,
+          locationAccuracy: true
+        }
+      });
+
+      console.log(`🔍 [RIDES-FLOW] Verificación BD después de update:`, {
+        driverId: driverAfterUpdate?.id,
+        currentLatitude: driverAfterUpdate?.currentLatitude,
+        currentLongitude: driverAfterUpdate?.currentLongitude,
+        isLocationActive: driverAfterUpdate?.isLocationActive,
+        lastLocationUpdate: driverAfterUpdate?.lastLocationUpdate,
+        locationAccuracy: driverAfterUpdate?.locationAccuracy
+      });
+
+      console.log(`✅ [RIDES-FLOW] Ubicación del conductor ${driverId} actualizada exitosamente`);
 
       return {
         driverId,

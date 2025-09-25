@@ -85,8 +85,13 @@ export class LocationTrackingService extends RedisPubSubService {
     };
 
     try {
+      console.log(`🔄 [LOCATION-TRACKING] Actualizando BD para conductor ${driverId}:`);
+      console.log(`   Lat: ${location.lat}, Lng: ${location.lng}`);
+      console.log(`   Accuracy: ${additionalData?.accuracy || 'null'}`);
+      console.log(`   Timestamp: ${now.toISOString()}`);
+
       // Update driver's current location in database
-      await this.prisma.driver.update({
+      const updateResult = await this.prisma.driver.update({
         where: { id: driverId },
         data: {
           currentLatitude: location.lat,
@@ -97,6 +102,9 @@ export class LocationTrackingService extends RedisPubSubService {
           updatedAt: now,
         },
       });
+
+      console.log(`✅ [LOCATION-TRACKING] BD actualizada exitosamente para conductor ${driverId}`);
+      console.log(`   Resultado: isLocationActive=${updateResult.isLocationActive}, lat=${updateResult.currentLatitude}, lng=${updateResult.currentLongitude}`);
 
       // Save to location history
       await this.prisma.driverLocationHistory.create({

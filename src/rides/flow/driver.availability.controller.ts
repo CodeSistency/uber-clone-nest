@@ -128,10 +128,26 @@ export class DriverAvailabilityController {
     @Body() body: SetDriverAvailabilityDto,
     @Req() req: any,
   ) {
+    console.log(`🚗 [AVAILABILITY] Usuario autenticado:`, {
+      userId: req.user.id,
+      email: req.user.email,
+      driverId: req.user.driverId,
+      hasDriverId: !!req.user.driverId
+    });
+
+    console.log(`🚗 [AVAILABILITY] Intentando cambiar status a: ${body.status} para driver ID: ${req.user.id}`);
+
     const driver = await this.prisma.driver.update({
       where: { id: Number(req.user.id) },
       data: { status: body.status },
     });
+
+    console.log(`✅ [AVAILABILITY] Status actualizado exitosamente:`, {
+      driverId: driver.id,
+      newStatus: driver.status,
+      timestamp: new Date().toISOString()
+    });
+
     return { data: { id: driver.id, status: driver.status } };
   }
 
