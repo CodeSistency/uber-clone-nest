@@ -66,8 +66,36 @@ export class FirebaseService {
             'Service account is missing required fields (private_key or client_email)',
           );
         }
+
+        // Fix common PEM formatting issues
+        if (serviceAccountJson.private_key) {
+          // Remove any extra quotes and fix line breaks
+          let privateKey = serviceAccountJson.private_key;
+
+          // If it's double-quoted, remove the quotes
+          if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+            privateKey = privateKey.slice(1, -1);
+          }
+
+          // Fix escaped newlines
+          privateKey = privateKey.replace(/\\n/g, '\n');
+
+          // Ensure it starts with BEGIN PRIVATE KEY
+          if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+            this.logger.warn('Private key does not appear to be in PEM format');
+          }
+
+          // Ensure it ends with END PRIVATE KEY
+          if (!privateKey.includes('-----END PRIVATE KEY-----')) {
+            this.logger.warn('Private key does not appear to be properly closed');
+          }
+
+          serviceAccountJson.private_key = privateKey;
+        }
+
       } catch (error) {
-        this.logger.error('Failed to initialize Firebase:', error);
+        this.logger.error('Failed to parse Firebase service account:', error);
+        this.logger.warn('Firebase push notifications will be disabled. Check your FIREBASE_SERVICE_ACCOUNT environment variable.');
         return;
       }
 
@@ -86,10 +114,21 @@ export class FirebaseService {
         }
 
         this.firebaseApp = admin.initializeApp(firebaseAppConfig);
-        this.logger.log('Firebase Admin SDK initialized successfully');
-      } catch (error) {
-        this.logger.error('Failed to initialize Firebase Admin SDK:', error);
+        this.logger.log('✅ Firebase Admin SDK initialized successfully');
+        this.logger.log(`📱 Push notifications enabled for project: ${projectId}`);
+      } catch (error: any) {
+        this.logger.error('❌ Failed to initialize Firebase Admin SDK:', error.message || error);
+
+        // Provide specific guidance based on error type
+        if (error.message?.includes('Invalid PEM formatted message')) {
+          this.logger.error('💡 This usually means the private_key in your Firebase service account is malformed.');
+          this.logger.error('💡 Check that your FIREBASE_SERVICE_ACCOUNT environment variable contains valid JSON with a properly formatted private_key field.');
+        } else if (error.message?.includes('Project')) {
+          this.logger.error('💡 Check that your FIREBASE_PROJECT_ID matches the project ID in your service account.');
+        }
+
         this.firebaseApp = null;
+        this.logger.warn('⚠️ Firebase push notifications will be disabled until configuration is fixed.');
       }
     } catch (error) {
       this.logger.error('Failed to initialize Firebase:', error);
