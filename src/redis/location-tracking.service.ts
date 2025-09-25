@@ -370,6 +370,7 @@ export class LocationTrackingService extends RedisPubSubService {
       vehicleTypeId?: number;
       status?: string;
       verified?: boolean;
+      verificationStatus?: string;
       tierId?: number;
     },
   ) {
