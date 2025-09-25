@@ -135,7 +135,11 @@ async function main() {
         carSeats: 4,
         vehicleTypeId: vehicleTypes[0].id, // Carro
         status: 'online',
-        verificationStatus: 'verified',
+        verificationStatus: 'approved',
+        isLocationActive: true,
+        currentLatitude: 10.5061, // Caracas - Centro
+        currentLongitude: -66.9146,
+        lastLocationUpdate: new Date(),
         canDoDeliveries: true,
       },
     }),
@@ -153,7 +157,11 @@ async function main() {
         carSeats: 4,
         vehicleTypeId: vehicleTypes[0].id, // Carro
         status: 'online',
-        verificationStatus: 'verified',
+        verificationStatus: 'approved',
+        isLocationActive: true,
+        currentLatitude: 10.5000, // Caracas - Altamira
+        currentLongitude: -66.8500,
+        lastLocationUpdate: new Date(),
         canDoDeliveries: false,
       },
     }),
@@ -170,7 +178,11 @@ async function main() {
         carSeats: 2,
         vehicleTypeId: vehicleTypes[1].id, // Moto
         status: 'offline',
-        verificationStatus: 'verified',
+        verificationStatus: 'approved',
+        isLocationActive: true,
+        currentLatitude: 10.4806, // Caracas - La Castellana
+        currentLongitude: -66.9036,
+        lastLocationUpdate: new Date(),
         canDoDeliveries: true,
       },
     }),

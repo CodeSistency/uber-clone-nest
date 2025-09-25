@@ -390,21 +390,34 @@ export class LocationTrackingService extends RedisPubSubService {
       currentLongitude: { not: null },
     };
 
+    // Handle verification status filter
     if (filters?.verified !== undefined) {
       whereClause.verificationStatus = filters.verified
         ? 'approved'
         : { not: 'approved' };
     }
 
+    // Handle direct verificationStatus filter (for backward compatibility)
+    if (filters?.verificationStatus) {
+      whereClause.verificationStatus = filters.verificationStatus;
+    }
+
     if (filters?.vehicleTypeId) {
       whereClause.vehicleTypeId = filters.vehicleTypeId;
     }
+
+    console.log(`🔍 [LOCATION-TRACKING] Where clause aplicado:`, JSON.stringify(whereClause, null, 2));
 
     const drivers = await this.prisma.driver.findMany({
       where: whereClause,
       include: {
         vehicleType: true,
       },
+    });
+
+    console.log(`📊 [LOCATION-TRACKING] Encontrados ${drivers.length} conductores antes del filtro de distancia`);
+    drivers.forEach((driver, index) => {
+      console.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName} - Status: ${driver.status} - Verified: ${driver.verificationStatus} - Location: (${driver.currentLatitude}, ${driver.currentLongitude})`);
     });
 
     // Filter by distance and calculate additional data
