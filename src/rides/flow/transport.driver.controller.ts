@@ -277,13 +277,15 @@ export class TransportDriverController {
       // DriverGuard ya validó que el usuario es conductor y agregó req.driver
       const driverId = req.driver.id;
 
-      // Si se proporcionan coordenadas manualmente, actualizar ubicación
-      if (lat !== undefined && lng !== undefined) {
+      // Si se proporcionan coordenadas manualmente Y NO SON (0,0), actualizar ubicación
+      if (lat !== undefined && lng !== undefined && !(lat === 0 && lng === 0)) {
         this.logger.log(`📍 [PENDING-REQUESTS] Usando ubicación manual del conductor: (${lat}, ${lng})`);
         await this.flow.updateDriverLocation(driverId, {
           lat,
           lng
         });
+      } else if (lat === 0 && lng === 0) {
+        this.logger.log(`📍 [PENDING-REQUESTS] IGNORANDO coordenadas (0,0) - Usando ubicación GPS existente`);
       }
 
       const pendingRequests =
