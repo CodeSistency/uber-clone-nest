@@ -224,6 +224,119 @@ export class DriverAvailabilityController {
   }
 
   // =========================================
+  // ENDPOINT DE DEBUGGING PARA VERIFICAR ESTADO DE CONDUCTORES
+  // =========================================
+
+  @Get('debug/status')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.DRIVER_READ)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: '🔍 [DEBUG] Ver estado completo de todos los conductores (Admin)',
+    description: `
+    **IMPORTANTE:** Endpoint de debugging para verificar el estado de todos los conductores.
+    **SOLO PARA ADMINISTRADORES**
+
+    **¿Qué devuelve?**
+    - Lista completa de conductores con toda su información
+    - Estado de disponibilidad, verificación, ubicación, etc.
+    - Información de debugging para solucionar problemas de matching
+
+    **Campos incluidos:**
+    - Información básica del conductor
+    - Estado (online/offline/busy)
+    - Estado de verificación (approved/pending/rejected)
+    - Información de ubicación GPS
+    - Estado de actividad de ubicación
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Información de debugging obtenida exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            totalDrivers: { type: 'number', example: 5 },
+            onlineDrivers: { type: 'number', example: 2 },
+            verifiedDrivers: { type: 'number', example: 3 },
+            drivers: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  firstName: { type: 'string', example: 'Maria' },
+                  lastName: { type: 'string', example: 'Garcia' },
+                  status: { type: 'string', example: 'online' },
+                  verificationStatus: { type: 'string', example: 'approved' },
+                  isLocationActive: { type: 'boolean', example: true },
+                  currentLatitude: { type: 'number', example: 9.923238 },
+                  currentLongitude: { type: 'number', example: -67.379189 },
+                  lastLocationUpdate: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async debugDriverStatus() {
+    console.log(`🔍 [DEBUG] Consultando estado completo de todos los conductores`);
+
+    // Obtener todos los conductores
+    const allDrivers = await this.prisma.driver.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        verificationStatus: true,
+        isLocationActive: true,
+        currentLatitude: true,
+        currentLongitude: true,
+        lastLocationUpdate: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Estadísticas
+    const totalDrivers = allDrivers.length;
+    const onlineDrivers = allDrivers.filter(d => d.status === 'online').length;
+    const verifiedDrivers = allDrivers.filter(d => d.verificationStatus === 'approved').length;
+    const driversWithLocation = allDrivers.filter(d => d.isLocationActive && d.currentLatitude && d.currentLongitude).length;
+
+    console.log(`📊 [DEBUG] Estadísticas de conductores:`);
+    console.log(`   - Total: ${totalDrivers}`);
+    console.log(`   - Online: ${onlineDrivers}`);
+    console.log(`   - Verificados (approved): ${verifiedDrivers}`);
+    console.log(`   - Con ubicación activa: ${driversWithLocation}`);
+
+    // Mostrar detalles de cada conductor
+    allDrivers.forEach((driver, index) => {
+      console.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName}`);
+      console.log(`      Status: ${driver.status} | Verified: ${driver.verificationStatus}`);
+      console.log(`      Location: ${driver.isLocationActive ? '✅' : '❌'} | Lat: ${driver.currentLatitude || 'null'} | Lng: ${driver.currentLongitude || 'null'}`);
+      console.log(`      Last Update: ${driver.lastLocationUpdate || 'never'}`);
+    });
+
+    return {
+      data: {
+        totalDrivers,
+        onlineDrivers,
+        verifiedDrivers,
+        driversWithLocation,
+        drivers: allDrivers,
+      },
+    };
+  }
+
+  // =========================================
   // ENDPOINTS PARA ADMINISTRADORES
   // =========================================
 
@@ -439,7 +552,7 @@ export class DriverAvailabilityController {
                 firstName: { type: 'string', example: 'Carlos' },
                 lastName: { type: 'string', example: 'Rodriguez' },
                 carModel: { type: 'string', example: 'Toyota Camry' },
-                verificationStatus: { type: 'string', example: 'verified' },
+                verificationStatus: { type: 'string', example: 'approved' },
                 canDoDeliveries: { type: 'boolean', example: true },
               },
             },
@@ -544,7 +657,7 @@ export class DriverAvailabilityController {
     - licensePlate: 'TEST-123' (por defecto)
     - carSeats: 4 (por defecto)
     - status: 'online'
-    - verificationStatus: 'verified'
+    - verificationStatus: 'approved'
 
     **Después de usar este endpoint:**
     - El usuario podrá usar todos los endpoints de conductores
@@ -631,7 +744,7 @@ export class DriverAvailabilityController {
         licensePlate: 'TEST-123',
         carSeats: 4,
         status: body.status,
-        verificationStatus: 'verified',
+        verificationStatus: 'approved',
         canDoDeliveries: true,
       },
     });

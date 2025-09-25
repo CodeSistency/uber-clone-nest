@@ -1086,7 +1086,7 @@ export class TransportDriverController {
     - licensePlate: 'TEST-123' (por defecto)
     - carSeats: 4 (por defecto)
     - status: 'online'
-    - verificationStatus: 'verified'
+    - verificationStatus: 'approved'
 
     **Después de usar este endpoint:**
     - El usuario podrá usar todos los endpoints de conductores
@@ -1176,7 +1176,7 @@ export class TransportDriverController {
         licensePlate: 'TEST-123',
         carSeats: 4,
         status: body.status,
-        verificationStatus: 'verified',
+        verificationStatus: 'approved',
         canDoDeliveries: true,
       },
     });
