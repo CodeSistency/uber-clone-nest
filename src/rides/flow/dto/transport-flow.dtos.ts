@@ -299,9 +299,9 @@ export class MatchBestDriverDto {
   radiusKm?: number = 5;
 }
 
+// DTOs simplificados para evitar problemas de referencias circulares en Swagger
 export class MatchedDriverDto {
   @ApiProperty({
-    description: 'Información del conductor encontrado',
     type: 'object',
     properties: {
       driverId: { type: 'number', example: 1 },
@@ -311,20 +311,11 @@ export class MatchedDriverDto {
       rating: { type: 'number', example: 4.8 },
       totalRides: { type: 'number', example: 1250 },
       memberSince: { type: 'string', format: 'date-time' },
-    },
+    }
   })
-  driver: {
-    driverId: number;
-    firstName: string;
-    lastName: string;
-    profileImageUrl?: string;
-    rating: number;
-    totalRides: number;
-    memberSince: Date;
-  };
+  driver: any;
 
   @ApiProperty({
-    description: 'Información del vehículo',
     type: 'object',
     properties: {
       carModel: { type: 'string', example: 'Toyota Camry 2020' },
@@ -339,34 +330,15 @@ export class MatchedDriverDto {
           icon: { type: 'string', example: '🚗' },
         },
       },
-    },
+    }
   })
-  vehicle: {
-    carModel: string;
-    licensePlate: string;
-    carSeats: number;
-    vehicleType: {
-      id: number;
-      name: string;
-      displayName: string;
-      icon?: string;
-    };
-  };
+  vehicle: any;
 
   @ApiProperty({
-    description: 'Información de ubicación y tiempo estimado',
     type: 'object',
     properties: {
-      distance: {
-        type: 'number',
-        example: 1.2,
-        description: 'Distancia en km',
-      },
-      estimatedArrival: {
-        type: 'number',
-        example: 5,
-        description: 'Tiempo estimado en minutos',
-      },
+      distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
+      estimatedArrival: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
       currentLocation: {
         type: 'object',
         properties: {
@@ -374,46 +346,24 @@ export class MatchedDriverDto {
           lng: { type: 'number', example: -74.0817 },
         },
       },
-    },
+    }
   })
-  location: {
-    distance: number;
-    estimatedArrival: number;
-    currentLocation: {
-      lat: number;
-      lng: number;
-    };
-  };
+  location: any;
 
   @ApiProperty({
-    description: 'Información del tier seleccionado',
     type: 'object',
     properties: {
       tierId: { type: 'number', example: 1 },
-      tierName: { type: 'string', example: 'Economy' },
+      tierName: { type: 'string', example: 'Premium' },
       estimatedFare: { type: 'number', example: 15.5 },
-    },
+    }
   })
-  pricing: {
-    tierId: number;
-    tierName: string;
-    estimatedFare: number;
-  };
+  pricing: any;
 
-  @ApiProperty({
-    description: 'Puntuación del matching (interno)',
-    type: 'number',
-    example: 85.5,
-    minimum: 0,
-    maximum: 100,
-  })
+  @ApiProperty({ example: 85.3, description: 'Puntuación del matching (0-100)' })
   matchScore: number;
 
-  @ApiProperty({
-    description: 'Timestamp de cuando se encontró el conductor',
-    type: 'string',
-    format: 'date-time',
-  })
+  @ApiProperty({ type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' })
   matchedAt: Date;
 }
 
