@@ -28,6 +28,7 @@ export enum NotificationType {
   DRIVER_CANCEL_RIDE = 'driver_cancel_ride',
   RIDE_REFUND_PROCESSED = 'ride_refund_processed',
   DRIVER_REQUEST_EXPIRED = 'driver_request_expired',
+  PASSENGER_RATED_BY_DRIVER = 'passenger_rated_by_driver',
 }
 
 export enum NotificationChannel {

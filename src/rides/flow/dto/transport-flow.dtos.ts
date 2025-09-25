@@ -516,6 +516,34 @@ export class DriverResponseDto {
   estimatedArrivalMinutes?: number;
 }
 
+// === RATING DEL CONDUCTOR AL PASAJERO ===
+
+export class DriverRatePassengerDto {
+  @ApiProperty({
+    description: 'Calificación del conductor al pasajero (1-5 estrellas)',
+    example: 5,
+    minimum: 1,
+    maximum: 5,
+    type: 'number',
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  @Type(() => Number)
+  rating: number;
+
+  @ApiPropertyOptional({
+    description: 'Comentario opcional sobre la experiencia con el pasajero',
+    example: 'Excelente pasajero, muy amable y respetuoso',
+    maxLength: 500,
+    type: 'string',
+  })
+  @IsOptional()
+  @IsString()
+  @Max(500)
+  comment?: string;
+}
+
 // === REPORTES DE CONDUCTORES ===
 
 export class ReportIssueDto {

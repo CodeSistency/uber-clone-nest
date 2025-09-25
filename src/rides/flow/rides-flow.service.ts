@@ -1917,4 +1917,111 @@ export class RidesFlowService {
       throw error;
     }
   }
+
+  // =========================================
+  // RATING DEL CONDUCTOR AL PASAJERO
+  // =========================================
+
+  /**
+   * Permite al conductor calificar al pasajero después de completar un viaje
+   */
+  async driverRatePassenger(
+    rideId: number,
+    driverId: number,
+    driverUserId: string,
+    rating: number,
+    comment?: string,
+  ): Promise<{
+    ratingId: number;
+    rideId: number;
+    passengerId: number;
+    rating: number;
+    comment?: string;
+    createdAt: Date;
+    message: string;
+  }> {
+    this.logger.log(`⭐ [DRIVER-RATE-PASSENGER] Conductor ${driverId} califica viaje ${rideId}`);
+
+    // Verificar que el viaje existe y está completado
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: { user: true },
+    });
+
+    if (!ride) {
+      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Viaje ${rideId} no encontrado`);
+      throw new Error('RIDE_NOT_FOUND');
+    }
+
+    // Verificar que el viaje está completado
+    if (ride.status !== 'completed') {
+      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Viaje ${rideId} no está completado (status: ${ride.status})`);
+      throw new Error('RIDE_NOT_COMPLETED');
+    }
+
+    // Verificar que el conductor es quien realizó el viaje
+    if (ride.driverId !== driverId) {
+      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Conductor ${driverId} no está autorizado para viaje ${rideId} (conductor del viaje: ${ride.driverId})`);
+      throw new Error('DRIVER_NOT_AUTHORIZED');
+    }
+
+    // Verificar que no existe ya un rating del conductor para este viaje
+    const existingRating = await this.prisma.rating.findFirst({
+      where: {
+        rideId,
+        ratedByUserId: Number(driverUserId),
+        ratedUserId: ride.userId, // El conductor califica al pasajero
+      },
+    });
+
+    if (existingRating) {
+      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Ya existe rating del conductor ${driverId} para viaje ${rideId}`);
+      throw new Error('RATING_ALREADY_EXISTS');
+    }
+
+    // Crear el rating
+    const newRating = await this.prisma.rating.create({
+      data: {
+        rideId,
+        ratedByUserId: Number(driverUserId), // Conductor
+        ratedUserId: ride.userId,            // Pasajero
+        ratingValue: rating,
+        comment: comment || null,
+      },
+    });
+
+    this.logger.log(`✅ [DRIVER-RATE-PASSENGER] Rating creado exitosamente: ID ${newRating.id}, ${rating} estrellas`);
+
+    // Notificar al pasajero sobre la calificación recibida
+    try {
+      await this.notifications.sendNotification({
+        userId: ride.userId.toString(),
+        type: NotificationType.PASSENGER_RATED_BY_DRIVER,
+        title: 'Calificación Recibida',
+        message: `El conductor te ha calificado con ${rating} estrella${rating !== 1 ? 's' : ''}${comment ? `. Comentario: "${comment}"` : ''}`,
+        data: {
+          rideId,
+          rating: rating,
+          comment: comment,
+          ratedBy: 'driver',
+        },
+        channels: [NotificationChannel.PUSH],
+      });
+
+      this.logger.log(`📱 [DRIVER-RATE-PASSENGER] Notificación enviada al pasajero ${ride.userId}`);
+    } catch (notificationError) {
+      this.logger.warn(`⚠️ [DRIVER-RATE-PASSENGER] Error enviando notificación al pasajero:`, notificationError);
+      // No fallar por error de notificación
+    }
+
+    return {
+      ratingId: newRating.id,
+      rideId: ride.rideId,
+      passengerId: ride.userId,
+      rating: newRating.ratingValue,
+      comment: newRating.comment || undefined,
+      createdAt: newRating.createdAt,
+      message: 'Calificación registrada exitosamente',
+    };
+  }
 }

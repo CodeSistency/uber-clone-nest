@@ -36,6 +36,7 @@ import {
   CancelRideDto,
   SimulateRequestDto,
   UpdateDriverLocationDto,
+  DriverRatePassengerDto,
 } from './dto/transport-flow.dtos';
 
 @ApiTags('rides-flow-driver')
@@ -964,6 +965,127 @@ export class TransportDriverController {
       success: true,
       data: result,
     };
+  }
+
+  // =========================================
+  // RATING DEL CONDUCTOR AL PASAJERO
+  // =========================================
+
+  @Post(':rideId/rate-passenger')
+  @UseGuards(JwtAuthGuard, DriverGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: '⭐ Conductor califica al pasajero al finalizar el viaje',
+    description: `
+    **IMPORTANTE:** Solo conductores registrados pueden usar este endpoint.
+
+    **¿Qué hace?**
+    - Permite al conductor calificar al pasajero después de completar un viaje
+    - Almacena la calificación (1-5 estrellas) y comentario opcional
+    - Actualiza el promedio de rating del pasajero
+    - Solo puede usarse en viajes completados por el conductor
+
+    **Validaciones:**
+    - El viaje debe existir y estar completado
+    - El conductor debe ser quien realizó el viaje
+    - Rating debe ser entre 1-5 estrellas
+    - Comentario opcional máximo 500 caracteres
+
+    **Después del rating:**
+    - El pasajero recibe notificación de la calificación
+    - Se actualiza el historial de ratings del pasajero
+    - Ayuda a mantener la calidad del servicio
+
+    **Notas importantes:**
+    - Solo un rating por viaje por conductor
+    - No se puede modificar una vez enviado
+    - Contribuye al perfil de confianza del pasajero
+    `,
+  })
+  @ApiBody({ type: DriverRatePassengerDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Calificación del pasajero registrada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            ratingId: { type: 'number', example: 123 },
+            rideId: { type: 'number', example: 456 },
+            passengerId: { type: 'number', example: 789 },
+            rating: { type: 'number', example: 5 },
+            comment: { type: 'string', example: 'Excelente pasajero' },
+            createdAt: { type: 'string', format: 'date-time' },
+            message: {
+              type: 'string',
+              example: 'Calificación registrada exitosamente',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos de calificación inválidos',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Conductor no autorizado para calificar este viaje',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Viaje no encontrado o no completado',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Ya existe una calificación para este viaje',
+  })
+  async ratePassenger(
+    @Param('rideId') rideId: string,
+    @Body() ratingData: DriverRatePassengerDto,
+    @Req() req: any,
+  ) {
+    try {
+      // DriverGuard ya validó que el usuario es conductor y agregó req.driver
+      const result = await this.flow.driverRatePassenger(
+        Number(rideId),
+        req.driver.id,
+        String(req.user.id),
+        ratingData.rating,
+        ratingData.comment,
+      );
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'RIDE_NOT_FOUND') {
+        throw new NotFoundException({
+          error: 'RIDE_NOT_FOUND',
+          message: 'Viaje no encontrado',
+        });
+      }
+      if (error.message === 'RIDE_NOT_COMPLETED') {
+        throw new NotFoundException({
+          error: 'RIDE_NOT_COMPLETED',
+          message: 'El viaje debe estar completado para poder calificar',
+        });
+      }
+      if (error.message === 'DRIVER_NOT_AUTHORIZED') {
+        throw new ForbiddenException({
+          error: 'DRIVER_NOT_AUTHORIZED',
+          message: 'Solo el conductor del viaje puede calificar al pasajero',
+        });
+      }
+      if (error.message === 'RATING_ALREADY_EXISTS') {
+        throw new ConflictException({
+          error: 'RATING_ALREADY_EXISTS',
+          message: 'Ya existe una calificación para este viaje',
+        });
+      }
+      throw error;
+    }
   }
 
   // =========================================

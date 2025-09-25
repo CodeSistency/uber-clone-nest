@@ -737,6 +737,102 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
         expect(response.body).toHaveProperty('redis');
         expect(response.body).toHaveProperty('timestamp');
       });
+
+      it('POST /api/rides/flow/driver/:rideId/rate-passenger - Driver rates passenger', async () => {
+        // First, create a driver user and convert to driver
+        const driverResponse = await requestAgent('POST', '/api/user')
+          .send({
+            name: 'Driver Rating Test',
+            email: 'driver.rating@test.com',
+            clerkId: 'driver_rating_test_123',
+          })
+          .expect(201);
+
+        const driverUserId = driverResponse.body.data[0].id;
+        const driverClerkId = driverResponse.body.data[0].clerk_id;
+
+        // Convert user to driver
+        await requestAgent('POST', `/api/rides/flow/driver/become-driver`)
+          .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
+          .send({ status: 'online' })
+          .expect(201);
+
+        // Create a passenger
+        const passengerResponse = await requestAgent('POST', '/api/user')
+          .send({
+            name: 'Passenger Rating Test',
+            email: 'passenger.rating@test.com',
+            clerkId: 'passenger_rating_test_123',
+          })
+          .expect(201);
+
+        const passengerId = passengerResponse.body.data[0].id;
+
+        // Create a ride
+        const createRideResponse = await requestAgent('POST', '/api/rides')
+          .set('Authorization', `Bearer dev-test-token-user${passengerId}`)
+          .send({
+            origin_address: 'Test Origin',
+            destination_address: 'Test Destination',
+            origin_latitude: 4.6097,
+            origin_longitude: -74.0817,
+            destination_latitude: 4.6098,
+            destination_longitude: -74.0818,
+            ride_time: 15,
+            fare_price: 10.0,
+            payment_status: 'pending',
+            user_id: passengerId,
+            tier_id: 1,
+            vehicle_type_id: 1,
+          })
+          .expect(201);
+
+        const rideId = createRideResponse.body.data.rideId;
+
+        // Accept the ride as driver
+        await requestAgent('POST', `/api/rides/flow/driver/${rideId}/accept`)
+          .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
+          .expect(200);
+
+        // Start the ride
+        await requestAgent('POST', `/api/rides/flow/driver/${rideId}/start`)
+          .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
+          .expect(200);
+
+        // Complete the ride
+        await requestAgent('POST', `/api/rides/flow/driver/${rideId}/complete`)
+          .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
+          .send({ fare: 10.0 })
+          .expect(200);
+
+        // Now rate the passenger
+        const ratePassengerDto = {
+          rating: 5,
+          comment: 'Excelente pasajero, muy educado y puntual',
+        };
+
+        const response = await requestAgent('POST', `/api/rides/flow/driver/${rideId}/rate-passenger`)
+          .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
+          .send(ratePassengerDto)
+          .expect(201);
+
+        expect(response.body).toHaveProperty('data');
+        expect(response.body.data).toMatchObject({
+          rideId: rideId,
+          passengerId: passengerId,
+          rating: 5,
+          comment: 'Excelente pasajero, muy educado y puntual',
+          message: 'Calificación registrada exitosamente',
+        });
+        expect(response.body.data).toHaveProperty('ratingId');
+        expect(response.body.data).toHaveProperty('createdAt');
+
+        // Try to rate again (should fail)
+        await requestAgent('POST', `/api/rides/flow/driver/${rideId}/rate-passenger`)
+          .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
+          .send({ rating: 4 })
+          .expect(409);
+      });
     });
 
     describe('📊 ENDPOINTS SUMMARY', () => {
@@ -748,7 +844,7 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
         const modulesTested = [
           'Users (7 endpoints)',
           'Drivers (5 endpoints)',
-          'Rides (6 endpoints)',
+          'Rides (7 endpoints)', // Added driver rating endpoint
           'Wallet (2 endpoints)',
           'Promotions (3 endpoints)',
           'Emergency Contacts (2 endpoints)',
@@ -756,7 +852,7 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
           'Safety (2 endpoints)',
           'Stripe Payments (3 endpoints)',
           'Notifications (12+ endpoints)',
-          'Real-time (8 endpoints)',
+          'Real-time (9 endpoints)', // Added driver rating test
         ];
 
         expect(modulesTested.length).toBeGreaterThan(10);
