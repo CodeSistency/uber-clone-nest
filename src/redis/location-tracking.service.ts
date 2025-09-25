@@ -424,12 +424,16 @@ export class LocationTrackingService extends RedisPubSubService {
     // Filter by distance and calculate additional data
     const nearbyDrivers = drivers
       .map((driver) => {
+        const driverLat = Number(driver.currentLatitude);
+        const driverLng = Number(driver.currentLongitude);
         const distance = this.calculateDistance(
           centerLat,
           centerLng,
-          Number(driver.currentLatitude),
-          Number(driver.currentLongitude),
+          driverLat,
+          driverLng,
         );
+
+        console.log(`📍 [LOCATION-TRACKING] Conductor ${driver.id}: ubicación (${driverLat}, ${driverLng}) - Distancia: ${distance.toFixed(3)}km - Dentro del radio ${radiusKm}km: ${distance <= radiusKm}`);
 
         if (distance <= radiusKm) {
           // Calculate estimated time (assuming average speed of 30 km/h in city)

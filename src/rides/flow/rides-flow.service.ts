@@ -700,7 +700,7 @@ export class RidesFlowService {
       this.logger.log(`🔍 [MATCHING] DEBUG - Llamando a locationTrackingService.findNearbyDrivers con:`);
       this.logger.log(`   - Lat: ${lat}`);
       this.logger.log(`   - Lng: ${lng}`);
-      this.logger.log(`   - Radius (metros): ${radiusKm / 1000}`);
+      this.logger.log(`   - Radius (km): ${radiusKm}`);
       this.logger.log(`   - Filters: ${JSON.stringify(filters)}`);
 
       let candidateDrivers;
@@ -708,7 +708,7 @@ export class RidesFlowService {
         candidateDrivers = await this.locationTrackingService.findNearbyDrivers(
           lat,
           lng,
-          radiusKm / 1000, // Convertir a metros para el servicio
+          radiusKm, // Radio ya está en kilómetros
           filters,
         );
         this.logger.log(`✅ [MATCHING] locationTrackingService.findNearbyDrivers completado sin errores`);
@@ -1801,8 +1801,15 @@ export class RidesFlowService {
       // 🔍 Obtener ubicación actual del conductor desde LocationTrackingService
       let driverLocation: any = null;
       try {
-        const locationData = await this.locationTrackingService.getDriverLocation(driverId);
-        driverLocation = locationData;
+        // Primero intentar obtener de memoria
+        driverLocation = this.locationTrackingService.getDriverLocation(driverId);
+
+        // Si no está en memoria, buscar en base de datos
+        if (!driverLocation) {
+          this.logger.debug(`📍 [PENDING-REQUESTS] Ubicación no encontrada en memoria, consultando BD para conductor ${driverId}`);
+          driverLocation = await this.locationTrackingService.getDriverLocationFromDB(driverId);
+        }
+
         this.logger.log(`📍 [PENDING-REQUESTS] Ubicación actual del conductor ${driverId}: (${driverLocation?.lat || 'N/A'}, ${driverLocation?.lng || 'N/A'}) - Última actualización: ${driverLocation?.lastUpdate ? new Date(driverLocation.lastUpdate).toISOString() : 'N/A'}`);
       } catch (error) {
         this.logger.warn(`⚠️ [PENDING-REQUESTS] No se pudo obtener ubicación del conductor ${driverId}: ${error.message}`);
