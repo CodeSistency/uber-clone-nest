@@ -404,30 +404,48 @@ export class NotificationsService {
     deviceId?: string,
   ): Promise<void> {
     try {
-      // Check if token already exists
-      const existingToken = await this.prisma.pushToken.findFirst({
-        where: {
-          token,
-          userId: parseInt(userId),
-        },
-      });
+      // Use a transaction to ensure atomicity
+      await this.prisma.$transaction(async (tx) => {
+        // First, check if token exists for another user and deactivate it
+        const existingTokenForOtherUser = await tx.pushToken.findFirst({
+          where: {
+            token,
+            userId: {
+              not: parseInt(userId),
+            },
+          },
+        });
 
-      if (existingToken) {
-        // Update existing token
-        await this.prisma.pushToken.update({
-          where: { id: existingToken.id },
-          data: {
+        if (existingTokenForOtherUser) {
+          // Deactivate the token for the previous user
+          await tx.pushToken.update({
+            where: { id: existingTokenForOtherUser.id },
+            data: {
+              isActive: false,
+              updatedAt: new Date(),
+            },
+          });
+
+          this.logger.warn(
+            `Push token transferred: user ${existingTokenForOtherUser.userId} → user ${userId}`
+          );
+
+          // Send logout signal to previous user (optional)
+          await this.sendLogoutSignal(existingTokenForOtherUser.userId);
+        }
+
+        // Now upsert the token for the current user
+        await tx.pushToken.upsert({
+          where: { token }, // This will work since token is unique
+          update: {
+            userId: parseInt(userId),
             deviceType,
             deviceId,
             isActive: true,
             lastUsedAt: new Date(),
             updatedAt: new Date(),
           },
-        });
-      } else {
-        // Create new token
-        await this.prisma.pushToken.create({
-          data: {
+          create: {
             userId: parseInt(userId),
             token,
             deviceType,
@@ -435,15 +453,37 @@ export class NotificationsService {
             isActive: true,
           },
         });
-      }
+      });
 
-      this.logger.log(`Push token registered for user ${userId}`);
-    } catch (error) {
+      this.logger.log(`Push token registered/transferred for user ${userId}`);
+    } catch (error: any) {
       this.logger.error(
         `Failed to register push token for user ${userId}:`,
         error,
       );
       throw error;
+    }
+  }
+
+  private async sendLogoutSignal(oldUserId: number): Promise<void> {
+    try {
+      // Send a notification to force logout on the old user's device
+      const logoutPayload = {
+        userId: oldUserId.toString(),
+        type: NotificationType.SYSTEM_MAINTENANCE,
+        title: 'Sesión cerrada',
+        message: 'Tu cuenta ha sido accedida desde otro dispositivo. Has sido desconectado por seguridad.',
+        data: {
+          action: 'force_logout',
+          reason: 'login_from_another_device',
+        },
+      };
+
+      await this.sendNotification(logoutPayload);
+
+      this.logger.log(`Logout signal sent to user ${oldUserId} for token transfer`);
+    } catch (error) {
+      this.logger.warn(`Failed to send logout signal to user ${oldUserId}:`, error);
     }
   }
 
