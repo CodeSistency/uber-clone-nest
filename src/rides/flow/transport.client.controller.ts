@@ -487,8 +487,8 @@ export class TransportClientController {
 
       console.log(`✅ [CLIENT] Matching completado exitosamente:`, {
         matchedDriver: result?.matchedDriver?.driver?.driverId,
-        score: result?.matchedDriver?.score,
-        estimatedMinutes: result?.matchedDriver?.estimatedMinutes
+        matchScore: result?.matchedDriver?.matchScore,
+        estimatedArrival: result?.matchedDriver?.location?.estimatedArrival
       });
 
       return { data: result };
