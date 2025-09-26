@@ -811,7 +811,10 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
           comment: 'Excelente pasajero, muy educado y puntual',
         };
 
-        const response = await requestAgent('POST', `/api/rides/flow/driver/${rideId}/rate-passenger`)
+        const response = await requestAgent(
+          'POST',
+          `/api/rides/flow/driver/${rideId}/rate-passenger`,
+        )
           .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
           .send(ratePassengerDto)
           .expect(201);
@@ -828,7 +831,10 @@ describe('Complete API Endpoints Integration Test (Uber Clone)', () => {
         expect(response.body.data).toHaveProperty('createdAt');
 
         // Try to rate again (should fail)
-        await requestAgent('POST', `/api/rides/flow/driver/${rideId}/rate-passenger`)
+        await requestAgent(
+          'POST',
+          `/api/rides/flow/driver/${rideId}/rate-passenger`,
+        )
           .set('Authorization', `Bearer dev-test-token-user${driverUserId}`)
           .send({ rating: 4 })
           .expect(409);

@@ -1,29 +1,19 @@
 import { SetMetadata } from '@nestjs/common';
-import { Permission } from '../entities/admin.entity';
+import { AdminPermission, AdminRole } from '../interfaces/admin.interface';
 
-// Key para el metadata de permisos
 export const PERMISSIONS_KEY = 'permissions';
+export const ROLES_KEY = 'roles';
 
-/**
- * Decorator para especificar qué permisos requiere una ruta
- * @param permissions - Lista de permisos requeridos
- */
-export const RequirePermissions = (...permissions: Permission[]) =>
+export const Permissions = (...permissions: AdminPermission[]) =>
   SetMetadata(PERMISSIONS_KEY, permissions);
 
-/**
- * Decorator para rutas que requieren un rol específico
- */
-export const RequireRole = (role: string) => SetMetadata('required_role', role);
-
-/**
- * Decorator para rutas que requieren cualquier permiso de una lista
- */
-export const RequireAnyPermission = (...permissions: Permission[]) =>
-  SetMetadata('any_permission', permissions);
-
-/**
- * Decorator para rutas que requieren todos los permisos de una lista
- */
-export const RequireAllPermissions = (...permissions: Permission[]) =>
+// Convenience decorator for requiring specific permissions
+export const RequirePermissions = (...permissions: AdminPermission[]) =>
   SetMetadata(PERMISSIONS_KEY, permissions);
+
+// Roles decorator
+export const Roles = (...roles: AdminRole[]) => SetMetadata(ROLES_KEY, roles);
+
+// Convenience decorator for requiring specific roles
+export const RequireRoles = (...roles: AdminRole[]) =>
+  SetMetadata(ROLES_KEY, roles);

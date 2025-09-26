@@ -1,173 +1,66 @@
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsEmail, IsString, MinLength } from 'class-validator';
+
 export class AdminLoginDto {
   @ApiProperty({
-    description: 'Admin email address',
+    description: 'Email del administrador',
     example: 'admin@uberclone.com',
-    type: 'string',
     format: 'email',
   })
-  @IsNotEmpty()
-  @IsEmail()
+  @IsEmail({}, { message: 'El email debe tener un formato válido' })
+  @IsNotEmpty({ message: 'El email es requerido' })
   email: string;
 
   @ApiProperty({
-    description: 'Admin password',
-    example: 'Admin123!',
-    type: 'string',
-    minLength: 6,
+    description: 'Contraseña del administrador',
+    example: 'SecurePass123!',
+    minLength: 8,
   })
-  @IsNotEmpty()
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: 'La contraseña debe ser una cadena de texto' })
+  @IsNotEmpty({ message: 'La contraseña es requerida' })
+  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   password: string;
-}
-
-// Clase para el objeto admin dentro de la respuesta
-export class AdminInfoDto {
-  @ApiProperty({
-    description: 'Admin ID',
-    example: '1',
-    type: 'number',
-  })
-  id: number;
-
-  @ApiProperty({
-    description: 'Admin full name',
-    example: 'John Doe',
-    type: 'string',
-  })
-  name: string;
-
-  @ApiProperty({
-    description: 'Admin email address',
-    example: 'admin@uberclone.com',
-    type: 'string',
-    format: 'email',
-  })
-  email: string;
-
-  @ApiProperty({
-    description: 'Whether the admin account is active',
-    example: true,
-    type: 'boolean',
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    description: 'Last login timestamp',
-    example: '2024-01-15T10:30:00Z',
-    type: 'string',
-    format: 'date-time',
-  })
-  lastLogin: Date;
-
-  @ApiProperty({
-    description: 'User type',
-    example: 'admin',
-    enum: ['user', 'admin'],
-  })
-  userType: 'user' | 'admin';
-
-  @ApiProperty({
-    description: 'Admin role',
-    example: 'admin',
-    enum: ['super_admin', 'admin', 'moderator', 'support'],
-  })
-  adminRole: string;
-
-  @ApiProperty({
-    description: 'Admin permissions array',
-    example: ['user:read', 'user:write', 'driver:read'],
-    type: 'array',
-    items: { type: 'string' },
-  })
-  adminPermissions: string[];
-
-  @ApiProperty({
-    description: 'Last admin login timestamp',
-    example: '2024-01-15T10:30:00Z',
-    type: 'string',
-    format: 'date-time',
-    required: false,
-  })
-  lastAdminLogin?: Date;
-
-  @ApiProperty({
-    description: 'Profile image URL',
-    example: 'https://example.com/profile.jpg',
-    type: 'string',
-    required: false,
-  })
-  profileImage?: string | null;
-
-  @ApiProperty({
-    description: 'Phone number',
-    example: '+1234567890',
-    type: 'string',
-    required: false,
-  })
-  phone?: string | null;
-
-  @ApiProperty({
-    description: 'Account creation timestamp',
-    example: '2024-01-01T00:00:00Z',
-    type: 'string',
-    format: 'date-time',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Last update timestamp',
-    example: '2024-01-15T10:30:00Z',
-    type: 'string',
-    format: 'date-time',
-  })
-  updatedAt: Date;
-  role: any;
 }
 
 export class AdminLoginResponseDto {
   @ApiProperty({
-    description: 'JWT access token for API authentication',
+    description: 'Token de acceso JWT para el administrador',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  accessToken: string;
+  access_token: string;
 
   @ApiProperty({
-    description: 'JWT refresh token for token renewal',
+    description: 'Token de refresco para renovar el acceso',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  refreshToken: string;
+  refresh_token: string;
 
   @ApiProperty({
-    description: 'Authenticated admin information',
-    type: AdminInfoDto,
+    description: 'Información del usuario administrador',
+    type: 'object',
+    properties: {
+      id: { type: 'number', example: 1 },
+      email: { type: 'string', example: 'admin@uberclone.com' },
+      name: { type: 'string', example: 'Admin Principal' },
+      role: { type: 'string', example: 'super_admin' },
+      permissions: {
+        type: 'array',
+        items: { type: 'string' },
+        example: ['users:read', 'rides:write', 'system:config:read'],
+      },
+    },
   })
-  admin: AdminInfoDto;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+    role: string;
+    permissions: string[];
+  };
 
   @ApiProperty({
-    description: 'Token expiration time in seconds',
-    example: 3600,
-    type: 'number',
+    description: 'Timestamp de expiración del token de acceso',
+    example: 1640995200,
   })
-  expiresIn: number;
-}
-
-export class RefreshTokenParams {
-  @ApiProperty({
-    example: 'admin@unerg.edu',
-    description: 'Email of the admin user',
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    description: 'Refresh token for session renewal',
-  })
-  @IsString()
-  @IsNotEmpty()
-  refreshToken: string;
+  expires_in: number;
 }

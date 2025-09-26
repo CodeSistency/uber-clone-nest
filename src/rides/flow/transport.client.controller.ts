@@ -6,7 +6,6 @@ import {
   Post,
   Req,
   UseGuards,
-  Query,
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
@@ -16,8 +15,6 @@ import {
   ApiOperation,
   ApiTags,
   ApiResponse,
-  ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LocationTrackingService } from '../../redis/location-tracking.service';
@@ -29,7 +26,6 @@ import {
   RateRideFlowDto,
   SelectVehicleDto,
   MatchBestDriverDto,
-  MatchedDriverDto,
   ConfirmDriverDto,
   PayWithMultipleMethodsDto,
   GeneratePaymentReferenceDto,
@@ -471,7 +467,7 @@ export class TransportClientController {
     console.log(`🎯 [CLIENT] Usuario autenticado:`, {
       userId: req.user.id,
       email: req.user.email,
-      driverId: req.user.driverId
+      driverId: req.user.driverId,
     });
     console.log(`🎯 [CLIENT] Datos de matching:`, body);
 
@@ -488,7 +484,7 @@ export class TransportClientController {
       console.log(`✅ [CLIENT] Matching completado exitosamente:`, {
         matchedDriver: result?.matchedDriver?.driver?.driverId,
         matchScore: result?.matchedDriver?.matchScore,
-        estimatedArrival: result?.matchedDriver?.location?.estimatedArrival
+        estimatedArrival: result?.matchedDriver?.location?.estimatedArrival,
       });
 
       return { data: result };
@@ -1897,10 +1893,13 @@ export class TransportClientController {
           firstName: driver.firstName,
           lastName: driver.lastName,
           profileImageUrl: driver.profileImageUrl,
-          carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : 'Unknown',
+          carModel: driver.vehicles?.[0]
+            ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
+            : 'Unknown',
           licensePlate: driver.vehicles?.[0]?.licensePlate || '',
           carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
-          vehicleType: driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
+          vehicleType:
+            driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
           currentLocation: {
             lat: newLat,
             lng: newLng,

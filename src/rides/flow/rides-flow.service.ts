@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import {
@@ -427,10 +433,10 @@ export class RidesFlowService {
     this.gateway.server
       ?.to(`order-${orderId}`)
       .emit('order:payment:initiated', {
-      orderId,
-      method,
+        orderId,
+        method,
         message: 'Esperando confirmación de pago venezolano',
-    });
+      });
 
     return updated;
   }
@@ -619,11 +625,15 @@ export class RidesFlowService {
     const { lat, lng, tierId, vehicleTypeId, radiusKm = 5 } = params;
     const startTime = Date.now();
 
-    this.logger.log(`🎯 [MATCHING] Iniciando búsqueda de conductor - Usuario: (${lat}, ${lng}) - Radio: ${radiusKm}km - Tier: ${tierId || 'auto'} - VehicleType: ${vehicleTypeId || 'auto'}`);
+    this.logger.log(
+      `🎯 [MATCHING] Iniciando búsqueda de conductor - Usuario: (${lat}, ${lng}) - Radio: ${radiusKm}km - Tier: ${tierId || 'auto'} - VehicleType: ${vehicleTypeId || 'auto'}`,
+    );
 
     try {
       // 0. DEBUG: Verificar estado general del sistema
-      this.logger.log(`🔍 [MATCHING] DEBUG - Verificando estado del sistema antes de búsqueda`);
+      this.logger.log(
+        `🔍 [MATCHING] DEBUG - Verificando estado del sistema antes de búsqueda`,
+      );
 
       // Detalles completos de conductores online
       const allOnlineDrivers = await this.prisma.driver.findMany({
@@ -634,13 +644,17 @@ export class RidesFlowService {
           lastName: true,
           status: true,
           verificationStatus: true,
-          createdAt: true
-        }
+          createdAt: true,
+        },
       });
 
-      this.logger.log(`📊 [MATCHING] DEBUG - Conductores online encontrados: ${allOnlineDrivers.length}`);
+      this.logger.log(
+        `📊 [MATCHING] DEBUG - Conductores online encontrados: ${allOnlineDrivers.length}`,
+      );
       allOnlineDrivers.forEach((driver, index) => {
-        this.logger.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName} - Status: ${driver.status} - Verified: ${driver.verificationStatus}`);
+        this.logger.log(
+          `   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName} - Status: ${driver.status} - Verified: ${driver.verificationStatus}`,
+        );
       });
 
       const totalDriversOnline = allOnlineDrivers.length;
@@ -650,15 +664,23 @@ export class RidesFlowService {
         // Intentar obtener un conductor cualquiera para verificar si el service funciona
         const sampleDriver = await this.prisma.driver.findFirst({
           where: { status: 'online', verificationStatus: 'approved' },
-          select: { id: true, firstName: true, lastName: true }
+          select: { id: true, firstName: true, lastName: true },
         });
 
         if (sampleDriver) {
-          const locationCheck = await this.locationTrackingService.getDriverLocation(sampleDriver.id);
-          this.logger.log(`🔍 [MATCHING] DEBUG - Location tracking funciona: ${locationCheck ? '✅ SÍ' : '❌ NO'} (ejemplo conductor ${sampleDriver.firstName})`);
+          const locationCheck =
+            await this.locationTrackingService.getDriverLocation(
+              sampleDriver.id,
+            );
+          this.logger.log(
+            `🔍 [MATCHING] DEBUG - Location tracking funciona: ${locationCheck ? '✅ SÍ' : '❌ NO'} (ejemplo conductor ${sampleDriver.firstName})`,
+          );
         }
       } catch (locationError) {
-        this.logger.error(`🔍 [MATCHING] DEBUG - Error en location tracking service:`, locationError);
+        this.logger.error(
+          `🔍 [MATCHING] DEBUG - Error en location tracking service:`,
+          locationError,
+        );
       }
 
       // 1. Obtener conductores candidatos con filtros básicos
@@ -668,14 +690,14 @@ export class RidesFlowService {
       };
 
       // 2. Aplicar filtros de compatibilidad si se especifican
-    if (tierId) {
+      if (tierId) {
         const compatibleVehicleTypes =
           await this.prisma.tierVehicleType.findMany({
             where: { tierId, isActive: true },
-        select: { vehicleTypeId: true },
-      });
+            select: { vehicleTypeId: true },
+          });
 
-      if (compatibleVehicleTypes.length > 0) {
+        if (compatibleVehicleTypes.length > 0) {
           const vehicleTypeIds = compatibleVehicleTypes.map(
             (vt) => vt.vehicleTypeId,
           );
@@ -683,21 +705,30 @@ export class RidesFlowService {
             vehicleTypeIds.length === 1
               ? vehicleTypeIds[0]
               : { in: vehicleTypeIds };
+        }
       }
-    }
 
       if (vehicleTypeId) {
         filters.vehicleTypeId = vehicleTypeId;
       }
 
-      this.logger.log(`🔍 [MATCHING] DEBUG - Filtros aplicados:`, JSON.stringify(filters));
-      this.logger.log(`🔍 [MATCHING] DEBUG - Parámetros de búsqueda: lat=${lat}, lng=${lng}, radiusKm=${radiusKm}`);
+      this.logger.log(
+        `🔍 [MATCHING] DEBUG - Filtros aplicados:`,
+        JSON.stringify(filters),
+      );
+      this.logger.log(
+        `🔍 [MATCHING] DEBUG - Parámetros de búsqueda: lat=${lat}, lng=${lng}, radiusKm=${radiusKm}`,
+      );
 
       // 3. Buscar conductores usando LocationTrackingService
-      this.logger.log(`🔍 [MATCHING] Buscando conductores cercanos - Ubicación: (${lat}, ${lng}) - Radio: ${radiusKm}km - Filtros: ${JSON.stringify(filters)}`);
+      this.logger.log(
+        `🔍 [MATCHING] Buscando conductores cercanos - Ubicación: (${lat}, ${lng}) - Radio: ${radiusKm}km - Filtros: ${JSON.stringify(filters)}`,
+      );
 
       // Log antes de llamar al location tracking service
-      this.logger.log(`🔍 [MATCHING] DEBUG - Llamando a locationTrackingService.findNearbyDrivers con:`);
+      this.logger.log(
+        `🔍 [MATCHING] DEBUG - Llamando a locationTrackingService.findNearbyDrivers con:`,
+      );
       this.logger.log(`   - Lat: ${lat}`);
       this.logger.log(`   - Lng: ${lng}`);
       this.logger.log(`   - Radius (km): ${radiusKm}`);
@@ -711,52 +742,75 @@ export class RidesFlowService {
           radiusKm, // Radio ya está en kilómetros
           filters,
         );
-        this.logger.log(`✅ [MATCHING] locationTrackingService.findNearbyDrivers completado sin errores`);
+        this.logger.log(
+          `✅ [MATCHING] locationTrackingService.findNearbyDrivers completado sin errores`,
+        );
       } catch (locationError) {
-        this.logger.error(`❌ [MATCHING] ERROR en locationTrackingService.findNearbyDrivers:`, locationError);
+        this.logger.error(
+          `❌ [MATCHING] ERROR en locationTrackingService.findNearbyDrivers:`,
+          locationError,
+        );
         throw locationError;
       }
 
-      this.logger.log(`📊 [MATCHING] Encontrados ${candidateDrivers.length} conductores candidatos por ubicación GPS`);
+      this.logger.log(
+        `📊 [MATCHING] Encontrados ${candidateDrivers.length} conductores candidatos por ubicación GPS`,
+      );
 
       // Log detallado de cada conductor encontrado
       if (candidateDrivers.length > 0) {
         this.logger.log(`👥 [MATCHING] Detalles de conductores candidatos:`);
         candidateDrivers.forEach((driver, index) => {
-          this.logger.log(`   ${index + 1}. ID=${driver.id || driver.driverId} - Distancia=${driver.distance}km - Nombre=${driver.firstName || 'N/A'} ${driver.lastName || ''}`);
-          this.logger.log(`      Ubicación actual: (${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`);
-          this.logger.log(`      Última actualización GPS: ${driver.lastLocationUpdate || 'N/A'}`);
+          this.logger.log(
+            `   ${index + 1}. ID=${driver.id || driver.driverId} - Distancia=${driver.distance}km - Nombre=${driver.firstName || 'N/A'} ${driver.lastName || ''}`,
+          );
+          this.logger.log(
+            `      Ubicación actual: (${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`,
+          );
+          this.logger.log(
+            `      Última actualización GPS: ${driver.lastLocationUpdate || 'N/A'}`,
+          );
         });
       } else {
-        this.logger.warn(`⚠️ [MATCHING] Ningún conductor encontrado por GPS. Verificando por qué...`);
+        this.logger.warn(
+          `⚠️ [MATCHING] Ningún conductor encontrado por GPS. Verificando por qué...`,
+        );
 
         // Verificar si hay conductores online pero sin ubicación GPS
         const onlineDriversWithoutGPS = await this.prisma.driver.findMany({
           where: {
             status: 'online',
-            verificationStatus: 'approved'
+            verificationStatus: 'approved',
           },
           select: {
             id: true,
             firstName: true,
-            lastName: true
-          }
+            lastName: true,
+          },
         });
 
-        this.logger.log(`🔍 [MATCHING] Conductores online en BD (${onlineDriversWithoutGPS.length}):`);
+        this.logger.log(
+          `🔍 [MATCHING] Conductores online en BD (${onlineDriversWithoutGPS.length}):`,
+        );
         onlineDriversWithoutGPS.forEach((driver, index) => {
-          this.logger.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName}`);
+          this.logger.log(
+            `   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName}`,
+          );
         });
       }
 
       // Log detallado de cada conductor encontrado con su ubicación
       candidateDrivers.forEach((driver, index) => {
-        this.logger.log(`👤 [MATCHING] Conductor ${index + 1}: ID=${driver.id} - Distancia=${driver.distance}km - Ubicación=(${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`);
+        this.logger.log(
+          `👤 [MATCHING] Conductor ${index + 1}: ID=${driver.id} - Distancia=${driver.distance}km - Ubicación=(${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`,
+        );
       });
 
       // 🚨 FALLBACK: Si no hay conductores con ubicación GPS, buscar conductores online sin ubicación
       if (candidateDrivers.length === 0) {
-        this.logger.warn(`⚠️ [MATCHING] No se encontraron conductores con ubicación GPS. Intentando fallback...`);
+        this.logger.warn(
+          `⚠️ [MATCHING] No se encontraron conductores con ubicación GPS. Intentando fallback...`,
+        );
 
         // Buscar todos los conductores online sin filtro de ubicación
         const onlineDrivers = await this.prisma.driver.findMany({
@@ -779,12 +833,16 @@ export class RidesFlowService {
           },
         });
 
-        this.logger.log(`🔄 [MATCHING] Fallback: Encontrados ${onlineDrivers.length} conductores online sin filtro de ubicación`);
+        this.logger.log(
+          `🔄 [MATCHING] Fallback: Encontrados ${onlineDrivers.length} conductores online sin filtro de ubicación`,
+        );
 
         // Log detallado de conductores encontrados en fallback
         if (onlineDrivers.length > 0) {
           onlineDrivers.forEach((driver, index) => {
-            this.logger.log(`👤 [MATCHING] Fallback - Conductor ${index + 1}: ${driver.firstName} ${driver.lastName} (ID: ${driver.id})`);
+            this.logger.log(
+              `👤 [MATCHING] Fallback - Conductor ${index + 1}: ${driver.firstName} ${driver.lastName} (ID: ${driver.id})`,
+            );
           });
         }
 
@@ -800,15 +858,19 @@ export class RidesFlowService {
                 id: driver.id,
                 driverId: driver.id,
                 distance: radiusKm / 2, // Asumir distancia media
-                estimatedMinutes: Math.round((radiusKm / 2) / 30 * 60), // Estimar tiempo basado en distancia
+                estimatedMinutes: Math.round((radiusKm / 2 / 30) * 60), // Estimar tiempo basado en distancia
                 currentLocation: { lat, lng }, // Usar ubicación del usuario como aproximación
                 firstName: driver.firstName,
                 lastName: driver.lastName,
                 profileImageUrl: driverDetails.profileImageUrl,
-                carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : 'Unknown',
+                carModel: driver.vehicles?.[0]
+                  ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
+                  : 'Unknown',
                 licensePlate: driver.vehicles?.[0]?.licensePlate || '',
                 carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
-                vehicleType: driverDetails.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
+                vehicleType:
+                  driverDetails.vehicles?.[0]?.vehicleType?.displayName ||
+                  'Unknown',
                 rating: driverDetails.rating,
                 totalRides: driverDetails.totalRides,
                 createdAt: driverDetails.createdAt,
@@ -816,28 +878,40 @@ export class RidesFlowService {
                 locationAccuracy: null,
                 isLocationActive: false,
               };
-            })
+            }),
           );
 
-          this.logger.log(`✅ [MATCHING] Fallback exitoso: Usando ${candidateDrivers.length} conductores online`);
+          this.logger.log(
+            `✅ [MATCHING] Fallback exitoso: Usando ${candidateDrivers.length} conductores online`,
+          );
         } else {
-          this.logger.error(`❌ [MATCHING] Fallback falló: No hay conductores online disponibles`);
-          this.logger.error(`💡 [MATCHING] Verificar que los conductores estén marcados como 'online' en la base de datos`);
+          this.logger.error(
+            `❌ [MATCHING] Fallback falló: No hay conductores online disponibles`,
+          );
+          this.logger.error(
+            `💡 [MATCHING] Verificar que los conductores estén marcados como 'online' en la base de datos`,
+          );
         }
       }
 
       if (candidateDrivers.length === 0) {
-        this.logger.error(`❌ [MATCHING] No se encontraron conductores disponibles en el área (${lat}, ${lng}) dentro de ${radiusKm}km ni en fallback`);
+        this.logger.error(
+          `❌ [MATCHING] No se encontraron conductores disponibles en el área (${lat}, ${lng}) dentro de ${radiusKm}km ni en fallback`,
+        );
         throw new Error('NO_DRIVERS_AVAILABLE');
       }
 
       // 4. Calcular scores para cada conductor
-      this.logger.log(`🧮 [MATCHING] Calculando scores para ${candidateDrivers.length} conductores...`);
+      this.logger.log(
+        `🧮 [MATCHING] Calculando scores para ${candidateDrivers.length} conductores...`,
+      );
 
       const scoredDrivers = await Promise.all(
         candidateDrivers.map(async (driver) => {
           const score = await this.calculateDriverScore(driver, lat, lng);
-          this.logger.log(`📈 [MATCHING] Conductor ID=${driver.id} - Score=${score.toFixed(1)} - Distancia=${driver.distance}km`);
+          this.logger.log(
+            `📈 [MATCHING] Conductor ID=${driver.id} - Score=${score.toFixed(1)} - Distancia=${driver.distance}km`,
+          );
           return { ...driver, score };
         }),
       );
@@ -846,12 +920,16 @@ export class RidesFlowService {
       scoredDrivers.sort((a, b) => b.score - a.score);
       const bestDriver = scoredDrivers[0];
 
-      this.logger.log(`🏆 [MATCHING] Mejor conductor seleccionado: ID=${bestDriver.id} - Score=${bestDriver.score.toFixed(1)} - Distancia=${bestDriver.distance}km - Ubicación=(${bestDriver.currentLocation?.lat || 'N/A'}, ${bestDriver.currentLocation?.lng || 'N/A'})`);
+      this.logger.log(
+        `🏆 [MATCHING] Mejor conductor seleccionado: ID=${bestDriver.id} - Score=${bestDriver.score.toFixed(1)} - Distancia=${bestDriver.distance}km - Ubicación=(${bestDriver.currentLocation?.lat || 'N/A'}, ${bestDriver.currentLocation?.lng || 'N/A'})`,
+      );
 
       // Log ranking completo
       this.logger.log(`📊 [MATCHING] Ranking completo:`);
       scoredDrivers.slice(0, 5).forEach((driver, index) => {
-        this.logger.log(`   ${index + 1}. ID=${driver.id} - Score=${driver.score.toFixed(1)} - Distancia=${driver.distance}km`);
+        this.logger.log(
+          `   ${index + 1}. ID=${driver.id} - Score=${driver.score.toFixed(1)} - Distancia=${driver.distance}km`,
+        );
       });
 
       // 6. Obtener información adicional del conductor
@@ -865,7 +943,9 @@ export class RidesFlowService {
 
       // 8. Preparar respuesta
       const processingTime = Date.now() - startTime;
-      this.logger.log(`✅ [MATCHING] Matching completado exitosamente en ${processingTime}ms - Conductor: ${driverDetails.firstName} ${driverDetails.lastName} (ID: ${bestDriver.id}) - Distancia: ${bestDriver.distance}km - ETA: ${estimatedMinutes}min`);
+      this.logger.log(
+        `✅ [MATCHING] Matching completado exitosamente en ${processingTime}ms - Conductor: ${driverDetails.firstName} ${driverDetails.lastName} (ID: ${bestDriver.id}) - Distancia: ${bestDriver.distance}km - ETA: ${estimatedMinutes}min`,
+      );
 
       const result = {
         matchedDriver: {
@@ -879,10 +959,13 @@ export class RidesFlowService {
             memberSince: driverDetails.createdAt,
           },
           vehicle: {
-            carModel: driverDetails.vehicles?.[0] ? `${driverDetails.vehicles[0].make} ${driverDetails.vehicles[0].model}` : 'Unknown',
+            carModel: driverDetails.vehicles?.[0]
+              ? `${driverDetails.vehicles[0].make} ${driverDetails.vehicles[0].model}`
+              : 'Unknown',
             licensePlate: driverDetails.vehicles?.[0]?.licensePlate || '',
             carSeats: driverDetails.vehicles?.[0]?.seatingCapacity || 0,
-            vehicleType: driverDetails.vehicles?.[0]?.vehicleType?.displayName || null,
+            vehicleType:
+              driverDetails.vehicles?.[0]?.vehicleType?.displayName || null,
           },
           location: {
             distance: Math.round(bestDriver.distance * 100) / 100, // Redondear a 2 decimales
@@ -911,7 +994,9 @@ export class RidesFlowService {
         },
       };
 
-      this.logger.log(`📋 [MATCHING] Respuesta final preparada - Score: ${result.matchedDriver.matchScore} - Tiempo de búsqueda: ${result.searchCriteria.searchDuration}s`);
+      this.logger.log(
+        `📋 [MATCHING] Respuesta final preparada - Score: ${result.matchedDriver.matchScore} - Tiempo de búsqueda: ${result.searchCriteria.searchDuration}s`,
+      );
 
       return result;
     } catch (error) {
@@ -1067,9 +1152,9 @@ export class RidesFlowService {
         include: { user: true },
       });
 
-    if (!ride) {
-      throw new Error('Ride not found');
-    }
+      if (!ride) {
+        throw new Error('Ride not found');
+      }
 
       if (ride.userId !== userId) {
         throw new Error('Ride does not belong to user');
@@ -1080,8 +1165,8 @@ export class RidesFlowService {
       }
 
       // 2. Verificar que el conductor esté disponible
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: driverId },
+      const driver = await this.prisma.driver.findUnique({
+        where: { id: driverId },
         select: {
           id: true,
           status: true,
@@ -1089,17 +1174,17 @@ export class RidesFlowService {
           firstName: true,
           lastName: true,
         },
-    });
+      });
 
-    if (!driver) {
-      throw new Error('Driver not found');
-    }
+      if (!driver) {
+        throw new Error('Driver not found');
+      }
 
-    if (driver.status !== 'online') {
+      if (driver.status !== 'online') {
         throw new Error('DRIVER_NOT_AVAILABLE');
-    }
+      }
 
-    if (driver.verificationStatus !== 'approved') {
+      if (driver.verificationStatus !== 'approved') {
         throw new Error('Driver not verified');
       }
 
@@ -1174,16 +1259,16 @@ export class RidesFlowService {
       const distance = 5; // TODO: Calcular distancia real
       const duration = ride.rideTime || 15;
 
-    await this.notifications.sendNotification({
+      await this.notifications.sendNotification({
         userId: `driver_${driverId}`, // Placeholder - debería ser el userId real del conductor
-      type: 'RIDE_REQUEST' as any,
+        type: 'RIDE_REQUEST' as any,
         title: 'Nueva Solicitud de Viaje',
         message: `Tienes una solicitud de viaje desde ${ride.originAddress} hasta ${ride.destinationAddress}`,
-      data: {
-        rideId,
+        data: {
+          rideId,
           isDirectRequest: true,
-        pickupLocation: {
-          lat: Number(ride.originLatitude),
+          pickupLocation: {
+            lat: Number(ride.originLatitude),
             lng: Number(ride.originLongitude),
           },
           dropoffLocation: {
@@ -1264,7 +1349,7 @@ export class RidesFlowService {
           message:
             'El conductor no respondió a tiempo. Puedes buscar otro conductor.',
           data: { rideId },
-      channels: ['push' as any],
+          channels: ['push' as any],
         });
 
         throw new Error('REQUEST_EXPIRED');
@@ -1293,20 +1378,20 @@ export class RidesFlowService {
             estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
           },
           channels: ['push' as any],
-    });
+        });
 
-    // Emitir evento WebSocket
+        // Emitir evento WebSocket
         this.gateway.server?.to(`ride-${rideId}`).emit('ride:accepted', {
-      rideId,
+          rideId,
           driverId,
           driverName: `${ride.driver?.firstName} ${ride.driver?.lastName}`,
           estimatedArrivalMinutes: estimatedArrivalMinutes || 5,
           timestamp: new Date(),
-    });
+        });
 
-    return {
-      rideId,
-      driverId,
+        return {
+          rideId,
+          driverId,
           response: 'accept',
           status: 'accepted',
           message: 'Viaje aceptado exitosamente',
@@ -1601,7 +1686,7 @@ export class RidesFlowService {
       speed?: number;
       heading?: number;
       rideId?: number;
-    }
+    },
   ) {
     console.log(`🔄 [RIDES-FLOW] === INICIO updateDriverLocation ===`);
     console.log(`🔄 [RIDES-FLOW] DriverId recibido: ${driverId}`);
@@ -1611,11 +1696,13 @@ export class RidesFlowService {
       accuracy: locationData.accuracy,
       speed: locationData.speed,
       heading: locationData.heading,
-      rideId: locationData.rideId
+      rideId: locationData.rideId,
     });
 
     try {
-      console.log(`🔄 [RIDES-FLOW] Llamando a locationTrackingService.updateDriverLocation...`);
+      console.log(
+        `🔄 [RIDES-FLOW] Llamando a locationTrackingService.updateDriverLocation...`,
+      );
 
       // Actualizar ubicación usando el location tracking service
       await this.locationTrackingService.updateDriverLocation(
@@ -1626,11 +1713,13 @@ export class RidesFlowService {
           accuracy: locationData.accuracy,
           speed: locationData.speed,
           heading: locationData.heading,
-          source: 'api'
-        }
+          source: 'api',
+        },
       );
 
-      console.log(`✅ [RIDES-FLOW] locationTrackingService.updateDriverLocation completado para driver ${driverId}`);
+      console.log(
+        `✅ [RIDES-FLOW] locationTrackingService.updateDriverLocation completado para driver ${driverId}`,
+      );
 
       // Verificar que se guardó correctamente en BD
       const driverAfterUpdate = await this.prisma.driver.findUnique({
@@ -1641,8 +1730,8 @@ export class RidesFlowService {
           currentLongitude: true,
           isLocationActive: true,
           lastLocationUpdate: true,
-          locationAccuracy: true
-        }
+          locationAccuracy: true,
+        },
       });
 
       console.log(`🔍 [RIDES-FLOW] Verificación BD después de update:`, {
@@ -1651,30 +1740,36 @@ export class RidesFlowService {
         currentLongitude: driverAfterUpdate?.currentLongitude,
         isLocationActive: driverAfterUpdate?.isLocationActive,
         lastLocationUpdate: driverAfterUpdate?.lastLocationUpdate,
-        locationAccuracy: driverAfterUpdate?.locationAccuracy
+        locationAccuracy: driverAfterUpdate?.locationAccuracy,
       });
 
-      console.log(`✅ [RIDES-FLOW] Ubicación del conductor ${driverId} actualizada exitosamente`);
+      console.log(
+        `✅ [RIDES-FLOW] Ubicación del conductor ${driverId} actualizada exitosamente`,
+      );
 
       return {
         driverId,
         location: {
           lat: locationData.lat,
-          lng: locationData.lng
+          lng: locationData.lng,
         },
         updatedAt: new Date(),
-        accuracy: locationData.accuracy
+        accuracy: locationData.accuracy,
       };
-
     } catch (error) {
-      this.logger.error(`❌ [LOCATION-UPDATE] Error actualizando ubicación del conductor ${driverId}:`, error);
+      this.logger.error(
+        `❌ [LOCATION-UPDATE] Error actualizando ubicación del conductor ${driverId}:`,
+        error,
+      );
       throw error;
     }
   }
 
   async setDriverOnline(driverId: number) {
     try {
-      this.logger.log(`🚗 [DRIVER-STATUS] Poniendo conductor ${driverId} online`);
+      this.logger.log(
+        `🚗 [DRIVER-STATUS] Poniendo conductor ${driverId} online`,
+      );
 
       // Verificar que el conductor existe y está verificado
       const driver = await this.prisma.driver.findUnique({
@@ -1685,7 +1780,7 @@ export class RidesFlowService {
           lastName: true,
           status: true,
           verificationStatus: true,
-        }
+        },
       });
 
       if (!driver) {
@@ -1706,26 +1801,36 @@ export class RidesFlowService {
           id: true,
           status: true,
           updatedAt: true,
-        }
+        },
       });
 
-      this.logger.log(`✅ [DRIVER-STATUS] Conductor ${driverId} (${driver.firstName} ${driver.lastName}) está ahora online`);
+      this.logger.log(
+        `✅ [DRIVER-STATUS] Conductor ${driverId} (${driver.firstName} ${driver.lastName}) está ahora online`,
+      );
 
       return {
         driverId: updatedDriver.id,
         status: updatedDriver.status,
         onlineAt: updatedDriver.updatedAt,
       };
-
     } catch (error) {
-      this.logger.error(`❌ [DRIVER-STATUS] Error poniendo conductor ${driverId} online:`, error);
+      this.logger.error(
+        `❌ [DRIVER-STATUS] Error poniendo conductor ${driverId} online:`,
+        error,
+      );
 
       if (error.message === 'DRIVER_NOT_FOUND') {
-        throw new NotFoundException({ error: 'DRIVER_NOT_FOUND', message: 'Conductor no encontrado' });
+        throw new NotFoundException({
+          error: 'DRIVER_NOT_FOUND',
+          message: 'Conductor no encontrado',
+        });
       }
 
       if (error.message === 'DRIVER_NOT_VERIFIED') {
-        throw new ForbiddenException({ error: 'DRIVER_NOT_VERIFIED', message: 'Conductor no está verificado' });
+        throw new ForbiddenException({
+          error: 'DRIVER_NOT_VERIFIED',
+          message: 'Conductor no está verificado',
+        });
       }
 
       throw error;
@@ -1734,14 +1839,16 @@ export class RidesFlowService {
 
   async setDriverOffline(driverId: number) {
     try {
-      this.logger.log(`🔴 [DRIVER-STATUS] Poniendo conductor ${driverId} offline`);
+      this.logger.log(
+        `🔴 [DRIVER-STATUS] Poniendo conductor ${driverId} offline`,
+      );
 
       // Verificar que no tenga rides activos
       const activeRide = await this.prisma.ride.findFirst({
         where: {
           driverId: driverId,
-          status: { in: ['accepted', 'arrived', 'in_progress'] }
-        }
+          status: { in: ['accepted', 'arrived', 'in_progress'] },
+        },
       });
 
       if (activeRide) {
@@ -1758,24 +1865,28 @@ export class RidesFlowService {
           id: true,
           status: true,
           updatedAt: true,
-        }
+        },
       });
 
-      this.logger.log(`✅ [DRIVER-STATUS] Conductor ${driverId} está ahora offline`);
+      this.logger.log(
+        `✅ [DRIVER-STATUS] Conductor ${driverId} está ahora offline`,
+      );
 
       return {
         driverId: updatedDriver.id,
         status: updatedDriver.status,
         offlineAt: updatedDriver.updatedAt,
       };
-
     } catch (error) {
-      this.logger.error(`❌ [DRIVER-STATUS] Error poniendo conductor ${driverId} offline:`, error);
+      this.logger.error(
+        `❌ [DRIVER-STATUS] Error poniendo conductor ${driverId} offline:`,
+        error,
+      );
 
       if (error.message === 'DRIVER_HAS_ACTIVE_RIDE') {
         throw new ConflictException({
           error: 'DRIVER_HAS_ACTIVE_RIDE',
-          message: 'No se puede poner offline con un ride activo'
+          message: 'No se puede poner offline con un ride activo',
         });
       }
 
@@ -1785,7 +1896,9 @@ export class RidesFlowService {
 
   async getDriverPendingRequests(driverId: number) {
     try {
-      this.logger.log(`📋 Buscando solicitudes pendientes para driver ${driverId}`);
+      this.logger.log(
+        `📋 Buscando solicitudes pendientes para driver ${driverId}`,
+      );
 
       // Verificar que el driver existe y está online
       const driver = await this.prisma.driver.findUnique({
@@ -1800,31 +1913,49 @@ export class RidesFlowService {
       });
 
       if (!driver) {
-        this.logger.error(`❌ Driver ${driverId} no encontrado en base de datos`);
+        this.logger.error(
+          `❌ Driver ${driverId} no encontrado en base de datos`,
+        );
         return [];
       }
 
-      this.logger.log(`👤 Driver encontrado: ${driver.firstName} ${driver.lastName} (${driver.status})`);
+      this.logger.log(
+        `👤 Driver encontrado: ${driver.firstName} ${driver.lastName} (${driver.status})`,
+      );
 
       // 🔍 Obtener ubicación actual del conductor desde LocationTrackingService
       let driverLocation: any = null;
       try {
         // Primero intentar obtener de memoria
-        driverLocation = this.locationTrackingService.getDriverLocation(driverId);
+        driverLocation =
+          this.locationTrackingService.getDriverLocation(driverId);
 
         // Si no está en memoria, buscar en base de datos
         if (!driverLocation) {
-          this.logger.debug(`📍 [PENDING-REQUESTS] Ubicación no encontrada en memoria, consultando BD para conductor ${driverId}`);
-          driverLocation = await this.locationTrackingService.getDriverLocationFromDB(driverId);
+          this.logger.debug(
+            `📍 [PENDING-REQUESTS] Ubicación no encontrada en memoria, consultando BD para conductor ${driverId}`,
+          );
+          driverLocation =
+            await this.locationTrackingService.getDriverLocationFromDB(
+              driverId,
+            );
         }
 
-        this.logger.log(`📍 [PENDING-REQUESTS] Ubicación actual del conductor ${driverId}: (${driverLocation?.lat || 'N/A'}, ${driverLocation?.lng || 'N/A'}) - Última actualización: ${driverLocation?.lastUpdate ? new Date(driverLocation.lastUpdate).toISOString() : 'N/A'}`);
+        this.logger.log(
+          `📍 [PENDING-REQUESTS] Ubicación actual del conductor ${driverId}: (${driverLocation?.lat || 'N/A'}, ${driverLocation?.lng || 'N/A'}) - Última actualización: ${driverLocation?.lastUpdate ? new Date(driverLocation.lastUpdate).toISOString() : 'N/A'}`,
+        );
       } catch (error) {
-        this.logger.warn(`⚠️ [PENDING-REQUESTS] No se pudo obtener ubicación del conductor ${driverId}: ${error.message}`);
-        this.logger.warn(`🔍 Verificar que el conductor esté enviando actualizaciones de ubicación (POST /location)`);
+        this.logger.warn(
+          `⚠️ [PENDING-REQUESTS] No se pudo obtener ubicación del conductor ${driverId}: ${error.message}`,
+        );
+        this.logger.warn(
+          `🔍 Verificar que el conductor esté enviando actualizaciones de ubicación (POST /location)`,
+        );
       }
 
-      this.logger.log(`🔍 Buscando rides con status 'driver_confirmed' asignados a driver ${driverId}`);
+      this.logger.log(
+        `🔍 Buscando rides con status 'driver_confirmed' asignados a driver ${driverId}`,
+      );
 
       // Buscar rides donde el conductor está asignado y status es 'driver_confirmed'
       const pendingRequests = await this.prisma.ride.findMany({
@@ -1856,16 +1987,23 @@ export class RidesFlowService {
         },
       });
 
-      this.logger.log(`📊 [PENDING-REQUESTS] Encontrados ${pendingRequests.length} rides pendientes para conductor ${driverId}`);
+      this.logger.log(
+        `📊 [PENDING-REQUESTS] Encontrados ${pendingRequests.length} rides pendientes para conductor ${driverId}`,
+      );
 
       // Log detallado de cada ride pendiente
       pendingRequests.forEach((ride, index) => {
         const assignedAt = new Date(ride.updatedAt);
         const expiresAt = new Date(assignedAt.getTime() + 2 * 60 * 1000);
         const now = new Date();
-        const timeRemainingSeconds = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+        const timeRemainingSeconds = Math.max(
+          0,
+          Math.floor((expiresAt.getTime() - now.getTime()) / 1000),
+        );
 
-        this.logger.log(`📋 [PENDING-REQUESTS] Ride ${index + 1}: ID=${ride.rideId} - Usuario: ${ride.user?.name || 'N/A'} - Origen: ${ride.originAddress.substring(0, 30)}... - Asignado: ${assignedAt.toISOString()} - Expira en: ${timeRemainingSeconds}s`);
+        this.logger.log(
+          `📋 [PENDING-REQUESTS] Ride ${index + 1}: ID=${ride.rideId} - Usuario: ${ride.user?.name || 'N/A'} - Origen: ${ride.originAddress.substring(0, 30)}... - Asignado: ${assignedAt.toISOString()} - Expira en: ${timeRemainingSeconds}s`,
+        );
       });
 
       // Formatear respuesta
@@ -1906,14 +2044,24 @@ export class RidesFlowService {
       });
 
       if (formattedRequests.length === 0) {
-        this.logger.log(`📭 [PENDING-REQUESTS] No se encontraron solicitudes pendientes para conductor ${driverId}`);
+        this.logger.log(
+          `📭 [PENDING-REQUESTS] No se encontraron solicitudes pendientes para conductor ${driverId}`,
+        );
         this.logger.log(`💡 [PENDING-REQUESTS] Posibles causas:`);
-        this.logger.log(`   - No hay usuarios solicitando rides en este momento`);
+        this.logger.log(
+          `   - No hay usuarios solicitando rides en este momento`,
+        );
         this.logger.log(`   - Las solicitudes expiraron (2 minutos máximo)`);
-        this.logger.log(`   - El conductor no fue seleccionado por el algoritmo de matching`);
-        this.logger.log(`   - Verificar ubicación del conductor: ${driverLocation ? `(${driverLocation.lat}, ${driverLocation.lng})` : 'NO DISPONIBLE'}`);
+        this.logger.log(
+          `   - El conductor no fue seleccionado por el algoritmo de matching`,
+        );
+        this.logger.log(
+          `   - Verificar ubicación del conductor: ${driverLocation ? `(${driverLocation.lat}, ${driverLocation.lng})` : 'NO DISPONIBLE'}`,
+        );
       } else {
-        this.logger.log(`✅ [PENDING-REQUESTS] Encontradas ${formattedRequests.length} solicitudes pendientes para conductor ${driverId}`);
+        this.logger.log(
+          `✅ [PENDING-REQUESTS] Encontradas ${formattedRequests.length} solicitudes pendientes para conductor ${driverId}`,
+        );
       }
 
       return formattedRequests;
@@ -1948,7 +2096,9 @@ export class RidesFlowService {
     createdAt: Date;
     message: string;
   }> {
-    this.logger.log(`⭐ [DRIVER-RATE-PASSENGER] Conductor ${driverId} califica viaje ${rideId}`);
+    this.logger.log(
+      `⭐ [DRIVER-RATE-PASSENGER] Conductor ${driverId} califica viaje ${rideId}`,
+    );
 
     // Verificar que el viaje existe y está completado
     const ride = await this.prisma.ride.findUnique({
@@ -1957,19 +2107,25 @@ export class RidesFlowService {
     });
 
     if (!ride) {
-      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Viaje ${rideId} no encontrado`);
+      this.logger.error(
+        `❌ [DRIVER-RATE-PASSENGER] Viaje ${rideId} no encontrado`,
+      );
       throw new Error('RIDE_NOT_FOUND');
     }
 
     // Verificar que el viaje está completado
     if (ride.status !== 'completed') {
-      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Viaje ${rideId} no está completado (status: ${ride.status})`);
+      this.logger.error(
+        `❌ [DRIVER-RATE-PASSENGER] Viaje ${rideId} no está completado (status: ${ride.status})`,
+      );
       throw new Error('RIDE_NOT_COMPLETED');
     }
 
     // Verificar que el conductor es quien realizó el viaje
     if (ride.driverId !== driverId) {
-      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Conductor ${driverId} no está autorizado para viaje ${rideId} (conductor del viaje: ${ride.driverId})`);
+      this.logger.error(
+        `❌ [DRIVER-RATE-PASSENGER] Conductor ${driverId} no está autorizado para viaje ${rideId} (conductor del viaje: ${ride.driverId})`,
+      );
       throw new Error('DRIVER_NOT_AUTHORIZED');
     }
 
@@ -1983,7 +2139,9 @@ export class RidesFlowService {
     });
 
     if (existingRating) {
-      this.logger.error(`❌ [DRIVER-RATE-PASSENGER] Ya existe rating del conductor ${driverId} para viaje ${rideId}`);
+      this.logger.error(
+        `❌ [DRIVER-RATE-PASSENGER] Ya existe rating del conductor ${driverId} para viaje ${rideId}`,
+      );
       throw new Error('RATING_ALREADY_EXISTS');
     }
 
@@ -1992,13 +2150,15 @@ export class RidesFlowService {
       data: {
         rideId,
         ratedByUserId: Number(driverUserId), // Conductor
-        ratedUserId: ride.userId,            // Pasajero
+        ratedUserId: ride.userId, // Pasajero
         ratingValue: rating,
         comment: comment || null,
       },
     });
 
-    this.logger.log(`✅ [DRIVER-RATE-PASSENGER] Rating creado exitosamente: ID ${newRating.id}, ${rating} estrellas`);
+    this.logger.log(
+      `✅ [DRIVER-RATE-PASSENGER] Rating creado exitosamente: ID ${newRating.id}, ${rating} estrellas`,
+    );
 
     // Notificar al pasajero sobre la calificación recibida
     try {
@@ -2016,9 +2176,14 @@ export class RidesFlowService {
         channels: [NotificationChannel.PUSH],
       });
 
-      this.logger.log(`📱 [DRIVER-RATE-PASSENGER] Notificación enviada al pasajero ${ride.userId}`);
+      this.logger.log(
+        `📱 [DRIVER-RATE-PASSENGER] Notificación enviada al pasajero ${ride.userId}`,
+      );
     } catch (notificationError) {
-      this.logger.warn(`⚠️ [DRIVER-RATE-PASSENGER] Error enviando notificación al pasajero:`, notificationError);
+      this.logger.warn(
+        `⚠️ [DRIVER-RATE-PASSENGER] Error enviando notificación al pasajero:`,
+        notificationError,
+      );
       // No fallar por error de notificación
     }
 

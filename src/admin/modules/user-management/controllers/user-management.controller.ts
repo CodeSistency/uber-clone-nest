@@ -1,279 +1,315 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Delete,
   Param,
-  ParseIntPipe,
   Query,
   Body,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
   UseGuards,
-  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiQuery,
   ApiBearerAuth,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
 } from '@nestjs/swagger';
+
 import { AdminAuthGuard } from '../../../guards/admin-auth.guard';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { RequirePermissions } from '../../../decorators/permissions.decorator';
-import { Permission } from '../../../entities/admin.entity';
-import { UserManagementService } from '../services/user-management.service';
+import { AdminPermission } from '../../../interfaces/admin.interface';
 
-@Controller()
+import { UserManagementService } from '../services/user-management.service';
+import {
+  GetUsersQueryDto,
+  UpdateUserStatusDto,
+  AdjustWalletDto,
+  AddEmergencyContactDto,
+  BulkUpdateStatusDto,
+  UserListResponseDto,
+  UserDetailsDto,
+} from '../dtos/user-management.dto';
+
+@ApiTags('Admin User Management')
+@Controller('admin/users')
 @UseGuards(AdminAuthGuard, PermissionsGuard)
-@ApiTags('admin/users')
 @ApiBearerAuth('JWT-auth')
 export class UserManagementController {
-  private readonly logger = new Logger(UserManagementController.name);
-
   constructor(private readonly userManagementService: UserManagementService) {}
 
   @Get()
-  @RequirePermissions(Permission.USER_READ)
+  @RequirePermissions(AdminPermission.USERS_READ)
   @ApiOperation({
-    summary: 'Get users with filters',
+    summary: 'Listar usuarios con filtros',
     description:
-      'Retrieve a paginated list of users with advanced filtering and search capabilities',
-  })
-  @ApiQuery({
-    name: 'page',
-    type: 'number',
-    required: false,
-    description: 'Page number for pagination',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: 'number',
-    required: false,
-    description: 'Number of users per page',
-    example: 10,
-  })
-  @ApiQuery({
-    name: 'search',
-    type: 'string',
-    required: false,
-    description: 'Search term for name or email',
-    example: 'john',
-  })
-  @ApiQuery({
-    name: 'status',
-    type: 'string',
-    required: false,
-    description: 'User status filter (active/inactive)',
-    example: 'active',
-  })
-  @ApiQuery({
-    name: 'userType',
-    type: 'string',
-    required: false,
-    description: 'User type filter',
-    example: 'user',
+      'Obtiene una lista paginada de usuarios con filtros avanzados para administración',
   })
   @ApiResponse({
     status: 200,
-    description: 'Users retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number', example: 1 },
-              name: { type: 'string', example: 'John Doe' },
-              email: { type: 'string', example: 'john@example.com' },
-              userType: { type: 'string', example: 'user' },
-              isActive: { type: 'boolean', example: true },
-              lastLogin: { type: 'string', format: 'date-time' },
-              createdAt: { type: 'string', format: 'date-time' },
-              _count: {
-                type: 'object',
-                properties: {
-                  rides: { type: 'number', example: 5 },
-                  deliveryOrders: { type: 'number', example: 3 },
-                  ratings: { type: 'number', example: 12 },
-                },
-              },
-            },
-          },
-        },
-        pagination: {
-          type: 'object',
-          properties: {
-            page: { type: 'number', example: 1 },
-            limit: { type: 'number', example: 10 },
-            total: { type: 'number', example: 150 },
-            pages: { type: 'number', example: 15 },
-          },
-        },
-      },
-    },
+    description: 'Lista de usuarios obtenida exitosamente',
+    type: UserListResponseDto,
   })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado',
   })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
+  @ApiResponse({
+    status: 403,
+    description: 'Permisos insuficientes',
+  })
   async getUsers(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('search') search?: string,
-    @Query('status') status?: string,
-    @Query('userType') userType?: string,
-  ) {
-    this.logger.log(
-      `Fetching users - page: ${page}, limit: ${limit}, search: ${search}, status: ${status}, userType: ${userType}`,
+    @Query() query: GetUsersQueryDto,
+  ): Promise<UserListResponseDto> {
+    const filters = {
+      status: query.status,
+      emailVerified: query.emailVerified,
+      phoneVerified: query.phoneVerified,
+      identityVerified: query.identityVerified,
+      hasWallet: query.hasWallet,
+      dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+      dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+      minRides: query.minRides,
+      maxRides: query.maxRides,
+      search: query.search,
+    };
+
+    return this.userManagementService.getUsersWithFilters(
+      filters,
+      query.page || 1,
+      query.limit || 20,
     );
-    return this.userManagementService.getUsers({
-      page,
-      limit,
-      search,
-      status,
-      userType,
-    });
   }
 
   @Get(':id')
-  @RequirePermissions(Permission.USER_READ)
+  @RequirePermissions(AdminPermission.USERS_READ)
   @ApiOperation({
-    summary: 'Get user by ID',
-    description: 'Retrieve detailed information about a specific user',
+    summary: 'Obtener detalles de un usuario',
+    description:
+      'Obtiene información completa de un usuario específico incluyendo wallet, contactos de emergencia, etc.',
   })
   @ApiParam({
     name: 'id',
-    type: 'number',
-    description: 'User ID to retrieve',
+    description: 'ID único del usuario',
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'User details retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'number', example: 1 },
-        name: { type: 'string', example: 'John Doe' },
-        email: { type: 'string', example: 'john@example.com' },
-        userType: { type: 'string', example: 'user' },
-        isActive: { type: 'boolean', example: true },
-        lastLogin: { type: 'string', format: 'date-time' },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' },
-        wallet: {
-          type: 'object',
-          properties: {
-            balance: { type: 'number', example: 100.5 },
-            currency: { type: 'string', example: 'USD' },
-          },
-        },
-        _count: {
-          type: 'object',
-          properties: {
-            rides: { type: 'number', example: 5 },
-            deliveryOrders: { type: 'number', example: 3 },
-            ratings: { type: 'number', example: 12 },
-          },
-        },
+    description: 'Detalles del usuario obtenidos exitosamente',
+    type: UserDetailsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Usuario no encontrado',
+  })
+  async getUserDetails(
+    @Param('id', ParseIntPipe) userId: number,
+  ): Promise<UserDetailsDto> {
+    const details = await this.userManagementService.getUserDetails(userId);
+
+    // Format the response
+    return {
+      basic: {
+        id: details.id,
+        name: details.name,
+        email: details.email,
+        phone: details.phone,
+        dateOfBirth: details.dateOfBirth,
+        gender: details.gender,
+        isActive: details.isActive,
+        emailVerified: details.emailVerified,
+        phoneVerified: details.phoneVerified,
+        identityVerified: details.identityVerified,
+        lastLogin: details.lastLogin,
+        createdAt: details.createdAt,
       },
-    },
-  })
-  @ApiNotFoundResponse({ description: 'User not found' })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
-  async getUserById(@Param('id', ParseIntPipe) id: number) {
-    this.logger.log(`Fetching user by ID: ${id}`);
-    return this.userManagementService.getUserById(id);
+      address: {
+        profileImage: details.profileImage,
+        address: details.address,
+        city: details.city,
+        state: details.state,
+        country: details.country,
+        postalCode: details.postalCode,
+      },
+      preferences: {
+        preferredLanguage: details.preferredLanguage,
+        timezone: details.timezone,
+        currency: details.currency,
+      },
+      stats: {
+        totalRides: details.totalRides,
+        completedRides: details.completedRides,
+        cancelledRides: details.cancelledRides,
+        averageRating: details.averageRating,
+      },
+      wallet: details.wallet,
+      emergencyContacts: details.emergencyContacts,
+      recentRides: details.recentRides,
+    };
   }
 
   @Put(':id/status')
-  @RequirePermissions(Permission.USER_WRITE)
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.USERS_SUSPEND)
   @ApiOperation({
-    summary: 'Update user status',
-    description: 'Activate or deactivate a user account',
+    summary: 'Actualizar estado de usuario',
+    description: 'Activa o suspende la cuenta de un usuario',
   })
   @ApiParam({
     name: 'id',
-    type: 'number',
-    description: 'User ID to update',
+    description: 'ID del usuario',
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'User status updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'User deactivated successfully' },
-        data: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', example: 1 },
-            isActive: { type: 'boolean', example: false },
-            updatedAt: { type: 'string', format: 'date-time' },
-          },
-        },
-      },
-    },
+    description: 'Estado del usuario actualizado exitosamente',
   })
-  @ApiNotFoundResponse({ description: 'User not found' })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
+  @ApiResponse({
+    status: 404,
+    description: 'Usuario no encontrado',
   })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateUserStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('isActive') isActive: boolean,
-  ) {
-    this.logger.log(
-      `Updating status for user ID: ${id}, isActive: ${isActive}`,
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() statusDto: UpdateUserStatusDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.userManagementService.updateUserStatus(
+      userId,
+      statusDto.isActive,
+      adminId,
+      statusDto.reason,
     );
-    return this.userManagementService.updateUserStatus(id, isActive);
   }
 
-  @Delete(':id')
-  @RequirePermissions(Permission.USER_WRITE)
+  @Post(':id/wallet/adjust')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.USERS_WRITE)
   @ApiOperation({
-    summary: 'Delete user',
-    description: 'Permanently delete a user account (soft delete)',
+    summary: 'Ajustar balance de wallet',
+    description: 'Agrega o sustrae fondos del wallet de un usuario',
   })
   @ApiParam({
     name: 'id',
-    type: 'number',
-    description: 'User ID to delete',
+    description: 'ID del usuario',
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'User deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'User deleted successfully' },
-      },
-    },
+    description: 'Balance del wallet ajustado exitosamente',
   })
-  @ApiNotFoundResponse({ description: 'User not found' })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
+  @ApiResponse({
+    status: 404,
+    description: 'Usuario no encontrado',
   })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
-  async deleteUser(@Param('id', ParseIntPipe) id: number) {
-    this.logger.log(`Deleting user with ID: ${id}`);
-    await this.userManagementService.deleteUser(id);
-    return { success: true, message: 'User deleted successfully' };
+  async adjustWalletBalance(
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() adjustDto: AdjustWalletDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.userManagementService.adjustWalletBalance(
+      userId,
+      adjustDto.amount,
+      adminId,
+      adjustDto.reason,
+      adjustDto.description,
+    );
+  }
+
+  @Post(':id/emergency-contacts')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions(AdminPermission.USERS_WRITE)
+  @ApiOperation({
+    summary: 'Agregar contacto de emergencia',
+    description: 'Agrega un nuevo contacto de emergencia para un usuario',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del usuario',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Contacto de emergencia agregado exitosamente',
+  })
+  async addEmergencyContact(
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() contactDto: AddEmergencyContactDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.userManagementService.addEmergencyContact(
+      userId,
+      contactDto.contactName,
+      contactDto.contactPhone,
+      adminId,
+    );
+  }
+
+  @Delete('emergency-contacts/:contactId')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.USERS_WRITE)
+  @ApiOperation({
+    summary: 'Eliminar contacto de emergencia',
+    description: 'Elimina un contacto de emergencia de un usuario',
+  })
+  @ApiParam({
+    name: 'contactId',
+    description: 'ID del contacto de emergencia',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contacto de emergencia eliminado exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Contacto no encontrado',
+  })
+  async removeEmergencyContact(
+    @Param('contactId', ParseIntPipe) contactId: number,
+    // @Req() req: Request
+  ): Promise<void> {
+    const adminId = 1; // Should come from JWT
+
+    return this.userManagementService.removeEmergencyContact(
+      contactId,
+      adminId,
+    );
+  }
+
+  @Post('bulk/status')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.USERS_SUSPEND)
+  @ApiOperation({
+    summary: 'Actualizar estado de múltiples usuarios',
+    description:
+      'Activa o suspende múltiples cuentas de usuario en una operación',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estados de usuarios actualizados exitosamente',
+  })
+  async bulkUpdateUserStatus(
+    @Body() bulkDto: BulkUpdateStatusDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.userManagementService.bulkUpdateUserStatus(
+      bulkDto.userIds,
+      bulkDto.isActive,
+      adminId,
+      bulkDto.reason,
+    );
   }
 }

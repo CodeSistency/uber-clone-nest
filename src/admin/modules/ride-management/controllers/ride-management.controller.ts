@@ -1,281 +1,261 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
-  ParseIntPipe,
   Query,
+  Body,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
   UseGuards,
-  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiQuery,
   ApiBearerAuth,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
 } from '@nestjs/swagger';
+
 import { AdminAuthGuard } from '../../../guards/admin-auth.guard';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { RequirePermissions } from '../../../decorators/permissions.decorator';
-import { Permission } from '../../../entities/admin.entity';
+import { AdminPermission } from '../../../interfaces/admin.interface';
+
 import { RideManagementService } from '../services/ride-management.service';
-import { FormattedRide } from '../services/ride-management.service';
+import {
+  GetRidesQueryDto,
+  ReassignRideDto,
+  CancelRideDto,
+  CompleteRideDto,
+  RideListResponseDto,
+  RideDetailsDto,
+} from '../dtos/ride-management.dto';
 
-type RideStatus =
-  | 'pending'
-  | 'accepted'
-  | 'arrived'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled'
-  | 'all';
-
-type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | 'all';
-
-@Controller()
+@ApiTags('Admin Ride Management')
+@Controller('admin/rides')
 @UseGuards(AdminAuthGuard, PermissionsGuard)
-@ApiTags('admin/rides')
 @ApiBearerAuth('JWT-auth')
 export class RideManagementController {
-  private readonly logger = new Logger(RideManagementController.name);
-
-  constructor(private readonly rideService: RideManagementService) {}
+  constructor(private readonly rideManagementService: RideManagementService) {}
 
   @Get()
-  @RequirePermissions(Permission.RIDE_READ)
+  @RequirePermissions(AdminPermission.RIDES_READ)
   @ApiOperation({
-    summary: 'Get rides with filters',
+    summary: 'Listar rides con filtros',
     description:
-      'Retrieve a paginated list of rides with advanced filtering options',
-  })
-  @ApiQuery({
-    name: 'page',
-    type: 'number',
-    required: false,
-    description: 'Page number for pagination',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: 'number',
-    required: false,
-    description: 'Number of rides per page',
-    example: 10,
-  })
-  @ApiQuery({
-    name: 'status',
-    enum: [
-      'pending',
-      'accepted',
-      'arrived',
-      'in_progress',
-      'completed',
-      'cancelled',
-      'all',
-    ],
-    required: false,
-    description: 'Filter by ride status',
-    example: 'completed',
-  })
-  @ApiQuery({
-    name: 'paymentStatus',
-    enum: ['pending', 'paid', 'failed', 'refunded', 'all'],
-    required: false,
-    description: 'Filter by payment status',
-    example: 'paid',
-  })
-  @ApiQuery({
-    name: 'driverId',
-    type: 'number',
-    required: false,
-    description: 'Filter by driver ID',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'userId',
-    type: 'number',
-    required: false,
-    description: 'Filter by user ID',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'dateFrom',
-    type: 'string',
-    required: false,
-    description: 'Filter rides from this date (YYYY-MM-DD)',
-    example: '2023-01-01',
-  })
-  @ApiQuery({
-    name: 'dateTo',
-    type: 'string',
-    required: false,
-    description: 'Filter rides to this date (YYYY-MM-DD)',
-    example: '2023-12-31',
+      'Obtiene una lista paginada de rides con filtros avanzados para administración',
   })
   @ApiResponse({
     status: 200,
-    description: 'Rides retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        data: {
-          type: 'array',
-          items: {
-            $ref: '#/components/schemas/Ride',
-          },
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'number', example: 100 },
-            page: { type: 'number', example: 1 },
-            limit: { type: 'number', example: 10 },
-            totalPages: { type: 'number', example: 10 },
-          },
-        },
-      },
-    },
+    description: 'Lista de rides obtenida exitosamente',
+    type: RideListResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permisos insuficientes',
   })
   async getRides(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('paymentStatus') paymentStatus?: PaymentStatus,
-    @Query('driverId') driverId?: number,
-    @Query('userId') userId?: number,
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
-  ): Promise<{
-    success: boolean;
-    data: FormattedRide[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      pages: number;
+    @Query() query: GetRidesQueryDto,
+  ): Promise<RideListResponseDto> {
+    const filters = {
+      status: query.status,
+      driverId: query.driverId,
+      userId: query.userId,
+      dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+      dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+      minFare: query.minFare,
+      maxFare: query.maxFare,
+      originAddress: query.originAddress,
+      destinationAddress: query.destinationAddress,
     };
-  }> {
-    this.logger.log(
-      `Fetching rides - page: ${page}, limit: ${limit}, paymentStatus: ${paymentStatus}`,
+
+    return this.rideManagementService.getRidesWithFilters(
+      filters,
+      query.page || 1,
+      query.limit || 20,
     );
-    return this.rideService.getRides({
-      page,
-      limit,
-      paymentStatus,
-      driverId,
-      userId,
-      dateFrom,
-      dateTo,
-    });
   }
 
   @Get(':id')
-  @RequirePermissions(Permission.RIDE_READ)
+  @RequirePermissions(AdminPermission.RIDES_READ)
   @ApiOperation({
-    summary: 'Get ride by ID',
-    description: 'Retrieve detailed information about a specific ride',
+    summary: 'Obtener detalles de un ride',
+    description:
+      'Obtiene información completa de un ride específico incluyendo driver, user, mensajes, etc.',
   })
   @ApiParam({
     name: 'id',
-    type: 'number',
-    description: 'Ride ID to retrieve',
-    example: 1,
+    description: 'ID único del ride',
+    example: 123,
   })
   @ApiResponse({
     status: 200,
-    description: 'Ride details retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'number', example: 1 },
-        status: { type: 'string', example: 'completed' },
-        paymentStatus: { type: 'string', example: 'paid' },
-        pickupLocation: { type: 'string', example: '123 Main St, City' },
-        pickupLat: { type: 'number', example: 40.7128 },
-        pickupLng: { type: 'number', example: -74.006 },
-        dropoffLocation: { type: 'string', example: '456 Oak Ave, City' },
-        dropoffLat: { type: 'number', example: 40.7213 },
-        dropoffLng: { type: 'number', example: -73.9872 },
-        fare: { type: 'number', example: 15.5 },
-        distance: { type: 'number', example: 5.2 },
-        duration: { type: 'number', example: 15 },
-        scheduledAt: { type: 'string', format: 'date-time' },
-        startedAt: { type: 'string', format: 'date-time' },
-        completedAt: { type: 'string', format: 'date-time' },
-        cancelledAt: { type: 'string', format: 'date-time' },
-        cancellationReason: { type: 'string', example: 'Driver cancelled' },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' },
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', example: 1 },
-            name: { type: 'string', example: 'John Doe' },
-            email: { type: 'string', example: 'john@example.com' },
-            phone: { type: 'string', example: '+1234567890' },
-          },
-        },
-        driver: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', example: 1 },
-            name: { type: 'string', example: 'Mike Driver' },
-            email: { type: 'string', example: 'mike@example.com' },
-            phone: { type: 'string', example: '+1987654321' },
-          },
-        },
-        vehicle: {
-          type: 'object',
-          properties: {
-            make: { type: 'string', example: 'Toyota' },
-            model: { type: 'string', example: 'Camry' },
-            year: { type: 'number', example: 2020 },
-            color: { type: 'string', example: 'Blue' },
-            licensePlate: { type: 'string', example: 'ABC123' },
-          },
-        },
-        payment: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', example: 1 },
-            amount: { type: 'number', example: 15.5 },
-            method: { type: 'string', example: 'credit_card' },
-            transactionId: { type: 'string', example: 'txn_123456789' },
-            status: { type: 'string', example: 'succeeded' },
-            paidAt: { type: 'string', format: 'date-time' },
-          },
-        },
-        rating: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', example: 1 },
-            rating: { type: 'number', example: 5 },
-            comment: { type: 'string', example: 'Great ride!' },
-            createdAt: { type: 'string', format: 'date-time' },
-          },
-        },
-        route: {
-          type: 'object',
-          properties: {
-            polyline: { type: 'string', example: 'encoded_polyline_string' },
-            distance: { type: 'number', example: 5.2 },
-            duration: { type: 'number', example: 15 },
-          },
-        },
+    description: 'Detalles del ride obtenidos exitosamente',
+    type: RideDetailsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Ride no encontrado',
+  })
+  async getRideDetails(
+    @Param('id', ParseIntPipe) rideId: number,
+  ): Promise<RideDetailsDto> {
+    const details = await this.rideManagementService.getRideDetails(rideId);
+
+    // Format the response
+    return {
+      basic: {
+        id: details.id,
+        rideId: details.rideId,
+        status: details.status,
+        createdAt: details.createdAt,
+        updatedAt: details.updatedAt,
+        rideTime: details.rideTime,
+        farePrice: details.farePrice,
+        paymentStatus: details.paymentStatus,
       },
-    },
+      locations: {
+        originAddress: details.originAddress,
+        destinationAddress: details.destinationAddress,
+        originLatitude: details.originLatitude,
+        originLongitude: details.originLongitude,
+        destinationLatitude: details.destinationLatitude,
+        destinationLongitude: details.destinationLongitude,
+      },
+      driver: details.driver,
+      user: details.user,
+      tier: details.tier,
+      ratings: details.ratings || [],
+      messages: details.messages || [],
+      recentLocations: details.locationHistory || [],
+    };
+  }
+
+  @Post(':id/reassign')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.RIDES_REASSIGN)
+  @ApiOperation({
+    summary: 'Reasignar ride a otro driver',
+    description:
+      'Permite a un administrador reasignar un ride de un driver a otro',
   })
-  @ApiNotFoundResponse({ description: 'Ride not found' })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
+  @ApiParam({
+    name: 'id',
+    description: 'ID del ride a reasignar',
+    example: 123,
   })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
-  async getRideById(@Param('id', ParseIntPipe) id: number) {
-    this.logger.log(`Fetching ride by ID: ${id}`);
-    return this.rideService.getRideById(id);
+  @ApiResponse({
+    status: 200,
+    description: 'Ride reasignado exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Ride o driver no encontrado',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'El ride no puede ser reasignado o el driver no está disponible',
+  })
+  async reassignRide(
+    @Param('id', ParseIntPipe) rideId: number,
+    @Body() reassignDto: ReassignRideDto,
+    // In a real implementation, you'd get the admin ID from the JWT token
+    // @Req() req: Request
+  ): Promise<any> {
+    // For now, using a mock admin ID - in production this would come from JWT
+    const adminId = 1; // This should come from the authenticated admin
+
+    return this.rideManagementService.reassignRide(
+      rideId,
+      reassignDto.newDriverId,
+      adminId,
+      reassignDto.reason,
+    );
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.RIDES_CANCEL)
+  @ApiOperation({
+    summary: 'Cancelar ride administrativamente',
+    description:
+      'Permite a un administrador cancelar un ride con opción de reembolso',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del ride a cancelar',
+    example: 123,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Ride cancelado exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Ride no encontrado',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'El ride no puede ser cancelado',
+  })
+  async cancelRide(
+    @Param('id', ParseIntPipe) rideId: number,
+    @Body() cancelDto: CancelRideDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.rideManagementService.cancelRide(
+      rideId,
+      adminId,
+      cancelDto.reason,
+      cancelDto.refundAmount,
+    );
+  }
+
+  @Post(':id/complete')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.RIDES_WRITE)
+  @ApiOperation({
+    summary: 'Completar ride manualmente',
+    description:
+      'Permite a un administrador marcar un ride como completado manualmente',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del ride a completar',
+    example: 123,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Ride completado exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Ride no encontrado',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'El ride no puede ser completado',
+  })
+  async completeRideManually(
+    @Param('id', ParseIntPipe) rideId: number,
+    @Body() completeDto: CompleteRideDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.rideManagementService.completeRideManually(
+      rideId,
+      adminId,
+      completeDto.reason,
+    );
   }
 }

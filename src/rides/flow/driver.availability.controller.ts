@@ -23,7 +23,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DriverGuard } from '../../drivers/guards/driver.guard';
 import { PermissionsGuard } from '../../admin/guards/permissions.guard';
 import { RequirePermissions } from '../../admin/decorators/permissions.decorator';
-import { Permission } from '../../admin/entities/admin.entity';
+import { AdminPermission } from '../../admin/interfaces/admin.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SetDriverAvailabilityDto } from './dto/transport-flow.dtos';
 
@@ -132,10 +132,12 @@ export class DriverAvailabilityController {
       userId: req.user.id,
       email: req.user.email,
       driverId: req.user.driverId,
-      hasDriverId: !!req.user.driverId
+      hasDriverId: !!req.user.driverId,
     });
 
-    console.log(`🚗 [AVAILABILITY] Intentando cambiar status a: ${body.status} para driver ID: ${req.user.id}`);
+    console.log(
+      `🚗 [AVAILABILITY] Intentando cambiar status a: ${body.status} para driver ID: ${req.user.id}`,
+    );
 
     const driver = await this.prisma.driver.update({
       where: { id: Number(req.user.id) },
@@ -145,7 +147,7 @@ export class DriverAvailabilityController {
     console.log(`✅ [AVAILABILITY] Status actualizado exitosamente:`, {
       driverId: driver.id,
       newStatus: driver.status,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     return { data: { id: driver.id, status: driver.status } };
@@ -229,7 +231,7 @@ export class DriverAvailabilityController {
 
   @Get('debug/status')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.DRIVER_READ)
+  @RequirePermissions(AdminPermission.DRIVERS_READ)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: '🔍 [DEBUG] Ver estado completo de todos los conductores (Admin)',
@@ -285,7 +287,9 @@ export class DriverAvailabilityController {
     },
   })
   async debugDriverStatus() {
-    console.log(`🔍 [DEBUG] Consultando estado completo de todos los conductores`);
+    console.log(
+      `🔍 [DEBUG] Consultando estado completo de todos los conductores`,
+    );
 
     // Obtener todos los conductores
     const allDrivers = await this.prisma.driver.findMany({
@@ -307,9 +311,15 @@ export class DriverAvailabilityController {
 
     // Estadísticas
     const totalDrivers = allDrivers.length;
-    const onlineDrivers = allDrivers.filter(d => d.status === 'online').length;
-    const verifiedDrivers = allDrivers.filter(d => d.verificationStatus === 'approved').length;
-    const driversWithLocation = allDrivers.filter(d => d.isLocationActive && d.currentLatitude && d.currentLongitude).length;
+    const onlineDrivers = allDrivers.filter(
+      (d) => d.status === 'online',
+    ).length;
+    const verifiedDrivers = allDrivers.filter(
+      (d) => d.verificationStatus === 'approved',
+    ).length;
+    const driversWithLocation = allDrivers.filter(
+      (d) => d.isLocationActive && d.currentLatitude && d.currentLongitude,
+    ).length;
 
     console.log(`📊 [DEBUG] Estadísticas de conductores:`);
     console.log(`   - Total: ${totalDrivers}`);
@@ -319,9 +329,15 @@ export class DriverAvailabilityController {
 
     // Mostrar detalles de cada conductor
     allDrivers.forEach((driver, index) => {
-      console.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName}`);
-      console.log(`      Status: ${driver.status} | Verified: ${driver.verificationStatus}`);
-      console.log(`      Location: ${driver.isLocationActive ? '✅' : '❌'} | Lat: ${driver.currentLatitude || 'null'} | Lng: ${driver.currentLongitude || 'null'}`);
+      console.log(
+        `   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName}`,
+      );
+      console.log(
+        `      Status: ${driver.status} | Verified: ${driver.verificationStatus}`,
+      );
+      console.log(
+        `      Location: ${driver.isLocationActive ? '✅' : '❌'} | Lat: ${driver.currentLatitude || 'null'} | Lng: ${driver.currentLongitude || 'null'}`,
+      );
       console.log(`      Last Update: ${driver.lastLocationUpdate || 'never'}`);
     });
 
@@ -342,7 +358,7 @@ export class DriverAvailabilityController {
 
   @Put('admin/availability/:driverId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.DRIVER_WRITE)
+  @RequirePermissions(AdminPermission.DRIVERS_WRITE)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: '👑 Administrar disponibilidad de cualquier conductor',
@@ -504,7 +520,7 @@ export class DriverAvailabilityController {
 
   @Get('admin/availability/:driverId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.DRIVER_READ)
+  @RequirePermissions(AdminPermission.DRIVERS_READ)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: '👀 Consultar disponibilidad de cualquier conductor (Admin)',
@@ -633,7 +649,9 @@ export class DriverAvailabilityController {
         driver: {
           firstName: driver.firstName,
           lastName: driver.lastName,
-          carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : 'Unknown',
+          carModel: driver.vehicles?.[0]
+            ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
+            : 'Unknown',
           verificationStatus: driver.verificationStatus,
           canDoDeliveries: driver.canDoDeliveries,
           lastUpdated: driver.updatedAt,

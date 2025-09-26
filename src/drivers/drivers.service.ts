@@ -1,6 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Driver, DriverDocument, Prisma, Vehicle, DriverPaymentMethod, DriverPayment, WorkZone, DriverVerificationHistory } from '@prisma/client';
+import {
+  Driver,
+  DriverDocument,
+  Prisma,
+  Vehicle,
+  DriverPaymentMethod,
+  DriverPayment,
+  WorkZone,
+  DriverVerificationHistory,
+} from '@prisma/client';
 import { RegisterDriverDto } from './dto/register-driver.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { SearchDriversDto } from './dto/search-drivers.dto';
@@ -14,7 +27,10 @@ import { UpdateDriverStatusDto } from './dto/update-driver-status.dto';
 import { VerifyDriverDto } from './dto/verify-driver.dto';
 import { CreateDriverPaymentDto } from './dto/driver-payment.dto';
 import { AssignWorkZoneDto } from './dto/work-zone.dto';
-import { DriverStatisticsDto, DriverStatsSummaryDto } from './dto/driver-statistics.dto';
+import {
+  DriverStatisticsDto,
+  DriverStatsSummaryDto,
+} from './dto/driver-statistics.dto';
 import { DriverProfileDto } from './dto/driver-profile.dto';
 
 @Injectable()
@@ -73,13 +89,8 @@ export class DriversService {
   }
 
   async registerDriver(registerDriverDto: RegisterDriverDto): Promise<Driver> {
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      profileImageUrl,
-    } = registerDriverDto;
+    const { firstName, lastName, email, phone, profileImageUrl } =
+      registerDriverDto;
 
     return this.prisma.driver.create({
       data: {
@@ -144,7 +155,6 @@ export class DriversService {
       data,
     });
   }
-
 
   async deleteDriver(id: number): Promise<Driver> {
     return this.prisma.driver.delete({
@@ -530,7 +540,10 @@ export class DriversService {
   // VEHICLE MANAGEMENT METHODS
   // =========================================
 
-  async createVehicle(driverId: number, createVehicleDto: CreateVehicleDto): Promise<Vehicle> {
+  async createVehicle(
+    driverId: number,
+    createVehicleDto: CreateVehicleDto,
+  ): Promise<Vehicle> {
     const { vehicleTypeId, isDefault, ...vehicleData } = createVehicleDto;
 
     // Verify driver exists
@@ -586,14 +599,14 @@ export class DriversService {
           take: 5,
         },
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
-  async updateVehicle(vehicleId: number, updateVehicleDto: UpdateVehicleDto): Promise<Vehicle> {
+  async updateVehicle(
+    vehicleId: number,
+    updateVehicleDto: UpdateVehicleDto,
+  ): Promise<Vehicle> {
     const { isDefault, ...updateData } = updateVehicleDto;
 
     // If setting as default, unset other defaults for this driver
@@ -639,7 +652,9 @@ export class DriversService {
     });
   }
 
-  async uploadVehicleDocument(uploadDto: UploadVehicleDocumentDto): Promise<any> {
+  async uploadVehicleDocument(
+    uploadDto: UploadVehicleDocumentDto,
+  ): Promise<any> {
     const { vehicleId, documentType, documentUrl } = uploadDto;
 
     // Verify vehicle exists
@@ -664,7 +679,10 @@ export class DriversService {
   // PAYMENT METHODS MANAGEMENT
   // =========================================
 
-  async createPaymentMethod(driverId: number, createDto: CreatePaymentMethodDto): Promise<DriverPaymentMethod> {
+  async createPaymentMethod(
+    driverId: number,
+    createDto: CreatePaymentMethodDto,
+  ): Promise<DriverPaymentMethod> {
     const { isDefault, ...methodData } = createDto;
 
     // If this is the default method, unset other defaults
@@ -683,17 +701,19 @@ export class DriversService {
     });
   }
 
-  async getDriverPaymentMethods(driverId: number): Promise<DriverPaymentMethod[]> {
+  async getDriverPaymentMethods(
+    driverId: number,
+  ): Promise<DriverPaymentMethod[]> {
     return this.prisma.driverPaymentMethod.findMany({
       where: { driverId },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
-  async updatePaymentMethod(methodId: number, updateDto: Partial<CreatePaymentMethodDto>): Promise<DriverPaymentMethod> {
+  async updatePaymentMethod(
+    methodId: number,
+    updateDto: Partial<CreatePaymentMethodDto>,
+  ): Promise<DriverPaymentMethod> {
     const { isDefault } = updateDto;
 
     // If setting as default, unset other defaults for this driver
@@ -727,7 +747,9 @@ export class DriversService {
     });
 
     if (pendingPayments > 0) {
-      throw new BadRequestException('Cannot delete payment method with pending payments');
+      throw new BadRequestException(
+        'Cannot delete payment method with pending payments',
+      );
     }
 
     await this.prisma.driverPaymentMethod.delete({
@@ -739,7 +761,10 @@ export class DriversService {
   // DRIVER PROFILE MANAGEMENT
   // =========================================
 
-  async updateDriverProfile(driverId: number, updateDto: UpdateDriverProfileDto): Promise<Driver> {
+  async updateDriverProfile(
+    driverId: number,
+    updateDto: UpdateDriverProfileDto,
+  ): Promise<Driver> {
     return this.prisma.driver.update({
       where: { id: driverId },
       data: updateDto,
@@ -795,11 +820,24 @@ export class DriversService {
     }
 
     // Calculate statistics
-    const completedRides = driver.rides.filter(ride => ride.status === 'completed');
-    const totalEarnings = completedRides.reduce((sum, ride) => sum + Number(ride.farePrice), 0);
-    const ratings = driver.rides.flatMap(ride => ride.ratings).map(r => Number(r.ratingValue));
-    const averageRating = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
-    const completionRate = driver.rides.length > 0 ? (completedRides.length / driver.rides.length) * 100 : 0;
+    const completedRides = driver.rides.filter(
+      (ride) => ride.status === 'completed',
+    );
+    const totalEarnings = completedRides.reduce(
+      (sum, ride) => sum + Number(ride.farePrice),
+      0,
+    );
+    const ratings = driver.rides
+      .flatMap((ride) => ride.ratings)
+      .map((r) => Number(r.ratingValue));
+    const averageRating =
+      ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+        : 0;
+    const completionRate =
+      driver.rides.length > 0
+        ? (completedRides.length / driver.rides.length) * 100
+        : 0;
 
     return {
       id: driver.id,
@@ -824,13 +862,16 @@ export class DriversService {
       bankAccountNumber: driver.bankAccountNumber,
       bankName: driver.bankName,
       taxId: driver.taxId,
-      currentLocation: driver.currentLatitude && driver.currentLongitude ? {
-        latitude: Number(driver.currentLatitude),
-        longitude: Number(driver.currentLongitude),
-        accuracy: Number(driver.locationAccuracy) || 0,
-        lastUpdate: driver.lastLocationUpdate?.toISOString() || null,
-      } : undefined,
-      vehicles: driver.vehicles.map(vehicle => ({
+      currentLocation:
+        driver.currentLatitude && driver.currentLongitude
+          ? {
+              latitude: Number(driver.currentLatitude),
+              longitude: Number(driver.currentLongitude),
+              accuracy: Number(driver.locationAccuracy) || 0,
+              lastUpdate: driver.lastLocationUpdate?.toISOString() || null,
+            }
+          : undefined,
+      vehicles: driver.vehicles.map((vehicle) => ({
         id: vehicle.id,
         make: vehicle.make,
         model: vehicle.model,
@@ -844,7 +885,7 @@ export class DriversService {
           displayName: vehicle.vehicleType.displayName,
         },
       })),
-      workZones: driver.workZoneAssignments.map(assignment => ({
+      workZones: driver.workZoneAssignments.map((assignment) => ({
         id: assignment.zone.id,
         name: assignment.zone.name,
         city: assignment.zone.city,
@@ -852,7 +893,7 @@ export class DriversService {
         isPrimary: assignment.isPrimary,
         status: assignment.status,
       })),
-      paymentMethods: driver.driverPaymentMethods.map(method => ({
+      paymentMethods: driver.driverPaymentMethods.map((method) => ({
         id: method.id,
         methodType: method.methodType,
         accountName: method.accountName,
@@ -860,20 +901,23 @@ export class DriversService {
         isDefault: method.isDefault,
         isActive: method.isActive,
       })),
-      documents: driver.documents.map(doc => ({
+      documents: driver.documents.map((doc) => ({
         id: doc.id,
         documentType: doc.documentType,
         verificationStatus: doc.verificationStatus,
         uploadedAt: doc.uploadedAt.toISOString(),
       })),
-      recentRides: driver.rides.map(ride => ({
+      recentRides: driver.rides.map((ride) => ({
         id: ride.rideId,
         originAddress: ride.originAddress,
         destinationAddress: ride.destinationAddress,
         farePrice: Number(ride.farePrice),
         status: ride.status,
         createdAt: ride.createdAt.toISOString(),
-        rating: ride.ratings.length > 0 ? Number(ride.ratings[0].ratingValue) : undefined,
+        rating:
+          ride.ratings.length > 0
+            ? Number(ride.ratings[0].ratingValue)
+            : undefined,
       })),
       createdAt: driver.createdAt.toISOString(),
       updatedAt: driver.updatedAt.toISOString(),
@@ -886,7 +930,11 @@ export class DriversService {
   // DRIVER STATUS MANAGEMENT
   // =========================================
 
-  async updateDriverStatus(driverId: number, statusDto: UpdateDriverStatusDto, adminId?: number): Promise<Driver> {
+  async updateDriverStatus(
+    driverId: number,
+    statusDto: UpdateDriverStatusDto,
+    adminId?: number,
+  ): Promise<Driver> {
     const { status, reason, notes, suspensionEndDate } = statusDto;
 
     const updateData: any = {
@@ -897,7 +945,9 @@ export class DriversService {
 
     if (status === 'suspended') {
       updateData.suspensionReason = reason;
-      updateData.suspensionEndDate = suspensionEndDate ? new Date(suspensionEndDate) : null;
+      updateData.suspensionEndDate = suspensionEndDate
+        ? new Date(suspensionEndDate)
+        : null;
     } else {
       updateData.suspensionReason = null;
       updateData.suspensionEndDate = null;
@@ -913,8 +963,18 @@ export class DriversService {
   // DRIVER VERIFICATION MANAGEMENT
   // =========================================
 
-  async verifyDriver(driverId: number, verifyDto: VerifyDriverDto, adminId: number): Promise<Driver> {
-    const { verificationStatus, reason, notes, requestAdditionalDocs, additionalDocuments } = verifyDto;
+  async verifyDriver(
+    driverId: number,
+    verifyDto: VerifyDriverDto,
+    adminId: number,
+  ): Promise<Driver> {
+    const {
+      verificationStatus,
+      reason,
+      notes,
+      requestAdditionalDocs,
+      additionalDocuments,
+    } = verifyDto;
 
     // Get current driver
     const driver = await this.prisma.driver.findUnique({
@@ -951,7 +1011,11 @@ export class DriversService {
   // WORK ZONE MANAGEMENT
   // =========================================
 
-  async assignWorkZone(driverId: number, assignDto: AssignWorkZoneDto, adminId?: number): Promise<any> {
+  async assignWorkZone(
+    driverId: number,
+    assignDto: AssignWorkZoneDto,
+    adminId?: number,
+  ): Promise<any> {
     const { zoneId, isPrimary } = assignDto;
 
     // If setting as primary, unset other primaries
@@ -1014,7 +1078,9 @@ export class DriversService {
   // PAYMENT MANAGEMENT
   // =========================================
 
-  async createDriverPayment(createDto: CreateDriverPaymentDto): Promise<DriverPayment> {
+  async createDriverPayment(
+    createDto: CreateDriverPaymentDto,
+  ): Promise<DriverPayment> {
     return this.prisma.driverPayment.create({
       data: createDto,
       include: {
@@ -1027,7 +1093,14 @@ export class DriversService {
   }
 
   async getDriverPayments(driverId: number, query?: any): Promise<any> {
-    const { status, paymentType, startDate, endDate, page = 1, limit = 10 } = query || {};
+    const {
+      status,
+      paymentType,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+    } = query || {};
 
     const where: Prisma.DriverPaymentWhereInput = { driverId };
 
@@ -1065,7 +1138,11 @@ export class DriversService {
     };
   }
 
-  async processDriverPayment(paymentId: number, transactionId?: string, notes?: string): Promise<DriverPayment> {
+  async processDriverPayment(
+    paymentId: number,
+    transactionId?: string,
+    notes?: string,
+  ): Promise<DriverPayment> {
     return this.prisma.driverPayment.update({
       where: { id: paymentId },
       data: {
@@ -1101,14 +1178,29 @@ export class DriversService {
       throw new NotFoundException(`Driver with ID ${driverId} not found`);
     }
 
-    const completedRides = driver.rides.filter(ride => ride.status === 'completed');
-    const totalEarnings = completedRides.reduce((sum, ride) => sum + Number(ride.farePrice), 0);
-    const cancelledRides = driver.rides.filter(ride => ride.status === 'cancelled');
+    const completedRides = driver.rides.filter(
+      (ride) => ride.status === 'completed',
+    );
+    const totalEarnings = completedRides.reduce(
+      (sum, ride) => sum + Number(ride.farePrice),
+      0,
+    );
+    const cancelledRides = driver.rides.filter(
+      (ride) => ride.status === 'cancelled',
+    );
 
-    const ratings = driver.rides.flatMap(ride => ride.ratings).map(r => Number(r.ratingValue));
-    const averageRating = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
+    const ratings = driver.rides
+      .flatMap((ride) => ride.ratings)
+      .map((r) => Number(r.ratingValue));
+    const averageRating =
+      ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+        : 0;
 
-    const completionRate = driver.rides.length > 0 ? (completedRides.length / driver.rides.length) * 100 : 0;
+    const completionRate =
+      driver.rides.length > 0
+        ? (completedRides.length / driver.rides.length) * 100
+        : 0;
 
     // Calculate weekly earnings (simplified)
     const weeklyEarnings = this.calculateWeeklyEarnings(completedRides);
@@ -1181,7 +1273,8 @@ export class DriversService {
       totalActiveDrivers,
       totalRidesToday,
       totalEarningsToday: Number(totalEarningsToday._sum.farePrice) || 0,
-      averageDriverRating: Math.round((Number(averageRating._avg.ratingValue) || 0) * 10) / 10,
+      averageDriverRating:
+        Math.round((Number(averageRating._avg.ratingValue) || 0) * 10) / 10,
       onlineDrivers,
       pendingVerification,
     };
@@ -1191,14 +1284,19 @@ export class DriversService {
   // BULK OPERATIONS
   // =========================================
 
-  async bulkVerifyDrivers(driverIds: string[], verificationStatus: string, reason?: string, adminId?: number): Promise<any> {
+  async bulkVerifyDrivers(
+    driverIds: string[],
+    verificationStatus: string,
+    reason?: string,
+    adminId?: number,
+  ): Promise<any> {
     const drivers = await this.prisma.driver.findMany({
-      where: { id: { in: driverIds.map(id => Number(id)) } },
+      where: { id: { in: driverIds.map((id) => Number(id)) } },
       select: { id: true, verificationStatus: true },
     });
 
     // Create verification history records
-    const historyRecords = drivers.map(driver => ({
+    const historyRecords = drivers.map((driver) => ({
       driverId: driver.id,
       previousStatus: driver.verificationStatus,
       newStatus: verificationStatus,
@@ -1212,14 +1310,19 @@ export class DriversService {
 
     // Update drivers
     await this.prisma.driver.updateMany({
-      where: { id: { in: driverIds.map(id => Number(id)) } },
+      where: { id: { in: driverIds.map((id) => Number(id)) } },
       data: { verificationStatus },
     });
 
     return { updated: drivers.length };
   }
 
-  async bulkUpdateStatus(driverIds: string[], status: string, reason?: string, adminId?: number): Promise<any> {
+  async bulkUpdateStatus(
+    driverIds: string[],
+    status: string,
+    reason?: string,
+    adminId?: number,
+  ): Promise<any> {
     const updateData: any = {
       status,
       lastStatusChange: new Date(),
@@ -1231,7 +1334,7 @@ export class DriversService {
     }
 
     await this.prisma.driver.updateMany({
-      where: { id: { in: driverIds.map(id => Number(id)) } },
+      where: { id: { in: driverIds.map((id) => Number(id)) } },
       data: updateData,
     });
 
@@ -1245,7 +1348,7 @@ export class DriversService {
   private calculateWeeklyEarnings(rides: any[]): any[] {
     const weeklyData = new Map<string, { earnings: number; rides: number }>();
 
-    rides.forEach(ride => {
+    rides.forEach((ride) => {
       const date = new Date(ride.createdAt);
       const weekKey = `${date.getFullYear()}-W${Math.ceil((date.getDate() - date.getDay() + 1) / 7)}`;
 
@@ -1265,7 +1368,7 @@ export class DriversService {
   private calculateMonthlyEarnings(rides: any[]): any[] {
     const monthlyData = new Map<string, { earnings: number; rides: number }>();
 
-    rides.forEach(ride => {
+    rides.forEach((ride) => {
       const date = new Date(ride.createdAt);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
@@ -1282,9 +1385,17 @@ export class DriversService {
       .slice(0, 12); // Last 12 months
   }
 
-  private calculateRatingDistribution(ratings: number[]): Record<number, number> {
-    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    ratings.forEach(rating => {
+  private calculateRatingDistribution(
+    ratings: number[],
+  ): Record<number, number> {
+    const distribution: Record<number, number> = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
+    ratings.forEach((rating) => {
       const rounded = Math.round(rating);
       if (rounded >= 1 && rounded <= 5) {
         distribution[rounded]++;
@@ -1296,7 +1407,7 @@ export class DriversService {
   private calculatePeakHours(rides: any[]): string[] {
     const hourCounts = new Array(24).fill(0);
 
-    rides.forEach(ride => {
+    rides.forEach((ride) => {
       const hour = new Date(ride.createdAt).getHours();
       hourCounts[hour]++;
     });
@@ -1305,8 +1416,11 @@ export class DriversService {
     const peakHours: string[] = [];
 
     for (let i = 0; i < 24; i++) {
-      if (hourCounts[i] >= maxCount * 0.8) { // Hours with 80% of max activity
-        peakHours.push(`${String(i).padStart(2, '0')}:00-${String(i + 1).padStart(2, '0')}:00`);
+      if (hourCounts[i] >= maxCount * 0.8) {
+        // Hours with 80% of max activity
+        peakHours.push(
+          `${String(i).padStart(2, '0')}:00-${String(i + 1).padStart(2, '0')}:00`,
+        );
       }
     }
 
@@ -1314,10 +1428,18 @@ export class DriversService {
   }
 
   private calculateActiveDays(rides: any[]): string[] {
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     const dayCounts = new Array(7).fill(0);
 
-    rides.forEach(ride => {
+    rides.forEach((ride) => {
       const day = new Date(ride.createdAt).getDay();
       dayCounts[day]++;
     });
@@ -1326,7 +1448,8 @@ export class DriversService {
     const activeDays: string[] = [];
 
     for (let i = 0; i < 7; i++) {
-      if (dayCounts[i] >= maxCount * 0.7) { // Days with 70% of max activity
+      if (dayCounts[i] >= maxCount * 0.7) {
+        // Days with 70% of max activity
         activeDays.push(dayNames[i]);
       }
     }

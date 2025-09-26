@@ -97,12 +97,9 @@ export class StripeService {
       });
 
       // Update payment intent with payment method
-      const paymentIntent = await this.stripe.paymentIntents.update(
-        payment_intent_id,
-        {
-          payment_method: payment_method_id,
-        },
-      );
+      await this.stripe.paymentIntents.update(payment_intent_id, {
+        payment_method: payment_method_id,
+      });
 
       // Confirm the payment
       const confirmedPayment =

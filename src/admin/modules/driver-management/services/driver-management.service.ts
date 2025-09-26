@@ -1,80 +1,73 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import { SearchDriversDto } from 'src/drivers/dto/search-drivers.dto';
-import { PaginatedDriversResponseDto } from 'src/drivers/dto/paginated-drivers-response.dto';
-import { DriverWithUserDto } from '../types/driver.types';
 
-// Extended driver type with all necessary properties
-// Extended driver type with user information
-type DriverWithUser = Prisma.DriverGetPayload<{
-  include: {
-    vehicles: {
-      where: { status: 'active' };
-      include: { vehicleType: true };
-    };
-    documents: true;
-    driverPaymentMethods: {
-      where: { isActive: true };
-    };
-    workZoneAssignments: {
-      include: { zone: true };
-    };
-    _count: {
-      select: { rides: boolean; documents: boolean; deliveryOrders: boolean };
-    };
-  };
-}> & {
-  user?: {
-    id: number;
-    email: string;
-    phone: string | null;
-    isActive: boolean;
-    name: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-  userId?: number;
-  isOnline?: boolean;
-  lastActive?: Date | null;
-  isSuspended?: boolean;
-  verifiedAt?: Date | null;
-  verificationStatus?: string;
-  verificationNotes?: string | null;
-  profileImageUrl?: string | null;
-  _count?: {
-    rides: number;
-    documents: number;
-    deliveryOrders: number;
-  };
-  vehicles?: Array<{
-    id: number;
-    make: string;
-    model: string;
-    licensePlate: string;
-    status: string;
-    vehicleType: {
-      id: number;
-      name: string;
-      displayName: string;
-    };
-  }>;
-  documents?: Array<{
-    id: number;
-    documentType: string;
-    documentUrl: string;
-    uploadedAt: Date;
-    verificationStatus?: string;
-    driverId: number;
-  }>;
-};
+export interface DriverFilters {
+  status?: string[];
+  verificationStatus?: string[];
+  canDoDeliveries?: boolean;
+  dateFrom?: Date;
+  dateTo?: Date;
+  minRating?: number;
+  maxRating?: number;
+  minRides?: number;
+  maxRides?: number;
+  minEarnings?: number;
+  maxEarnings?: number;
+  search?: string; // nombre, email, teléfono
+  zoneId?: number;
+}
 
-export interface GetDriversOptions {
+export interface DriverListResponse {
+  drivers: any[];
+  total: number;
   page: number;
   limit: number;
-  search?: string;
-  status?: string;
-  verificationStatus?: string;
+  totalPages: number;
+}
+
+export interface DriverDetails {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: Date;
+  gender?: string;
+  profileImageUrl?: string;
+  status: string;
+  verificationStatus: string;
+  canDoDeliveries: boolean;
+  averageRating?: number;
+  totalRides: number;
+  completedRides: number;
+  cancelledRides: number;
+  totalEarnings: number;
+  completionRate: number;
+  lastActive?: Date;
+  createdAt: Date;
+
+  // Relations
+  address?: {
+    address?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+  };
+  documents: any[];
+  vehicles: any[];
+  currentWorkZone?: any;
+  paymentMethods: any[];
+  recentRides: any[];
+  performanceStats: {
+    todayRides: number;
+    weekRides: number;
+    monthRides: number;
+    todayEarnings: number;
+    weekEarnings: number;
+    monthEarnings: number;
+    averageResponseTime?: number;
+    customerSatisfaction?: number;
+  };
 }
 
 @Injectable()
@@ -83,382 +76,524 @@ export class DriverManagementService {
 
   constructor(private prisma: PrismaService) {}
 
-  async searchDrivers(
-    searchDto: SearchDriversDto,
-  ): Promise<PaginatedDriversResponseDto> {
-    const {
-      page = 1,
-      limit = 10,
-      firstName,
-      lastName,
-      status,
-      verificationStatus,
-      canDoDeliveries,
-      carSeats,
-      vehicleTypeId,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-      createdFrom,
-      createdTo,
-      updatedFrom,
-      updatedTo,
-    } = searchDto;
+  async getDriversWithFilters(
+    filters: DriverFilters,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<DriverListResponse> {
+    const skip = (page - 1) * limit;
 
-    // Construir filtros dinámicamente
-    const where: Prisma.DriverWhereInput = {};
+    // Build where clause
+    const where: any = {};
 
-    // Filtros de texto (búsqueda parcial case-insensitive)
-    if (firstName) {
-      where.firstName = {
-        contains: firstName,
-        mode: 'insensitive',
-      };
+    if (filters.status && filters.status.length > 0) {
+      where.status = { in: filters.status };
     }
 
-    if (lastName) {
-      where.lastName = {
-        contains: lastName,
-        mode: 'insensitive',
-      };
+    if (filters.verificationStatus && filters.verificationStatus.length > 0) {
+      where.verificationStatus = { in: filters.verificationStatus };
     }
 
-    // Filtros exactos
-    if (status !== undefined) {
-      where.status = status;
+    if (filters.canDoDeliveries !== undefined) {
+      where.canDoDeliveries = filters.canDoDeliveries;
     }
 
-    if (verificationStatus !== undefined) {
-      where.verificationStatus = verificationStatus;
-    }
-
-    if (canDoDeliveries !== undefined) {
-      where.canDoDeliveries = canDoDeliveries;
-    }
-
-    if (carSeats !== undefined) {
-      where.vehicles = {
-        some: { seatingCapacity: carSeats },
-      };
-    }
-
-    if (vehicleTypeId !== undefined) {
-      where.vehicles = {
-        some: { vehicleTypeId: vehicleTypeId },
-      };
-    }
-
-    // Filtros de fecha
-    if (createdFrom || createdTo) {
+    if (filters.dateFrom || filters.dateTo) {
       where.createdAt = {};
-      if (createdFrom) {
-        where.createdAt.gte = new Date(createdFrom);
+      if (filters.dateFrom) {
+        where.createdAt.gte = filters.dateFrom;
       }
-      if (createdTo) {
-        where.createdAt.lte = new Date(createdTo);
-      }
-    }
-
-    if (updatedFrom || updatedTo) {
-      where.updatedAt = {};
-      if (updatedFrom) {
-        where.updatedAt.gte = new Date(updatedFrom);
-      }
-      if (updatedTo) {
-        where.updatedAt.lte = new Date(updatedTo);
+      if (filters.dateTo) {
+        where.createdAt.lte = filters.dateTo;
       }
     }
 
-    // Calcular offset para paginación
-    const offset = (page - 1) * limit;
+    if (filters.minRating !== undefined || filters.maxRating !== undefined) {
+      where.averageRating = {};
+      if (filters.minRating !== undefined) {
+        where.averageRating.gte = filters.minRating;
+      }
+      if (filters.maxRating !== undefined) {
+        where.averageRating.lte = filters.maxRating;
+      }
+    }
 
-    // Ejecutar consulta de conteo y búsqueda en paralelo
-    const [total, drivers] = await Promise.all([
-      this.prisma.driver.count({ where }),
-      this.prisma.driver.findMany({
-        where,
-        orderBy: {
-          [sortBy]: sortOrder,
+    if (filters.minRides !== undefined || filters.maxRides !== undefined) {
+      where.totalRides = {};
+      if (filters.minRides !== undefined) {
+        where.totalRides.gte = filters.minRides;
+      }
+      if (filters.maxRides !== undefined) {
+        where.totalRides.lte = filters.maxRides;
+      }
+    }
+
+    if (
+      filters.minEarnings !== undefined ||
+      filters.maxEarnings !== undefined
+    ) {
+      where.totalEarnings = {};
+      if (filters.minEarnings !== undefined) {
+        where.totalEarnings.gte = filters.minEarnings;
+      }
+      if (filters.maxEarnings !== undefined) {
+        where.totalEarnings.lte = filters.maxEarnings;
+      }
+    }
+
+    if (filters.search) {
+      where.OR = [
+        { firstName: { contains: filters.search, mode: 'insensitive' } },
+        { lastName: { contains: filters.search, mode: 'insensitive' } },
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { phone: { contains: filters.search } },
+      ];
+    }
+
+    if (filters.zoneId) {
+      where.driverWorkZones = {
+        some: {
+          zoneId: filters.zoneId,
+          status: 'active',
         },
-        skip: offset,
-        take: limit,
-        include: {
-          vehicles: {
-            where: { status: 'active' },
-            include: { vehicleType: true },
-          },
-          documents: {
-            select: {
-              id: true,
-              documentType: true,
-              verificationStatus: true,
-              uploadedAt: true,
-            },
-          },
-          _count: {
-            select: {
-              rides: true,
-              deliveryOrders: true,
-            },
+      };
+    }
+
+    // Get total count
+    const total = await this.prisma.driver.count({ where });
+
+    // Get drivers with relations
+    const drivers = await this.prisma.driver.findMany({
+      where,
+      include: {
+        workZoneAssignments: {
+          where: { status: 'active' },
+          include: { zone: true },
+          take: 1,
+        },
+        _count: {
+          select: {
+            rides: true,
           },
         },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take: limit,
+    });
+
+    // Get additional stats for each driver
+    const driversWithStats = await Promise.all(
+      drivers.map(async (driver) => {
+        const rideStats = await this.getDriverRideStats(driver.id);
+        const earningsStats = await this.getDriverEarningsStats(driver.id);
+
+        return {
+          ...driver,
+          totalRides: driver._count.rides,
+          completedRides: rideStats.completed,
+          cancelledRides: rideStats.cancelled,
+          totalEarnings: earningsStats.total,
+          completionRate:
+            rideStats.total > 0
+              ? (rideStats.completed / rideStats.total) * 100
+              : 0,
+          currentWorkZone: driver.workZoneAssignments?.[0]?.zone || null,
+          defaultVehicle: null, // Will be populated separately if needed
+          _count: undefined, // Remove the _count field
+        };
       }),
-    ]);
+    );
 
-    // Calcular información de paginación
     const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
-
-    // Construir lista de filtros aplicados
-    const appliedFilters: string[] = [];
-    const filters: any = {};
-
-    if (firstName) {
-      appliedFilters.push('firstName');
-      filters.searchTerm = firstName;
-    }
-    if (lastName) appliedFilters.push('lastName');
-    if (status) appliedFilters.push('status');
-    if (verificationStatus) appliedFilters.push('verificationStatus');
-    if (canDoDeliveries !== undefined) appliedFilters.push('canDoDeliveries');
-    if (carSeats !== undefined) appliedFilters.push('carSeats');
-    if (vehicleTypeId !== undefined) appliedFilters.push('vehicleTypeId');
-    if (createdFrom || createdTo) appliedFilters.push('createdDateRange');
-    if (updatedFrom || updatedTo) appliedFilters.push('updatedDateRange');
-
-    // Transform drivers to match expected format
-    const transformedDrivers: DriverWithUserDto[] = drivers.map(driver => ({
-      id: driver.id,
-      userId: driver.id, // Assuming driver.id === user.id for now
-      firstName: driver.firstName,
-      lastName: driver.lastName,
-      email: null, // Would need to join with user table
-      phone: null, // Would need to join with user table
-      status: driver.status as 'suspended' | 'active' | 'inactive',
-      isOnline: driver.status === 'online',
-      lastActive: driver.lastActive || driver.lastLocationUpdate,
-      profileImageUrl: driver.profileImageUrl,
-      rating: 0, // Would need to calculate
-      totalRides: driver._count?.rides || 0,
-      totalEarnings: 0, // Would need to calculate
-      vehicles: driver.vehicles,
-      documents: driver.documents?.map(doc => ({
-        id: doc.id,
-        type: doc.documentType,
-        status: doc.verificationStatus || 'pending',
-        url: '', // Not selected in query
-        uploadedAt: doc.uploadedAt,
-        driverId: driver.id,
-      })) || [],
-      verificationStatus: driver.verificationStatus,
-      verifiedAt: null,
-      verificationNotes: null,
-      createdAt: driver.createdAt,
-      updatedAt: driver.updatedAt,
-    }));
 
     return {
-      data: transformedDrivers,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNext,
-        hasPrev,
-      },
-      filters:
-        appliedFilters.length > 0
-          ? {
-              applied: appliedFilters,
-              ...filters,
-            }
-          : undefined,
+      drivers: driversWithStats,
+      total,
+      page,
+      limit,
+      totalPages,
     };
   }
 
-
-  /**
-   * Get detailed information about a specific driver
-   * @param id Driver ID
-   * @returns Detailed driver information
-   */
-  async getDriverById(id: number): Promise<DriverWithUserDto> {
-    // Get driver details with documents
+  async getDriverDetails(driverId: number): Promise<DriverDetails> {
     const driver = await this.prisma.driver.findUnique({
-      where: { id },
+      where: { id: driverId },
       include: {
-        vehicles: {
+        workZoneAssignments: {
           where: { status: 'active' },
-          include: { vehicleType: true },
-        },
-        documents: {
-          select: {
-            id: true,
-            documentType: true,
-            documentUrl: true,
-            uploadedAt: true,
-            verificationStatus: true,
-            driverId: true,
-          },
+          include: { zone: true },
         },
         driverPaymentMethods: {
           where: { isActive: true },
         },
-        workZoneAssignments: {
-          include: { zone: true },
+        rides: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            ratings: {
+              where: { ratedByUserId: { not: driverId } },
+            },
+          },
+        },
+        driverPayments: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
         },
       },
     });
 
     if (!driver) {
-      throw new NotFoundException(`Driver with ID ${id} not found`);
+      throw new NotFoundException(`Driver with ID ${driverId} not found`);
     }
 
-    // For now, we'll assume drivers are linked to users by ID
-    // In a real app, you'd have a proper foreign key relationship
-    const user = await this.prisma.user.findUnique({
-      where: { id: driver.id }, // Assuming driver.id === user.id for now
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const rideStats = await this.getDriverRideStats(driverId);
+    const earningsStats = await this.getDriverEarningsStats(driverId);
+    const performanceStats = await this.getDriverPerformanceStats(driverId);
 
-    if (!user) {
-      throw new NotFoundException(`User not found for driver ID ${id}`);
-    }
-
-    // Calculate average rating
-    const ratings = await this.prisma.rating.aggregate({
-      where: { ratedUserId: id },
-      _avg: { ratingValue: true },
-      _count: true,
-    });
-
-    // Calculate total earnings from completed rides
-    const earnings = await this.prisma.ride.aggregate({
-      where: {
-        driverId: id,
-        paymentStatus: 'completed',
-      },
-      _sum: { farePrice: true },
-    });
-
-    // Transform the data for the response
     return {
       id: driver.id,
-      userId: user.id,
       firstName: driver.firstName,
       lastName: driver.lastName,
-      email: user.email,
-      phone: user.phone,
-      status: driver.status as 'suspended' | 'active' | 'inactive',
-      isOnline: driver.status === 'online',
-      lastActive: driver.lastActive || driver.lastLocationUpdate,
-      profileImageUrl: driver.profileImageUrl,
-      rating: ratings._avg.ratingValue || 0,
-      totalRides: await this.prisma.ride.count({ where: { driverId: id } }),
-      totalEarnings: earnings._sum.farePrice?.toNumber() || 0,
-      vehicles: driver.vehicles,
-      documents: driver.documents?.map(doc => ({
-        id: doc.id,
-        type: doc.documentType,
-        status: doc.verificationStatus || 'pending',
-        url: doc.documentUrl,
-        uploadedAt: doc.uploadedAt,
-        driverId: doc.driverId,
-      })) || [],
+      email: driver.email || undefined,
+      phone: driver.phone || undefined,
+      dateOfBirth: driver.dateOfBirth || undefined,
+      gender: driver.gender || undefined,
+      profileImageUrl: driver.profileImageUrl || undefined,
+      status: driver.status,
       verificationStatus: driver.verificationStatus,
-      verifiedAt: driver.verificationStatus === 'approved' ? user.createdAt : null, // Placeholder
-      verificationNotes: null, // Placeholder
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      canDoDeliveries: driver.canDoDeliveries,
+      averageRating: driver.averageRating
+        ? Number(driver.averageRating)
+        : undefined,
+      totalRides: rideStats.total,
+      completedRides: rideStats.completed,
+      cancelledRides: rideStats.cancelled,
+      totalEarnings: Number(earningsStats.total),
+      completionRate:
+        rideStats.total > 0 ? (rideStats.completed / rideStats.total) * 100 : 0,
+      lastActive: driver.lastActive || undefined,
+      createdAt: driver.createdAt,
+      address: {
+        address: driver.address || undefined,
+        city: driver.city || undefined,
+        state: driver.state || undefined,
+        postalCode: driver.postalCode || undefined,
+      },
+      documents: [], // Driver documents not directly related in schema
+      vehicles: [], // Vehicles not directly related in current schema
+      currentWorkZone: driver.workZoneAssignments?.[0]?.zone || undefined,
+      paymentMethods: driver.driverPaymentMethods || [],
+      recentRides: (driver.rides || []).map((ride) => ({
+        ...ride,
+        driverRating: ride.ratings.find((r) => r.ratedByUserId)?.ratingValue,
+        ratings: undefined,
+      })),
+      performanceStats,
     };
   }
 
-  /**
-   * Update a driver's verification status
-   * @param id Driver ID
-   * @param verificationStatus New verification status
-   * @param notes Optional notes about the verification
-   * @returns Updated driver verification information
-   */
-  async updateDriverVerification(
-    id: number,
-    verificationStatus: string,
-    notes?: string,
-  ) {
-    // Get the driver
+  async updateDriverStatus(
+    driverId: number,
+    status: string,
+    adminId: number,
+    reason?: string,
+    suspensionEndDate?: Date,
+  ): Promise<any> {
     const driver = await this.prisma.driver.findUnique({
-      where: { id },
+      where: { id: driverId },
     });
 
     if (!driver) {
-      throw new NotFoundException(`Driver with ID ${id} not found`);
+      throw new NotFoundException(`Driver with ID ${driverId} not found`);
     }
 
-    // Get the associated user (assuming driver.id === user.id for now)
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-    });
-
-    const statusMap: Record<string, string> = {
-      verified: 'online',
-      pending: 'offline',
-      rejected: 'inactive',
+    const updateData: any = {
+      status,
+      statusChangedBy: adminId,
+      lastStatusChange: new Date(),
     };
 
-    const driverStatus = statusMap[verificationStatus] || driver.status;
-    const userActiveStatus = verificationStatus === 'verified';
+    if (status === 'suspended' && suspensionEndDate) {
+      updateData.suspensionEndDate = suspensionEndDate;
+      updateData.suspensionReason = reason;
+    }
 
-    try {
-      // Update driver's verification status using a transaction
-      await this.prisma.$transaction([
-        this.prisma.driver.update({
-          where: { id },
-          data: {
-            verificationStatus: verificationStatus.toLowerCase(),
-            status: driverStatus,
-            updatedAt: new Date(),
-          },
-        }),
-        // Update user's active status if user exists
-        ...(user
-          ? [
-              this.prisma.user.update({
-                where: { id: user.id },
-                data: { isActive: userActiveStatus },
-              }),
-            ]
-          : []),
-      ]);
+    const updatedDriver = await this.prisma.driver.update({
+      where: { id: driverId },
+      data: updateData,
+    });
 
-      this.logger.log(
-        `Updated verification status for driver ${id} to ${verificationStatus}`,
-      );
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'driver_status_update',
+      `driver_${driverId}`,
+      `Updated driver ${driverId} status from ${driver.status} to ${status}. Reason: ${reason || 'No reason provided'}`,
+      { driverId, oldStatus: driver.status },
+      {
+        driverId,
+        newStatus: status,
+        reason,
+        suspensionEndDate,
+      },
+    );
 
-      return {
-        success: true,
-        message: 'Driver verification status updated',
-        data: {
-          id,
-          verificationStatus: verificationStatus.toLowerCase(),
-          verifiedAt: verificationStatus === 'verified' ? new Date() : null,
-          verifiedBy: 1, // This would be the ID of the admin who performed the verification
-          notes,
+    this.logger.log(
+      `Admin ${adminId} updated driver ${driverId} status to ${status}`,
+    );
+
+    return updatedDriver;
+  }
+
+  async updateDriverVerification(
+    driverId: number,
+    verificationStatus: string,
+    adminId: number,
+    notes?: string,
+  ): Promise<any> {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+    });
+
+    if (!driver) {
+      throw new NotFoundException(`Driver with ID ${driverId} not found`);
+    }
+
+    const updatedDriver = await this.prisma.driver.update({
+      where: { id: driverId },
+      data: {
+        verificationStatus,
+      },
+    });
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'driver_verification_update',
+      `driver_${driverId}`,
+      `Updated driver ${driverId} verification status from ${driver.verificationStatus} to ${verificationStatus}`,
+      { driverId, oldVerificationStatus: driver.verificationStatus },
+      {
+        driverId,
+        newVerificationStatus: verificationStatus,
+        notes,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} updated driver ${driverId} verification to ${verificationStatus}`,
+    );
+
+    return updatedDriver;
+  }
+
+  async updateDriverWorkZones(
+    driverId: number,
+    zoneIds: number[],
+    adminId: number,
+    primaryZoneId?: number,
+  ): Promise<any> {
+    // Remove existing work zones
+    await this.prisma.driverWorkZone.deleteMany({
+      where: { driverId },
+    });
+
+    // Add new work zones
+    const workZones = zoneIds.map((zoneId, index) => ({
+      driverId,
+      zoneId,
+      assignedBy: adminId,
+      isPrimary: zoneId === primaryZoneId,
+      status: 'active' as const,
+    }));
+
+    const createdWorkZones = await this.prisma.driverWorkZone.createMany({
+      data: workZones,
+    });
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'driver_work_zones_update',
+      `driver_${driverId}`,
+      `Updated work zones for driver ${driverId}: ${zoneIds.join(', ')}`,
+      { driverId },
+      {
+        driverId,
+        zoneIds,
+        primaryZoneId,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} updated work zones for driver ${driverId}`,
+    );
+
+    return createdWorkZones;
+  }
+
+  async bulkUpdateDriverStatus(
+    driverIds: number[],
+    status: string,
+    adminId: number,
+    reason?: string,
+  ): Promise<any> {
+    const updateData: any = {
+      status,
+      statusChangedBy: adminId,
+      lastStatusChange: new Date(),
+    };
+
+    if (status === 'suspended') {
+      updateData.suspensionReason = reason;
+    }
+
+    const result = await this.prisma.driver.updateMany({
+      where: {
+        id: { in: driverIds },
+      },
+      data: updateData,
+    });
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'drivers_bulk_status_update',
+      'bulk_operation',
+      `Bulk updated ${result.count} drivers to status ${status}. Reason: ${reason || 'No reason provided'}`,
+      { driverIds, newStatus: status },
+      {
+        driverIds,
+        newStatus: status,
+        affectedCount: result.count,
+        reason,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} bulk updated ${result.count} drivers to status ${status}`,
+    );
+
+    return result;
+  }
+
+  private async getDriverRideStats(driverId: number) {
+    const rides = await this.prisma.ride.findMany({
+      where: { driverId },
+      select: { status: true },
+    });
+
+    const completed = rides.filter((r) => r.status === 'completed').length;
+    const cancelled = rides.filter((r) => r.status === 'cancelled').length;
+    const total = rides.length;
+
+    return { total, completed, cancelled };
+  }
+
+  private async getDriverEarningsStats(driverId: number) {
+    const result = await this.prisma.driverPayment.aggregate({
+      where: {
+        driverId,
+        status: 'processed',
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return {
+      total: result._sum.amount || 0,
+    };
+  }
+
+  private async getDriverPerformanceStats(driverId: number) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [todayStats, weekStats, monthStats] = await Promise.all([
+      this.getDriverStatsForPeriod(driverId, today, now),
+      this.getDriverStatsForPeriod(driverId, weekStart, now),
+      this.getDriverStatsForPeriod(driverId, monthStart, now),
+    ]);
+
+    return {
+      todayRides: todayStats.rides,
+      weekRides: weekStats.rides,
+      monthRides: monthStats.rides,
+      todayEarnings: todayStats.earnings,
+      weekEarnings: weekStats.earnings,
+      monthEarnings: monthStats.earnings,
+      averageResponseTime: undefined, // Would need additional tracking
+      customerSatisfaction: undefined, // Would need ratings analysis
+    };
+  }
+
+  private async getDriverStatsForPeriod(
+    driverId: number,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const rides = await this.prisma.ride.findMany({
+      where: {
+        driverId,
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
         },
-      };
+        status: 'completed',
+      },
+      select: {
+        farePrice: true,
+      },
+    });
+
+    const totalEarnings = rides.reduce(
+      (sum, ride) => sum + Number(ride.farePrice),
+      0,
+    );
+
+    return {
+      rides: rides.length,
+      earnings: totalEarnings,
+    };
+  }
+
+  private async logAdminAction(
+    adminId: number,
+    action: string,
+    resource: string,
+    resourceId: string,
+    oldValue: any,
+    newValue: any,
+  ): Promise<void> {
+    try {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          adminId,
+          action,
+          resource,
+          resourceId,
+          oldValue,
+          newValue,
+          ipAddress: 'system',
+          userAgent: 'admin-panel',
+        },
+      });
     } catch (error) {
-      this.logger.error(
-        `Failed to update driver verification status: ${error.message}`,
-        error.stack,
-      );
-      throw new Error('Failed to update driver verification status');
+      this.logger.error('Failed to log admin action:', error);
     }
   }
 }

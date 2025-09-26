@@ -1,0 +1,1458 @@
+{
+  "proyecto": "admin_panel_rides",
+  "etapas": [
+    {
+      "id": "E1",
+      "nombre": "Configuración Base y Autenticación",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M1.1",
+          "nombre": "Configuración Base del Proyecto",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Establecer la estructura base del proyecto admin con configuración inicial, dependencias y estructura de carpetas",
+          "dependencias": [
+            "package.json",
+            "src/app.module.ts",
+            "prisma/schema.prisma"
+          ],
+          "tareas": [
+            {
+              "id": "T1.1.1",
+              "nombre": "Instalación de dependencias",
+              "descripcion": "Instalar todas las dependencias necesarias para el sistema admin (NestJS, JWT, TypeORM/Prisma, etc.)",
+              "subtareas": [
+        {
+          "id": "ST1.1.1.1",
+          "nombre": "Dependencias core de NestJS",
+          "descripcion": "Instalar @nestjs/core, @nestjs/common, @nestjs/platform-express y módulos relacionados",
+          "completado": true
+        },
+                {
+                  "id": "ST1.1.1.2",
+                  "nombre": "Dependencias de autenticación",
+                  "descripcion": "Instalar @nestjs/jwt, @nestjs/passport, passport-jwt, bcrypt para autenticación",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.1.3",
+                  "nombre": "Dependencias de base de datos",
+                  "descripcion": "Instalar @prisma/client, prisma para gestión de base de datos PostgreSQL",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.1.4",
+                  "nombre": "Dependencias de validación",
+                  "descripcion": "Instalar class-validator, class-transformer para validación de DTOs",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T1.1.2",
+              "nombre": "Estructura de carpetas del módulo admin",
+              "descripcion": "Crear la estructura de directorios completa para el módulo admin siguiendo el patrón del proyecto",
+              "subtareas": [
+            {
+              "id": "ST1.1.2.1",
+              "nombre": "Crear carpeta base admin",
+              "descripcion": "Crear directorio src/admin/ con estructura modular",
+              "completado": true
+            },
+            {
+              "id": "ST1.1.2.2",
+              "nombre": "Estructura de controllers",
+              "descripcion": "Crear src/admin/controllers/ con archivos base",
+              "completado": true
+            },
+            {
+              "id": "ST1.1.2.3",
+              "nombre": "Estructura de servicios",
+              "descripcion": "Crear src/admin/services/ para lógica de negocio",
+              "completado": true
+            },
+            {
+              "id": "ST1.1.2.4",
+              "nombre": "Estructura de DTOs",
+              "descripcion": "Crear src/admin/dto/ para objetos de transferencia",
+              "completado": true
+            }
+              ]
+            },
+            {
+              "id": "T1.1.3",
+              "nombre": "Configuración de variables de entorno",
+              "descripcion": "Configurar variables de entorno específicas para el módulo admin",
+              "subtareas": [
+            {
+              "id": "ST1.1.3.1",
+              "nombre": "Variables JWT admin",
+              "descripcion": "Configurar JWT_SECRET_ADMIN y JWT_EXPIRES_IN_ADMIN separados del sistema principal",
+              "completado": true
+            },
+            {
+              "id": "ST1.1.3.2",
+              "nombre": "Configuración de base de datos",
+              "descripcion": "Variables de conexión a PostgreSQL para el módulo admin",
+              "completado": true
+            },
+            {
+              "id": "ST1.1.3.3",
+              "nombre": "Configuración de Redis",
+              "descripcion": "Variables para Redis en modo admin",
+              "completado": true
+            }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.2",
+          "nombre": "Sistema de Autenticación RBAC",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema completo de autenticación con control de acceso basado en roles (RBAC) para administradores",
+          "dependencias": [
+            "src/config/config.service.ts",
+            "src/auth/auth.module.ts",
+            "src/users/users.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T1.2.1",
+              "nombre": "Definir roles y permisos",
+              "descripcion": "Crear enumeraciones y constantes para los 4 roles definidos (Super Admin, Admin, Moderator, Support) y sus 60+ permisos",
+              "subtareas": [
+                {
+                  "id": "ST1.2.1.1",
+                  "nombre": "Enumeración de roles",
+                  "descripcion": "Crear enum Role con SuperAdmin, Admin, Moderator, Support",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.2.1.2",
+                  "nombre": "Definición de permisos",
+                  "descripcion": "Crear enum Permission con permisos granulares por módulo (users:read, rides:write, etc.)",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.2.1.3",
+                  "nombre": "Matriz de permisos por rol",
+                  "descripcion": "Crear mapa que asocie cada rol con sus permisos específicos",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T1.2.2",
+              "nombre": "Extender modelo User para admins",
+              "descripcion": "Actualizar el schema de Prisma para incluir campos específicos de administradores",
+              "subtareas": [
+                {
+                  "id": "ST1.2.2.1",
+                  "nombre": "Campos de rol y permisos",
+                  "descripcion": "Agregar userType, adminRole, adminPermissions al modelo User"
+                },
+                {
+                  "id": "ST1.2.2.2",
+                  "nombre": "Campos de auditoría",
+                  "descripcion": "Agregar lastAdminLogin, adminCreatedAt, adminUpdatedAt"
+                },
+                {
+                  "id": "ST1.2.2.3",
+                  "nombre": "Relación con AdminAuditLog",
+                  "descripcion": "Crear modelo AdminAuditLog para registro de acciones administrativas"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.3",
+              "nombre": "Implementar guards de autorización",
+              "descripcion": "Crear guards personalizados para verificar permisos en rutas protegidas",
+              "subtareas": [
+                {
+                  "id": "ST1.2.3.1",
+                  "nombre": "AdminJwtAuthGuard",
+                  "descripcion": "Guard que valida tokens JWT específicos de admin",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.2.3.2",
+                  "name": "PermissionsGuard",
+                  "descripcion": "Guard que verifica permisos específicos para cada endpoint",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.2.3.3",
+                  "name": "RolesGuard",
+                  "descripcion": "Guard que valida roles requeridos para acceder a recursos",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T1.2.4",
+              "nombre": "Sistema de login admin",
+              "descripcion": "Implementar endpoint de login específico para administradores con validación de roles",
+              "subtareas": [
+                {
+                  "id": "ST1.2.4.1",
+                  "name": "DTOs de login admin",
+                  "descripcion": "Crear AdminLoginDto con email, password y validaciones",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.2.4.2",
+                  "name": "Servicio de autenticación admin",
+                  "descripcion": "Crear AdminAuthService con lógica de login y generación de tokens",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.2.4.3",
+                  "name": "Endpoint POST /admin/auth/login",
+                  "descripcion": "Crear endpoint que retorna access_token y refresh_token para admin",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.3",
+          "nombre": "Base de Datos Admin",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Configurar las tablas específicas necesarias para el sistema administrativo",
+          "dependencias": [
+            "prisma/schema.prisma",
+            "src/prisma/prisma.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T1.3.1",
+              "nombre": "Crear migraciones para campos admin",
+              "descripcion": "Generar migraciones de Prisma para los nuevos campos de User y AdminAuditLog",
+              "subtareas": [
+                {
+                  "id": "ST1.3.1.1",
+                  "name": "Migración campos User admin",
+                  "descripcion": "Crear migración para userType, adminRole, adminPermissions, etc."
+                },
+                {
+                  "id": "ST1.3.1.2",
+                  "name": "Migración AdminAuditLog",
+                  "descripcion": "Crear tabla AdminAuditLog con campos de auditoría completos"
+                },
+                {
+                  "id": "ST1.3.1.3",
+                  "name": "Ejecutar migraciones",
+                  "descripcion": "Aplicar migraciones a la base de datos de desarrollo"
+                }
+              ]
+            },
+            {
+              "id": "T1.3.2",
+              "nombre": "Seeds para datos admin iniciales",
+              "descripcion": "Crear usuario super admin inicial y permisos base del sistema",
+              "subtareas": [
+                {
+                  "id": "ST1.3.2.1",
+                  "name": "Usuario Super Admin",
+                  "descripcion": "Crear seed para usuario admin inicial con todos los permisos",
+                  "completado": true
+                },
+            {
+              "id": "ST1.3.2.2",
+              "name": "Permisos iniciales",
+              "descripcion": "Crear seeds para todos los permisos del sistema RBAC",
+              "completado": true
+            },
+            {
+              "id": "ST1.3.2.3",
+              "name": "Datos de prueba",
+              "descripcion": "Crear usuarios admin de prueba para diferentes roles",
+              "completado": true
+            }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "nombre": "Dashboard y Gestión de Rides",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M2.1",
+          "nombre": "Dashboard Principal",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Crear dashboard principal con métricas clave, gráficos y actualizaciones en tiempo real",
+          "dependencias": [
+            "src/admin/controllers/admin-auth.controller.ts",
+            "src/rides/rides.service.ts",
+            "src/drivers/drivers.service.ts",
+            "src/prisma/prisma.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T2.1.1",
+              "nombre": "Servicio de métricas del dashboard",
+              "descripcion": "Crear servicio que calcule métricas principales (rides activos, revenue, drivers online, etc.)",
+              "subtareas": [
+                {
+                  "id": "ST2.1.1.1",
+                  "nombre": "Métricas de rides",
+                  "descripcion": "Contar rides activos, completados, cancelados por período",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.1.2",
+                  "nombre": "Métricas financieras",
+                  "descripcion": "Calcular revenue total, promedio por ride, tendencias",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.1.3",
+                  "nombre": "Métricas de drivers",
+                  "descripcion": "Contar drivers online, ocupados, promedio de rating",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.1.4",
+                  "nombre": "Métricas de usuarios",
+                  "descripcion": "Usuarios activos, nuevos registros, retención",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T2.1.2",
+              "nombre": "Controlador del dashboard",
+              "descripcion": "Crear endpoint GET /admin/dashboard que retorne métricas principales",
+              "subtareas": [
+                {
+                  "id": "ST2.1.2.1",
+                  "nombre": "Endpoint básico",
+                  "descripcion": "Crear endpoint protegido con permisos analytics:read",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.2.2",
+                  "nombre": "DTOs de respuesta",
+                  "descripcion": "Crear interfaces para métricas del dashboard",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.2.3",
+                  "nombre": "Caching básico",
+                  "descripcion": "Implementar cache temporal para métricas (5 minutos)",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T2.1.3",
+              "nombre": "Sistema de alertas",
+              "descripcion": "Implementar detección automática de situaciones críticas",
+              "subtareas": [
+                {
+                  "id": "ST2.1.3.1",
+                  "nombre": "Alertas de rendimiento",
+                  "descripcion": "Alertas por baja disponibilidad de drivers, alta tasa de cancelaciones",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.3.2",
+                  "nombre": "Alertas financieras",
+                  "descripcion": "Alertas por caída significativa en revenue",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.3.3",
+                  "nombre": "Alertas técnicas",
+                  "descripcion": "Alertas por errores del sistema, timeouts, etc.",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.2",
+          "nombre": "Gestión de Rides",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema completo de gestión de rides con lista, filtros, detalles y acciones",
+          "dependencias": [
+            "src/rides/rides.service.ts",
+            "src/rides/rides.controller.ts",
+            "src/admin/guards/permissions.guard.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T2.2.1",
+              "nombre": "Lista de rides con filtros",
+              "descripcion": "Crear endpoint GET /admin/rides con paginación y filtros avanzados",
+              "subtareas": [
+                {
+                  "id": "ST2.2.1.1",
+                  "nombre": "Query básica con paginación",
+                  "descripcion": "Endpoint que retorna lista paginada de rides ordenados por fecha",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.1.2",
+                  "nombre": "Filtros por estado",
+                  "descripcion": "Filtrar por pending, accepted, in_progress, completed, cancelled",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.1.3",
+                  "nombre": "Filtros por entidades",
+                  "descripcion": "Filtrar por driver_id, user_id, fecha desde/hasta",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.1.4",
+                  "nombre": "Filtros por ubicación",
+                  "descripcion": "Buscar por dirección de origen o destino",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T2.2.2",
+              "nombre": "Vista detallada de ride",
+              "descripcion": "Crear endpoint GET /admin/rides/:id con información completa del ride",
+              "subtareas": [
+                {
+                  "id": "ST2.2.2.1",
+                  "nombre": "Información básica",
+                  "descripcion": "ID, fechas, tarifa, distancia, duración, estado",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.2.2",
+                  "nombre": "Información de entidades",
+                  "descripcion": "Datos completos de usuario, driver y vehículo",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.2.3",
+                  "nombre": "Historial y chat",
+                  "descripcion": "Timeline de estados, mensajes entre usuario y driver",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.2.4",
+                  "nombre": "Ruta y ubicación",
+                  "descripcion": "Coordenadas GPS de origen, destino y ruta tomada",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T2.2.3",
+              "nombre": "Acciones de intervención",
+              "descripcion": "Implementar endpoints para intervenir manualmente en rides",
+              "subtareas": [
+                {
+                  "id": "ST2.2.3.1",
+                  "nombre": "Reasignar driver",
+                  "descripcion": "POST /admin/rides/:id/reassign - Cambiar driver asignado",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.3.2",
+                  "nombre": "Cancelar ride",
+                  "descripcion": "POST /admin/rides/:id/cancel - Cancelar con razón y reembolso",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.3.3",
+                  "nombre": "Completar manualmente",
+                  "descripcion": "POST /admin/rides/:id/complete - Marcar como completado",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.2.3.4",
+                  "nombre": "Auditoría de acciones",
+                  "descripcion": "Registrar todas las intervenciones en AdminAuditLog",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "nombre": "Gestión de Entidades (Usuarios, Drivers, etc.)",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M3.1",
+          "nombre": "Gestión de Usuarios",
+          "progreso": 100
+        },
+        {
+          "id": "M3.2",
+          "nombre": "Gestión de Drivers",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema completo de gestión de drivers con lista, filtros, detalles y operaciones administrativas",
+          "dependencias": [
+            "src/drivers/drivers.service.ts",
+            "src/drivers/drivers.controller.ts",
+            "src/driver-payment-methods/driver-payment-methods.service.ts",
+            "src/work-zones/work-zones.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T3.2.1",
+              "nombre": "Lista de drivers con filtros",
+              "descripcion": "Crear endpoint GET /admin/drivers con filtros avanzados (estado, verificación, zona, rendimiento)",
+              "subtareas": [
+                {
+                  "id": "ST3.2.1.1",
+                  "nombre": "Query básica con paginación",
+                  "descripcion": "Endpoint que retorna lista paginada de drivers ordenados por fecha de registro",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.1.2",
+                  "nombre": "Filtros por estado y verificación",
+                  "descripcion": "Filtrar por estado online/offline/busy/suspended, verificación pending/approved/rejected",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.1.3",
+                  "nombre": "Filtros por rendimiento",
+                  "descripcion": "Filtrar por rating, número de rides, earnings, tasa de completación",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.1.4",
+                  "nombre": "Filtros por zona de trabajo",
+                  "descripcion": "Filtrar drivers por zonas de trabajo asignadas",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T3.2.2",
+              "nombre": "Vista detallada de driver",
+              "descripcion": "Crear endpoint GET /admin/drivers/:id con información completa del driver",
+              "subtareas": [
+                {
+                  "id": "ST3.2.2.1",
+                  "nombre": "Información básica del driver",
+                  "descripcion": "ID, nombre, email, teléfono, fecha nacimiento, género, estado, verificación",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.2.2",
+                  "nombre": "Estadísticas de rendimiento",
+                  "descripcion": "Total rides, completadas/canceladas, earnings, rating promedio, tasa de completación",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.2.3",
+                  "nombre": "Información financiera y métodos de pago",
+                  "descripcion": "Earnings totales, métodos de pago activos, historial de pagos recientes",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.2.4",
+                  "nombre": "Zonas de trabajo y rides recientes",
+                  "descripcion": "Zonas asignadas, rides recientes con detalles y ratings",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T3.2.3",
+              "nombre": "Operaciones administrativas para drivers",
+              "descripcion": "Implementar endpoints para suspensión, verificación, zonas de trabajo y operaciones bulk",
+              "subtareas": [
+                {
+                  "id": "ST3.2.3.1",
+                  "nombre": "Gestión de estado y suspensión",
+                  "descripcion": "PUT /admin/drivers/:id/status - Cambiar estado con suspensión temporal opcional",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.3.2",
+                  "nombre": "Verificación de drivers",
+                  "descripcion": "PUT /admin/drivers/:id/verification - Cambiar estado de verificación con notas",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.3.3",
+                  "nombre": "Asignación de zonas de trabajo",
+                  "descripcion": "PUT /admin/drivers/:id/work-zones - Asignar/desasignar zonas con zona primaria",
+                  "completado": true
+                },
+                {
+                  "id": "ST3.2.3.4",
+                  "nombre": "Operaciones bulk",
+                  "descripcion": "POST /admin/drivers/bulk/status - Cambios masivos de estado",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "nombre": "Reportes y Analytics",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M4.1",
+          "nombre": "Sistema de Reportes y Analytics",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema completo de reportes, analytics, dashboards customizables y exportación de datos",
+          "dependencias": [
+            "src/admin/modules/dashboard/dashboard.service.ts",
+            "src/rides/rides.service.ts",
+            "src/users/users.service.ts",
+            "src/drivers/drivers.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T4.1.1",
+              "nombre": "Generador de reportes",
+              "descripcion": "Crear sistema de generación de reportes con filtros avanzados (fechas, entidades, agrupación)",
+              "subtareas": [
+                {
+                  "id": "ST4.1.1.1",
+                  "nombre": "Reportes de rides",
+                  "descripcion": "Reportes de viajes con métricas de rendimiento, revenue y tendencias",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.1.2",
+                  "nombre": "Reportes de usuarios",
+                  "descripcion": "Análisis de crecimiento de usuarios, actividad y retención",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.1.3",
+                  "nombre": "Reportes de drivers",
+                  "descripcion": "Métricas de rendimiento de conductores, earnings y ratings",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.1.4",
+                  "nombre": "Reportes financieros",
+                  "descripcion": "Análisis de ingresos, gastos, márgenes y tendencias financieras",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T4.1.2",
+              "nombre": "Sistema de exportación",
+              "descripcion": "Implementar exportación de reportes en múltiples formatos (CSV, Excel, PDF)",
+              "subtareas": [
+                {
+                  "id": "ST4.1.2.1",
+                  "nombre": "Exportación CSV",
+                  "descripcion": "Generar archivos CSV con datos de reportes",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.2.2",
+                  "nombre": "Exportación Excel",
+                  "descripcion": "Crear archivos Excel con formato y gráficos",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.2.3",
+                  "nombre": "Exportación PDF",
+                  "descripcion": "Generar reportes PDF con layout profesional",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.2.4",
+                  "nombre": "Descarga automática",
+                  "descripcion": "Sistema de descarga directa de archivos exportados",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T4.1.3",
+              "nombre": "Dashboards dinámicos",
+              "descripcion": "Crear sistema de dashboards customizables con widgets en tiempo real",
+              "subtareas": [
+                {
+                  "id": "ST4.1.3.1",
+                  "nombre": "Widgets de métricas",
+                  "descripcion": "Widgets para KPIs principales (rides, revenue, usuarios activos)",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.3.2",
+                  "nombre": "Widgets de gráficos",
+                  "descripcion": "Gráficos de tendencias, distribuciones y comparaciones",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.3.3",
+                  "nombre": "Widgets de tablas",
+                  "descripcion": "Tablas dinámicas con ordenamiento y filtros",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.3.4",
+                  "nombre": "Dashboards customizables",
+                  "descripcion": "Sistema para crear y guardar dashboards personalizados",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T4.1.4",
+              "nombre": "Reportes programados",
+              "descripcion": "Implementar sistema de reportes automáticos y envío por email",
+              "subtareas": [
+                {
+                  "id": "ST4.1.4.1",
+                  "nombre": "Programación de reportes",
+                  "descripcion": "Interfaz para programar reportes con expresiones cron",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.4.2",
+                  "nombre": "Envío automático por email",
+                  "descripcion": "Sistema de envío automático de reportes por email",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.4.3",
+                  "nombre": "Gestión de suscripciones",
+                  "descripcion": "Administrar suscripciones y destinatarios de reportes",
+                  "completado": true
+                },
+                {
+                  "id": "ST4.1.4.4",
+                  "nombre": "Historial de envíos",
+                  "descripcion": "Tracking de reportes enviados y estado de entrega",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "nombre": "Sistema de Notificaciones",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M5.1",
+          "nombre": "Sistema de Notificaciones Completo",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema completo de notificaciones con push, email, SMS, plantillas y broadcast",
+          "dependencias": [
+            "src/admin/modules/dashboard/dashboard.service.ts",
+            "src/notifications/notifications.service.ts",
+            "src/firebase/firebase.service.ts",
+            "src/twilio/twilio.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T5.1.1",
+              "nombre": "Envío de notificaciones push",
+              "descripcion": "Implementar envío de notificaciones push para usuarios y drivers",
+              "subtareas": [
+                {
+                  "id": "ST5.1.1.1",
+                  "nombre": "Integración Firebase",
+                  "descripcion": "Configurar Firebase para envío de push notifications",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.1.2",
+                  "nombre": "Tokens de dispositivo",
+                  "descripcion": "Sistema de registro y gestión de tokens push",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.1.3",
+                  "nombre": "Envío personalizado",
+                  "descripcion": "API para envío de notificaciones push personalizadas",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.1.4",
+                  "nombre": "Segmentación de usuarios",
+                  "descripcion": "Envío basado en segmentos de usuarios (activos, zona, etc.)",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T5.1.2",
+              "nombre": "Sistema de plantillas",
+              "descripcion": "Crear sistema de plantillas reutilizables para emails y SMS",
+              "subtareas": [
+                {
+                  "id": "ST5.1.2.1",
+                  "nombre": "Plantillas de email",
+                  "descripcion": "Plantillas HTML para emails con variables dinámicas",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.2.2",
+                  "nombre": "Plantillas SMS",
+                  "descripcion": "Plantillas de texto para mensajes SMS",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.2.3",
+                  "nombre": "Sistema de variables",
+                  "descripcion": "Reemplazo dinámico de variables en plantillas",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.2.4",
+                  "nombre": "Gestión de plantillas",
+                  "descripcion": "Interfaz para crear, editar y gestionar plantillas",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T5.1.3",
+              "nombre": "Historial y seguimiento",
+              "descripcion": "Sistema completo de historial de notificaciones y métricas de entrega",
+              "subtareas": [
+                {
+                  "id": "ST5.1.3.1",
+                  "nombre": "Registro de envíos",
+                  "descripcion": "Historial completo de todas las notificaciones enviadas",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.3.2",
+                  "nombre": "Estado de entrega",
+                  "descripcion": "Tracking de estado de entrega (enviado, entregado, leído)",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.3.3",
+                  "nombre": "Métricas de rendimiento",
+                  "descripcion": "Estadísticas de delivery rate, open rate, engagement",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.3.4",
+                  "nombre": "Filtros de búsqueda",
+                  "descripcion": "Búsqueda y filtrado avanzado del historial",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T5.1.4",
+              "nombre": "Broadcast y automatización",
+              "descripcion": "Sistema de broadcast masivo y notificaciones automáticas",
+              "subtareas": [
+                {
+                  "id": "ST5.1.4.1",
+                  "nombre": "Broadcast masivo",
+                  "descripcion": "Envío de notificaciones a grandes segmentos de usuarios",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.4.2",
+                  "nombre": "Segmentación avanzada",
+                  "descripcion": "Filtros complejos para targeting preciso",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.4.3",
+                  "nombre": "Notificaciones automáticas",
+                  "descripcion": "Triggers automáticos para eventos del sistema",
+                  "completado": true
+                },
+                {
+                  "id": "ST5.1.4.4",
+                  "nombre": "A/B Testing",
+                  "descripcion": "Sistema de pruebas A/B para optimización de notificaciones",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "nombre": "Gestión Geográfica y Regional",
+      "progreso": 0,
+      "modulos": [
+        {
+          "id": "M6.1",
+          "nombre": "Estructura Geográfica",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Implementar gestión completa de países, estados, ciudades y zonas de servicio geográfico",
+          "dependencias": [
+            "src/config/config.service.ts",
+            "prisma/schema.prisma"
+          ],
+          "tareas": [
+            {
+              "id": "T6.1.1",
+              "nombre": "CRUD de Países",
+              "descripcion": "Crear sistema completo para gestión de países con códigos ISO, monedas y zonas horarias",
+              "subtareas": [
+                {
+                  "id": "ST6.1.1.1",
+                  "nombre": "Modelo y schema de países",
+                  "descripcion": "Crear tabla Country con campos ISO, moneda, timezone, impuestos",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.1.1.2",
+                  "nombre": "API endpoints para países",
+                  "descripcion": "GET/POST/PUT/DELETE /admin/countries con validaciones",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.1.1.3",
+                  "nombre": "Importación masiva de países",
+                  "descripcion": "Sistema de carga CSV para datos iniciales de países",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T6.1.2",
+              "nombre": "Gestión de Estados/Provincias",
+              "descripcion": "Implementar gestión jerárquica de estados dependientes de países",
+              "subtareas": [
+                {
+                  "id": "ST6.1.2.1",
+                  "nombre": "Modelo State/Province",
+                  "descripcion": "Crear tabla State con foreign key a Country",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.1.2.2",
+                  "nombre": "API con dependencias",
+                  "descripcion": "Endpoints que filtran estados por país seleccionado",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.1.2.3",
+                  "nombre": "Configuraciones regionales",
+                  "descripcion": "Campos para multiplicadores de pricing por estado",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T6.1.3",
+              "nombre": "Sistema de Ciudades",
+              "descripcion": "Gestión completa de ciudades con coordenadas GPS y límites",
+              "subtareas": [
+                {
+                  "id": "ST6.1.3.1",
+                  "nombre": "Modelo City con coordenadas",
+                  "descripcion": "Tabla City con lat/lng, límites geográficos, dependencias",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.1.3.2",
+                  "nombre": "Zonas de servicio por ciudad",
+                  "descripcion": "Sistema de definición de áreas operativas por ciudad",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.1.3.3",
+                  "nombre": "Pricing granular por ciudad",
+                  "descripcion": "Multiplicadores específicos y zonas premium por ciudad",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M6.2",
+          "nombre": "Configuración Regional",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Implementar configuraciones específicas por región geográfica",
+          "dependencias": [
+            "src/admin/modules/geography/geography.module.ts",
+            "src/config/config.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T6.2.1",
+              "nombre": "Zonas de Servicio",
+              "descripcion": "Definir y gestionar zonas de cobertura geográfica por ciudad/estado",
+              "subtareas": [
+                {
+                  "id": "ST6.2.1.1",
+                  "nombre": "Modelo ServiceZone",
+                  "descripcion": "Crear tabla para zonas de servicio con geometrías",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.2.1.2",
+                  "nombre": "Editor visual de zonas",
+                  "descripcion": "Interfaz para dibujar y editar límites de zonas",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.2.1.3",
+                  "nombre": "Validación de cobertura",
+                  "descripcion": "Verificar que no hay gaps o overlaps en zonas",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T6.2.2",
+              "nombre": "Configuraciones Locales",
+              "descripcion": "Moneda, idioma, regulaciones específicas por ubicación",
+              "subtareas": [
+                {
+                  "id": "ST6.2.2.1",
+                  "nombre": "Configuración por país",
+                  "descripcion": "Moneda local, idioma, regulaciones específicas",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.2.2.2",
+                  "nombre": "Horarios de servicio regionales",
+                  "descripcion": "Horarios diferentes de operación por zona geográfica",
+                  "completado": true
+                },
+                {
+                  "id": "ST6.2.2.3",
+                  "nombre": "Límites y restricciones locales",
+                  "descripcion": "Restricciones específicas por jurisdicción",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E7",
+      "nombre": "Sistema de Pricing Granular",
+      "progreso": 33.3,
+      "modulos": [
+        {
+          "id": "M7.1",
+          "nombre": "Arquitectura de Pricing",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema completo de pricing dinámico con multiplicadores regionales y temporales",
+          "dependencias": [
+            "src/rides/rides.service.ts",
+            "src/admin/modules/geography/geography.module.ts",
+            "prisma/schema.prisma"
+          ],
+          "tareas": [
+            {
+              "id": "T7.1.1",
+              "nombre": "Base Pricing Global",
+              "descripcion": "Establecer tarifas base independientes de ubicación",
+              "subtareas": [
+                {
+                  "id": "ST7.1.1.1",
+                  "nombre": "Modelo BaseFare",
+                  "descripcion": "Tabla para tarifas base (base_fare, per_minute, per_mile)",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.1.2",
+                  "nombre": "API de configuración base",
+                  "descripcion": "Endpoints para gestión de tarifas base globales",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.1.3",
+                  "nombre": "Validaciones de pricing",
+                  "descripcion": "Reglas de negocio para límites de precios",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T7.1.2",
+              "nombre": "Multiplicadores por Tier",
+              "descripcion": "Configuración de factores de precio por nivel de servicio",
+              "subtareas": [
+                {
+                  "id": "ST7.1.2.1",
+                  "nombre": "Definición de tiers",
+                  "descripcion": "Economy (1.0x), Comfort (1.3x), Premium (1.8x), Luxury (2.5x)",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.2.2",
+                  "nombre": "API de gestión de tiers",
+                  "descripcion": "CRUD para configuración de multiplicadores por tier",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.2.3",
+                  "nombre": "Testing de tiers",
+                  "descripcion": "Herramientas para probar combinaciones de pricing",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T7.1.3",
+              "nombre": "Multiplicadores Regionales",
+              "descripcion": "Ajustes de precio basados en ubicación geográfica",
+              "subtareas": [
+                {
+                  "id": "ST7.1.3.1",
+                  "nombre": "Pricing por país",
+                  "descripcion": "Multiplicadores base y conversiones de moneda",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.3.2",
+                  "nombre": "Pricing por estado/ciudad",
+                  "descripcion": "Ajustes específicos para áreas metropolitanas, rurales, turísticas",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.3.3",
+                  "nombre": "Zonas especiales",
+                  "descripcion": "Pricing para aeropuertos, centros comerciales, eventos",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T7.1.4",
+              "nombre": "Multiplicadores Temporales",
+              "descripcion": "Ajustes dinámicos basados en hora, día, temporada",
+              "completado": true,
+              "subtareas": [
+                {
+                  "id": "ST7.1.4.1",
+                  "nombre": "Horarios pico",
+                  "descripcion": "7:00-9:00, 17:00-19:00 con multiplicador 1.4x",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.4.2",
+                  "nombre": "Horarios nocturnos",
+                  "descripcion": "22:00-6:00 con multiplicador 1.6x",
+                  "completado": true
+                },
+                {
+                  "id": "ST7.1.4.3",
+                  "nombre": "Festivos y fines de semana",
+                  "descripcion": "Multiplicadores para días especiales y fines de semana",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M7.2",
+          "nombre": "Pricing Dinámico y Testing",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Implementar cálculo dinámico de precios y herramientas de testing",
+          "dependencias": [
+            "src/rides/rides.service.ts",
+            "src/admin/modules/pricing/pricing.module.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T7.2.1",
+              "nombre": "Motor de Cálculo de Precios",
+              "descripcion": "Implementar fórmula completa de cálculo dinámico",
+              "subtareas": [
+                {
+                  "id": "ST7.2.1.1",
+                  "nombre": "Fórmula de pricing",
+                  "descripcion": "Precio = (Base × Tier × Regional × Temporal) + Adicionales"
+                },
+                {
+                  "id": "ST7.2.1.2",
+                  "nombre": "Servicio de cálculo",
+                  "descripcion": "PriceCalculationService con lógica de negocio"
+                },
+                {
+                  "id": "ST7.2.1.3",
+                  "nombre": "Validación de cálculos",
+                  "descripcion": "Tests unitarios para todas las combinaciones de pricing"
+                }
+              ]
+            },
+            {
+              "id": "T7.2.2",
+              "nombre": "Herramientas de Testing",
+              "descripcion": "Price calculator y herramientas para probar configuraciones",
+              "subtareas": [
+                {
+                  "id": "ST7.2.2.1",
+                  "nombre": "Price Calculator UI",
+                  "descripcion": "Interfaz para probar combinaciones de pricing"
+                },
+                {
+                  "id": "ST7.2.2.2",
+                  "nombre": "Historical Analysis",
+                  "descripcion": "Comparación de precios históricos y tendencias"
+                },
+                {
+                  "id": "ST7.2.2.3",
+                  "nombre": "A/B Testing Framework",
+                  "descripcion": "Sistema para probar diferentes estrategias de pricing"
+                }
+              ]
+            },
+            {
+              "id": "T7.2.3",
+              "nombre": "Tarifas Adicionales",
+              "descripcion": "Implementar fees especiales (aeropuerto, tolls, waiting time)",
+              "subtareas": [
+                {
+                  "id": "ST7.2.3.1",
+                  "nombre": "Airport Fees",
+                  "descripcion": "Tarifas fijas por recogida/entrega en aeropuertos"
+                },
+                {
+                  "id": "ST7.2.3.2",
+                  "nombre": "Toll Roads y Peajes",
+                  "descripcion": "Cargo automático por uso de autopistas"
+                },
+                {
+                  "id": "ST7.2.3.3",
+                  "nombre": "Waiting Time y Cancellation",
+                  "descripcion": "Penalizaciones por tiempo de espera y cancelaciones"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E8",
+      "nombre": "Módulo Configuración del Sistema",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M8.1",
+          "nombre": "Configuración Global",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Sistema de configuración global del admin panel y plataforma",
+          "dependencias": [
+            "src/config/config.service.ts",
+            "src/admin/modules/config/config.module.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T8.1.1",
+              "nombre": "Feature Flags",
+              "descripcion": "Sistema de habilitación/deshabilitación de funcionalidades",
+              "completado": true,
+              "subtareas": [
+                {
+                  "id": "ST8.1.1.1",
+                  "nombre": "Modelo FeatureFlag",
+                  "descripcion": "Tabla para flags con nombre, descripción, estado",
+                  "completado": true
+                },
+                {
+                  "id": "ST8.1.1.2",
+                  "nombre": "API de gestión de flags",
+                  "descripcion": "Endpoints para activar/desactivar features",
+                  "completado": true
+                },
+                {
+                  "id": "ST8.1.1.3",
+                  "nombre": "Cache de flags",
+                  "descripcion": "Sistema de cache para performance de flags",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T8.1.2",
+              "nombre": "API Keys y Integraciones",
+              "descripcion": "Gestión de claves para servicios externos",
+              "completado": true,
+              "subtareas": [
+                {
+                  "id": "ST8.1.2.1",
+                  "nombre": "Modelo APIKey",
+                  "descripcion": "Tabla segura para almacenar claves API",
+                  "completado": true
+                },
+                {
+                  "id": "ST8.1.2.2",
+                  "nombre": "Encriptación de claves",
+                  "descripcion": "Sistema de encriptación para claves sensibles",
+                  "completado": true
+                },
+                {
+                  "id": "ST8.1.2.3",
+                  "nombre": "Rotación automática",
+                  "descripcion": "Sistema de renovación automática de claves expiradas",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M8.2",
+          "nombre": "Gestión de Administradores",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Sistema completo para gestión de usuarios administradores",
+          "dependencias": [
+            "src/admin/admin.service.ts",
+            "src/auth/auth.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T8.2.1",
+              "nombre": "CRUD de Administradores",
+              "descripcion": "Crear, editar, activar/desactivar administradores",
+              "subtareas": [
+                {
+                  "id": "ST8.2.1.1",
+                  "nombre": "Extender modelo User para admins",
+                  "descripcion": "Campos adicionales específicos para administradores"
+                },
+                {
+                  "id": "ST8.2.1.2",
+                  "nombre": "API de gestión de admins",
+                  "descripcion": "Endpoints completos para CRUD de administradores"
+                },
+                {
+                  "id": "ST8.2.1.3",
+                  "nombre": "Reset de contraseñas",
+                  "descripcion": "Sistema seguro de cambio de contraseñas admin"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E9",
+      "nombre": "Testing y QA",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M9.1",
+          "nombre": "Testing Unitario",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar suite completa de tests unitarios",
+          "dependencias": [
+            "jest.config.js",
+            "src/**/*.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T9.1.1",
+              "nombre": "Tests de Servicios",
+              "completado": true,
+              "descripcion": "Cobertura completa de lógica de negocio",
+              "subtareas": [
+                {
+                  "id": "ST9.1.1.1",
+                  "nombre": "Tests de pricing",
+                  "completado": true,
+                  "descripcion": "Validación de cálculos de precios"
+                },
+                {
+                  "id": "ST9.1.1.2",
+                  "nombre": "Tests de notificaciones",
+                  "descripcion": "Validación de envío y plantillas",
+                  "completado": true
+                },
+                {
+                  "id": "ST9.1.1.3",
+                  "nombre": "Tests de RBAC",
+                  "descripcion": "Validación de permisos y autorizaciones",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "nombre": "Documentación del Sistema",
+      "progreso": 100,
+      "modulos": [
+        {
+          "id": "M10.1",
+          "nombre": "Documentación Técnica",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Documentación completa para desarrolladores",
+          "dependencias": [
+            "docs/api-documentation.md",
+            "docs/database-schema.md"
+          ],
+          "tareas": [
+            {
+              "id": "T10.1.1",
+              "nombre": "API Documentation",
+              "completado": true,
+              "descripcion": "Documentación completa de endpoints con Swagger",
+              "subtareas": [
+                {
+                  "id": "ST10.1.1.1",
+                  "completado": true,
+                  "nombre": "Swagger/OpenAPI specs",
+                  "descripcion": "Especificaciones completas para todos los endpoints"
+                },
+                {
+                  "id": "ST10.1.1.2",
+                  "nombre": "Ejemplos de uso",
+                  "completado": true,
+                  "descripcion": "Código de ejemplo para integración"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

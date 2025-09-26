@@ -1,12 +1,9 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import {
-  AdminJwtPayload,
-  AuthenticatedAdmin,
-} from '../interfaces/admin.interface';
-import { AdminService } from '../admin.service';
-import { AdminRole, Permission } from '../entities/admin.entity';
+import { ConfigService } from '@nestjs/config';
+import { AdminAuthService } from '../services/admin-auth.service';
+import { AdminJwtPayload } from '../interfaces/admin.interface';
 
 export const JWT_STRATEGY_NAME = 'admin-jwt';
 
@@ -15,76 +12,39 @@ export class AdminJwtStrategy extends PassportStrategy(
   Strategy,
   JWT_STRATEGY_NAME,
 ) {
-  private readonly logger = new Logger(AdminJwtStrategy.name);
+  constructor(
+    private configService: ConfigService,
+    private adminAuthService: AdminAuthService,
+  ) {
+    const secret =
+      configService.get<string>('ADMIN_JWT_SECRET') ||
+      configService.get<string>('JWT_SECRET');
 
-  constructor(private adminService: AdminService) {
+    if (!secret) {
+      throw new Error('JWT secret not configured for admin authentication');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'your-super-secret-jwt-key-here',
+      secretOrKey: secret,
     });
   }
 
-  async validate(payload: AdminJwtPayload): Promise<AuthenticatedAdmin> {
-    this.logger.debug('Validating admin JWT payload:', {
-      sub: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      permissionsCount: payload.permissions?.length || 0,
-    });
+  async validate(payload: AdminJwtPayload) {
+    const user = await this.adminAuthService.validateAdmin(payload);
 
-    const { sub: adminId, email } = payload;
-
-    // Buscar el admin en la base de datos
-    this.logger.debug(`Looking up admin by ID: ${adminId}`);
-    const admin = await this.adminService.FindAdminById(parseInt(adminId));
-
-    if (!admin) {
-      this.logger.error(`Admin not found in database:`, { adminId, email });
-      throw new UnauthorizedException('Admin not found');
+    if (!user) {
+      throw new UnauthorizedException('Token inválido o usuario no encontrado');
     }
 
-    if (!admin.isActive) {
-      this.logger.warn(`Admin account is deactivated:`, { adminId, email });
-      throw new UnauthorizedException('Admin account is deactivated');
-    }
-
-    this.logger.debug(`Admin found and active:`, {
-      id: admin.id,
-      email: admin.email,
-      userType: admin.userType,
-      adminRole: admin.adminRole,
-      permissionsCount: admin.adminPermissions?.length || 0,
-    });
-
-    // Retornar la información del admin autenticado
+    // Return user object that will be attached to request.user
     return {
-      id: admin.id,
-      name: admin.name,
-      email: admin.email,
-      userType: admin.userType || 'user',
-      adminRole: Object.values(AdminRole).includes(admin.adminRole as AdminRole)
-        ? (admin.adminRole as AdminRole)
-        : AdminRole.SUPPORT,
-      isActive: admin.isActive,
-      adminPermissions: (admin.adminPermissions || [])
-        .map((perm: any) => {
-          if (
-            typeof perm === 'string' &&
-            Object.values(Permission).includes(perm as Permission)
-          ) {
-            return perm as Permission;
-          }
-          if (
-            typeof perm === 'number' &&
-            Object.values(Permission).includes(perm as unknown as Permission)
-          ) {
-            return perm as unknown as Permission;
-          }
-          return undefined;
-        })
-        .filter((perm): perm is Permission => perm !== undefined),
-      lastAdminLogin: admin.lastAdminLogin || undefined,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      permissions: user.permissions,
     };
   }
 }

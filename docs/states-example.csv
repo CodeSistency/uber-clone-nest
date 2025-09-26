@@ -1,0 +1,24 @@
+countryId,name,code,latitude,longitude,timezone,capital,population,areaKm2,pricingMultiplier,serviceFee
+1,California,CA,36.7783,-119.4179,America/Los_Angeles,Sacramento,39538223,423967,1.2,2.5
+1,Texas,TX,31.9686,-99.9018,America/Chicago,Austin,29145505,695662,1.1,1.8
+1,Florida,FL,27.7663,-81.6868,America/New_York,Tallahassee,21538187,170312,1.15,2.2
+1,New York,NY,40.7128,-74.0060,America/New_York,Albany,20201249,141297,1.25,3.0
+1,Illinois,IL,40.6331,-89.3985,America/Chicago,Springfield,12812508,149995,1.05,1.5
+2,Ontario,ON,51.2538,-85.3232,America/Toronto,Toronto,14446515,1076395,1.1,2.0
+2,Quebec,QC,52.9399,-73.5491,America/Montreal,Quebec City,8501833,1857411,1.08,1.8
+2,British Columbia,BC,53.7267,-127.6476,America/Vancouver,Victoria,5000879,944735,1.12,2.2
+3,Jalisco,JL,20.6595,-103.3494,America/Mexico_City,Guadalajara,8348151,78599,1.0,1.2
+3,Mexico City,CDMX,19.4326,-99.1332,America/Mexico_City,Mexico City,9209944,1485,1.15,2.8
+4,Sao Paulo,SP,-23.5505,-46.6333,America/Sao_Paulo,Sao Paulo,44411238,248219,1.2,2.5
+4,Rio de Janeiro,RJ,-22.9068,-43.1729,America/Sao_Paulo,Rio de Janeiro,17159960,43780,1.18,2.3
+5,England,ENG,52.3555,-1.1743,Europe/London,London,55977178,130279,1.3,3.5
+5,Scotland,SCT,56.4907,-4.2026,Europe/London,Edinburgh,5438100,78772,1.15,2.8
+6,North Rhine-Westphalia,NW,51.4332,7.6616,Europe/Berlin,Dusseldorf,17947221,34085,1.1,2.2
+6,Bavaria,BY,48.7904,11.4979,Europe/Berlin,Munich,13076721,70541,1.12,2.4
+7,Ile-de-France,IDF,48.8566,2.3522,Europe/Paris,Paris,12278210,12011,1.25,3.2
+7,Provence-Alpes-Cote d'Azur,PACA,43.9352,6.0679,Europe/Paris,Marseille,5074065,31400,1.08,2.0
+8,Catalonia,CAT,41.5912,1.5209,Europe/Madrid,Barcelona,7675217,32108,1.1,2.1
+8,Andalusia,AN,37.5443,-4.7278,Europe/Madrid,Seville,8446561,87599,1.05,1.8
+9,Lombardy,LOM,45.4668,9.1905,Europe/Rome,Milan,10060574,23863,1.15,2.5
+9,Latium,LAZ,41.9028,12.4964,Europe/Rome,Rome,5890743,17232,1.18,2.8
+10,Tokyo,TYO,35.6762,139.6503,Asia/Tokyo,Tokyo,13942856,2194,1.3,3.8

@@ -157,7 +157,9 @@ export class NotificationsService {
   ): Promise<void> {
     try {
       this.logger.log(`🔍 Buscando drivers online para ride ${rideId}...`);
-      this.logger.log(`📍 Ubicación pickup: ${pickupLocation.lat}, ${pickupLocation.lng}`);
+      this.logger.log(
+        `📍 Ubicación pickup: ${pickupLocation.lat}, ${pickupLocation.lng}`,
+      );
 
       // Find nearby drivers (within 5km)
       const nearbyDrivers = await this.prisma.driver.findMany({
@@ -185,7 +187,9 @@ export class NotificationsService {
 
       // Log details of found drivers
       nearbyDrivers.forEach((driver, index) => {
-        this.logger.log(`  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} (${driver.vehicles?.[0]?.vehicleType?.displayName || 'Sin tipo'})`);
+        this.logger.log(
+          `  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} (${driver.vehicles?.[0]?.vehicleType?.displayName || 'Sin tipo'})`,
+        );
       });
 
       // Send notifications to nearby drivers
@@ -229,7 +233,9 @@ export class NotificationsService {
   }> {
     try {
       this.logger.log(`🎯 Iniciando matching automático para ride ${rideId}`);
-      this.logger.log(`📍 Ubicación pickup: ${pickupLocation.lat}, ${pickupLocation.lng}`);
+      this.logger.log(
+        `📍 Ubicación pickup: ${pickupLocation.lat}, ${pickupLocation.lng}`,
+      );
 
       // 1. Buscar drivers online disponibles
       const availableDrivers = await this.prisma.driver.findMany({
@@ -248,10 +254,14 @@ export class NotificationsService {
         take: 20, // Buscar más drivers para tener mejores opciones
       });
 
-      this.logger.log(`👥 Drivers online encontrados: ${availableDrivers.length}`);
+      this.logger.log(
+        `👥 Drivers online encontrados: ${availableDrivers.length}`,
+      );
 
       if (availableDrivers.length === 0) {
-        this.logger.warn(`⚠️ No hay drivers online disponibles para ride ${rideId}`);
+        this.logger.warn(
+          `⚠️ No hay drivers online disponibles para ride ${rideId}`,
+        );
         return {
           assigned: false,
           availableDrivers: 0,
@@ -260,7 +270,7 @@ export class NotificationsService {
       }
 
       // 2. Calcular distancias simuladas (por ahora, distancia aleatoria entre 0-5km)
-      const driversWithDistance = availableDrivers.map(driver => {
+      const driversWithDistance = availableDrivers.map((driver) => {
         // Simular distancia (en producción usaríamos cálculo real con coordenadas GPS)
         const simulatedDistance = Math.random() * 5; // 0-5km
         return {
@@ -274,25 +284,32 @@ export class NotificationsService {
 
       this.logger.log(`📊 Drivers ordenados por distancia:`);
       driversWithDistance.slice(0, 5).forEach((driver, index) => {
-        this.logger.log(`  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} - ${driver.distance.toFixed(2)}km`);
+        this.logger.log(
+          `  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} - ${driver.distance.toFixed(2)}km`,
+        );
       });
 
       // 4. Intentar asignar el driver más cercano
       const selectedDriver = driversWithDistance[0];
-      this.logger.log(`🎯 Intentando asignar driver ${selectedDriver.id} (${selectedDriver.distance.toFixed(2)}km)`);
+      this.logger.log(
+        `🎯 Intentando asignar driver ${selectedDriver.id} (${selectedDriver.distance.toFixed(2)}km)`,
+      );
 
       try {
         // Asignar driver usando el método existente de confirmación
         await this.confirmDriverForRide(rideId, selectedDriver.id);
 
-        this.logger.log(`✅ Driver ${selectedDriver.id} asignado exitosamente a ride ${rideId}`);
+        this.logger.log(
+          `✅ Driver ${selectedDriver.id} asignado exitosamente a ride ${rideId}`,
+        );
 
         // 5. Notificar al driver asignado
         const notification: NotificationPayload = {
           userId: selectedDriver.id.toString(),
           type: NotificationType.RIDE_REQUEST,
           title: 'Ride Assigned - Respond Now!',
-          message: 'You have been automatically assigned to a ride. Check your pending requests.',
+          message:
+            'You have been automatically assigned to a ride. Check your pending requests.',
           data: {
             rideId,
             pickupLocation,
@@ -303,7 +320,9 @@ export class NotificationsService {
         };
 
         await this.sendNotification(notification);
-        this.logger.log(`📱 Notificación enviada al driver ${selectedDriver.id}`);
+        this.logger.log(
+          `📱 Notificación enviada al driver ${selectedDriver.id}`,
+        );
 
         return {
           assigned: true,
@@ -311,12 +330,16 @@ export class NotificationsService {
           availableDrivers: availableDrivers.length,
           notifiedDrivers: 1,
         };
-
       } catch (assignmentError) {
-        this.logger.error(`❌ Error asignando driver ${selectedDriver.id} a ride ${rideId}:`, assignmentError);
+        this.logger.error(
+          `❌ Error asignando driver ${selectedDriver.id} a ride ${rideId}:`,
+          assignmentError,
+        );
 
         // Si falla la asignación automática, enviar notificaciones a todos los drivers cercanos
-        this.logger.log(`🔄 Fallback: Enviando notificaciones push a ${Math.min(driversWithDistance.length, 5)} drivers`);
+        this.logger.log(
+          `🔄 Fallback: Enviando notificaciones push a ${Math.min(driversWithDistance.length, 5)} drivers`,
+        );
         await this.notifyNearbyDrivers(rideId, pickupLocation);
 
         return {
@@ -325,9 +348,11 @@ export class NotificationsService {
           notifiedDrivers: Math.min(driversWithDistance.length, 5),
         };
       }
-
     } catch (error) {
-      this.logger.error(`❌ Error en findAndAssignNearbyDriver para ride ${rideId}:`, error);
+      this.logger.error(
+        `❌ Error en findAndAssignNearbyDriver para ride ${rideId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -369,10 +394,14 @@ export class NotificationsService {
         },
       });
 
-      this.logger.log(`✅ Driver ${driverId} confirmado para ride ${rideId} (status: driver_confirmed)`);
-
+      this.logger.log(
+        `✅ Driver ${driverId} confirmado para ride ${rideId} (status: driver_confirmed)`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Error confirmando driver ${driverId} para ride ${rideId}:`, error);
+      this.logger.error(
+        `❌ Error confirmando driver ${driverId} para ride ${rideId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -435,7 +464,7 @@ export class NotificationsService {
           });
 
           this.logger.warn(
-            `Push token transferred: user ${existingTokenForOtherUser.userId} → user ${userId}`
+            `Push token transferred: user ${existingTokenForOtherUser.userId} → user ${userId}`,
           );
 
           // Send logout signal to previous user (optional)
@@ -480,7 +509,8 @@ export class NotificationsService {
         userId: oldUserId.toString(),
         type: NotificationType.SYSTEM_MAINTENANCE,
         title: 'Sesión cerrada',
-        message: 'Tu cuenta ha sido accedida desde otro dispositivo. Has sido desconectado por seguridad.',
+        message:
+          'Tu cuenta ha sido accedida desde otro dispositivo. Has sido desconectado por seguridad.',
         data: {
           action: 'force_logout',
           reason: 'login_from_another_device',
@@ -489,9 +519,14 @@ export class NotificationsService {
 
       await this.sendNotification(logoutPayload);
 
-      this.logger.log(`Logout signal sent to user ${oldUserId} for token transfer`);
+      this.logger.log(
+        `Logout signal sent to user ${oldUserId} for token transfer`,
+      );
     } catch (error) {
-      this.logger.warn(`Failed to send logout signal to user ${oldUserId}:`, error);
+      this.logger.warn(
+        `Failed to send logout signal to user ${oldUserId}:`,
+        error,
+      );
     }
   }
 
@@ -572,6 +607,13 @@ export class NotificationsService {
       );
       throw error;
     }
+  }
+
+  async markAsRead(
+    notificationId: number,
+    userId: string,
+  ): Promise<void> {
+    return this.markNotificationAsRead(notificationId, userId);
   }
 
   async markNotificationAsRead(

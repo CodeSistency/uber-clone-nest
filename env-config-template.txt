@@ -144,3 +144,6 @@ ADMIN_JWT_SECRET=your-admin-jwt-secret-key-that-is-at-least-32-characters-long
 # Admin JWT expiration times
 ADMIN_JWT_EXPIRES_IN=1h
 ADMIN_JWT_REFRESH_EXPIRES_IN=7d
+
+# Admin JWT Refresh Secret (optional - uses main JWT_SECRET if not set)
+ADMIN_JWT_REFRESH_SECRET=your-admin-refresh-jwt-secret-key-that-is-at-least-32-characters-long

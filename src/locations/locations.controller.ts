@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, Query, ParseFloatPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  ParseFloatPipe,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { LocationsService } from './locations.service';
 import { ValidateLocationDto } from './dto/validate-location.dto';

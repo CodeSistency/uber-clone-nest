@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -26,7 +36,10 @@ import { UpdateDriverProfileDto } from './dto/update-driver-profile.dto';
 import { VerifyDriverDto } from './dto/verify-driver.dto';
 import { CreateDriverPaymentDto } from './dto/driver-payment.dto';
 import { AssignWorkZoneDto } from './dto/work-zone.dto';
-import { DriverStatisticsDto, DriverStatsSummaryDto } from './dto/driver-statistics.dto';
+import {
+  DriverStatisticsDto,
+  DriverStatsSummaryDto,
+} from './dto/driver-statistics.dto';
 import { DriverProfileDto } from './dto/driver-profile.dto';
 import { BulkOperationDto } from './dto/bulk-operation.dto';
 
@@ -283,10 +296,7 @@ export class DriversController {
     @Param('driverId') driverId: string,
     @Body() body: UpdateDriverStatusDto,
   ): Promise<Driver> {
-    return this.driversService.updateDriverStatus(
-      Number(driverId),
-      body,
-    );
+    return this.driversService.updateDriverStatus(Number(driverId), body);
   }
 
   @Get('ride-requests')
@@ -469,7 +479,8 @@ export class DriversController {
   @Get('profile/:id')
   @ApiOperation({
     summary: 'Get complete driver profile',
-    description: 'Retrieve comprehensive driver profile with statistics, vehicles, payment methods, and work zones',
+    description:
+      'Retrieve comprehensive driver profile with statistics, vehicles, payment methods, and work zones',
   })
   @ApiParam({
     name: 'id',
@@ -482,7 +493,9 @@ export class DriversController {
     type: DriverProfileDto,
   })
   @ApiNotFoundResponse({ description: 'Driver not found' })
-  async getDriverProfile(@Param('id', ParseIntPipe) id: number): Promise<DriverProfileDto> {
+  async getDriverProfile(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DriverProfileDto> {
     return this.driversService.getDriverProfile(id);
   }
 
@@ -550,7 +563,9 @@ export class DriversController {
     status: 200,
     description: 'Vehicles retrieved successfully',
   })
-  async getDriverVehicles(@Param('driverId', ParseIntPipe) driverId: number): Promise<any[]> {
+  async getDriverVehicles(
+    @Param('driverId', ParseIntPipe) driverId: number,
+  ): Promise<any[]> {
     return this.driversService.getDriverVehicles(driverId);
   }
 
@@ -591,8 +606,12 @@ export class DriversController {
     status: 200,
     description: 'Vehicle deleted successfully',
   })
-  @ApiBadRequestResponse({ description: 'Cannot delete vehicle with active rides' })
-  async deleteVehicle(@Param('vehicleId', ParseIntPipe) vehicleId: number): Promise<void> {
+  @ApiBadRequestResponse({
+    description: 'Cannot delete vehicle with active rides',
+  })
+  async deleteVehicle(
+    @Param('vehicleId', ParseIntPipe) vehicleId: number,
+  ): Promise<void> {
     return this.driversService.deleteVehicle(vehicleId);
   }
 
@@ -606,7 +625,9 @@ export class DriversController {
     status: 201,
     description: 'Document uploaded successfully',
   })
-  async uploadVehicleDocument(@Body() uploadDto: UploadVehicleDocumentDto): Promise<any> {
+  async uploadVehicleDocument(
+    @Body() uploadDto: UploadVehicleDocumentDto,
+  ): Promise<any> {
     return this.driversService.uploadVehicleDocument(uploadDto);
   }
 
@@ -650,7 +671,9 @@ export class DriversController {
     status: 200,
     description: 'Payment methods retrieved successfully',
   })
-  async getDriverPaymentMethods(@Param('driverId', ParseIntPipe) driverId: number): Promise<any[]> {
+  async getDriverPaymentMethods(
+    @Param('driverId', ParseIntPipe) driverId: number,
+  ): Promise<any[]> {
     return this.driversService.getDriverPaymentMethods(driverId);
   }
 
@@ -690,7 +713,9 @@ export class DriversController {
     status: 200,
     description: 'Payment method deleted successfully',
   })
-  async deletePaymentMethod(@Param('methodId', ParseIntPipe) methodId: number): Promise<void> {
+  async deletePaymentMethod(
+    @Param('methodId', ParseIntPipe) methodId: number,
+  ): Promise<void> {
     return this.driversService.deletePaymentMethod(methodId);
   }
 
@@ -701,7 +726,8 @@ export class DriversController {
   @Put(':driverId/verification')
   @ApiOperation({
     summary: 'Update driver verification status',
-    description: 'Approve, reject, or request additional documents for driver verification',
+    description:
+      'Approve, reject, or request additional documents for driver verification',
   })
   @ApiParam({
     name: 'driverId',
@@ -881,7 +907,11 @@ export class DriversController {
     @Param('paymentId', ParseIntPipe) paymentId: number,
     @Body() body: { transactionId?: string; notes?: string },
   ): Promise<any> {
-    return this.driversService.processDriverPayment(paymentId, body.transactionId, body.notes);
+    return this.driversService.processDriverPayment(
+      paymentId,
+      body.transactionId,
+      body.notes,
+    );
   }
 
   // =========================================
@@ -904,7 +934,9 @@ export class DriversController {
     type: DriverStatisticsDto,
   })
   @ApiNotFoundResponse({ description: 'Driver not found' })
-  async getDriverStatistics(@Param('driverId', ParseIntPipe) driverId: number): Promise<DriverStatisticsDto> {
+  async getDriverStatistics(
+    @Param('driverId', ParseIntPipe) driverId: number,
+  ): Promise<DriverStatisticsDto> {
     return this.driversService.getDriverStatistics(driverId);
   }
 
@@ -958,11 +990,21 @@ export class DriversController {
     description: 'Drivers verified successfully',
   })
   async bulkVerifyDrivers(
-    @Body() body: { driverIds: string[]; verificationStatus: string; reason?: string },
+    @Body()
+    body: {
+      driverIds: string[];
+      verificationStatus: string;
+      reason?: string;
+    },
   ): Promise<any> {
     // TODO: Get admin ID from request context
     const adminId = 1; // Placeholder
-    return this.driversService.bulkVerifyDrivers(body.driverIds, body.verificationStatus, body.reason, adminId);
+    return this.driversService.bulkVerifyDrivers(
+      body.driverIds,
+      body.verificationStatus,
+      body.reason,
+      adminId,
+    );
   }
 
   @Post('bulk/status')
@@ -1001,6 +1043,11 @@ export class DriversController {
   ): Promise<any> {
     // TODO: Get admin ID from request context
     const adminId = 1; // Placeholder
-    return this.driversService.bulkUpdateStatus(body.driverIds, body.status, body.reason, adminId);
+    return this.driversService.bulkUpdateStatus(
+      body.driverIds,
+      body.status,
+      body.reason,
+      adminId,
+    );
   }
 }

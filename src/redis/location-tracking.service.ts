@@ -85,7 +85,9 @@ export class LocationTrackingService extends RedisPubSubService {
     };
 
     try {
-      console.log(`🔄 [LOCATION-TRACKING] Actualizando BD para conductor ${driverId}:`);
+      console.log(
+        `🔄 [LOCATION-TRACKING] Actualizando BD para conductor ${driverId}:`,
+      );
       console.log(`   Lat: ${location.lat}, Lng: ${location.lng}`);
       console.log(`   Accuracy: ${additionalData?.accuracy || 'null'}`);
       console.log(`   Timestamp: ${now.toISOString()}`);
@@ -103,8 +105,12 @@ export class LocationTrackingService extends RedisPubSubService {
         },
       });
 
-      console.log(`✅ [LOCATION-TRACKING] BD actualizada exitosamente para conductor ${driverId}`);
-      console.log(`   Resultado: isLocationActive=${updateResult.isLocationActive}, lat=${updateResult.currentLatitude}, lng=${updateResult.currentLongitude}`);
+      console.log(
+        `✅ [LOCATION-TRACKING] BD actualizada exitosamente para conductor ${driverId}`,
+      );
+      console.log(
+        `   Resultado: isLocationActive=${updateResult.isLocationActive}, lat=${updateResult.currentLatitude}, lng=${updateResult.currentLongitude}`,
+      );
 
       // Save to location history
       await this.prisma.driverLocationHistory.create({
@@ -407,7 +413,10 @@ export class LocationTrackingService extends RedisPubSubService {
       whereClause.vehicleTypeId = filters.vehicleTypeId;
     }
 
-    console.log(`🔍 [LOCATION-TRACKING] Where clause aplicado:`, JSON.stringify(whereClause, null, 2));
+    console.log(
+      `🔍 [LOCATION-TRACKING] Where clause aplicado:`,
+      JSON.stringify(whereClause, null, 2),
+    );
 
     const drivers = await this.prisma.driver.findMany({
       where: whereClause,
@@ -420,9 +429,13 @@ export class LocationTrackingService extends RedisPubSubService {
       },
     });
 
-    console.log(`📊 [LOCATION-TRACKING] Encontrados ${drivers.length} conductores antes del filtro de distancia`);
+    console.log(
+      `📊 [LOCATION-TRACKING] Encontrados ${drivers.length} conductores antes del filtro de distancia`,
+    );
     drivers.forEach((driver, index) => {
-      console.log(`   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName} - Status: ${driver.status} - Verified: ${driver.verificationStatus} - Location: (${driver.currentLatitude}, ${driver.currentLongitude})`);
+      console.log(
+        `   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName} - Status: ${driver.status} - Verified: ${driver.verificationStatus} - Location: (${driver.currentLatitude}, ${driver.currentLongitude})`,
+      );
     });
 
     // Filter by distance and calculate additional data
@@ -437,7 +450,9 @@ export class LocationTrackingService extends RedisPubSubService {
           driverLng,
         );
 
-        console.log(`📍 [LOCATION-TRACKING] Conductor ${driver.id}: ubicación (${driverLat}, ${driverLng}) - Distancia: ${distance.toFixed(3)}km - Dentro del radio ${radiusKm}km: ${distance <= radiusKm}`);
+        console.log(
+          `📍 [LOCATION-TRACKING] Conductor ${driver.id}: ubicación (${driverLat}, ${driverLng}) - Distancia: ${distance.toFixed(3)}km - Dentro del radio ${radiusKm}km: ${distance <= radiusKm}`,
+        );
 
         if (distance <= radiusKm) {
           // Calculate estimated time (assuming average speed of 30 km/h in city)
@@ -448,10 +463,13 @@ export class LocationTrackingService extends RedisPubSubService {
             firstName: driver.firstName,
             lastName: driver.lastName,
             profileImageUrl: driver.profileImageUrl,
-            carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : '',
+            carModel: driver.vehicles?.[0]
+              ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
+              : '',
             licensePlate: driver.vehicles?.[0]?.licensePlate || '',
             carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
-            vehicleType: driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
+            vehicleType:
+              driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
             currentLocation: {
               lat: Number(driver.currentLatitude),
               lng: Number(driver.currentLongitude),

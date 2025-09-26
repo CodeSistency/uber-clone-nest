@@ -57,15 +57,33 @@ export class TestDatabaseManager {
       },
     });
 
+    // Create vehicle type first
+    const vehicleType = await this.prisma.vehicleType.create({
+      data: {
+        name: 'car',
+        displayName: 'Carro',
+      },
+    });
+
     // Create test driver
-    await this.prisma.driver.create({
+    const driver = await this.prisma.driver.create({
       data: {
         firstName: 'Test',
         lastName: 'Driver',
-        carModel: 'Toyota Camry',
-        licensePlate: 'ABC-123',
-        carSeats: 4,
         status: 'online',
+      },
+    });
+
+    // Create vehicle for the driver
+    await this.prisma.vehicle.create({
+      data: {
+        driverId: driver.id,
+        vehicleTypeId: vehicleType.id,
+        make: 'Toyota',
+        model: 'Corolla',
+        year: 2020,
+        licensePlate: 'ABC-123',
+        seatingCapacity: 4,
       },
     });
   }

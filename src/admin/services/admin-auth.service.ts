@@ -1,0 +1,214 @@
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { AdminLoginDto, AdminLoginResponseDto } from '../dto/admin-login.dto';
+import {
+  AdminRole,
+  AdminPermission,
+  AdminJwtPayload,
+  ROLE_PERMISSIONS,
+} from '../interfaces/admin.interface';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class AdminAuthService {
+  private readonly logger = new Logger(AdminAuthService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {}
+
+  async login(loginDto: AdminLoginDto): Promise<AdminLoginResponseDto> {
+    const { email, password } = loginDto;
+
+    // Find admin user
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        isActive: true,
+        userType: true,
+        adminRole: true,
+        adminPermissions: true,
+        lastAdminLogin: true,
+      },
+    });
+
+    // Validate user exists and is admin
+    if (!user) {
+      this.logger.warn(`Login attempt for non-existent user: ${email}`);
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(`Login attempt for inactive user: ${email}`);
+      throw new UnauthorizedException('Cuenta inactiva');
+    }
+
+    if (user.userType !== 'admin' || !user.adminRole) {
+      this.logger.warn(`Login attempt for non-admin user: ${email}`);
+      throw new UnauthorizedException('Acceso no autorizado');
+    }
+
+    // Validate password
+    if (!user.password) {
+      this.logger.warn(`User has no password set: ${email}`);
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      this.logger.warn(`Invalid password for user: ${email}`);
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    // Update last login
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastAdminLogin: new Date(),
+        lastLogin: new Date(),
+      },
+    });
+
+    // Generate tokens
+    const permissions =
+      (user.adminPermissions as AdminPermission[]) ||
+      ROLE_PERMISSIONS[user.adminRole as AdminRole] ||
+      [];
+
+    const payload: AdminJwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.adminRole as AdminRole,
+      permissions,
+    };
+
+    const accessToken = this.generateAccessToken(payload);
+    const refreshToken = this.generateRefreshToken(payload);
+
+    // Log successful login
+    this.logger.log(`Admin login successful: ${email} (${user.adminRole})`);
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.adminRole,
+        permissions,
+      },
+      expires_in: this.getAccessTokenExpiration(),
+    };
+  }
+
+  async validateAdmin(payload: AdminJwtPayload): Promise<any> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        userType: true,
+        adminRole: true,
+        adminPermissions: true,
+      },
+    });
+
+    if (!user || !user.isActive || user.userType !== 'admin') {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.adminRole,
+      permissions:
+        user.adminPermissions ||
+        ROLE_PERMISSIONS[user.adminRole as AdminRole] ||
+        [],
+    };
+  }
+
+  async refreshToken(refreshToken: string): Promise<AdminLoginResponseDto> {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret:
+          this.configService.get('ADMIN_JWT_REFRESH_SECRET') ||
+          this.configService.get('JWT_SECRET'),
+      });
+
+      const user = await this.validateAdmin(payload);
+      if (!user) {
+        throw new UnauthorizedException('Token inválido');
+      }
+
+      const newPayload: AdminJwtPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions,
+      };
+
+      return {
+        access_token: this.generateAccessToken(newPayload),
+        refresh_token: this.generateRefreshToken(newPayload),
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          permissions: user.permissions,
+        },
+        expires_in: this.getAccessTokenExpiration(),
+      };
+    } catch (error) {
+      this.logger.error(`Token refresh failed: ${error.message}`);
+      throw new UnauthorizedException('Token de refresco inválido');
+    }
+  }
+
+  private generateAccessToken(payload: AdminJwtPayload): string {
+    return this.jwtService.sign(payload, {
+      secret:
+        this.configService.get('ADMIN_JWT_SECRET') ||
+        this.configService.get('JWT_SECRET'),
+      expiresIn:
+        this.configService.get('ADMIN_JWT_EXPIRES_IN') ||
+        this.configService.get('JWT_EXPIRES_IN') ||
+        '1h',
+    });
+  }
+
+  private generateRefreshToken(payload: AdminJwtPayload): string {
+    return this.jwtService.sign(payload, {
+      secret:
+        this.configService.get('ADMIN_JWT_REFRESH_SECRET') ||
+        this.configService.get('JWT_SECRET'),
+      expiresIn:
+        this.configService.get('ADMIN_JWT_REFRESH_EXPIRES_IN') ||
+        this.configService.get('JWT_REFRESH_EXPIRES_IN') ||
+        '7d',
+    });
+  }
+
+  private getAccessTokenExpiration(): number {
+    const expiresIn =
+      this.configService.get('ADMIN_JWT_EXPIRES_IN') ||
+      this.configService.get('JWT_EXPIRES_IN') ||
+      '1h';
+    // Convert to seconds (simplified - in production you'd use a proper library)
+    const seconds = expiresIn.includes('h') ? parseInt(expiresIn) * 3600 : 3600;
+    return Math.floor(Date.now() / 1000) + seconds;
+  }
+}

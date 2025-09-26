@@ -272,7 +272,7 @@ export class TransportDriverController {
   async getPendingRequests(
     @Req() req: any,
     @Query('lat', ParseFloatPipe) lat?: number,
-    @Query('lng', ParseFloatPipe) lng?: number
+    @Query('lng', ParseFloatPipe) lng?: number,
   ) {
     try {
       // DriverGuard ya validó que el usuario es conductor y agregó req.driver
@@ -280,13 +280,17 @@ export class TransportDriverController {
 
       // Si se proporcionan coordenadas manualmente Y NO SON (0,0), actualizar ubicación
       if (lat !== undefined && lng !== undefined && !(lat === 0 && lng === 0)) {
-        this.logger.log(`📍 [PENDING-REQUESTS] Usando ubicación manual del conductor: (${lat}, ${lng})`);
+        this.logger.log(
+          `📍 [PENDING-REQUESTS] Usando ubicación manual del conductor: (${lat}, ${lng})`,
+        );
         await this.flow.updateDriverLocation(driverId, {
           lat,
-          lng
+          lng,
         });
       } else if (lat === 0 && lng === 0) {
-        this.logger.log(`📍 [PENDING-REQUESTS] IGNORANDO coordenadas (0,0) - Usando ubicación GPS existente`);
+        this.logger.log(
+          `📍 [PENDING-REQUESTS] IGNORANDO coordenadas (0,0) - Usando ubicación GPS existente`,
+        );
       }
 
       const pendingRequests =
@@ -325,7 +329,7 @@ export class TransportDriverController {
     - La ubicación se almacena tanto en memoria (Redis) como en base de datos
     - Si hay un ride activo, se especifica en \`rideId\`
     - Las actualizaciones se publican a través de WebSockets
-    `
+    `,
   })
   @ApiBody({ type: UpdateDriverLocationDto })
   @ApiResponse({
@@ -335,7 +339,10 @@ export class TransportDriverController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Ubicación actualizada exitosamente' },
+        message: {
+          type: 'string',
+          example: 'Ubicación actualizada exitosamente',
+        },
         data: {
           type: 'object',
           properties: {
@@ -344,30 +351,34 @@ export class TransportDriverController {
               type: 'object',
               properties: {
                 lat: { type: 'number', example: 4.6097 },
-                lng: { type: 'number', example: -74.0817 }
-              }
+                lng: { type: 'number', example: -74.0817 },
+              },
             },
-            timestamp: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' },
-            accuracy: { type: 'number', example: 5.2 }
-          }
-        }
-      }
-    }
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              example: '2024-01-15T10:30:00.000Z',
+            },
+            accuracy: { type: 'number', example: 5.2 },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuario no es conductor'
+    description: 'Usuario no es conductor',
   })
   async updateLocation(
     @Body() locationData: UpdateDriverLocationDto,
-    @Req() req: any
+    @Req() req: any,
   ) {
     console.log(`📍 [LOCATION-UPDATE] === INICIO LOCATION UPDATE ===`);
     console.log(`📍 [LOCATION-UPDATE] Usuario autenticado:`, {
       userId: req.user.id,
       email: req.user.email,
       driverId: req.user.driverId,
-      hasDriverId: !!req.user.driverId
+      hasDriverId: !!req.user.driverId,
     });
 
     console.log(`📍 [LOCATION-UPDATE] Datos de ubicación recibidos:`, {
@@ -376,7 +387,7 @@ export class TransportDriverController {
       accuracy: locationData.accuracy,
       speed: locationData.speed,
       heading: locationData.heading,
-      rideId: locationData.rideId
+      rideId: locationData.rideId,
     });
 
     try {
@@ -385,10 +396,15 @@ export class TransportDriverController {
 
       if (!driverId) {
         console.log(`❌ [LOCATION-UPDATE] ERROR: Usuario no tiene driverId`);
-        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+        throw new NotFoundException({
+          error: 'USER_NOT_DRIVER',
+          message: 'Usuario no es conductor',
+        });
       }
 
-      console.log(`📍 [LOCATION-UPDATE] Usando driverId: ${driverId} para actualizar ubicación`);
+      console.log(
+        `📍 [LOCATION-UPDATE] Usando driverId: ${driverId} para actualizar ubicación`,
+      );
 
       // Actualizar ubicación usando el location tracking service
       await this.flow.updateDriverLocation(driverId, {
@@ -397,7 +413,7 @@ export class TransportDriverController {
         accuracy: locationData.accuracy,
         speed: locationData.speed,
         heading: locationData.heading,
-        rideId: locationData.rideId
+        rideId: locationData.rideId,
       });
 
       return {
@@ -407,11 +423,11 @@ export class TransportDriverController {
           driverId,
           location: {
             lat: locationData.lat,
-            lng: locationData.lng
+            lng: locationData.lng,
           },
           timestamp: new Date(),
-          accuracy: locationData.accuracy
-        }
+          accuracy: locationData.accuracy,
+        },
       };
     } catch (error) {
       throw error;
@@ -438,7 +454,7 @@ export class TransportDriverController {
     **Notas importantes:**
     - Solo conductores verificados pueden ponerse online
     - Si hay un ride activo, no se puede poner offline
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -454,20 +470,23 @@ export class TransportDriverController {
             driverId: { type: 'number', example: 7 },
             status: { type: 'string', example: 'online' },
             onlineAt: { type: 'string', format: 'date-time' },
-          }
-        }
-      }
-    }
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 403,
-    description: 'Conductor no verificado'
+    description: 'Conductor no verificado',
   })
   async goOnline(@Req() req: any) {
     try {
       const driverId = req.user.driverId;
       if (!driverId) {
-        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+        throw new NotFoundException({
+          error: 'USER_NOT_DRIVER',
+          message: 'Usuario no es conductor',
+        });
       }
 
       const result = await this.flow.setDriverOnline(driverId);
@@ -475,7 +494,7 @@ export class TransportDriverController {
       return {
         success: true,
         message: 'Conductor online exitosamente',
-        data: result
+        data: result,
       };
     } catch (error) {
       throw error;
@@ -497,21 +516,24 @@ export class TransportDriverController {
     **Notas importantes:**
     - Si hay un ride activo, no se puede poner offline
     - Las ubicaciones se mantienen para reporting
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
-    description: 'Conductor puesto offline exitosamente'
+    description: 'Conductor puesto offline exitosamente',
   })
   @ApiResponse({
     status: 409,
-    description: 'No se puede poner offline con ride activo'
+    description: 'No se puede poner offline con ride activo',
   })
   async goOffline(@Req() req: any) {
     try {
       const driverId = req.user.driverId;
       if (!driverId) {
-        throw new NotFoundException({ error: 'USER_NOT_DRIVER', message: 'Usuario no es conductor' });
+        throw new NotFoundException({
+          error: 'USER_NOT_DRIVER',
+          message: 'Usuario no es conductor',
+        });
       }
 
       const result = await this.flow.setDriverOffline(driverId);
@@ -519,7 +541,7 @@ export class TransportDriverController {
       return {
         success: true,
         message: 'Conductor offline exitosamente',
-        data: result
+        data: result,
       };
     } catch (error) {
       throw error;
@@ -544,7 +566,7 @@ export class TransportDriverController {
     - Verificar que el JWT token tiene driverId
     - Confirmar que el conductor existe en BD
     - Diagnosticar problemas de autenticación
-    `
+    `,
   })
   @ApiResponse({
     status: 200,
@@ -561,7 +583,7 @@ export class TransportDriverController {
             driverId: { type: 'number', nullable: true },
             driverStatus: { type: 'string', nullable: true },
             driverVerificationStatus: { type: 'string', nullable: true },
-          }
+          },
         },
         driver: {
           type: 'object',
@@ -572,7 +594,7 @@ export class TransportDriverController {
             verificationStatus: { type: 'string' },
             firstName: { type: 'string' },
             lastName: { type: 'string' },
-          }
+          },
         },
         diagnostics: {
           type: 'object',
@@ -581,11 +603,11 @@ export class TransportDriverController {
             driverExistsInDb: { type: 'boolean' },
             isOnline: { type: 'boolean' },
             isVerified: { type: 'boolean' },
-          }
+          },
         },
-        timestamp: { type: 'string', format: 'date-time' }
-      }
-    }
+        timestamp: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   async getMe(@Req() req: any) {
     console.log(`👤 [DRIVER-ME] === CONSULTA ESTADO CONDUCTOR ===`);
@@ -605,7 +627,7 @@ export class TransportDriverController {
             lastName: true,
             status: true,
             verificationStatus: true,
-          }
+          },
         });
       }
 
@@ -617,7 +639,7 @@ export class TransportDriverController {
         isVerified: driver?.verificationStatus === 'approved',
         driverIdFromJwt: user.driverId,
         driverIdFromDb: driver?.id,
-        driverIdsMatch: user.driverId === driver?.id
+        driverIdsMatch: user.driverId === driver?.id,
       };
 
       const result = {
@@ -635,7 +657,7 @@ export class TransportDriverController {
         currentLatitude: driver?.currentLatitude,
         currentLongitude: driver?.currentLongitude,
         isLocationActive: driver?.isLocationActive,
-        lastLocationUpdate: driver?.lastLocationUpdate
+        lastLocationUpdate: driver?.lastLocationUpdate,
       });
 
       return result;

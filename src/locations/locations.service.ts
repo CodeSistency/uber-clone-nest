@@ -236,9 +236,14 @@ export class LocationsService {
       canMatch: boolean;
     };
   }> {
-    this.logger.log(`🔍 Checking matching distance between user (${userLocation.lat}, ${userLocation.lng}) and driver (${driverLocation.lat}, ${driverLocation.lng})`);
+    this.logger.log(
+      `🔍 Checking matching distance between user (${userLocation.lat}, ${userLocation.lng}) and driver (${driverLocation.lat}, ${driverLocation.lng})`,
+    );
 
-    const distanceKm = await this.calculateDistance(userLocation, driverLocation);
+    const distanceKm = await this.calculateDistance(
+      userLocation,
+      driverLocation,
+    );
     const isWithinRange = distanceKm <= maxRadiusKm;
     const differenceKm = Math.max(0, distanceKm - maxRadiusKm);
 
@@ -256,10 +261,14 @@ export class LocationsService {
       },
     };
 
-    this.logger.log(`📏 Distance check result: ${distanceKm}km (max: ${maxRadiusKm}km) - ${isWithinRange ? '✅ WITHIN RANGE' : '❌ OUT OF RANGE'}`);
+    this.logger.log(
+      `📏 Distance check result: ${distanceKm}km (max: ${maxRadiusKm}km) - ${isWithinRange ? '✅ WITHIN RANGE' : '❌ OUT OF RANGE'}`,
+    );
 
     if (!isWithinRange) {
-      this.logger.warn(`🚫 Driver is ${differenceKm}km too far for matching (max allowed: ${maxRadiusKm}km)`);
+      this.logger.warn(
+        `🚫 Driver is ${differenceKm}km too far for matching (max allowed: ${maxRadiusKm}km)`,
+      );
     }
 
     return result;

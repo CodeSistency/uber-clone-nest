@@ -1,0 +1,11 @@
+name,isoCode2,isoCode3,numericCode,phoneCode,currencyCode,currencyName,currencySymbol,timezone,continent,region,subregion,vatRate,corporateTaxRate,incomeTaxRate,capital,population,areaKm2,supportedLanguages,flag
+United States,US,USA,840,+1,USD,United States Dollar,$,America/New_York,North America,Americas,Northern America,8.25,21.0,37.0,Washington D.C.,331900000,9833517,en,🇺🇸
+Canada,CA,CAN,124,+1,CAD,Canadian Dollar,C$,America/Toronto,North America,Americas,Northern America,5.0,15.0,33.0,Ottawa,38250000,9984670,en,fr,🇨🇦
+Mexico,MX,MEX,484,+52,MXN,Mexican Peso,$,America/Mexico_City,North America,Americas,Central America,16.0,30.0,35.0,Mexico City,128900000,1964375,es,🇲🇽
+Brazil,BR,BRA,076,+55,BRL,Brazilian Real,R$,America/Sao_Paulo,South America,Americas,South America,17.0,34.0,27.5,Brasilia,215300000,8515767,pt,🇧🇷
+United Kingdom,GB,GBR,826,+44,GBP,British Pound,£,Europe/London,Europe,Europe,Northern Europe,20.0,19.0,45.0,London,67500000,243610,en,🇬🇧
+Germany,DE,DEU,276,+49,EUR,Euro,€,Europe/Berlin,Europe,Europe,Western Europe,19.0,15.0,45.0,Berlin,83200000,357114,en,🇩🇪
+France,FR,FRA,250,+33,EUR,Euro,€,Europe/Paris,Europe,Europe,Western Europe,20.0,25.0,45.0,Paris,67800000,643801,en,fr,🇫🇷
+Spain,ES,ESP,724,+34,EUR,Euro,€,Europe/Madrid,Europe,Europe,Southern Europe,21.0,25.0,47.0,Madrid,47400000,505992,en,es,🇪🇸
+Italy,IT,ITA,380,+39,EUR,Euro,€,Europe/Rome,Europe,Europe,Southern Europe,22.0,24.0,43.0,Rome,59500000,301340,en,it,🇮🇹
+Japan,JP,JPN,392,+81,JPY,Japanese Yen,¥,Asia/Tokyo,Asia,Asia,Eastern Asia,10.0,23.5,40.0,Tokyo,125800000,377975,ja,🇯🇵

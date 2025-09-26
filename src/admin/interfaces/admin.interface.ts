@@ -1,149 +1,170 @@
-import { AdminRole, Permission } from '../entities/admin.entity';
+// Admin roles and permissions interfaces
+export enum AdminRole {
+  SUPER_ADMIN = 'super_admin',
+  ADMIN = 'admin',
+  MODERATOR = 'moderator',
+  SUPPORT = 'support',
+}
 
-// Interfaz para el payload del JWT de admin
+export enum AdminPermission {
+  // User management permissions
+  USERS_READ = 'users:read',
+  USERS_WRITE = 'users:write',
+  USERS_DELETE = 'users:delete',
+  USERS_SUSPEND = 'users:suspend',
+  USERS_VERIFY = 'users:verify',
+
+  // Driver management permissions
+  DRIVERS_READ = 'drivers:read',
+  DRIVERS_WRITE = 'drivers:write',
+  DRIVERS_DELETE = 'drivers:delete',
+  DRIVERS_VERIFY = 'drivers:verify',
+  DRIVERS_SUSPEND = 'drivers:suspend',
+
+  // Ride management permissions
+  RIDES_READ = 'rides:read',
+  RIDES_WRITE = 'rides:write',
+  RIDES_CANCEL = 'rides:cancel',
+  RIDES_REASSIGN = 'rides:reassign',
+  RIDES_REFUND = 'rides:refund',
+
+  // Analytics and reports permissions
+  ANALYTICS_READ = 'analytics:read',
+  REPORTS_READ = 'reports:read',
+  REPORTS_GENERATE = 'reports:generate',
+  REPORTS_EXPORT = 'reports:export',
+
+  // Notifications permissions
+  NOTIFICATIONS_READ = 'notifications:read',
+  NOTIFICATIONS_WRITE = 'notifications:write',
+  NOTIFICATIONS_SEND = 'notifications:send',
+
+  // Pricing management permissions
+  PRICING_READ = 'pricing:read',
+  PRICING_WRITE = 'pricing:write',
+
+  // Geographical Management
+  GEOGRAPHY_READ = 'geography:read',
+  GEOGRAPHY_WRITE = 'geography:write',
+
+  // System configuration permissions
+  CONFIG_READ = 'config:read',
+  CONFIG_WRITE = 'config:write',
+  SYSTEM_CONFIG_READ = 'system:config:read',
+  SYSTEM_CONFIG_WRITE = 'system:config:write',
+  SYSTEM_MAINTENANCE = 'system:maintenance',
+
+  // Admin permissions
+  ADMIN = 'admin',
+
+  // Emergency and safety permissions
+  EMERGENCY_INTERVENE = 'emergency:intervene',
+  SAFETY_MONITOR = 'safety:monitor',
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  role: AdminRole;
+  permissions: AdminPermission[];
+  isActive: boolean;
+  lastLogin?: Date;
+  createdAt: Date;
+}
+
 export interface AdminJwtPayload {
-  sub: string; // Admin ID as string for JWT compatibility
+  sub: number;
   email: string;
   role: AdminRole;
-  permissions: Permission[];
+  permissions: AdminPermission[];
   iat?: number;
   exp?: number;
 }
 
-// Interfaz para el admin autenticado en el request
-export interface AuthenticatedAdmin {
-  id: number;
-  name: string;
-  email: string;
-  userType: 'user' | 'admin' | null;
-  adminRole: AdminRole | null;
-  adminPermissions: Permission[];
-  lastAdminLogin?: Date | null;
-  isActive: boolean;
-}
+// Permission matrix by role
+export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
+  [AdminRole.SUPER_ADMIN]: Object.values(AdminPermission),
 
-// Interfaz para filtros de búsqueda de drivers
-export interface DriverFilters {
-  search?: string;
-  status?: string[];
-  verificationStatus?: string[];
-  rideCount?: NumberRange;
-  rating?: NumberRange;
-  location?: LocationFilter;
-  canDoDeliveries?: boolean;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}
+  [AdminRole.ADMIN]: [
+    // User permissions
+    AdminPermission.USERS_READ,
+    AdminPermission.USERS_WRITE,
+    AdminPermission.USERS_SUSPEND,
+    AdminPermission.USERS_VERIFY,
 
-// Interfaz para filtros de búsqueda de usuarios
-export interface UserFilters {
-  search?: string; // nombre, email, teléfono
-  status?: string[];
-  registrationDate?: DateRange;
-  rideCount?: NumberRange;
-  rating?: NumberRange;
-  location?: LocationFilter;
-  hasWallet?: boolean;
-  isVerified?: boolean;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}
+    // Driver permissions
+    AdminPermission.DRIVERS_READ,
+    AdminPermission.DRIVERS_WRITE,
+    AdminPermission.DRIVERS_VERIFY,
+    AdminPermission.DRIVERS_SUSPEND,
 
-// Interfaz para filtros de búsqueda de rides
-export interface RideFilters {
-  status?: string[];
-  paymentStatus?: string[];
-  dateRange?: DateRange;
-  driverId?: number;
-  userId?: string;
-  tierId?: number;
-  minFare?: number;
-  maxFare?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}
+    // Ride permissions
+    AdminPermission.RIDES_READ,
+    AdminPermission.RIDES_WRITE,
+    AdminPermission.RIDES_CANCEL,
+    AdminPermission.RIDES_REASSIGN,
+    AdminPermission.RIDES_REFUND,
 
-// Interfaz para filtros de búsqueda de stores
-export interface StoreFilters {
-  search?: string;
-  category?: string[];
-  isOpen?: boolean;
-  rating?: NumberRange;
-  ownerId?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-}
+    // Analytics permissions
+    AdminPermission.ANALYTICS_READ,
+    AdminPermission.REPORTS_READ,
+    AdminPermission.REPORTS_GENERATE,
+    AdminPermission.REPORTS_EXPORT,
 
-// Interfaces auxiliares
-export interface DateRange {
-  start: Date;
-  end: Date;
-}
+    // Notifications permissions
+    AdminPermission.NOTIFICATIONS_READ,
+    AdminPermission.NOTIFICATIONS_WRITE,
+    AdminPermission.NOTIFICATIONS_SEND,
 
-export interface NumberRange {
-  min: number;
-  max: number;
-}
+    // Pricing permissions
+    AdminPermission.PRICING_READ,
+    AdminPermission.PRICING_WRITE,
 
-export interface LocationFilter {
-  latitude: number;
-  longitude: number;
-  radius: number; // en kilómetros
-}
+    // Geographical permissions
+    AdminPermission.GEOGRAPHY_READ,
+    AdminPermission.GEOGRAPHY_WRITE,
 
-// Interfaz para logs de auditoría
-export interface AuditLog {
-  id: string;
-  adminId: number;
-  adminEmail: string;
-  action: string;
-  resource: string;
-  resourceId: string;
-  oldValue?: any;
-  newValue?: any;
-  ipAddress: string;
-  userAgent: string;
-  timestamp: Date;
-}
+    // Configuration permissions
+    AdminPermission.CONFIG_READ,
+    AdminPermission.CONFIG_WRITE,
 
-// Interfaz para configuración del sistema
-export interface SystemConfig {
-  // Pricing
-  baseFare: number;
-  perMinuteRate: number;
-  perMileRate: number;
+    // System permissions (limited)
+    AdminPermission.SYSTEM_CONFIG_READ,
 
-  // Commissions
-  driverCommission: number;
-  platformFee: number;
-  deliveryCommission: number;
+    // Emergency permissions
+    AdminPermission.EMERGENCY_INTERVENE,
+    AdminPermission.SAFETY_MONITOR,
+  ],
 
-  // Safety
-  sosResponseTime: number;
-  emergencyContacts: string[];
+  [AdminRole.MODERATOR]: [
+    // Limited user permissions
+    AdminPermission.USERS_READ,
 
-  // Features
-  features: {
-    scheduledRides: boolean;
-    delivery: boolean;
-    promotions: boolean;
-    wallet: boolean;
-    notifications: boolean;
-  };
+    // Limited driver permissions
+    AdminPermission.DRIVERS_READ,
+    AdminPermission.DRIVERS_VERIFY,
 
-  // Limits
-  limits: {
-    maxRideDistance: number;
-    maxDeliveryDistance: number;
-    maxActiveRidesPerDriver: number;
-    maxActiveOrdersPerCourier: number;
-  };
-}
+    // Limited ride permissions
+    AdminPermission.RIDES_READ,
+    AdminPermission.RIDES_CANCEL,
+
+    // Analytics permissions (read-only)
+    AdminPermission.ANALYTICS_READ,
+    AdminPermission.NOTIFICATIONS_READ,
+
+    // Safety monitoring
+    AdminPermission.SAFETY_MONITOR,
+  ],
+
+  [AdminRole.SUPPORT]: [
+    // Basic user permissions
+    AdminPermission.USERS_READ,
+
+    // Basic ride permissions
+    AdminPermission.RIDES_READ,
+
+    // Safety monitoring (limited)
+    AdminPermission.SAFETY_MONITOR,
+  ],
+};

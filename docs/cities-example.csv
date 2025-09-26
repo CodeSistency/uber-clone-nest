@@ -1,0 +1,24 @@
+stateId,name,latitude,longitude,timezone,serviceRadius,population,areaKm2,elevation,pricingMultiplier,serviceFee,restrictedAreas,premiumZones,postalCodes
+1,Los Angeles,34.0522,-118.2437,America/Los_Angeles,60,3976322,1302,89,1.3,1.5,airport,military_zone,downtown,stadium,90001,90002,90003
+1,San Francisco,37.7749,-122.4194,America/Los_Angeles,45,873965,121,16,1.4,2.0,airport,downtown,financial_district,94102,94103,94105
+1,San Diego,32.7157,-117.1611,America/Los_Angeles,55,1423851,964,19,1.25,1.2,airport,military_zone,downtown,92101,92102,92103
+1,San Jose,37.3382,-121.8863,America/Los_Angeles,50,1013240,467,25,1.35,1.8,airport,downtown,tech_park,95101,95110,95112
+2,Toronto,43.6532,-79.3832,America/Toronto,70,2930000,630,76,1.2,1.8,airport,downtown,financial_district,M5A,M5B,M5C
+2,Montreal,45.5017,-73.5673,America/Montreal,65,1704694,431,233,1.15,1.5,airport,downtown,old_port,H1A,H2A,H3A
+2,Vancouver,49.2827,-123.1207,America/Vancouver,55,631486,114,0,1.25,2.0,airport,downtown,stanley_park,V5K,V6A,V6B
+3,Mexico City,19.4326,-99.1332,America/Mexico_City,80,9209944,1485,2240,1.1,1.0,airport,military_zone,downtown,polanco,06700,11510,06500
+3,Guadalajara,20.6595,-103.3494,America/Mexico_City,60,1495182,151,1568,1.05,0.8,airport,downtown,44100,44200,44300
+4,Sao Paulo,-23.5505,-46.6333,America/Sao_Paulo,85,12176866,1521,760,1.2,1.5,airport,downtown,paulista_avenue,01310,01415,01501
+4,Rio de Janeiro,-22.9068,-43.1729,America/Sao_Paulo,75,6747815,1200,0,1.25,2.0,airport,downtown,copacabana,20010,20211,20510
+5,London,51.5074,-0.1278,Europe/London,45,8982000,1572,11,1.4,2.5,airport,downtown,westminster,SW1A,SW1P,SW1V
+5,Birmingham,52.4862,-1.8904,Europe/London,40,1141816,598,140,1.1,1.2,airport,downtown,B1,B2,B3
+6,Berlin,52.5200,13.4050,Europe/Berlin,55,3769495,891,34,1.15,1.8,airport,downtown,mitte,10115,10117,10119
+6,Munich,48.1351,11.5820,Europe/Berlin,50,1484226,310,519,1.2,2.0,airport,downtown,marienplatz,80331,80333,80335
+7,Paris,48.8566,2.3522,Europe/Paris,40,2165423,105,28,1.35,2.2,airport,downtown,champs_elysees,75001,75002,75003
+7,Lyon,45.7640,4.8357,Europe/Paris,35,515695,48,237,1.1,1.5,airport,downtown,vieux_lyon,69001,69002,69003
+8,Barcelona,41.3851,2.1734,Europe/Madrid,35,1620343,101,12,1.25,1.8,airport,downtown,gothic_quarter,08001,08002,08003
+8,Madrid,40.4168,-3.7038,Europe/Madrid,50,3223334,604,667,1.2,2.0,airport,downtown,gran_via,28001,28002,28003
+9,Rome,41.9028,12.4964,Europe/Rome,45,2872800,1285,21,1.3,2.0,airport,downtown,colosseum,00118,00144,00161
+9,Milan,45.4642,9.1900,Europe/Rome,40,1371498,181,122,1.25,1.8,airport,downtown,duomo,20121,20122,20123
+10,Tokyo,35.6762,139.6503,Asia/Tokyo,70,13942856,2194,40,1.5,3.0,airport,downtown,shibuya,100-0001,100-0002,100-0003
+10,Yokohama,35.4437,139.6380,Asia/Tokyo,50,3748781,437,1,1.3,2.2,airport,downtown,minato_mirai,220-0001,220-0002,220-0003

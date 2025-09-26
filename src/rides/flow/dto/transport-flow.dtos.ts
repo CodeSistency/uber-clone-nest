@@ -311,7 +311,7 @@ export class MatchedDriverDto {
       rating: { type: 'number', example: 4.8 },
       totalRides: { type: 'number', example: 1250 },
       memberSince: { type: 'string', format: 'date-time' },
-    }
+    },
   })
   driver: any;
 
@@ -330,15 +330,23 @@ export class MatchedDriverDto {
           icon: { type: 'string', example: '🚗' },
         },
       },
-    }
+    },
   })
   vehicle: any;
 
   @ApiProperty({
     type: 'object',
     properties: {
-      distance: { type: 'number', example: 1.2, description: 'Distancia en km' },
-      estimatedArrival: { type: 'number', example: 5, description: 'Tiempo estimado en minutos' },
+      distance: {
+        type: 'number',
+        example: 1.2,
+        description: 'Distancia en km',
+      },
+      estimatedArrival: {
+        type: 'number',
+        example: 5,
+        description: 'Tiempo estimado en minutos',
+      },
       currentLocation: {
         type: 'object',
         properties: {
@@ -346,7 +354,7 @@ export class MatchedDriverDto {
           lng: { type: 'number', example: -74.0817 },
         },
       },
-    }
+    },
   })
   location: any;
 
@@ -356,14 +364,21 @@ export class MatchedDriverDto {
       tierId: { type: 'number', example: 1 },
       tierName: { type: 'string', example: 'Premium' },
       estimatedFare: { type: 'number', example: 15.5 },
-    }
+    },
   })
   pricing: any;
 
-  @ApiProperty({ example: 85.3, description: 'Puntuación del matching (0-100)' })
+  @ApiProperty({
+    example: 85.3,
+    description: 'Puntuación del matching (0-100)',
+  })
   matchScore: number;
 
-  @ApiProperty({ type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' })
+  @ApiProperty({
+    type: 'string',
+    format: 'date-time',
+    example: '2024-01-15T10:30:00.000Z',
+  })
   matchedAt: Date;
 }
 
@@ -820,7 +835,7 @@ export class UpdateDriverLocationDto {
     example: 4.6097,
     minimum: -90,
     maximum: 90,
-    type: 'number'
+    type: 'number',
   })
   @IsNumber()
   @Min(-90)
@@ -833,7 +848,7 @@ export class UpdateDriverLocationDto {
     example: -74.0817,
     minimum: -180,
     maximum: 180,
-    type: 'number'
+    type: 'number',
   })
   @IsNumber()
   @Min(-180)
@@ -845,7 +860,7 @@ export class UpdateDriverLocationDto {
     description: 'Precisión de la ubicación en metros',
     example: 5.2,
     minimum: 0,
-    type: 'number'
+    type: 'number',
   })
   @IsOptional()
   @IsNumber()
@@ -857,7 +872,7 @@ export class UpdateDriverLocationDto {
     description: 'Velocidad actual en km/h',
     example: 45.5,
     minimum: 0,
-    type: 'number'
+    type: 'number',
   })
   @IsOptional()
   @IsNumber()
@@ -870,7 +885,7 @@ export class UpdateDriverLocationDto {
     example: 90,
     minimum: 0,
     maximum: 360,
-    type: 'number'
+    type: 'number',
   })
   @IsOptional()
   @IsNumber()
@@ -882,7 +897,7 @@ export class UpdateDriverLocationDto {
   @ApiPropertyOptional({
     description: 'ID del ride activo (opcional)',
     example: 123,
-    type: 'number'
+    type: 'number',
   })
   @IsOptional()
   @IsNumber()

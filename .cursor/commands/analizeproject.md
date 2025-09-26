@@ -1,0 +1,9 @@
+Actúa como un asistente de desarrollo experto y analiza el contexto completo de mi proyecto. Por favor, realiza las siguientes tareas:
+
+Análisis del Filetree: Examina la estructura de directorios y archivos del proyecto. Identifica los archivos clave (como package.json, README.md, archivos de configuración, etc.) y describe brevemente su propósito basado en su nombre y ubicación.
+Análisis de Código: Revisa el contenido de los archivos de código (por ejemplo, .js, .ts, .py, .html, .css, etc.) y comprende la lógica, patrones y tecnologías utilizadas. Identifica el lenguaje principal, frameworks o bibliotecas relevantes, y cualquier dependencia declarada (por ejemplo, en package.json o requirements.txt).
+Contexto General: Proporciona un resumen del propósito del proyecto, basado en el análisis de los archivos, nombres de carpetas, comentarios en el código y cualquier documentación disponible (como README.md). Si hay un archivo de configuración (como .env, Dockerfile, o archivos de CI/CD), inclúyelos en tu análisis para entender el entorno y el flujo de trabajo.
+Sugerencias y Mejoras: Basándote en el análisis, sugiere mejoras específicas en el código, estructura de archivos o configuración. Por ejemplo, señala posibles optimizaciones, mejores prácticas, o archivos redundantes/innecesarios. Si encuentras errores o problemas (como dependencias obsoletas, configuraciones inseguras, o código repetitivo), indícalos con explicaciones claras.
+Interacción Futura: Prepárate para responder preguntas específicas o realizar cambios en el código basándote en este análisis. Si necesito que edites un archivo, generes nuevo código o expliques algo en detalle, utiliza este contexto para mantener la coherencia con el proyecto.
+
+Por favor, proporciona un resumen claro y estructurado de tu análisis, destacando los puntos clave en cada sección. Si necesitas más información o acceso a algún archivo específico, indícalos. ¡Comienza el análisis ahora!

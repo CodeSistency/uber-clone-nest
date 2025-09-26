@@ -2,7 +2,6 @@ import {
   IsOptional,
   IsString,
   IsEmail,
-  IsPhoneNumber,
   IsIn,
   IsDateString,
 } from 'class-validator';

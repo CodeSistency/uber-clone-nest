@@ -34,8 +34,12 @@ export class RidesService {
     } = createRideDto;
 
     this.logger.log(`🚗 CREANDO RIDE - Inicio del proceso`);
-    this.logger.log(`📍 Origen: ${origin_address} (${origin_latitude}, ${origin_longitude})`);
-    this.logger.log(`📍 Destino: ${destination_address} (${destination_latitude}, ${destination_longitude})`);
+    this.logger.log(
+      `📍 Origen: ${origin_address} (${origin_latitude}, ${origin_longitude})`,
+    );
+    this.logger.log(
+      `📍 Destino: ${destination_address} (${destination_latitude}, ${destination_longitude})`,
+    );
     this.logger.log(`👤 Usuario ID: ${user_id}`);
     this.logger.log(`⏱️ Tiempo estimado: ${ride_time} minutos`);
     this.logger.log(`💰 Precio: ${fare_price}`);
@@ -70,18 +74,29 @@ export class RidesService {
 
     // Notify nearby drivers about the new ride
     try {
-      this.logger.log(`🔍 Buscando drivers cercanos para ride ${ride.rideId}...`);
-      const matchingResult = await this.notificationsService.findAndAssignNearbyDriver(ride.rideId, {
-        lat: origin_latitude,
-        lng: origin_longitude,
-      });
+      this.logger.log(
+        `🔍 Buscando drivers cercanos para ride ${ride.rideId}...`,
+      );
+      const matchingResult =
+        await this.notificationsService.findAndAssignNearbyDriver(ride.rideId, {
+          lat: origin_latitude,
+          lng: origin_longitude,
+        });
 
       if (matchingResult.assigned) {
-        this.logger.log(`✅ Driver asignado automáticamente: ${matchingResult.driverId}`);
-        this.logger.log(`📱 Notificación enviada al driver ${matchingResult.driverId}`);
+        this.logger.log(
+          `✅ Driver asignado automáticamente: ${matchingResult.driverId}`,
+        );
+        this.logger.log(
+          `📱 Notificación enviada al driver ${matchingResult.driverId}`,
+        );
       } else {
-        this.logger.warn(`⚠️ No se pudo asignar driver automáticamente. Drivers encontrados: ${matchingResult.availableDrivers}`);
-        this.logger.log(`📢 Enviando notificaciones push a ${matchingResult.notifiedDrivers} drivers`);
+        this.logger.warn(
+          `⚠️ No se pudo asignar driver automáticamente. Drivers encontrados: ${matchingResult.availableDrivers}`,
+        );
+        this.logger.log(
+          `📢 Enviando notificaciones push a ${matchingResult.notifiedDrivers} drivers`,
+        );
       }
     } catch (error) {
       this.logger.error(
@@ -283,8 +298,8 @@ export class RidesService {
           vehicleInfo: updatedRide.vehicle
             ? `${updatedRide.vehicle.make} ${updatedRide.vehicle.model} - ${updatedRide.vehicle.licensePlate}`
             : updatedRide.driver?.vehicles?.[0]
-            ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
-            : 'Vehículo asignado',
+              ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
+              : 'Vehículo asignado',
           vehicleType:
             updatedRide.vehicle?.vehicleType?.displayName ||
             updatedRide.driver?.vehicles?.[0]?.vehicleType?.displayName ||
@@ -375,12 +390,13 @@ export class RidesService {
         ride.driverId,
         'arrived',
         {
-          driverName: updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
+          driverName:
+            updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
           vehicleInfo: updatedRide.vehicle
             ? `${updatedRide.vehicle.make} ${updatedRide.vehicle.model} - ${updatedRide.vehicle.licensePlate}`
             : updatedRide.driver?.vehicles?.[0]
-            ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
-            : 'Vehículo asignado',
+              ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
+              : 'Vehículo asignado',
         },
       );
       this.logger.log(
@@ -676,12 +692,13 @@ export class RidesService {
         ride.driverId,
         'in_progress',
         {
-          driverName: updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
+          driverName:
+            updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
           vehicleInfo: updatedRide.vehicle
             ? `${updatedRide.vehicle.make} ${updatedRide.vehicle.model} - ${updatedRide.vehicle.licensePlate}`
             : updatedRide.driver?.vehicles?.[0]
-            ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
-            : 'Vehículo asignado',
+              ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
+              : 'Vehículo asignado',
           startedAt: now.toISOString(),
         },
       );
@@ -701,8 +718,11 @@ export class RidesService {
         id: updatedRide.driver?.id,
         firstName: updatedRide.driver?.firstName,
         lastName: updatedRide.driver?.lastName,
-        carModel: updatedRide.driver?.vehicles?.[0] ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model}` : 'Unknown',
-        licensePlate: updatedRide.driver?.vehicles?.[0]?.licensePlate || 'Unknown',
+        carModel: updatedRide.driver?.vehicles?.[0]
+          ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model}`
+          : 'Unknown',
+        licensePlate:
+          updatedRide.driver?.vehicles?.[0]?.licensePlate || 'Unknown',
       },
       origin: {
         address: updatedRide.originAddress,

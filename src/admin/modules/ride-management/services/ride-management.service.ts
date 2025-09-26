@@ -1,56 +1,30 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../prisma/prisma.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { AdminAuditLog } from '@prisma/client';
 
-// Note: Ride model in Prisma doesn't have a status field, only paymentStatus
-type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | 'all';
-
-interface RideUser {
-  id: number;
-  name: string;
-  phone: string;
+export interface RideFilters {
+  status?: string[];
+  driverId?: number;
+  userId?: number;
+  dateFrom?: Date;
+  dateTo?: Date;
+  minFare?: number;
+  maxFare?: number;
+  originAddress?: string;
+  destinationAddress?: string;
 }
 
-interface RideDriver {
-  id: number;
-  firstName: string;
-  lastName: string;
-  carModel?: string | null;
-  licensePlate?: string | null;
-  profileImageUrl?: string | null;
+export interface RideListResponse {
+  rides: any[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
-interface RideTier {
+export interface RideDetails {
   id: number;
-  name: string;
-}
-
-type PrismaRide = {
   rideId: number;
-  originAddress: string;
-  destinationAddress: string;
-  originLatitude: Decimal;
-  originLongitude: Decimal;
-  destinationLatitude: Decimal;
-  destinationLongitude: Decimal;
-  rideTime: number;
-  farePrice: Decimal;
-  paymentStatus: string;
-  scheduledFor: Date | null;
-  createdAt: Date;
-  user: RideUser;
-  driver: RideDriver | null;
-  tier: RideTier | null;
-};
-
-// Extended ride type with all necessary properties
-export interface FormattedRide {
-  id: number;
   originAddress: string;
   destinationAddress: string;
   originLatitude: number;
@@ -60,27 +34,20 @@ export interface FormattedRide {
   rideTime: number;
   farePrice: number;
   paymentStatus: string;
-  scheduledFor: Date | null;
-  createdAt: Date;
-  user: RideUser;
-  driver: {
-    id: number;
-    name: string;
-    carModel: string;
-    licensePlate: string;
-    profileImageUrl: string;
-  } | null;
-  vehicleType: RideTier | null;
-}
-
-export interface GetRidesOptions {
-  page: number;
-  limit: number;
-  paymentStatus?: PaymentStatus;
+  status: string;
   driverId?: number;
-  userId?: number;
-  dateFrom?: string;
-  dateTo?: string;
+  userId: number;
+  tierId?: number;
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Relations
+  driver?: any;
+  user?: any;
+  tier?: any;
+  ratings?: any[];
+  messages?: any[];
+  locationHistory?: any[];
 }
 
 @Injectable()
@@ -89,171 +56,78 @@ export class RideManagementService {
 
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Get a paginated list of rides with filters
-   * @param options Pagination and filtering options
-   * @returns List of rides and pagination info
-   */
-  async getRides(options: GetRidesOptions) {
-    const { page, limit, paymentStatus, driverId, userId, dateFrom, dateTo } =
-      options;
+  async getRidesWithFilters(
+    filters: RideFilters,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<RideListResponse> {
     const skip = (page - 1) * limit;
 
-    // Build the where clause for filtering
+    // Build where clause
     const where: any = {};
 
-    // Apply payment status filter
-    if (paymentStatus && paymentStatus !== 'all') {
-      where.paymentStatus = paymentStatus;
+    if (filters.status && filters.status.length > 0) {
+      where.status = { in: filters.status };
     }
 
-    // Apply driver filter
-    if (driverId) {
-      where.driverId = Number(driverId);
+    if (filters.driverId) {
+      where.driverId = filters.driverId;
     }
 
-    // Apply user filter
-    if (userId) {
-      where.userId = Number(userId);
+    if (filters.userId) {
+      where.userId = filters.userId;
     }
 
-    // Apply date range filter
-    if (dateFrom || dateTo) {
+    if (filters.dateFrom || filters.dateTo) {
       where.createdAt = {};
-      if (dateFrom) {
-        where.createdAt.gte = new Date(dateFrom);
+      if (filters.dateFrom) {
+        where.createdAt.gte = filters.dateFrom;
       }
-      if (dateTo) {
-        // Set to end of day
-        const endOfDay = new Date(dateTo);
-        endOfDay.setHours(23, 59, 59, 999);
-        where.createdAt.lte = endOfDay;
+      if (filters.dateTo) {
+        where.createdAt.lte = filters.dateTo;
       }
     }
 
-    try {
-      const [rides, total] = await Promise.all([
-        // Get paginated rides with related data
-        this.prisma.ride.findMany({
-          where,
-          skip,
-          take: limit,
-          select: {
-            rideId: true,
-            originAddress: true,
-            destinationAddress: true,
-            originLatitude: true,
-            originLongitude: true,
-            destinationLatitude: true,
-            destinationLongitude: true,
-            rideTime: true,
-            farePrice: true,
-            paymentStatus: true,
-            scheduledFor: true,
-            createdAt: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                phone: true,
-              },
-            },
-            driver: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                profileImageUrl: true,
-              },
-              include: {
-                vehicles: {
-                  where: { isDefault: true, status: 'active' },
-                  take: 1,
-                  select: {
-                    make: true,
-                    model: true,
-                    licensePlate: true,
-                  },
-                },
-              },
-            },
-            tier: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        }),
-        // Count total rides matching filters
-        this.prisma.ride.count({ where }),
-      ]);
+    if (filters.minFare !== undefined || filters.maxFare !== undefined) {
+      where.farePrice = {};
+      if (filters.minFare !== undefined) {
+        where.farePrice.gte = filters.minFare;
+      }
+      if (filters.maxFare !== undefined) {
+        where.farePrice.lte = filters.maxFare;
+      }
+    }
 
-      // Transform the data for the response
-      const formattedRides: FormattedRide[] = rides.map((ride: any) => ({
-        id: ride.rideId,
-        originAddress: ride.originAddress,
-        destinationAddress: ride.destinationAddress,
-        originLatitude: Number(ride.originLatitude),
-        originLongitude: Number(ride.originLongitude),
-        destinationLatitude: Number(ride.destinationLatitude),
-        destinationLongitude: Number(ride.destinationLongitude),
-        rideTime: ride.rideTime,
-        farePrice: Number(ride.farePrice),
-        paymentStatus: ride.paymentStatus.toLowerCase(),
-        scheduledFor: ride.scheduledFor,
-        createdAt: ride.createdAt,
-        user: ride.user,
-        driver: ride.driver
-          ? {
-              id: ride.driver.id,
-              name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
-              carModel: ride.driver.vehicles?.[0] ? `${ride.driver.vehicles[0].make} ${ride.driver.vehicles[0].model}` : '',
-              licensePlate: ride.driver.vehicles?.[0]?.licensePlate || '',
-              profileImageUrl: ride.driver.profileImageUrl || '',
-            }
-          : null,
-        vehicleType: ride.tier,
-      }));
-
-      return {
-        success: true,
-        data: formattedRides,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-        },
+    if (filters.originAddress) {
+      where.originAddress = {
+        contains: filters.originAddress,
+        mode: 'insensitive',
       };
-    } catch (error) {
-      this.logger.error('Error fetching rides:', error);
-      throw error;
     }
-  }
 
-  /**
-   * Get detailed information about a specific ride
-   * @param rideId Ride ID
-   * @returns Detailed ride information
-   */
-  async getRideById(rideId: number) {
-    const ride = await this.prisma.ride.findUnique({
-      where: { rideId },
-      select: {
-        rideId: true,
-        originAddress: true,
-        destinationAddress: true,
-        originLatitude: true,
-        originLongitude: true,
-        destinationLatitude: true,
-        destinationLongitude: true,
-        rideTime: true,
-        farePrice: true,
-        paymentStatus: true,
-        scheduledFor: true,
-        createdAt: true,
+    if (filters.destinationAddress) {
+      where.destinationAddress = {
+        contains: filters.destinationAddress,
+        mode: 'insensitive',
+      };
+    }
+
+    // Get total count
+    const total = await this.prisma.ride.count({ where });
+
+    // Get rides with relations
+    const rides = await this.prisma.ride.findMany({
+      where,
+      include: {
+        driver: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImageUrl: true,
+            averageRating: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -262,34 +136,131 @@ export class RideManagementService {
             phone: true,
           },
         },
+        tier: {
+          select: {
+            id: true,
+            name: true,
+            baseFare: true,
+          },
+        },
+        ratings: {
+          select: {
+            id: true,
+            ratingValue: true,
+            comment: true,
+            ratedByUserId: true,
+            createdAt: true,
+          },
+        },
+        _count: {
+          select: {
+            messages: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      rides: rides.map((ride) => ({
+        ...ride,
+        messagesCount: ride._count.messages,
+        _count: undefined, // Remove the _count field from response
+      })),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  async getRideDetails(rideId: number): Promise<RideDetails> {
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: {
         driver: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
             profileImageUrl: true,
-          },
-          include: {
+            averageRating: true,
+            phone: true,
+            email: true,
             vehicles: {
-              where: { isDefault: true, status: 'active' },
-              take: 1,
+              where: { isDefault: true },
               select: {
                 make: true,
                 model: true,
                 licensePlate: true,
               },
+              take: 1,
             },
           },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        tier: {
+          select: {
+            id: true,
+            name: true,
+            baseFare: true,
+            perMinuteRate: true,
+            perMileRate: true,
+          },
+        },
+        ratings: {
+          include: {
+            ratedBy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        messages: {
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+        locationHistory: {
+          orderBy: {
+            timestamp: 'desc',
+          },
+          take: 10, // Last 10 location updates
         },
       },
     });
 
     if (!ride) {
-      throw new NotFoundException('Ride not found');
+      throw new NotFoundException(`Ride with ID ${rideId} not found`);
     }
 
     return {
       id: ride.rideId,
+      rideId: ride.rideId,
       originAddress: ride.originAddress,
       destinationAddress: ride.destinationAddress,
       originLatitude: Number(ride.originLatitude),
@@ -298,117 +269,290 @@ export class RideManagementService {
       destinationLongitude: Number(ride.destinationLongitude),
       rideTime: ride.rideTime,
       farePrice: Number(ride.farePrice),
-      paymentStatus: ride.paymentStatus.toLowerCase(),
-      scheduledFor: ride.scheduledFor,
+      paymentStatus: ride.paymentStatus,
+      status: ride.status,
+      driverId: ride.driverId || undefined,
+      userId: ride.userId,
+      tierId: ride.tierId || undefined,
       createdAt: ride.createdAt,
+      updatedAt: ride.updatedAt,
+      driver: ride.driver,
       user: ride.user,
-      driver: ride.driver
-        ? {
-            id: ride.driver.id,
-            name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
-            carModel: ride.driver.vehicles?.[0] ? `${ride.driver.vehicles[0].make} ${ride.driver.vehicles[0].model}` : '',
-            licensePlate: ride.driver.vehicles?.[0]?.licensePlate || '',
-            profileImageUrl: ride.driver.profileImageUrl || '',
-          }
-        : null,
+      tier: ride.tier,
+      ratings: ride.ratings,
+      messages: ride.messages,
+      locationHistory: ride.locationHistory,
     };
   }
 
-  /**
-   * Get ride statistics (total rides, revenue, etc.)
-   * @returns Ride statistics
-   */
-  async getRideStatistics() {
-    try {
-      const [
-        totalRides,
-        completedRides,
-        cancelledRides,
-        totalRevenue,
-        averageRating,
-        ridesByStatus,
-        ridesByDay,
-      ] = await Promise.all([
-        // Total rides
-        this.prisma.ride.count(),
-
-        // Completed rides (using payment status as a proxy for completion)
-        this.prisma.ride.count({
-          where: {
-            paymentStatus: 'PAID',
-            rideTime: { gt: 0 }, // Assuming rideTime is a number representing seconds
-          },
-        }),
-
-        // Cancelled rides
-        this.prisma.ride.count({
-          where: {
-            paymentStatus: 'CANCELLED',
-          },
-        }),
-
-        // Total revenue (only from paid rides)
-        this.prisma.ride.aggregate({
-          where: {
-            paymentStatus: 'PAID',
-            rideTime: { gt: 0 }, // Assuming rideTime is a number representing seconds
-          },
-          _sum: { farePrice: true },
-        }),
-
-        // Average rating
-        this.prisma.rating.aggregate({
-          _avg: { ratingValue: true },
-          _count: true,
-        }),
-
-        // Rides by payment status
-        this.prisma.ride.groupBy({
-          by: ['paymentStatus'],
-          _count: { _all: true },
-        }),
-
-        // Rides by day for the last 30 days
-        this.prisma.$queryRaw`
-          SELECT DATE("createdAt") as date, COUNT(*) as count
-          FROM "Ride"
-          WHERE "createdAt" >= NOW() - INTERVAL '30 days'
-          GROUP BY DATE("createdAt")
-          ORDER BY date ASC
-        `,
-      ]);
-
-      // Process rides by status to use payment status instead of ride status
-      const statusCounts = ridesByStatus.reduce((acc, item) => {
-        acc[item.paymentStatus.toLowerCase()] = item._count._all;
-        return acc;
-      }, {});
-
-      return {
-        success: true,
-        data: {
-          totalRides,
-          completedRides,
-          cancelledRides,
-          completionRate:
-            totalRides > 0 ? (completedRides / totalRides) * 100 : 0,
-          totalRevenue: totalRevenue._sum?.farePrice
-            ? Number(totalRevenue._sum.farePrice)
-            : 0,
-          averageRating: averageRating._avg?.ratingValue || 0,
-          totalRatings: averageRating._count || 0,
-          ridesByStatus: statusCounts,
-          ridesByDay: Array.isArray(ridesByDay)
-            ? ridesByDay.map((item) => ({
-                date: item.date.toISOString().split('T')[0],
-                count: Number(item.count),
-              }))
-            : [],
+  async reassignRide(
+    rideId: number,
+    newDriverId: number,
+    adminId: number,
+    reason: string,
+  ): Promise<any> {
+    // Get current ride
+    const currentRide = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: {
+        driver: {
+          select: { id: true, firstName: true, lastName: true },
         },
-      };
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    if (!currentRide) {
+      throw new NotFoundException(`Ride with ID ${rideId} not found`);
+    }
+
+    // Check if ride can be reassigned
+    if (
+      !['pending', 'accepted', 'driver_confirmed'].includes(currentRide.status)
+    ) {
+      throw new Error(
+        `Cannot reassign ride with status: ${currentRide.status}`,
+      );
+    }
+
+    // Get new driver
+    const newDriver = await this.prisma.driver.findUnique({
+      where: { id: newDriverId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        verificationStatus: true,
+      },
+    });
+
+    if (!newDriver) {
+      throw new NotFoundException(`Driver with ID ${newDriverId} not found`);
+    }
+
+    if (
+      newDriver.status !== 'online' ||
+      newDriver.verificationStatus !== 'approved'
+    ) {
+      throw new Error(`Driver ${newDriverId} is not available for assignment`);
+    }
+
+    // Update ride
+    const updatedRide = await this.prisma.ride.update({
+      where: { rideId },
+      data: {
+        driverId: newDriverId,
+        status: 'accepted', // Reset to accepted status
+      },
+      include: {
+        driver: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImageUrl: true,
+          },
+        },
+        user: true,
+        tier: true,
+      },
+    });
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'ride_reassign',
+      `ride_${rideId}`,
+      `Reassigned ride from driver ${currentRide.driverId} to ${newDriverId}. Reason: ${reason}`,
+      {
+        rideId,
+        oldDriverId: currentRide.driverId,
+        newDriverId,
+        reason,
+      },
+      {
+        rideId,
+        previousDriver: currentRide.driverId,
+        newDriver: newDriverId,
+        reason,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} reassigned ride ${rideId} from driver ${currentRide.driverId} to ${newDriverId}`,
+    );
+
+    return updatedRide;
+  }
+
+  async cancelRide(
+    rideId: number,
+    adminId: number,
+    reason: string,
+    refundAmount?: number,
+  ): Promise<any> {
+    // Get current ride
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    if (!ride) {
+      throw new NotFoundException(`Ride with ID ${rideId} not found`);
+    }
+
+    // Check if ride can be cancelled
+    if (['completed', 'cancelled'].includes(ride.status)) {
+      throw new Error(`Ride ${rideId} is already ${ride.status}`);
+    }
+
+    // Update ride status
+    const updatedRide = await this.prisma.ride.update({
+      where: { rideId },
+      data: {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelledBy: 'admin',
+        cancellationReason: reason,
+        cancellationNotes: `Admin cancellation: ${reason}`,
+      },
+      include: {
+        driver: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        user: true,
+        tier: true,
+      },
+    });
+
+    // Handle refund if specified
+    if (refundAmount && refundAmount > 0) {
+      // This would integrate with wallet service
+      this.logger.log(
+        `Processing refund of ${refundAmount} for ride ${rideId}`,
+      );
+    }
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'ride_cancel',
+      `ride_${rideId}`,
+      `Cancelled ride ${rideId}. Reason: ${reason}`,
+      { rideId, status: ride.status },
+      {
+        rideId,
+        cancelledBy: 'admin',
+        reason,
+        refundAmount,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} cancelled ride ${rideId}. Reason: ${reason}`,
+    );
+
+    return updatedRide;
+  }
+
+  async completeRideManually(
+    rideId: number,
+    adminId: number,
+    reason: string,
+  ): Promise<any> {
+    // Get current ride
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+    });
+
+    if (!ride) {
+      throw new NotFoundException(`Ride with ID ${rideId} not found`);
+    }
+
+    // Check if ride can be completed
+    if (ride.status === 'completed') {
+      throw new Error(`Ride ${rideId} is already completed`);
+    }
+
+    if (ride.status === 'cancelled') {
+      throw new Error(`Cannot complete a cancelled ride ${rideId}`);
+    }
+
+    // Update ride status
+    const updatedRide = await this.prisma.ride.update({
+      where: { rideId },
+      data: {
+        status: 'completed',
+      },
+      include: {
+        driver: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        user: true,
+        tier: true,
+      },
+    });
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'ride_complete_manual',
+      `ride_${rideId}`,
+      `Manually completed ride ${rideId}. Reason: ${reason}`,
+      { rideId, status: ride.status },
+      {
+        rideId,
+        completedBy: 'admin',
+        reason,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} manually completed ride ${rideId}. Reason: ${reason}`,
+    );
+
+    return updatedRide;
+  }
+
+  private async logAdminAction(
+    adminId: number,
+    action: string,
+    resource: string,
+    resourceId: string,
+    oldValue: any,
+    newValue: any,
+  ): Promise<void> {
+    try {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          adminId,
+          action,
+          resource,
+          resourceId,
+          oldValue,
+          newValue,
+          ipAddress: 'system', // Would be populated from request in real implementation
+          userAgent: 'admin-panel',
+        },
+      });
     } catch (error) {
-      this.logger.error('Error fetching ride statistics:', error);
-      throw error;
+      this.logger.error('Failed to log admin action:', error);
+      // Don't throw - audit logging failure shouldn't break the main operation
     }
   }
 }

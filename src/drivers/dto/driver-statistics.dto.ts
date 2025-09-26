@@ -58,7 +58,7 @@ export class DriverStatisticsDto {
   @ApiProperty({
     description: 'Weekly earnings breakdown',
     example: [
-      { week: '2024-W01', earnings: 450.50, rides: 12 },
+      { week: '2024-W01', earnings: 450.5, rides: 12 },
       { week: '2024-W02', earnings: 520.25, rides: 15 },
     ],
   })
@@ -121,7 +121,7 @@ export class DriverStatsSummaryDto {
 
   @ApiProperty({
     description: 'Total earnings today',
-    example: 3750.50,
+    example: 3750.5,
   })
   totalEarningsToday: number;
 

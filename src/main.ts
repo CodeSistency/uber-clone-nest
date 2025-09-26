@@ -25,28 +25,44 @@ async function logEnvironmentConfig(configService: AppConfigService) {
   console.log(`- Host: ${configService.database.host}`);
   console.log(`- Port: ${configService.database.port}`);
   console.log(`- Username: ${configService.database.username}`);
-  console.log(`- Password: ${configService.database.password ? '✅ Set' : '❌ Not set'}`);
+  console.log(
+    `- Password: ${configService.database.password ? '✅ Set' : '❌ Not set'}`,
+  );
   console.log(`- Database: ${configService.database.database}`);
   console.log(`- SSL: ${configService.database.ssl}`);
 
   // Firebase config
   console.log('\n🔥 FIREBASE CONFIG:');
-  console.log(`- Project ID: ${configService.firebase.projectId || '❌ Not set'}`);
-  console.log(`- Service Account: ${configService.firebase.serviceAccount ? '✅ Set' : '❌ Not set'}`);
+  console.log(
+    `- Project ID: ${configService.firebase.projectId || '❌ Not set'}`,
+  );
+  console.log(
+    `- Service Account: ${configService.firebase.serviceAccount ? '✅ Set' : '❌ Not set'}`,
+  );
   console.log(`- Initialized: ${configService.firebase.initialized}`);
-  console.log(`- Storage Bucket: ${configService.firebase.storageBucket || 'Not set'}`);
-  console.log(`- Messaging Sender ID: ${configService.firebase.messagingSenderId || 'Not set'}`);
+  console.log(
+    `- Storage Bucket: ${configService.firebase.storageBucket || 'Not set'}`,
+  );
+  console.log(
+    `- Messaging Sender ID: ${configService.firebase.messagingSenderId || 'Not set'}`,
+  );
 
   // Raw environment variables for Firebase
   console.log('\n🔍 RAW FIREBASE ENV VARS:');
   const envProjectId = process.env.FIREBASE_PROJECT_ID;
   const envServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
-  console.log(`- FIREBASE_PROJECT_ID: ${envProjectId ? '✅ Set' : '❌ Not set'}`);
-  console.log(`- FIREBASE_SERVICE_ACCOUNT: ${envServiceAccount ? '✅ Set' : '❌ Not set'}`);
+  console.log(
+    `- FIREBASE_PROJECT_ID: ${envProjectId ? '✅ Set' : '❌ Not set'}`,
+  );
+  console.log(
+    `- FIREBASE_SERVICE_ACCOUNT: ${envServiceAccount ? '✅ Set' : '❌ Not set'}`,
+  );
   if (envServiceAccount) {
     console.log(`- Length: ${envServiceAccount.length}`);
     console.log(`- First 100 chars: ${envServiceAccount.substring(0, 100)}`);
-    console.log(`- Last 100 chars: ${envServiceAccount.substring(Math.max(0, envServiceAccount.length - 100))}`);
+    console.log(
+      `- Last 100 chars: ${envServiceAccount.substring(Math.max(0, envServiceAccount.length - 100))}`,
+    );
   }
 
   // Redis config
@@ -54,31 +70,49 @@ async function logEnvironmentConfig(configService: AppConfigService) {
   console.log(`- URL: ${configService.redis.url || '❌ Not set'}`);
   console.log(`- Host: ${configService.redis.host || '❌ Not set'}`);
   console.log(`- Port: ${configService.redis.port || '❌ Not set'}`);
-  console.log(`- Password: ${configService.redis.password ? '✅ Set' : 'Not set'}`);
+  console.log(
+    `- Password: ${configService.redis.password ? '✅ Set' : 'Not set'}`,
+  );
   console.log(`- DB: ${configService.redis.db || 'Not set'}`);
 
   // Stripe config
   console.log('\n💳 STRIPE CONFIG:');
-  console.log(`- Secret Key: ${configService.stripe.secretKey ? '✅ Set' : '❌ Not set'}`);
-  console.log(`- Webhook Secret: ${configService.stripe.webhookSecret ? '✅ Set' : '❌ Not set'}`);
+  console.log(
+    `- Secret Key: ${configService.stripe.secretKey ? '✅ Set' : '❌ Not set'}`,
+  );
+  console.log(
+    `- Webhook Secret: ${configService.stripe.webhookSecret ? '✅ Set' : '❌ Not set'}`,
+  );
 
   // JWT config
   console.log('\n🔐 JWT CONFIG:');
-  console.log(`- Secret: ${configService.jwt.secret ? '✅ Set' : '❌ Not set'}`);
+  console.log(
+    `- Secret: ${configService.jwt.secret ? '✅ Set' : '❌ Not set'}`,
+  );
   console.log(`- Expires In: ${configService.jwt.expiresIn}`);
   console.log(`- Refresh Expires In: ${configService.jwt.refreshExpiresIn}`);
 
   // Twilio config
   console.log('\n📱 TWILIO CONFIG:');
-  console.log(`- Account SID: ${configService.twilio.accountSid ? '✅ Set' : '❌ Not set'}`);
-  console.log(`- Auth Token: ${configService.twilio.authToken ? '✅ Set' : '❌ Not set'}`);
-  console.log(`- Phone Number: ${configService.twilio.phoneNumber ? '✅ Set' : '❌ Not set'}`);
+  console.log(
+    `- Account SID: ${configService.twilio.accountSid ? '✅ Set' : '❌ Not set'}`,
+  );
+  console.log(
+    `- Auth Token: ${configService.twilio.authToken ? '✅ Set' : '❌ Not set'}`,
+  );
+  console.log(
+    `- Phone Number: ${configService.twilio.phoneNumber ? '✅ Set' : '❌ Not set'}`,
+  );
   console.log(`- Initialized: ${configService.twilio.initialized}`);
 
   // Clerk config
   console.log('\n👤 CLERK CONFIG:');
-  console.log(`- Secret Key: ${configService.clerk.secretKey ? '✅ Set' : '❌ Not set'}`);
-  console.log(`- Publishable Key: ${configService.clerk.publishableKey ? '✅ Set' : '❌ Not set'}`);
+  console.log(
+    `- Secret Key: ${configService.clerk.secretKey ? '✅ Set' : '❌ Not set'}`,
+  );
+  console.log(
+    `- Publishable Key: ${configService.clerk.publishableKey ? '✅ Set' : '❌ Not set'}`,
+  );
   console.log(`- API URL: ${configService.clerk.apiUrl}`);
   console.log(`- Frontend API: ${configService.clerk.frontendApi}`);
   console.log(`- Domain: ${configService.clerk.domain}`);
@@ -86,9 +120,15 @@ async function logEnvironmentConfig(configService: AppConfigService) {
 
   // Notification config
   console.log('\n🔔 NOTIFICATION CONFIG:');
-  console.log(`- Rate Limit Per Hour: ${configService.notification.rateLimitPerHour}`);
-  console.log(`- Rate Limit Per Minute: ${configService.notification.rateLimitPerMinute}`);
-  console.log(`- Analytics Enabled: ${configService.notification.analyticsEnabled}`);
+  console.log(
+    `- Rate Limit Per Hour: ${configService.notification.rateLimitPerHour}`,
+  );
+  console.log(
+    `- Rate Limit Per Minute: ${configService.notification.rateLimitPerMinute}`,
+  );
+  console.log(
+    `- Analytics Enabled: ${configService.notification.analyticsEnabled}`,
+  );
   console.log(`- Retention Days: ${configService.notification.retentionDays}`);
 
   console.log('\n=====================================\n');
@@ -152,9 +192,26 @@ async function bootstrap() {
     .setTitle(swaggerConfig.title || 'Uber Clone API')
     .setDescription(
       swaggerConfig.description ||
-        'Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features. ' +
-          'Use the "Authorize" button to set your JWT token for testing authenticated endpoints. ' +
-          'Note: Registration endpoint (POST /api/user) is public and does not require authentication.',
+        '🚗 Complete API documentation for Uber Clone application with ride-sharing, delivery, and marketplace features.\n\n' +
+          '## 🔐 Authentication\n' +
+          '- **User Endpoints**: Use JWT token obtained from login endpoints\n' +
+          '- **Admin Endpoints**: Use admin JWT token from `/admin/auth/login`\n' +
+          '- **Public Endpoints**: Registration and some informational endpoints\n\n' +
+          '## 🏗️ System Modules\n' +
+          '- **Ride Sharing**: Complete ride booking and management system\n' +
+          '- **Delivery & Marketplace**: Store management and order processing\n' +
+          '- **Admin Panel**: Comprehensive administrative interface\n' +
+          '- **Real-time**: WebSocket-based live tracking and notifications\n' +
+          '- **Payments**: Stripe integration with wallet system\n\n' +
+          '## 📊 Admin Panel Features\n' +
+          '- Real-time dashboard with KPIs and metrics\n' +
+          '- User, driver, and ride management\n' +
+          '- Geographical zone management\n' +
+          '- Dynamic pricing and tier configuration\n' +
+          '- Comprehensive reporting and analytics\n' +
+          '- Feature flags and system configuration\n' +
+          '- Secure API key management\n\n' +
+          '**Note**: Use the "Authorize" button to set your JWT token for testing authenticated endpoints.',
     )
     .setVersion(swaggerConfig.version || '1.0.0')
     .addTag('users', 'User management endpoints')
@@ -166,6 +223,16 @@ async function bootstrap() {
     .addTag('chat', 'Chat and messaging endpoints')
     .addTag('stripe', 'Stripe payment endpoints')
     .addTag('admin', 'Admin management endpoints')
+    .addTag('Admin Auth', 'Admin authentication and authorization')
+    .addTag('Admin Dashboard', 'Admin dashboard and analytics')
+    .addTag('Admin Rides', 'Admin ride management')
+    .addTag('Admin Users', 'Admin user management')
+    .addTag('Admin Drivers', 'Admin driver management')
+    .addTag('Admin Reports', 'Admin reporting and analytics')
+    .addTag('Admin Notifications', 'Admin notification management')
+    .addTag('Admin Geography', 'Admin geographical management')
+    .addTag('Admin Pricing', 'Admin pricing and tier management')
+    .addTag('Admin Config', 'Admin system configuration')
     .addTag('analytics', 'Analytics and reporting endpoints')
     .addTag('notifications', 'Notification management endpoints')
     .addTag('stores', 'Store management endpoints')

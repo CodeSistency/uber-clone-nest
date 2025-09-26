@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsObject } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsObject,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateWorkZoneDto {
@@ -38,7 +44,15 @@ export class CreateWorkZoneDto {
     description: 'GeoJSON polygon defining the zone boundaries',
     example: {
       type: 'Polygon',
-      coordinates: [[[-66.9036, 10.4806], [-66.9036, 10.5206], [-66.8636, 10.5206], [-66.8636, 10.4806], [-66.9036, 10.4806]]]
+      coordinates: [
+        [
+          [-66.9036, 10.4806],
+          [-66.9036, 10.5206],
+          [-66.8636, 10.5206],
+          [-66.8636, 10.4806],
+          [-66.9036, 10.4806],
+        ],
+      ],
     },
   })
   @IsNotEmpty()

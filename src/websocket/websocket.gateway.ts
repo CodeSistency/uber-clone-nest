@@ -10,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RedisAdapter } from '@socket.io/redis-adapter';
-import { Logger, Inject } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { createClient } from 'redis';
 import { RealTimeService } from './real-time.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -67,17 +67,23 @@ export class WebSocketGatewayClass
     this.logger.log(`- RedisAdapter available: ${!!RedisAdapter}`);
     if (RedisAdapter) {
       this.logger.log(`- RedisAdapter type: ${typeof RedisAdapter}`);
-      this.logger.log(`- RedisAdapter constructor: ${RedisAdapter.constructor.name}`);
+      this.logger.log(
+        `- RedisAdapter constructor: ${RedisAdapter.constructor.name}`,
+      );
     }
 
     // Configure Redis adapter for scalability if Redis is available
     try {
       if (redisConfig?.url || (redisConfig?.host && redisConfig?.port)) {
-        this.logger.log('🔄 Configuring Redis adapter for WebSocket scalability...');
+        this.logger.log(
+          '🔄 Configuring Redis adapter for WebSocket scalability...',
+        );
 
         // Create Redis clients for pub/sub
         const pubClient = createClient({
-          url: redisConfig.url || `redis://${redisConfig.host}:${redisConfig.port}`,
+          url:
+            redisConfig.url ||
+            `redis://${redisConfig.host}:${redisConfig.port}`,
           password: redisConfig.password,
           database: redisConfig.db || 0,
         });
@@ -114,13 +120,13 @@ export class WebSocketGatewayClass
         // Connect to Redis with timeout
         try {
           this.logger.log('🔄 Attempting to connect Redis clients...');
-          await Promise.all([
-            pubClient.connect(),
-            subClient.connect(),
-          ]);
+          await Promise.all([pubClient.connect(), subClient.connect()]);
           this.logger.log('✅ Redis clients connected successfully');
         } catch (connectError: any) {
-          this.logger.error('❌ Failed to connect Redis clients:', connectError.message);
+          this.logger.error(
+            '❌ Failed to connect Redis clients:',
+            connectError.message,
+          );
           this.logger.error('❌ Redis connection error details:', connectError);
           throw connectError;
         }
@@ -131,7 +137,9 @@ export class WebSocketGatewayClass
 
           // Check if RedisAdapter is available and properly imported
           if (!RedisAdapter) {
-            throw new Error('RedisAdapter is not available - check @socket.io/redis-adapter installation');
+            throw new Error(
+              'RedisAdapter is not available - check @socket.io/redis-adapter installation',
+            );
           }
 
           // Try different adapter creation approaches
@@ -140,18 +148,34 @@ export class WebSocketGatewayClass
           try {
             // Approach 1: Standard constructor with server namespace
             // RedisAdapter expects (nsp, pubClient, subClient, opts?)
-            redisAdapter = new RedisAdapter(server.sockets, pubClient, subClient);
-            this.logger.log('✅ Redis adapter created with standard constructor');
+            redisAdapter = new RedisAdapter(
+              server.sockets,
+              pubClient,
+              subClient,
+            );
+            this.logger.log(
+              '✅ Redis adapter created with standard constructor',
+            );
           } catch (constructorError: any) {
-            this.logger.warn('⚠️ Standard constructor failed, trying alternative approach:', constructorError.message);
+            this.logger.warn(
+              '⚠️ Standard constructor failed, trying alternative approach:',
+              constructorError.message,
+            );
 
             try {
               // Approach 2: Type assertion with server namespace
-              redisAdapter = new (RedisAdapter as any)(server.sockets, pubClient, subClient);
+              redisAdapter = new (RedisAdapter as any)(
+                server.sockets,
+                pubClient,
+                subClient,
+              );
               this.logger.log('✅ Redis adapter created with type assertion');
             } catch (assertionError: any) {
               this.logger.error('❌ Both adapter creation approaches failed');
-              this.logger.error('❌ Constructor error:', constructorError.message);
+              this.logger.error(
+                '❌ Constructor error:',
+                constructorError.message,
+              );
               this.logger.error('❌ Assertion error:', assertionError.message);
               throw assertionError;
             }
@@ -172,37 +196,58 @@ export class WebSocketGatewayClass
           // Apply adapter to server
           server.adapter(redisAdapter);
 
-          this.logger.log('✅ Redis adapter configured successfully for WebSocket horizontal scaling');
-          this.logger.log('🚀 Multiple WebSocket server instances can now share connections and rooms');
-
+          this.logger.log(
+            '✅ Redis adapter configured successfully for WebSocket horizontal scaling',
+          );
+          this.logger.log(
+            '🚀 Multiple WebSocket server instances can now share connections and rooms',
+          );
         } catch (adapterError: any) {
-          this.logger.error('❌ Failed to configure Redis adapter:', adapterError.message);
+          this.logger.error(
+            '❌ Failed to configure Redis adapter:',
+            adapterError.message,
+          );
           this.logger.error('❌ Adapter error details:', adapterError);
           this.logger.error('❌ Adapter error stack:', adapterError.stack);
 
           // Fallback to in-memory adapter
-          this.logger.warn('⚠️ Falling back to in-memory adapter for WebSocket');
-          this.logger.warn('💡 To enable horizontal scaling, check Redis connection and Socket.IO version compatibility');
+          this.logger.warn(
+            '⚠️ Falling back to in-memory adapter for WebSocket',
+          );
+          this.logger.warn(
+            '💡 To enable horizontal scaling, check Redis connection and Socket.IO version compatibility',
+          );
 
           // Try to clean up Redis connections
           try {
             pubClient.quit().catch(() => {});
             subClient.quit().catch(() => {});
           } catch (cleanupError) {
-            this.logger.warn('⚠️ Failed to clean up Redis connections:', cleanupError.message);
+            this.logger.warn(
+              '⚠️ Failed to clean up Redis connections:',
+              cleanupError.message,
+            );
           }
         }
-
       } else {
-        this.logger.warn('⚠️ Redis not configured. WebSocket will work in single-instance mode only.');
-        this.logger.warn('💡 Configure REDIS_URL or REDIS_HOST/REDIS_PORT to enable horizontal scaling');
+        this.logger.warn(
+          '⚠️ Redis not configured. WebSocket will work in single-instance mode only.',
+        );
+        this.logger.warn(
+          '💡 Configure REDIS_URL or REDIS_HOST/REDIS_PORT to enable horizontal scaling',
+        );
       }
     } catch (error: any) {
-      this.logger.error('❌ Failed to configure Redis adapter for WebSocket:', error.message);
+      this.logger.error(
+        '❌ Failed to configure Redis adapter for WebSocket:',
+        error.message,
+      );
       this.logger.error('❌ Redis setup error details:', error);
       this.logger.error('❌ Redis setup error stack:', error.stack);
       this.logger.warn('⚠️ WebSocket will continue in single-instance mode');
-      this.logger.warn('💡 Check Redis server availability and network connectivity');
+      this.logger.warn(
+        '💡 Check Redis server availability and network connectivity',
+      );
     }
   }
 
@@ -441,7 +486,12 @@ export class WebSocketGatewayClass
       // Try to get version from package.json
       const fs = require('fs');
       const path = require('path');
-      const packagePath = path.join(process.cwd(), 'node_modules', 'socket.io', 'package.json');
+      const packagePath = path.join(
+        process.cwd(),
+        'node_modules',
+        'socket.io',
+        'package.json',
+      );
       const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
       return packageJson.version;
     } catch (error) {

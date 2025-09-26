@@ -1,99 +1,153 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { RedisService } from '../../src/redis/redis.service';
 
-// Mock PrismaService for unit tests
+// Mock services for unit tests
 export const mockPrismaService = {
   user: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
+    delete: jest.fn().mockResolvedValue({}),
   },
   driver: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
   },
   ride: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
+  },
+  country: {
+    findUnique: jest.fn().mockResolvedValue({}),
+  },
+  state: {
+    findUnique: jest.fn().mockResolvedValue({}),
+  },
+  city: {
+    findUnique: jest.fn().mockResolvedValue({}),
+  },
+  serviceZone: {
+    findUnique: jest.fn().mockResolvedValue({}),
   },
   rideTier: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    findFirst: jest.fn().mockResolvedValue({}),
+    update: jest.fn().mockResolvedValue({}),
+    count: jest.fn().mockResolvedValue(0),
   },
   rating: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
   },
   wallet: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    update: jest.fn().mockResolvedValue({}),
   },
   walletTransaction: {
-    create: jest.fn(),
-    findMany: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
   },
   promotion: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
   },
   emergencyContact: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
+    delete: jest.fn().mockResolvedValue({}),
   },
   chatMessage: {
-    create: jest.fn(),
-    findMany: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
   },
   driverDocument: {
-    create: jest.fn(),
-    findMany: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
   },
   store: {
-    create: jest.fn(),
-    findMany: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
   },
   product: {
-    create: jest.fn(),
-    findMany: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
   },
   deliveryOrder: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
   },
   orderItem: {
-    create: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
   },
   notification: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-    updateMany: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
   },
   pushToken: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    updateMany: jest.fn(),
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
   },
   notificationPreferences: {
-    findUnique: jest.fn(),
-    upsert: jest.fn(),
+    findUnique: jest.fn().mockResolvedValue({}),
+    upsert: jest.fn().mockResolvedValue({}),
   },
+  temporalPricingRule: {
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    findFirst: jest.fn().mockResolvedValue({}),
+    update: jest.fn().mockResolvedValue({}),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    delete: jest.fn().mockResolvedValue({}),
+    count: jest.fn().mockResolvedValue(0),
+  },
+  featureFlag: {
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({}),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+  },
+  aPIKey: {
+    create: jest.fn().mockResolvedValue({}),
+    findUnique: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+    findFirst: jest.fn().mockResolvedValue({}),
+    update: jest.fn().mockResolvedValue({}),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    delete: jest.fn().mockResolvedValue({}),
+    count: jest.fn().mockResolvedValue(0),
+  },
+  aPIKeyAudit: {
+    create: jest.fn().mockResolvedValue({}),
+    findMany: jest.fn().mockResolvedValue([]),
+  },
+};
+
+// Mock RedisService for unit tests
+export const mockRedisService = {
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn().mockResolvedValue(undefined),
+  del: jest.fn().mockResolvedValue(1),
+  keys: jest.fn().mockResolvedValue([]),
 };
 
 // Setup function for unit tests
@@ -107,6 +161,10 @@ export async function setupUnitTestModule(
       {
         provide: PrismaService,
         useValue: mockPrismaService,
+      },
+      {
+        provide: RedisService,
+        useValue: mockRedisService,
       },
     ],
   }).compile();
@@ -123,6 +181,13 @@ export const testUtils = {
             method.mockReset();
           }
         });
+      }
+    });
+
+    // Reset Redis service mocks
+    Object.values(mockRedisService).forEach((method) => {
+      if (typeof method === 'function' && method.mockReset) {
+        method.mockReset();
       }
     });
   },

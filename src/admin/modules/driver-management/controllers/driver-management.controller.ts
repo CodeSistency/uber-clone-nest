@@ -1,336 +1,289 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Param,
-  ParseIntPipe,
   Query,
   Body,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
   UseGuards,
-  BadRequestException,
-  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiQuery,
   ApiBearerAuth,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
-  ApiBody,
-  ApiBadRequestResponse,
 } from '@nestjs/swagger';
+
 import { AdminAuthGuard } from '../../../guards/admin-auth.guard';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { RequirePermissions } from '../../../decorators/permissions.decorator';
-import { Permission } from '../../../entities/admin.entity';
-import { DriverManagementService } from '../services/driver-management.service';
-import { SearchDriversDto } from 'src/drivers/dto/search-drivers.dto';
-import { PaginatedDriversResponseDto } from 'src/drivers/dto/paginated-drivers-response.dto';
+import { AdminPermission } from '../../../interfaces/admin.interface';
 
-@Controller()
+import { DriverManagementService } from '../services/driver-management.service';
+import {
+  GetDriversQueryDto,
+  UpdateDriverStatusDto,
+  UpdateDriverVerificationDto,
+  UpdateDriverWorkZonesDto,
+  BulkUpdateDriverStatusDto,
+  DriverListResponseDto,
+  DriverDetailsDto,
+} from '../dtos/driver-management.dto';
+
+@ApiTags('Admin Driver Management')
+@Controller('admin/drivers')
 @UseGuards(AdminAuthGuard, PermissionsGuard)
-@ApiTags('admin/drivers')
 @ApiBearerAuth('JWT-auth')
 export class DriverManagementController {
-  private readonly logger = new Logger(DriverManagementController.name);
-
-  constructor(private readonly driverService: DriverManagementService) {}
+  constructor(
+    private readonly driverManagementService: DriverManagementService,
+  ) {}
 
   @Get()
-  @RequirePermissions(Permission.DRIVER_READ)
+  @RequirePermissions(AdminPermission.DRIVERS_READ)
   @ApiOperation({
-    summary: 'Get drivers with filters',
+    summary: 'Listar drivers con filtros',
     description:
-      'Retrieve a paginated list of drivers with advanced filtering options',
-  })
-  @ApiQuery({
-    name: 'page',
-    type: 'number',
-    required: false,
-    description: 'Page number for pagination',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: 'number',
-    required: false,
-    description: 'Number of drivers per page',
-    example: 10,
-  })
-  @ApiQuery({
-    name: 'search',
-    type: 'string',
-    required: false,
-    description: 'Search term for name, email, or phone',
-    example: 'john',
-  })
-  @ApiQuery({
-    name: 'status',
-    enum: ['active', 'inactive', 'suspended', 'all'],
-    required: false,
-    description: 'Filter by driver status',
-    example: 'active',
-  })
-  @ApiQuery({
-    name: 'verificationStatus',
-    enum: ['pending', 'verified', 'rejected', 'all'],
-    required: false,
-    description: 'Filter by verification status',
-    example: 'verified',
+      'Obtiene una lista paginada de drivers con filtros avanzados para administración',
   })
   @ApiResponse({
     status: 200,
-    description: 'Drivers retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number', example: 1 },
-              name: { type: 'string', example: 'John Driver' },
-              email: { type: 'string', example: 'driver@example.com' },
-              phone: { type: 'string', example: '+1234567890' },
-              status: { type: 'string', example: 'active' },
-              verificationStatus: { type: 'string', example: 'verified' },
-              lastLogin: { type: 'string', format: 'date-time' },
-              createdAt: { type: 'string', format: 'date-time' },
-              _count: {
-                type: 'object',
-                properties: {
-                  rides: { type: 'number', example: 15 },
-                  deliveries: { type: 'number', example: 8 },
-                  ratings: { type: 'number', example: 12 },
-                },
-              },
-            },
-          },
-        },
-        pagination: {
-          type: 'object',
-          properties: {
-            page: { type: 'number', example: 1 },
-            limit: { type: 'number', example: 10 },
-            total: { type: 'number', example: 50 },
-            pages: { type: 'number', example: 5 },
-          },
-        },
-      },
-    },
+    description: 'Lista de drivers obtenida exitosamente',
+    type: DriverListResponseDto,
   })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado',
   })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
-  async searchDrivers(
-    @Query() searchDto: SearchDriversDto,
-  ): Promise<PaginatedDriversResponseDto> {
-    return this.driverService.searchDrivers(searchDto);
+  @ApiResponse({
+    status: 403,
+    description: 'Permisos insuficientes',
+  })
+  async getDrivers(
+    @Query() query: GetDriversQueryDto,
+  ): Promise<DriverListResponseDto> {
+    const filters = {
+      status: query.status,
+      verificationStatus: query.verificationStatus,
+      canDoDeliveries: query.canDoDeliveries,
+      dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+      dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+      minRating: query.minRating,
+      maxRating: query.maxRating,
+      minRides: query.minRides,
+      maxRides: query.maxRides,
+      minEarnings: query.minEarnings,
+      maxEarnings: query.maxEarnings,
+      search: query.search,
+      zoneId: query.zoneId,
+    };
+
+    return this.driverManagementService.getDriversWithFilters(
+      filters,
+      query.page || 1,
+      query.limit || 20,
+    );
   }
 
   @Get(':id')
-  @RequirePermissions(Permission.DRIVER_READ)
+  @RequirePermissions(AdminPermission.DRIVERS_READ)
   @ApiOperation({
-    summary: 'Get driver by ID',
-    description: 'Retrieve detailed information about a specific driver',
+    summary: 'Obtener detalles de un driver',
+    description:
+      'Obtiene información completa de un driver específico incluyendo documentos, vehículos, estadísticas, etc.',
   })
   @ApiParam({
     name: 'id',
-    type: 'number',
-    description: 'Driver ID to retrieve',
+    description: 'ID único del driver',
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'Driver details retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'number', example: 1 },
-        name: { type: 'string', example: 'John Driver' },
-        email: { type: 'string', example: 'driver@example.com' },
-        phone: { type: 'string', example: '+1234567890' },
-        status: { type: 'string', example: 'active' },
-        verificationStatus: { type: 'string', example: 'verified' },
-        isOnline: { type: 'boolean', example: true },
-        lastActive: { type: 'string', format: 'date-time' },
-        lastLogin: { type: 'string', format: 'date-time' },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' },
-        driverProfile: {
-          type: 'object',
-          properties: {
-            licenseNumber: { type: 'string', example: 'DL1234567890' },
-            licenseExpiry: { type: 'string', format: 'date' },
-            vehicleMake: { type: 'string', example: 'Toyota' },
-            vehicleModel: { type: 'string', example: 'Corolla' },
-            vehicleYear: { type: 'number', example: 2020 },
-            vehicleColor: { type: 'string', example: 'Blue' },
-            vehiclePlate: { type: 'string', example: 'ABC123' },
-            averageRating: { type: 'number', example: 4.8 },
-            totalRides: { type: 'number', example: 150 },
-            totalEarnings: { type: 'number', example: 12500.75 },
-          },
-        },
-        documents: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number', example: 1 },
-              type: { type: 'string', example: 'LICENSE' },
-              status: { type: 'string', example: 'APPROVED' },
-              url: {
-                type: 'string',
-                example: 'https://example.com/documents/license.jpg',
-              },
-              verifiedAt: { type: 'string', format: 'date-time' },
-              verifiedBy: { type: 'number', example: 1 },
-              rejectionReason: { type: 'string', example: 'Expired document' },
-            },
-          },
-        },
+    description: 'Detalles del driver obtenidos exitosamente',
+    type: DriverDetailsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Driver no encontrado',
+  })
+  async getDriverDetails(
+    @Param('id', ParseIntPipe) driverId: number,
+  ): Promise<DriverDetailsDto> {
+    const details =
+      await this.driverManagementService.getDriverDetails(driverId);
+
+    // Format the response
+    return {
+      basic: {
+        id: details.id,
+        firstName: details.firstName,
+        lastName: details.lastName,
+        email: details.email,
+        phone: details.phone,
+        dateOfBirth: details.dateOfBirth,
+        gender: details.gender,
+        status: details.status,
+        verificationStatus: details.verificationStatus,
+        canDoDeliveries: details.canDoDeliveries,
+        lastActive: details.lastActive,
+        createdAt: details.createdAt,
       },
-    },
-  })
-  @ApiNotFoundResponse({ description: 'Driver not found' })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
-  async getDriverById(@Param('id', ParseIntPipe) id: number) {
-    this.logger.log(`Fetching driver by ID: ${id}`);
-    return this.driverService.getDriverById(id);
+      stats: {
+        averageRating: details.averageRating,
+        totalRides: details.totalRides,
+        completedRides: details.completedRides,
+        cancelledRides: details.cancelledRides,
+        totalEarnings: details.totalEarnings,
+        completionRate: details.completionRate,
+      },
+      address: details.address,
+      documents: details.documents,
+      vehicles: details.vehicles,
+      currentWorkZone: details.currentWorkZone,
+      paymentMethods: details.paymentMethods,
+      recentRides: details.recentRides,
+      performanceStats: details.performanceStats,
+    };
   }
 
   @Put(':id/status')
-  @RequirePermissions(Permission.DRIVER_WRITE)
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.DRIVERS_SUSPEND)
   @ApiOperation({
-    summary: 'Update driver status',
-    description: 'Update the status of a driver (active, inactive, suspended)',
+    summary: 'Actualizar estado de driver',
+    description:
+      'Cambia el estado de un driver (online/offline/busy/suspended) con posibilidad de suspensión temporal',
   })
   @ApiParam({
     name: 'id',
-    type: 'number',
-    description: 'Driver ID to update',
+    description: 'ID del driver',
     example: 1,
-  })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          enum: ['active', 'inactive', 'suspended'],
-          description: 'New status for the driver',
-        },
-      },
-      required: ['status'],
-    },
   })
   @ApiResponse({
     status: 200,
-    description: 'Driver status updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Driver status updated successfully',
-        },
-        data: {
-          $ref: '#/components/schemas/Driver',
-        },
-      },
-    },
+    description: 'Estado del driver actualizado exitosamente',
   })
-  @ApiBadRequestResponse({ description: 'Invalid status provided' })
-  @ApiNotFoundResponse({ description: 'Driver not found' })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
+  @ApiResponse({
+    status: 404,
+    description: 'Driver no encontrado',
   })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateDriverStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('status') status: string,
-  ) {
-    this.logger.log(`Updating status for driver ID: ${id}, status: ${status}`);
+    @Param('id', ParseIntPipe) driverId: number,
+    @Body() statusDto: UpdateDriverStatusDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
 
-    // Validate the status is a valid DriverStatus
-    if (!['active', 'inactive', 'suspended'].includes(status)) {
-      throw new BadRequestException(
-        'Invalid status. Must be one of: active, inactive, suspended',
-      );
-    }
-
-    // Use the verification status update since that's what's available in the service
-    // This assumes that verification status and driver status are related in your business logic
-    return this.driverService.updateDriverVerification(id, status);
+    return this.driverManagementService.updateDriverStatus(
+      driverId,
+      statusDto.status,
+      adminId,
+      statusDto.reason,
+      statusDto.suspensionEndDate
+        ? new Date(statusDto.suspensionEndDate)
+        : undefined,
+    );
   }
 
   @Put(':id/verification')
-  @RequirePermissions(Permission.DRIVER_APPROVE)
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.DRIVERS_VERIFY)
   @ApiOperation({
-    summary: 'Update driver verification status',
+    summary: 'Actualizar verificación de driver',
     description:
-      'Update the verification status of a driver and optionally add notes',
+      'Cambia el estado de verificación de un driver (pending/approved/rejected/under_review)',
   })
   @ApiParam({
     name: 'id',
-    type: 'number',
-    description: 'Driver ID to verify',
+    description: 'ID del driver',
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'Driver verification status updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Driver verification status updated',
-        },
-        data: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', example: 1 },
-            verificationStatus: { type: 'string', example: 'verified' },
-            verifiedAt: { type: 'string', format: 'date-time' },
-            verifiedBy: { type: 'number', example: 1 },
-            notes: { type: 'string', example: 'All documents verified' },
-          },
-        },
-      },
-    },
+    description: 'Verificación del driver actualizada exitosamente',
   })
-  @ApiNotFoundResponse({ description: 'Driver not found' })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing JWT token',
+  @ApiResponse({
+    status: 404,
+    description: 'Driver no encontrado',
   })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions' })
   async updateDriverVerification(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('verificationStatus')
-    verificationStatus: 'pending' | 'verified' | 'rejected',
-    @Body('notes') notes?: string,
-  ) {
-    this.logger.log(
-      `Updating verification for driver ID: ${id}, status: ${verificationStatus}`,
+    @Param('id', ParseIntPipe) driverId: number,
+    @Body() verificationDto: UpdateDriverVerificationDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.driverManagementService.updateDriverVerification(
+      driverId,
+      verificationDto.verificationStatus,
+      adminId,
+      verificationDto.notes,
     );
-    return this.driverService.updateDriverVerification(
-      id,
-      verificationStatus,
-      notes,
+  }
+
+  @Put(':id/work-zones')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.DRIVERS_WRITE)
+  @ApiOperation({
+    summary: 'Actualizar zonas de trabajo',
+    description:
+      'Asigna nuevas zonas de trabajo a un driver con posibilidad de zona primaria',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del driver',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Zonas de trabajo actualizadas exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Driver no encontrado',
+  })
+  async updateDriverWorkZones(
+    @Param('id', ParseIntPipe) driverId: number,
+    @Body() workZonesDto: UpdateDriverWorkZonesDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.driverManagementService.updateDriverWorkZones(
+      driverId,
+      workZonesDto.zoneIds,
+      adminId,
+      workZonesDto.primaryZoneId,
+    );
+  }
+
+  @Post('bulk/status')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.DRIVERS_SUSPEND)
+  @ApiOperation({
+    summary: 'Actualizar estado de múltiples drivers',
+    description: 'Cambia el estado de múltiples drivers en una operación bulk',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estados de drivers actualizados exitosamente',
+  })
+  async bulkUpdateDriverStatus(
+    @Body() bulkDto: BulkUpdateDriverStatusDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.driverManagementService.bulkUpdateDriverStatus(
+      bulkDto.driverIds,
+      bulkDto.status,
+      adminId,
+      bulkDto.reason,
     );
   }
 }
