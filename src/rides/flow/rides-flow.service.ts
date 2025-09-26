@@ -764,11 +764,6 @@ export class RidesFlowService {
             status: 'online',
             verificationStatus: 'approved',
           },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
           include: {
             vehicles: {
               where: { isDefault: true, status: 'active' },
@@ -813,7 +808,7 @@ export class RidesFlowService {
                 carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : 'Unknown',
                 licensePlate: driver.vehicles?.[0]?.licensePlate || '',
                 carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
-                vehicleType: driverDetails.vehicleType,
+                vehicleType: driverDetails.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
                 rating: driverDetails.rating,
                 totalRides: driverDetails.totalRides,
                 createdAt: driverDetails.createdAt,
@@ -884,10 +879,10 @@ export class RidesFlowService {
             memberSince: driverDetails.createdAt,
           },
           vehicle: {
-            carModel: driverDetails.carModel,
-            licensePlate: driverDetails.licensePlate,
-            carSeats: driverDetails.carSeats,
-            vehicleType: driverDetails.vehicleType || null,
+            carModel: driverDetails.vehicles?.[0] ? `${driverDetails.vehicles[0].make} ${driverDetails.vehicles[0].model}` : 'Unknown',
+            licensePlate: driverDetails.vehicles?.[0]?.licensePlate || '',
+            carSeats: driverDetails.vehicles?.[0]?.seatingCapacity || 0,
+            vehicleType: driverDetails.vehicles?.[0]?.vehicleType?.displayName || null,
           },
           location: {
             distance: Math.round(bestDriver.distance * 100) / 100, // Redondear a 2 decimales

@@ -834,15 +834,12 @@ export class RealtimeController {
         currentLatitude: { not: null },
         currentLongitude: { not: null },
       },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        status: true,
-        currentLatitude: true,
-        currentLongitude: true,
-        lastLocationUpdate: true,
-        locationAccuracy: true,
+      include: {
+        vehicles: {
+          where: { isDefault: true, status: 'active' },
+          take: 1,
+          include: { vehicleType: true },
+        },
       },
       orderBy: { lastLocationUpdate: 'desc' },
     });

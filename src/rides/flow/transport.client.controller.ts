@@ -1805,14 +1805,6 @@ export class TransportClientController {
       // Obtener conductores existentes para simular
       const existingDrivers = await this.prisma.driver.findMany({
         take: driverCount,
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          profileImageUrl: true,
-          lastLocationUpdate: true,
-          locationAccuracy: true,
-        },
         include: {
           vehicles: {
             where: { isDefault: true, status: 'active' },
