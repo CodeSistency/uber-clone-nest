@@ -15,7 +15,7 @@ import { DriversService } from './drivers.service';
 import { Driver, DriverDocument } from '@prisma/client';
 import { RegisterDriverDto } from './dto/register-driver.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
-import { UpdateDriverStatusDto } from './dto/update-status.dto';
+import { UpdateDriverStatusDto } from './dto/update-driver-status.dto';
 import { SearchDriversDto } from './dto/search-drivers.dto';
 import { PaginatedDriversResponseDto } from './dto/paginated-drivers-response.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -285,7 +285,7 @@ export class DriversController {
   ): Promise<Driver> {
     return this.driversService.updateDriverStatus(
       Number(driverId),
-      body.status,
+      body,
     );
   }
 
