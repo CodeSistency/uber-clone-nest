@@ -23,33 +23,13 @@ export class RegisterDriverDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'user_2driverclerkid' })
-  @IsNotEmpty()
+  @ApiProperty({ example: '+1234567890' })
+  @IsOptional()
   @IsString()
-  clerkId: string;
-
-  @ApiProperty({ example: 'Toyota Camry' })
-  @IsNotEmpty()
-  @IsString()
-  carModel: string;
-
-  @ApiProperty({ example: 'ABC-1234' })
-  @IsNotEmpty()
-  @IsString()
-  licensePlate: string;
-
-  @ApiProperty({ example: 4 })
-  @IsNotEmpty()
-  @IsNumber()
-  carSeats: number;
+  phone?: string;
 
   @ApiProperty({ example: 'https://example.com/profile.jpg', required: false })
   @IsOptional()
   @IsString()
   profileImageUrl?: string;
-
-  @ApiProperty({ example: 'https://example.com/car.jpg', required: false })
-  @IsOptional()
-  @IsString()
-  carImageUrl?: string;
 }

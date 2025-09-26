@@ -768,10 +768,19 @@ export class RidesFlowService {
             id: true,
             firstName: true,
             lastName: true,
-            carModel: true,
-            licensePlate: true,
-            carSeats: true,
-            vehicleTypeId: true,
+          },
+          include: {
+            vehicles: {
+              where: { isDefault: true, status: 'active' },
+              take: 1,
+              select: {
+                make: true,
+                model: true,
+                licensePlate: true,
+                seatingCapacity: true,
+                vehicleTypeId: true,
+              },
+            },
           },
         });
 
@@ -801,9 +810,9 @@ export class RidesFlowService {
                 firstName: driver.firstName,
                 lastName: driver.lastName,
                 profileImageUrl: driverDetails.profileImageUrl,
-                carModel: driver.carModel,
-                licensePlate: driver.licensePlate,
-                carSeats: driver.carSeats,
+                carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : 'Unknown',
+                licensePlate: driver.vehicles?.[0]?.licensePlate || '',
+                carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
                 vehicleType: driverDetails.vehicleType,
                 rating: driverDetails.rating,
                 totalRides: driverDetails.totalRides,
@@ -970,7 +979,11 @@ export class RidesFlowService {
     const driver = await this.prisma.driver.findUnique({
       where: { id: driverId },
       include: {
-        vehicleType: true,
+        vehicles: {
+          where: { isDefault: true, status: 'active' },
+          take: 1,
+          include: { vehicleType: true },
+        },
         rides: {
           where: {
             status: 'completed',

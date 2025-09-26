@@ -167,7 +167,11 @@ export class NotificationsService {
           verificationStatus: 'approved',
         },
         include: {
-          vehicleType: true,
+          vehicles: {
+            where: { isDefault: true, status: 'active' },
+            take: 1,
+            include: { vehicleType: true },
+          },
         },
         take: 10, // Limit to 10 nearby drivers
       });
@@ -181,7 +185,7 @@ export class NotificationsService {
 
       // Log details of found drivers
       nearbyDrivers.forEach((driver, index) => {
-        this.logger.log(`  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} (${driver.vehicleType?.displayName || 'Sin tipo'})`);
+        this.logger.log(`  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} (${driver.vehicles?.[0]?.vehicleType?.displayName || 'Sin tipo'})`);
       });
 
       // Send notifications to nearby drivers
@@ -235,7 +239,11 @@ export class NotificationsService {
           verificationStatus: 'approved',
         },
         include: {
-          vehicleType: true,
+          vehicles: {
+            where: { isDefault: true, status: 'active' },
+            take: 1,
+            include: { vehicleType: true },
+          },
         },
         take: 20, // Buscar más drivers para tener mejores opciones
       });

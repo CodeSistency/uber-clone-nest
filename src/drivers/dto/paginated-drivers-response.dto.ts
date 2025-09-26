@@ -6,7 +6,7 @@ export class PaginatedDriversResponseDto {
     description: 'Lista de conductores',
     type: [Object],
   })
-  data: Driver[];
+  data: any[];
 
   @ApiProperty({
     description: 'Información de paginación',

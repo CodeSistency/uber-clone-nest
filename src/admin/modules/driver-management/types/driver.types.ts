@@ -15,18 +15,27 @@ export interface DriverWithUserDto {
   userId: number;
   firstName: string;
   lastName: string;
-  email: string;
-  phone: string;
+  email: string | null;
+  phone: string | null;
   status: 'suspended' | 'active' | 'inactive';
   isOnline: boolean;
   lastActive: Date | null;
   profileImageUrl: string | null;
-  carImageUrl: string | null;
-  carModel: string | null;
-  licensePlate: string | null;
   rating: number;
   totalRides: number;
   totalEarnings: number;
+  vehicles?: Array<{
+    id: number;
+    make: string;
+    model: string;
+    licensePlate: string;
+    status: string;
+    vehicleType: {
+      id: number;
+      name: string;
+      displayName: string;
+    };
+  }>;
   documents: DriverDocumentDto[];
   verificationStatus: string | null;
   verifiedAt: Date | null;

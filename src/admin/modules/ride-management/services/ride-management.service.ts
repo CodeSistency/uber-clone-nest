@@ -164,8 +164,17 @@ export class RideManagementService {
                 firstName: true,
                 lastName: true,
                 profileImageUrl: true,
-                carModel: true,
-                licensePlate: true,
+              },
+              include: {
+                vehicles: {
+                  where: { isDefault: true, status: 'active' },
+                  take: 1,
+                  select: {
+                    make: true,
+                    model: true,
+                    licensePlate: true,
+                  },
+                },
               },
             },
             tier: {
@@ -200,8 +209,8 @@ export class RideManagementService {
           ? {
               id: ride.driver.id,
               name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
-              carModel: ride.driver.carModel || '',
-              licensePlate: ride.driver.licensePlate || '',
+              carModel: ride.driver.vehicles?.[0] ? `${ride.driver.vehicles[0].make} ${ride.driver.vehicles[0].model}` : '',
+              licensePlate: ride.driver.vehicles?.[0]?.licensePlate || '',
               profileImageUrl: ride.driver.profileImageUrl || '',
             }
           : null,
@@ -259,8 +268,17 @@ export class RideManagementService {
             firstName: true,
             lastName: true,
             profileImageUrl: true,
-            carModel: true,
-            licensePlate: true,
+          },
+          include: {
+            vehicles: {
+              where: { isDefault: true, status: 'active' },
+              take: 1,
+              select: {
+                make: true,
+                model: true,
+                licensePlate: true,
+              },
+            },
           },
         },
       },
@@ -288,8 +306,8 @@ export class RideManagementService {
         ? {
             id: ride.driver.id,
             name: `${ride.driver.firstName} ${ride.driver.lastName}`.trim(),
-            carModel: ride.driver.carModel || '',
-            licensePlate: ride.driver.licensePlate || '',
+            carModel: ride.driver.vehicles?.[0] ? `${ride.driver.vehicles[0].make} ${ride.driver.vehicles[0].model}` : '',
+            licensePlate: ride.driver.vehicles?.[0]?.licensePlate || '',
             profileImageUrl: ride.driver.profileImageUrl || '',
           }
         : null,

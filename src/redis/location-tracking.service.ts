@@ -412,7 +412,11 @@ export class LocationTrackingService extends RedisPubSubService {
     const drivers = await this.prisma.driver.findMany({
       where: whereClause,
       include: {
-        vehicleType: true,
+        vehicles: {
+          where: { isDefault: true, status: 'active' },
+          take: 1,
+          include: { vehicleType: true },
+        },
       },
     });
 
@@ -444,10 +448,10 @@ export class LocationTrackingService extends RedisPubSubService {
             firstName: driver.firstName,
             lastName: driver.lastName,
             profileImageUrl: driver.profileImageUrl,
-            carModel: driver.carModel,
-            licensePlate: driver.licensePlate,
-            carSeats: driver.carSeats,
-            vehicleType: driver.vehicleType,
+            carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : '',
+            licensePlate: driver.vehicles?.[0]?.licensePlate || '',
+            carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
+            vehicleType: driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
             currentLocation: {
               lat: Number(driver.currentLatitude),
               lng: Number(driver.currentLongitude),

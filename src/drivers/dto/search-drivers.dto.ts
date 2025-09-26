@@ -55,7 +55,7 @@ export class SearchDriversDto {
   lastName?: string;
 
   @ApiPropertyOptional({
-    description: 'Buscar por modelo de carro',
+    description: 'Buscar por modelo de vehículo (en vehículos asociados al conductor)',
     example: 'Toyota',
   })
   @IsOptional()
@@ -63,7 +63,7 @@ export class SearchDriversDto {
   carModel?: string;
 
   @ApiPropertyOptional({
-    description: 'Buscar por placa de carro',
+    description: 'Buscar por placa de vehículo (en vehículos asociados al conductor)',
     example: 'ABC-123',
   })
   @IsOptional()
@@ -98,7 +98,7 @@ export class SearchDriversDto {
   canDoDeliveries?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Número de asientos del carro',
+    description: 'Número de asientos del vehículo (en vehículos asociados al conductor)',
     example: 4,
     minimum: 1,
     maximum: 8,
@@ -111,7 +111,7 @@ export class SearchDriversDto {
   carSeats?: number;
 
   @ApiPropertyOptional({
-    description: 'ID del tipo de vehículo',
+    description: 'ID del tipo de vehículo (en vehículos asociados al conductor)',
     example: 1,
   })
   @IsOptional()

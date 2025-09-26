@@ -1810,18 +1810,14 @@ export class TransportClientController {
           firstName: true,
           lastName: true,
           profileImageUrl: true,
-          carModel: true,
-          licensePlate: true,
-          carSeats: true,
-          vehicleTypeId: true,
           lastLocationUpdate: true,
           locationAccuracy: true,
-          vehicleType: {
-            select: {
-              id: true,
-              name: true,
-              displayName: true,
-            },
+        },
+        include: {
+          vehicles: {
+            where: { isDefault: true, status: 'active' },
+            take: 1,
+            include: { vehicleType: true },
           },
         },
         orderBy: { id: 'asc' },
@@ -1862,7 +1858,7 @@ export class TransportClientController {
         const newLng = centerLng + lngOffset;
 
         // Asignar tipo de vehículo si no tiene uno
-        let vehicleTypeId = driver.vehicleTypeId;
+        let vehicleTypeId = driver.vehicles?.[0]?.vehicleTypeId;
         if (!vehicleTypeId && availableVehicleTypes.length > 0) {
           vehicleTypeId =
             availableVehicleTypes[
@@ -1888,7 +1884,6 @@ export class TransportClientController {
           where: { id: driver.id },
           data: {
             status: 'online',
-            vehicleTypeId: vehicleTypeId,
             updatedAt: new Date(),
           },
         });
@@ -1910,10 +1905,10 @@ export class TransportClientController {
           firstName: driver.firstName,
           lastName: driver.lastName,
           profileImageUrl: driver.profileImageUrl,
-          carModel: driver.carModel,
-          licensePlate: driver.licensePlate,
-          carSeats: driver.carSeats,
-          vehicleType: driver.vehicleType,
+          carModel: driver.vehicles?.[0] ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}` : 'Unknown',
+          licensePlate: driver.vehicles?.[0]?.licensePlate || '',
+          carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
+          vehicleType: driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
           currentLocation: {
             lat: newLat,
             lng: newLng,

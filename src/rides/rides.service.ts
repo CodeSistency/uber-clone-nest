@@ -99,7 +99,11 @@ export class RidesService {
       include: {
         driver: {
           include: {
-            vehicleType: true,
+            vehicles: {
+              where: { isDefault: true, status: 'active' },
+              take: 1,
+              include: { vehicleType: true },
+            },
           },
         },
         tier: true,
@@ -220,9 +224,17 @@ export class RidesService {
     const ride = await this.prisma.ride.findUnique({
       where: { rideId },
       include: {
-        driver: true,
+        driver: {
+          include: {
+            vehicles: {
+              where: { isDefault: true, status: 'active' },
+              take: 1,
+            },
+          },
+        },
         tier: true,
         user: true,
+        vehicle: true,
       },
     });
 
@@ -242,12 +254,19 @@ export class RidesService {
       include: {
         driver: {
           include: {
-            vehicleType: true,
+            vehicles: {
+              where: { isDefault: true, status: 'active' },
+              take: 1,
+              include: { vehicleType: true },
+            },
           },
         },
         tier: true,
         user: true,
         requestedVehicleType: true,
+        vehicle: {
+          include: { vehicleType: true },
+        },
       },
     });
 
@@ -261,9 +280,15 @@ export class RidesService {
         {
           driverName:
             updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
-          vehicleInfo: `${updatedRide.driver?.carModel} - ${updatedRide.driver?.licensePlate}`,
+          vehicleInfo: updatedRide.vehicle
+            ? `${updatedRide.vehicle.make} ${updatedRide.vehicle.model} - ${updatedRide.vehicle.licensePlate}`
+            : updatedRide.driver?.vehicles?.[0]
+            ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
+            : 'Vehículo asignado',
           vehicleType:
-            updatedRide.driver?.vehicleType?.displayName || 'Vehículo',
+            updatedRide.vehicle?.vehicleType?.displayName ||
+            updatedRide.driver?.vehicles?.[0]?.vehicleType?.displayName ||
+            'Vehículo',
         },
       );
       this.logger.log(`Notified passenger about accepted ride ${rideId}`);
@@ -329,8 +354,16 @@ export class RidesService {
         // You might want to add a driver_arrived_at field
       },
       include: {
-        driver: true,
+        driver: {
+          include: {
+            vehicles: {
+              where: { isDefault: true, status: 'active' },
+              take: 1,
+            },
+          },
+        },
         user: true,
+        vehicle: true,
       },
     });
 
@@ -342,8 +375,12 @@ export class RidesService {
         ride.driverId,
         'arrived',
         {
-          driverName: ride.driver?.firstName + ' ' + ride.driver?.lastName,
-          vehicleInfo: `${ride.driver?.carModel} - ${ride.driver?.licensePlate}`,
+          driverName: updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
+          vehicleInfo: updatedRide.vehicle
+            ? `${updatedRide.vehicle.make} ${updatedRide.vehicle.model} - ${updatedRide.vehicle.licensePlate}`
+            : updatedRide.driver?.vehicles?.[0]
+            ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
+            : 'Vehículo asignado',
         },
       );
       this.logger.log(
@@ -617,9 +654,17 @@ export class RidesService {
         // For now, we'll just update the timestamp
       },
       include: {
-        driver: true,
+        driver: {
+          include: {
+            vehicles: {
+              where: { isDefault: true, status: 'active' },
+              take: 1,
+            },
+          },
+        },
         user: true,
         tier: true,
+        vehicle: true,
       },
     });
 
@@ -631,8 +676,12 @@ export class RidesService {
         ride.driverId,
         'in_progress',
         {
-          driverName: ride.driver?.firstName + ' ' + ride.driver?.lastName,
-          vehicleInfo: `${ride.driver?.carModel} - ${ride.driver?.licensePlate}`,
+          driverName: updatedRide.driver?.firstName + ' ' + updatedRide.driver?.lastName,
+          vehicleInfo: updatedRide.vehicle
+            ? `${updatedRide.vehicle.make} ${updatedRide.vehicle.model} - ${updatedRide.vehicle.licensePlate}`
+            : updatedRide.driver?.vehicles?.[0]
+            ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model} - ${updatedRide.driver.vehicles[0].licensePlate}`
+            : 'Vehículo asignado',
           startedAt: now.toISOString(),
         },
       );
@@ -652,8 +701,8 @@ export class RidesService {
         id: updatedRide.driver?.id,
         firstName: updatedRide.driver?.firstName,
         lastName: updatedRide.driver?.lastName,
-        carModel: updatedRide.driver?.carModel,
-        licensePlate: updatedRide.driver?.licensePlate,
+        carModel: updatedRide.driver?.vehicles?.[0] ? `${updatedRide.driver.vehicles[0].make} ${updatedRide.driver.vehicles[0].model}` : 'Unknown',
+        licensePlate: updatedRide.driver?.vehicles?.[0]?.licensePlate || 'Unknown',
       },
       origin: {
         address: updatedRide.originAddress,

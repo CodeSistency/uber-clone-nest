@@ -126,14 +126,10 @@ async function main() {
         id: driverUsers[0].id, // Associate with user
         firstName: 'Carlos',
         lastName: 'Rodriguez',
+        email: 'carlos.driver@example.com',
+        phone: '+58-412-1234567',
         profileImageUrl:
           'https://api.dicebear.com/7.x/avataaars/svg?seed=carlos',
-        carImageUrl:
-          'https://images.unsplash.com/photo-1549924231-f129b911e442?w=400',
-        carModel: 'Toyota Camry',
-        licensePlate: 'ABC123',
-        carSeats: 4,
-        vehicleTypeId: vehicleTypes[0].id, // Carro
         status: 'online',
         verificationStatus: 'approved',
         isLocationActive: true,
@@ -141,6 +137,10 @@ async function main() {
         currentLongitude: -66.9146,
         lastLocationUpdate: new Date(),
         canDoDeliveries: true,
+        averageRating: 4.8,
+        totalRides: 45,
+        totalEarnings: 2250.75,
+        completionRate: 98.5,
       },
     }),
     prisma.driver.create({
@@ -148,14 +148,10 @@ async function main() {
         id: driverUsers[1].id, // Associate with user
         firstName: 'Maria',
         lastName: 'Garcia',
+        email: 'maria.driver@example.com',
+        phone: '+58-414-7654321',
         profileImageUrl:
           'https://api.dicebear.com/7.x/avataaars/svg?seed=maria',
-        carImageUrl:
-          'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
-        carModel: 'Honda Civic',
-        licensePlate: 'XYZ789',
-        carSeats: 4,
-        vehicleTypeId: vehicleTypes[0].id, // Carro
         status: 'online',
         verificationStatus: 'approved',
         isLocationActive: true,
@@ -163,6 +159,10 @@ async function main() {
         currentLongitude: -66.8500,
         lastLocationUpdate: new Date(),
         canDoDeliveries: false,
+        averageRating: 4.6,
+        totalRides: 32,
+        totalEarnings: 1680.25,
+        completionRate: 95.2,
       },
     }),
     prisma.driver.create({
@@ -170,13 +170,9 @@ async function main() {
         id: driverUsers[2].id, // Associate with user
         firstName: 'Luis',
         lastName: 'Martinez',
+        email: 'luis.driver@example.com',
+        phone: '+58-416-9876543',
         profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=luis',
-        carImageUrl:
-          'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
-        carModel: 'Yamaha MT-07',
-        licensePlate: 'MOT789',
-        carSeats: 2,
-        vehicleTypeId: vehicleTypes[1].id, // Moto
         status: 'offline',
         verificationStatus: 'approved',
         isLocationActive: true,
@@ -184,12 +180,93 @@ async function main() {
         currentLongitude: -66.9036,
         lastLocationUpdate: new Date(),
         canDoDeliveries: true,
+        averageRating: 4.9,
+        totalRides: 28,
+        totalEarnings: 1575.50,
+        completionRate: 97.8,
       },
     }),
   ]);
 
   // =========================================
-  // SECTION 4: DRIVER DOCUMENTS
+  // SECTION 4: DRIVER VEHICLES
+  // =========================================
+  console.log('🚗 Seeding driver vehicles...');
+  const vehicles = await Promise.all([
+    prisma.vehicle.create({
+      data: {
+        driverId: drivers[0].id,
+        vehicleTypeId: vehicleTypes[0].id, // Carro
+        make: 'Toyota',
+        model: 'Camry',
+        year: 2020,
+        color: 'White',
+        licensePlate: 'ABC123',
+        vin: '1HGBH41JXMN109186',
+        seatingCapacity: 4,
+        hasAC: true,
+        hasGPS: true,
+        fuelType: 'gasoline',
+        insuranceProvider: 'Seguros Caracas',
+        insurancePolicyNumber: 'POL-001234',
+        insuranceExpiryDate: new Date('2024-12-31'),
+        frontImageUrl: 'https://images.unsplash.com/photo-1549924231-f129b911e442?w=400',
+        backImageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
+        status: 'active',
+        verificationStatus: 'verified',
+        isDefault: true,
+      },
+    }),
+    prisma.vehicle.create({
+      data: {
+        driverId: drivers[1].id,
+        vehicleTypeId: vehicleTypes[0].id, // Carro
+        make: 'Honda',
+        model: 'Civic',
+        year: 2019,
+        color: 'Blue',
+        licensePlate: 'XYZ789',
+        vin: '2HGFC2F59JH123456',
+        seatingCapacity: 4,
+        hasAC: true,
+        hasGPS: false,
+        fuelType: 'gasoline',
+        insuranceProvider: 'Seguros Nacional',
+        insurancePolicyNumber: 'POL-005678',
+        insuranceExpiryDate: new Date('2024-10-15'),
+        frontImageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
+        status: 'active',
+        verificationStatus: 'verified',
+        isDefault: true,
+      },
+    }),
+    prisma.vehicle.create({
+      data: {
+        driverId: drivers[2].id,
+        vehicleTypeId: vehicleTypes[1].id, // Moto
+        make: 'Yamaha',
+        model: 'MT-07',
+        year: 2021,
+        color: 'Black',
+        licensePlate: 'MOT789',
+        vin: 'JY1MS02A1M0000123',
+        seatingCapacity: 2,
+        hasAC: false,
+        hasGPS: true,
+        fuelType: 'gasoline',
+        insuranceProvider: 'Seguros Moto',
+        insurancePolicyNumber: 'POL-009012',
+        insuranceExpiryDate: new Date('2024-08-20'),
+        frontImageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
+        status: 'active',
+        verificationStatus: 'verified',
+        isDefault: true,
+      },
+    }),
+  ]);
+
+  // =========================================
+  // SECTION 5: DRIVER DOCUMENTS
   // =========================================
   console.log('📄 Seeding driver documents...');
   await Promise.all([
@@ -220,7 +297,57 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 5: RIDE TIERS
+  // SECTION 6: VEHICLE DOCUMENTS
+  // =========================================
+  console.log('📋 Seeding vehicle documents...');
+  await Promise.all([
+    // Carlos' Toyota Camry documents
+    prisma.vehicleDocument.create({
+      data: {
+        vehicleId: vehicles[0].id,
+        documentType: 'registration',
+        documentUrl: 'https://example.com/vehicle-docs/toyota-registration.jpg',
+        verificationStatus: 'verified',
+        verifiedAt: new Date(),
+        verifiedBy: 1, // Admin ID
+      },
+    }),
+    prisma.vehicleDocument.create({
+      data: {
+        vehicleId: vehicles[0].id,
+        documentType: 'insurance',
+        documentUrl: 'https://example.com/vehicle-docs/toyota-insurance.jpg',
+        verificationStatus: 'verified',
+        verifiedAt: new Date(),
+        verifiedBy: 1,
+      },
+    }),
+    // Maria's Honda Civic documents
+    prisma.vehicleDocument.create({
+      data: {
+        vehicleId: vehicles[1].id,
+        documentType: 'registration',
+        documentUrl: 'https://example.com/vehicle-docs/honda-registration.jpg',
+        verificationStatus: 'verified',
+        verifiedAt: new Date(),
+        verifiedBy: 1,
+      },
+    }),
+    // Luis' Yamaha MT-07 documents
+    prisma.vehicleDocument.create({
+      data: {
+        vehicleId: vehicles[2].id,
+        documentType: 'registration',
+        documentUrl: 'https://example.com/vehicle-docs/yamaha-registration.jpg',
+        verificationStatus: 'verified',
+        verifiedAt: new Date(),
+        verifiedBy: 1,
+      },
+    }),
+  ]);
+
+  // =========================================
+  // SECTION 7: RIDE TIERS
   // =========================================
   console.log('⭐ Seeding ride tiers...');
   const rideTiers = await Promise.all([
@@ -257,7 +384,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 4: TIER-VEHICLE TYPE COMBINATIONS
+  // SECTION 8: TIER-VEHICLE TYPE COMBINATIONS
   // =========================================
   console.log('🔗 Seeding tier-vehicle type combinations...');
   const tierVehicleCombinations = await Promise.all([
@@ -313,7 +440,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 5: RIDES
+  // SECTION 9: RIDES
   // =========================================
   console.log('🚕 Seeding rides...');
   const rides = await Promise.all([
@@ -331,6 +458,7 @@ async function main() {
         driverId: drivers[0].id,
         userId: users[0].id,
         tierId: rideTiers[0].id,
+        vehicleId: vehicles[0].id, // Toyota Camry
         requestedVehicleTypeId: vehicleTypes[0].id, // Solicitó carro
       },
     }),
@@ -348,6 +476,7 @@ async function main() {
         driverId: drivers[1].id,
         userId: users[1].id,
         tierId: rideTiers[1].id,
+        vehicleId: vehicles[1].id, // Honda Civic
         requestedVehicleTypeId: vehicleTypes[1].id, // Solicitó moto
       },
     }),
@@ -370,7 +499,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 6: STORES
+  // SECTION 10: STORES
   // =========================================
   console.log('🏪 Seeding stores...');
   const stores = await Promise.all([
@@ -422,7 +551,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 7: PRODUCTS
+  // SECTION 11: PRODUCTS
   // =========================================
   console.log('🍕 Seeding products...');
   const products = await Promise.all([
@@ -504,7 +633,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 8: DELIVERY ORDERS
+  // SECTION 12: DELIVERY ORDERS
   // =========================================
   console.log('📦 Seeding delivery orders...');
   const deliveryOrders = await Promise.all([
@@ -541,7 +670,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 9: ORDER ITEMS
+  // SECTION 13: ORDER ITEMS
   // =========================================
   console.log('🛒 Seeding order items...');
   await Promise.all([
@@ -582,7 +711,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 10: PROMOTIONS
+  // SECTION 14: PROMOTIONS
   // =========================================
   console.log('🎁 Seeding promotions...');
   const promotions = await Promise.all([
@@ -613,7 +742,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 11: WALLETS
+  // SECTION 15: WALLETS
   // =========================================
   console.log('💰 Seeding wallets...');
   const wallets = await Promise.all([
@@ -638,7 +767,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 12: WALLET TRANSACTIONS
+  // SECTION 16: WALLET TRANSACTIONS
   // =========================================
   console.log('💸 Seeding wallet transactions...');
   await Promise.all([
@@ -677,7 +806,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 13: RATINGS
+  // SECTION 17: RATINGS
   // =========================================
   console.log('⭐ Seeding ratings...');
   await Promise.all([
@@ -730,7 +859,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 14: EMERGENCY CONTACTS
+  // SECTION 18: EMERGENCY CONTACTS
   // =========================================
   console.log('🚨 Seeding emergency contacts...');
   await Promise.all([
@@ -758,7 +887,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 15: CHAT MESSAGES
+  // SECTION 19: CHAT MESSAGES
   // =========================================
   console.log('💬 Seeding chat messages...');
   await Promise.all([
@@ -804,7 +933,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 16: ADMIN SYSTEM
+  // SECTION 20: ADMIN SYSTEM
   // =========================================
   console.log('👑 Seeding admin system...');
 
@@ -946,7 +1075,9 @@ async function main() {
   console.log('📊 Summary:');
   console.log(`   👥 ${users.length} users created`);
   console.log(`   🚗 ${drivers.length} drivers created`);
+  console.log(`   🚙 ${vehicles.length} vehicles created`);
   console.log(`   📄 ${3} driver documents created`);
+  console.log(`   📋 ${4} vehicle documents created`);
   console.log(`   ⭐ ${rideTiers.length} ride tiers created`);
   console.log(`   🚕 ${rides.length} rides created`);
   console.log(`   🏪 ${stores.length} stores created`);
