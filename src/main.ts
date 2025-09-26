@@ -262,7 +262,13 @@ async function bootstrap() {
   // Note: Security is applied per endpoint using guards, not globally
   // This allows public endpoints like registration to work without authentication
 
-  SwaggerModule.setup(swaggerConfig.path || 'api', app, document);
+  SwaggerModule.setup(swaggerConfig.path || 'api', app, document, {
+    swaggerOptions: {
+      docExpansion: 'none', // 'none' = colapsado, 'list' = lista, 'full' = expandido
+      filter: true,
+      showRequestHeaders: true,
+    },
+  });
 
   // Enable CORS with secure defaults
   app.enableCors({
