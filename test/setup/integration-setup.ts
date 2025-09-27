@@ -71,6 +71,7 @@ export class TestDatabaseManager {
         firstName: 'Test',
         lastName: 'Driver',
         status: 'online',
+        carSeats: 4,
       },
     });
 

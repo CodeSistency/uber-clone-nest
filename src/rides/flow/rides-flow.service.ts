@@ -13,7 +13,10 @@ import {
 } from '../../notifications/interfaces/notification.interface';
 import { WebSocketGatewayClass } from '../../websocket/websocket.gateway';
 import { WalletService } from '../../wallet/wallet.service';
+import { MatchingEngine } from './matching-engine';
+import { MatchingMetricsService } from './matching-metrics.service';
 import { RidesService } from '../rides.service';
+import { RedisService } from '../../redis/redis.service';
 import { OrdersService } from '../../orders/orders.service';
 import { StripeService } from '../../stripe/stripe.service';
 import { ErrandsService } from '../../errands/errands.service';
@@ -36,6 +39,8 @@ export class RidesFlowService {
     private readonly parcelsService: ParcelsService,
     private readonly locationTrackingService: LocationTrackingService,
     private readonly walletService: WalletService,
+    private readonly redisService: RedisService,
+    private readonly matchingMetrics: MatchingMetricsService,
   ) {}
 
   // Método para obtener tiers organizados por tipo de vehículo
@@ -613,6 +618,310 @@ export class RidesFlowService {
   // === NUEVOS MÉTODOS PARA MATCHING AUTOMÁTICO ===
 
   /**
+   * Valida que los servicios críticos estén funcionando
+   */
+  private async validateSystemHealth(): Promise<void> {
+    try {
+      // Verificar conexión a base de datos
+      await this.prisma.$queryRaw`SELECT 1`;
+
+      // Verificar Redis si está disponible
+      if (this.redisService) {
+        await this.redisService.ping();
+      }
+    } catch (error) {
+      this.logger.error('❌ [MATCHING] Error en validación de servicios críticos:', error);
+      throw new Error('Sistema no disponible temporalmente');
+    }
+  }
+
+  /**
+   * Extrae y centraliza toda la lógica de debug
+   */
+  private logDebugInfo(
+    step: string,
+    data: any,
+    level: 'info' | 'warn' | 'error' = 'info'
+  ): void {
+    if (process.env.NODE_ENV !== 'development' || !process.env.MATCHING_DEBUG) {
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const logData = {
+      timestamp,
+      step,
+      data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data
+    };
+
+    switch (level) {
+      case 'error':
+        this.logger.error(`🔍 [DEBUG] ${step}:`, logData);
+        break;
+      case 'warn':
+        this.logger.warn(`🔍 [DEBUG] ${step}:`, logData);
+        break;
+      default:
+        this.logger.log(`🔍 [DEBUG] ${step}:`, logData);
+    }
+  }
+
+  /**
+   * Construye filtros de tipo de vehículo basados en tier y vehicleTypeId
+   */
+  private async buildVehicleTypeFilters(
+    tierId?: number,
+    vehicleTypeId?: number
+  ): Promise<any> {
+    if (vehicleTypeId) {
+      return vehicleTypeId;
+    }
+
+      if (tierId) {
+      const compatibleTypes = await this.prisma.tierVehicleType.findMany({
+            where: { tierId, isActive: true },
+            select: { vehicleTypeId: true },
+          });
+
+      if (compatibleTypes.length === 0) return null;
+      if (compatibleTypes.length === 1) return compatibleTypes[0].vehicleTypeId;
+
+      return { in: compatibleTypes.map(vt => vt.vehicleTypeId) };
+    }
+
+    return null;
+  }
+
+  /**
+   * Busca conductores cercanos con manejo de errores mejorado
+   */
+  private async findNearbyDrivers(
+    lat: number,
+    lng: number,
+    radiusKm: number,
+    filters: any
+  ): Promise<any[]> {
+    try {
+      const drivers = await this.locationTrackingService.findNearbyDrivers(
+          lat,
+          lng,
+        radiusKm,
+        filters
+      );
+
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.log(`✅ [MATCHING] Encontrados ${drivers.length} conductores cercanos`);
+      }
+
+      return drivers;
+    } catch (error) {
+      this.logger.error('❌ [MATCHING] Error buscando conductores cercanos:', error);
+
+      // Fallback: buscar conductores online sin considerar ubicación GPS
+      this.logger.warn('⚠️ [MATCHING] Usando fallback - buscando conductores online sin GPS');
+      return await this.fallbackDriverSearch(filters);
+    }
+  }
+
+  /**
+   * Búsqueda de fallback cuando el GPS falla
+   */
+  private async fallbackDriverSearch(filters: any): Promise<any[]> {
+    try {
+      const drivers = await this.prisma.driver.findMany({
+        where: filters,
+        include: {
+          vehicles: {
+            where: { isDefault: true },
+            take: 1
+          }
+        },
+        take: 10 // Limitar resultados en fallback
+      });
+
+      return drivers.map(driver => ({
+        ...driver,
+        distance: 999, // Distancia máxima para ordenar al final
+        currentLocation: null,
+        lastLocationUpdate: null
+      }));
+    } catch (error) {
+      this.logger.error('❌ [MATCHING] Error en búsqueda de fallback:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Sistema de caché inteligente para matching
+   */
+  private async getCachedDriversList(
+    cacheKey: string,
+    fetchFunction: () => Promise<any[]>,
+    ttlSeconds: number = 30
+  ): Promise<any[]> {
+    try {
+      // Intentar obtener del caché
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        if (process.env.NODE_ENV === 'development') {
+          this.logger.log(`✅ [CACHE] Hit para ${cacheKey}`);
+        }
+        return JSON.parse(cached);
+      }
+
+      // Si no está en caché, obtener datos frescos
+      const data = await fetchFunction();
+
+      // Guardar en caché
+      await this.redisService.set(cacheKey, JSON.stringify(data), ttlSeconds);
+
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.log(`💾 [CACHE] Miss para ${cacheKey} - guardado por ${ttlSeconds}s`);
+      }
+
+      return data;
+    } catch (error) {
+      this.logger.warn(`⚠️ [CACHE] Error con caché ${cacheKey}:`, error);
+      // Fallback: obtener datos frescos sin caché
+      return await fetchFunction();
+    }
+  }
+
+  /**
+   * Obtener conductores disponibles con caché inteligente
+   */
+  private async getAvailableDriversWithCache(
+    filters: any,
+    radiusKm: number,
+    userLat: number,
+    userLng: number
+  ): Promise<any[]> {
+    const cacheKey = `drivers:available:${JSON.stringify(filters)}:r${radiusKm}`;
+
+    return this.getCachedDriversList(
+      cacheKey,
+      () => this.findNearbyDrivers(userLat, userLng, radiusKm, filters),
+      30 // 30 segundos de caché
+    );
+  }
+
+  /**
+   * Obtener información detallada de conductores con caché
+   */
+  private async getDriverDetailsWithCache(driverIds: number[]): Promise<any[]> {
+    if (driverIds.length === 0) return [];
+
+    const cacheKey = `drivers:details:${driverIds.sort().join(',')}`;
+
+    return this.getCachedDriversList(
+      cacheKey,
+      () => this.getDriverDetailedInfoBatch(driverIds),
+      300 // 5 minutos de caché para detalles
+    );
+  }
+
+  /**
+   * Obtener información detallada de múltiples conductores
+   */
+  private async getDriverDetailedInfoBatch(driverIds: number[]): Promise<any[]> {
+    if (driverIds.length === 0) return [];
+
+    try {
+      const drivers = await this.prisma.driver.findMany({
+          where: {
+          id: { in: driverIds }
+          },
+          include: {
+            vehicles: {
+            where: { isDefault: true },
+            take: 1
+          },
+          rides: {
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              ratings: {
+                select: {
+                  ratingValue: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      return drivers.map(driver => {
+        const recentRatings = driver.rides.flatMap((ride: any) =>
+          ride.ratings?.map((r: any) => r.ratingValue) || []
+        ).filter(Boolean);
+        const avgRating = recentRatings.length > 0
+          ? recentRatings.reduce((sum: number, rating: number) => sum + rating, 0) / recentRatings.length
+          : 0;
+
+              return {
+                id: driver.id,
+                firstName: driver.firstName,
+                lastName: driver.lastName,
+          profileImageUrl: driver.profileImageUrl,
+          rating: avgRating,
+          totalRides: driver.rides.length,
+          createdAt: driver.createdAt,
+          vehicles: driver.vehicles
+        };
+      });
+    } catch (error) {
+      this.logger.error('❌ Error obteniendo información detallada de conductores:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Invalidar caché de matching cuando cambie el estado de conductores
+   */
+  async invalidateDriverCache(driverId?: number): Promise<void> {
+    try {
+      const patterns = [
+        'drivers:available:*',
+        'drivers:details:*',
+        'pricing:*'
+      ];
+
+      for (const pattern of patterns) {
+        // Nota: En Redis, para invalidar patrones necesitamos usar KEYS (solo para desarrollo)
+        // En producción usar sets de claves relacionadas
+        if (process.env.NODE_ENV === 'development') {
+          const keys = await this.redisService.keys(pattern);
+          if (keys.length > 0) {
+            await this.redisService.del(...keys);
+            this.logger.log(`🗑️ [CACHE] Invalidado ${keys.length} claves con patrón ${pattern}`);
+          }
+        }
+      }
+
+      if (driverId) {
+        this.logger.log(`🗑️ [CACHE] Caché invalidado para conductor ${driverId}`);
+        } else {
+        this.logger.log(`🗑️ [CACHE] Caché global de matching invalidado`);
+      }
+    } catch (error) {
+      this.logger.warn('⚠️ [CACHE] Error invalidando caché:', error);
+    }
+  }
+
+  /**
+   * Calcula scores para múltiples conductores usando MatchingEngine
+   */
+  private async calculateDriversScores(
+    drivers: any[],
+    userLat: number,
+    userLng: number,
+    searchRadius?: number
+  ): Promise<any[]> {
+    const engine = new MatchingEngine(this.prisma, this.matchingMetrics, this.logger);
+    return engine.calculateBatchScores(drivers, userLat, userLng, searchRadius);
+  }
+
+  /**
    * Encuentra el mejor conductor disponible usando algoritmo de scoring
    */
   async findBestDriverMatch(params: {
@@ -625,314 +934,80 @@ export class RidesFlowService {
     const { lat, lng, tierId, vehicleTypeId, radiusKm = 5 } = params;
     const startTime = Date.now();
 
-    this.logger.log(
-      `🎯 [MATCHING] Iniciando búsqueda de conductor - Usuario: (${lat}, ${lng}) - Radio: ${radiusKm}km - Tier: ${tierId || 'auto'} - VehicleType: ${vehicleTypeId || 'auto'}`,
-    );
+    // Log inicial solo en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+          this.logger.log(
+        `🎯 [MATCHING] Iniciando búsqueda de conductor - Usuario: (${lat}, ${lng}) - Radio: ${radiusKm}km - Tier: ${tierId || 'auto'} - VehicleType: ${vehicleTypeId || 'auto'}`,
+      );
+    }
 
     try {
-      // 0. DEBUG: Verificar estado general del sistema
-      this.logger.log(
-        `🔍 [MATCHING] DEBUG - Verificando estado del sistema antes de búsqueda`,
-      );
-
-      // Detalles completos de conductores online
-      const allOnlineDrivers = await this.prisma.driver.findMany({
-        where: { status: 'online', verificationStatus: 'approved' },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          status: true,
-          verificationStatus: true,
-          createdAt: true,
-        },
-      });
-
-      this.logger.log(
-        `📊 [MATCHING] DEBUG - Conductores online encontrados: ${allOnlineDrivers.length}`,
-      );
-      allOnlineDrivers.forEach((driver, index) => {
-        this.logger.log(
-          `   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName} - Status: ${driver.status} - Verified: ${driver.verificationStatus}`,
-        );
-      });
-
-      const totalDriversOnline = allOnlineDrivers.length;
-
-      // Verificar location tracking service
-      try {
-        // Intentar obtener un conductor cualquiera para verificar si el service funciona
-        const sampleDriver = await this.prisma.driver.findFirst({
-          where: { status: 'online', verificationStatus: 'approved' },
-          select: { id: true, firstName: true, lastName: true },
-        });
-
-        if (sampleDriver) {
-          const locationCheck =
-            await this.locationTrackingService.getDriverLocation(
-              sampleDriver.id,
-            );
-          this.logger.log(
-            `🔍 [MATCHING] DEBUG - Location tracking funciona: ${locationCheck ? '✅ SÍ' : '❌ NO'} (ejemplo conductor ${sampleDriver.firstName})`,
-          );
-        }
-      } catch (locationError) {
-        this.logger.error(
-          `🔍 [MATCHING] DEBUG - Error en location tracking service:`,
-          locationError,
-        );
-      }
+      // Verificar servicios críticos antes de proceder
+      await this.validateSystemHealth();
 
       // 1. Obtener conductores candidatos con filtros básicos
-      const filters: any = {
-        status: 'online',
-        verificationStatus: 'approved',
+      const driverFilters: any = {
+        status: 'online' as const,
+        verificationStatus: 'approved' as const,
       };
 
-      // 2. Aplicar filtros de compatibilidad si se especifican
-      if (tierId) {
-        const compatibleVehicleTypes =
-          await this.prisma.tierVehicleType.findMany({
-            where: { tierId, isActive: true },
-            select: { vehicleTypeId: true },
-          });
-
-        if (compatibleVehicleTypes.length > 0) {
-          const vehicleTypeIds = compatibleVehicleTypes.map(
-            (vt) => vt.vehicleTypeId,
-          );
-          filters.vehicleTypeId =
-            vehicleTypeIds.length === 1
-              ? vehicleTypeIds[0]
-              : { in: vehicleTypeIds };
+      // 2. Aplicar filtros de compatibilidad de vehículo
+      if (tierId || vehicleTypeId) {
+        const vehicleTypeFilters = await this.buildVehicleTypeFilters(tierId, vehicleTypeId);
+        if (vehicleTypeFilters) {
+          driverFilters.vehicleTypeId = vehicleTypeFilters;
         }
       }
 
-      if (vehicleTypeId) {
-        filters.vehicleTypeId = vehicleTypeId;
-      }
+      this.logDebugInfo('Filtros aplicados', { driverFilters, searchParams: { lat, lng, radiusKm } });
 
-      this.logger.log(
-        `🔍 [MATCHING] DEBUG - Filtros aplicados:`,
-        JSON.stringify(filters),
-      );
-      this.logger.log(
-        `🔍 [MATCHING] DEBUG - Parámetros de búsqueda: lat=${lat}, lng=${lng}, radiusKm=${radiusKm}`,
+      // 3. Buscar conductores candidatos cercanos (con caché inteligente)
+      const candidateDrivers = await this.getAvailableDriversWithCache(
+        driverFilters,
+        radiusKm,
+        lat,
+        lng
       );
 
-      // 3. Buscar conductores usando LocationTrackingService
-      this.logger.log(
-        `🔍 [MATCHING] Buscando conductores cercanos - Ubicación: (${lat}, ${lng}) - Radio: ${radiusKm}km - Filtros: ${JSON.stringify(filters)}`,
-      );
-
-      // Log antes de llamar al location tracking service
-      this.logger.log(
-        `🔍 [MATCHING] DEBUG - Llamando a locationTrackingService.findNearbyDrivers con:`,
-      );
-      this.logger.log(`   - Lat: ${lat}`);
-      this.logger.log(`   - Lng: ${lng}`);
-      this.logger.log(`   - Radius (km): ${radiusKm}`);
-      this.logger.log(`   - Filters: ${JSON.stringify(filters)}`);
-
-      let candidateDrivers;
-      try {
-        candidateDrivers = await this.locationTrackingService.findNearbyDrivers(
-          lat,
-          lng,
-          radiusKm, // Radio ya está en kilómetros
-          filters,
-        );
-        this.logger.log(
-          `✅ [MATCHING] locationTrackingService.findNearbyDrivers completado sin errores`,
-        );
-      } catch (locationError) {
-        this.logger.error(
-          `❌ [MATCHING] ERROR en locationTrackingService.findNearbyDrivers:`,
-          locationError,
-        );
-        throw locationError;
-      }
-
-      this.logger.log(
-        `📊 [MATCHING] Encontrados ${candidateDrivers.length} conductores candidatos por ubicación GPS`,
-      );
-
-      // Log detallado de cada conductor encontrado
-      if (candidateDrivers.length > 0) {
-        this.logger.log(`👥 [MATCHING] Detalles de conductores candidatos:`);
-        candidateDrivers.forEach((driver, index) => {
-          this.logger.log(
-            `   ${index + 1}. ID=${driver.id || driver.driverId} - Distancia=${driver.distance}km - Nombre=${driver.firstName || 'N/A'} ${driver.lastName || ''}`,
-          );
-          this.logger.log(
-            `      Ubicación actual: (${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`,
-          );
-          this.logger.log(
-            `      Última actualización GPS: ${driver.lastLocationUpdate || 'N/A'}`,
-          );
-        });
-      } else {
-        this.logger.warn(
-          `⚠️ [MATCHING] Ningún conductor encontrado por GPS. Verificando por qué...`,
-        );
-
-        // Verificar si hay conductores online pero sin ubicación GPS
-        const onlineDriversWithoutGPS = await this.prisma.driver.findMany({
-          where: {
-            status: 'online',
-            verificationStatus: 'approved',
-          },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        });
-
-        this.logger.log(
-          `🔍 [MATCHING] Conductores online en BD (${onlineDriversWithoutGPS.length}):`,
-        );
-        onlineDriversWithoutGPS.forEach((driver, index) => {
-          this.logger.log(
-            `   ${index + 1}. ID=${driver.id} - ${driver.firstName} ${driver.lastName}`,
-          );
-        });
-      }
-
-      // Log detallado de cada conductor encontrado con su ubicación
-      candidateDrivers.forEach((driver, index) => {
-        this.logger.log(
-          `👤 [MATCHING] Conductor ${index + 1}: ID=${driver.id} - Distancia=${driver.distance}km - Ubicación=(${driver.currentLocation?.lat || 'N/A'}, ${driver.currentLocation?.lng || 'N/A'})`,
-        );
+      this.logDebugInfo('Conductores candidatos encontrados', {
+        count: candidateDrivers.length,
+        searchArea: { lat, lng, radiusKm }
       });
 
-      // 🚨 FALLBACK: Si no hay conductores con ubicación GPS, buscar conductores online sin ubicación
+      // Si no hay conductores candidatos, retornar null
       if (candidateDrivers.length === 0) {
-        this.logger.warn(
-          `⚠️ [MATCHING] No se encontraron conductores con ubicación GPS. Intentando fallback...`,
-        );
-
-        // Buscar todos los conductores online sin filtro de ubicación
-        const onlineDrivers = await this.prisma.driver.findMany({
-          where: {
-            status: 'online',
-            verificationStatus: 'approved',
-          },
-          include: {
-            vehicles: {
-              where: { isDefault: true, status: 'active' },
-              take: 1,
-              select: {
-                make: true,
-                model: true,
-                licensePlate: true,
-                seatingCapacity: true,
-                vehicleTypeId: true,
-              },
-            },
-          },
-        });
-
-        this.logger.log(
-          `🔄 [MATCHING] Fallback: Encontrados ${onlineDrivers.length} conductores online sin filtro de ubicación`,
-        );
-
-        // Log detallado de conductores encontrados en fallback
-        if (onlineDrivers.length > 0) {
-          onlineDrivers.forEach((driver, index) => {
-            this.logger.log(
-              `👤 [MATCHING] Fallback - Conductor ${index + 1}: ${driver.firstName} ${driver.lastName} (ID: ${driver.id})`,
-            );
-          });
-        }
-
-        if (onlineDrivers.length > 0) {
-          // Convertir a formato esperado por el algoritmo de scoring
-          // Para fallback, necesitamos obtener información adicional de cada conductor
-          candidateDrivers = await Promise.all(
-            onlineDrivers.map(async (driver) => {
-              // Obtener información detallada del conductor
-              const driverDetails = await this.getDriverDetailedInfo(driver.id);
-
-              return {
-                id: driver.id,
-                driverId: driver.id,
-                distance: radiusKm / 2, // Asumir distancia media
-                estimatedMinutes: Math.round((radiusKm / 2 / 30) * 60), // Estimar tiempo basado en distancia
-                currentLocation: { lat, lng }, // Usar ubicación del usuario como aproximación
-                firstName: driver.firstName,
-                lastName: driver.lastName,
-                profileImageUrl: driverDetails.profileImageUrl,
-                carModel: driver.vehicles?.[0]
-                  ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
-                  : 'Unknown',
-                licensePlate: driver.vehicles?.[0]?.licensePlate || '',
-                carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
-                vehicleType:
-                  driverDetails.vehicles?.[0]?.vehicleType?.displayName ||
-                  'Unknown',
-                rating: driverDetails.rating,
-                totalRides: driverDetails.totalRides,
-                createdAt: driverDetails.createdAt,
-                lastLocationUpdate: null,
-                locationAccuracy: null,
-                isLocationActive: false,
-              };
-            }),
-          );
-
-          this.logger.log(
-            `✅ [MATCHING] Fallback exitoso: Usando ${candidateDrivers.length} conductores online`,
-          );
-        } else {
-          this.logger.error(
-            `❌ [MATCHING] Fallback falló: No hay conductores online disponibles`,
-          );
-          this.logger.error(
-            `💡 [MATCHING] Verificar que los conductores estén marcados como 'online' en la base de datos`,
-          );
-        }
+        this.logger.warn(`⚠️ [MATCHING] No se encontraron conductores disponibles en el área`);
+        return null;
       }
 
-      if (candidateDrivers.length === 0) {
-        this.logger.error(
-          `❌ [MATCHING] No se encontraron conductores disponibles en el área (${lat}, ${lng}) dentro de ${radiusKm}km ni en fallback`,
-        );
-        throw new Error('NO_DRIVERS_AVAILABLE');
+      // 4. Obtener información detallada de conductores para scoring (con caché)
+      const driverIds = candidateDrivers.map(d => d.id || d.driverId);
+      const detailedDrivers = await this.getDriverDetailsWithCache(driverIds);
+
+      if (detailedDrivers.length === 0) {
+        this.logger.error('❌ [MATCHING] No se pudo obtener información detallada de conductores');
+        return null;
       }
 
-      // 4. Calcular scores para cada conductor
-      this.logger.log(
-        `🧮 [MATCHING] Calculando scores para ${candidateDrivers.length} conductores...`,
-      );
+      // 5. Calcular scores para cada conductor usando procesamiento por lotes
+      const scoredDrivers = await this.calculateDriversScores(detailedDrivers, lat, lng, radiusKm);
 
-      const scoredDrivers = await Promise.all(
-        candidateDrivers.map(async (driver) => {
-          const score = await this.calculateDriverScore(driver, lat, lng);
-          this.logger.log(
-            `📈 [MATCHING] Conductor ID=${driver.id} - Score=${score.toFixed(1)} - Distancia=${driver.distance}km`,
-          );
-          return { ...driver, score };
-        }),
-      );
+      if (scoredDrivers.length === 0) {
+        this.logger.warn('⚠️ [MATCHING] No se pudieron calcular scores para los conductores');
+        return null;
+      }
 
-      // 5. Ordenar por score descendente y tomar el mejor
-      scoredDrivers.sort((a, b) => b.score - a.score);
+      // 6. Seleccionar el mejor conductor
       const bestDriver = scoredDrivers[0];
 
-      this.logger.log(
-        `🏆 [MATCHING] Mejor conductor seleccionado: ID=${bestDriver.id} - Score=${bestDriver.score.toFixed(1)} - Distancia=${bestDriver.distance}km - Ubicación=(${bestDriver.currentLocation?.lat || 'N/A'}, ${bestDriver.currentLocation?.lng || 'N/A'})`,
-      );
-
-      // Log ranking completo
-      this.logger.log(`📊 [MATCHING] Ranking completo:`);
-      scoredDrivers.slice(0, 5).forEach((driver, index) => {
-        this.logger.log(
-          `   ${index + 1}. ID=${driver.id} - Score=${driver.score.toFixed(1)} - Distancia=${driver.distance}km`,
-        );
+      this.logDebugInfo('Mejor conductor seleccionado', {
+        driverId: bestDriver.id,
+        score: bestDriver.score.toFixed(2),
+        distance: bestDriver.distance.toFixed(2),
+        location: bestDriver.currentLocation
       });
 
-      // 6. Obtener información adicional del conductor
+      // 6. Preparar respuesta final
       const driverDetails = await this.getDriverDetailedInfo(bestDriver.id);
 
       // 7. Calcular tiempo estimado de llegada (velocidad promedio 30 km/h en ciudad)
@@ -943,9 +1018,26 @@ export class RidesFlowService {
 
       // 8. Preparar respuesta
       const processingTime = Date.now() - startTime;
+
+      if (process.env.NODE_ENV === 'development') {
       this.logger.log(
-        `✅ [MATCHING] Matching completado exitosamente en ${processingTime}ms - Conductor: ${driverDetails.firstName} ${driverDetails.lastName} (ID: ${bestDriver.id}) - Distancia: ${bestDriver.distance}km - ETA: ${estimatedMinutes}min`,
-      );
+          `✅ [MATCHING] Matching completado en ${processingTime}ms - Conductor: ${driverDetails.firstName} ${driverDetails.lastName} (ID: ${bestDriver.id})`,
+        );
+      }
+
+      // Registrar métricas completas de matching
+      await this.matchingMetrics.recordMatchingMetrics({
+        duration: processingTime,
+        driversFound: candidateDrivers.length,
+        driversScored: scoredDrivers.length,
+        winnerScore: bestDriver.score,
+        winnerDistance: bestDriver.distance,
+        winnerRating: Number(driverDetails.rating || driverDetails.averageRating || 0),
+        searchRadius: radiusKm,
+        hasWinner: true,
+        tierId,
+        strategy: 'balanced'
+      });
 
       const result = {
         matchedDriver: {
@@ -993,10 +1085,6 @@ export class RidesFlowService {
           searchDuration: (Date.now() - startTime) / 1000, // En segundos
         },
       };
-
-      this.logger.log(
-        `📋 [MATCHING] Respuesta final preparada - Score: ${result.matchedDriver.matchScore} - Tiempo de búsqueda: ${result.searchCriteria.searchDuration}s`,
-      );
 
       return result;
     } catch (error) {

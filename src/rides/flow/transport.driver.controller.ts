@@ -1319,6 +1319,7 @@ export class TransportDriverController {
         status: body.status,
         verificationStatus: 'approved',
         canDoDeliveries: true,
+        carSeats: 4, // Default number of seats
       },
     });
 

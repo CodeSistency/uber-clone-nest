@@ -102,6 +102,24 @@ export class RedisService {
     }
   }
 
+  async incr(key: string): Promise<number> {
+    try {
+      return await this.client.incr(key);
+    } catch (error) {
+      this.logger.error(`Error incrementing key ${key}:`, error);
+      return 0;
+    }
+  }
+
+  async incrby(key: string, increment: number): Promise<number> {
+    try {
+      return await this.client.incrBy(key, increment);
+    } catch (error) {
+      this.logger.error(`Error incrementing key ${key} by ${increment}:`, error);
+      return 0;
+    }
+  }
+
   // Hash operations
   async hget(key: string, field: string): Promise<string | null> {
     try {

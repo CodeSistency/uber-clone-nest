@@ -1,0 +1,907 @@
+{
+  "proyecto": "uber_clone_platform",
+  "etapas": [
+    {
+      "id": "E1",
+      "nombre": "Configuración Base y Arquitectura del Sistema",
+      "progreso": 95,
+      "modulos": [
+        {
+          "id": "M1.1",
+          "nombre": "Configuración Base del Proyecto",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Establecer la estructura base del proyecto completo con configuración inicial, dependencias y arquitectura fundamental",
+          "dependencias": [
+            "package.json",
+            "src/app.module.ts",
+            "prisma/schema.prisma",
+            "src/main.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T1.1.1",
+              "nombre": "Instalación y configuración de dependencias core",
+              "descripcion": "Instalar y configurar todas las dependencias principales de NestJS, autenticación, base de datos y comunicación en tiempo real",
+              "subtareas": [
+                {
+                  "id": "ST1.1.1.1",
+                  "nombre": "Dependencias de NestJS y TypeScript",
+                  "descripcion": "Instalar @nestjs/core, @nestjs/common, @nestjs/platform-express, typescript, ts-node y dependencias relacionadas",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.1.2",
+                  "nombre": "Dependencias de autenticación y seguridad",
+                  "descripcion": "Instalar @nestjs/jwt, @nestjs/passport, passport-jwt, bcrypt, class-validator, class-transformer",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.1.3",
+                  "nombre": "Dependencias de base de datos",
+                  "descripcion": "Instalar @prisma/client, prisma, @types/bcrypt, y configuraciones de PostgreSQL",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.1.4",
+                  "nombre": "Dependencias de comunicación en tiempo real",
+                  "descripcion": "Instalar socket.io, @nestjs/websockets, @nestjs/platform-socket.io, redis para pub/sub",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.1.5",
+                  "nombre": "Dependencias de servicios externos",
+                  "descripcion": "Instalar stripe, firebase-admin, twilio, csv-parser, exceljs, pdfmake para pagos, notificaciones y reportes",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T1.1.2",
+              "nombre": "Arquitectura de módulos del proyecto",
+              "descripcion": "Crear la estructura modular completa siguiendo el patrón de separación de responsabilidades",
+              "subtareas": [
+                {
+                  "id": "ST1.1.2.1",
+                  "nombre": "Estructura base de carpetas",
+                  "descripcion": "Crear directorios src/ con módulos principales: auth, users, drivers, rides, websocket, redis, prisma, config",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.2.2",
+                  "nombre": "Módulo de configuración tipada",
+                  "descripcion": "Implementar AppConfigModule con configuración tipada fuerte para todas las variables de entorno",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.2.3",
+                  "nombre": "Módulo de base de datos Prisma",
+                  "descripcion": "Configurar PrismaModule con PrismaService y migraciones iniciales",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.2.4",
+                  "nombre": "Módulo de servicios compartidos",
+                  "descripcion": "Crear servicios comunes: idempotency, validation, exception handling, logging",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T1.1.3",
+              "nombre": "Configuración de variables de entorno y validación",
+              "descripcion": "Implementar sistema completo de configuración de entorno con validación y valores por defecto",
+              "subtareas": [
+                {
+                  "id": "ST1.1.3.1",
+                  "nombre": "Variables de aplicación",
+                  "descripcion": "Configurar PORT, NODE_ENV, CORS_ORIGIN, SWAGGER settings",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.3.2",
+                  "nombre": "Variables de base de datos",
+                  "descripcion": "Configurar DATABASE_URL con validación de conexión PostgreSQL",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.3.3",
+                  "nombre": "Variables de autenticación",
+                  "descripcion": "Configurar JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.3.4",
+                  "nombre": "Variables de servicios externos",
+                  "descripcion": "Configurar STRIPE_SECRET_KEY, FIREBASE_PROJECT_ID, TWILIO_ACCOUNT_SID, REDIS_URL",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.3.5",
+                  "nombre": "Script de validación de configuración",
+                  "descripcion": "Crear validate-config.js para verificar todas las variables requeridas al inicio",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T1.1.4",
+              "nombre": "Setup inicial de base de datos",
+              "descripcion": "Crear esquema de base de datos completo con todas las entidades principales del sistema",
+              "subtareas": [
+                {
+                  "id": "ST1.1.4.1",
+                  "nombre": "Modelo User con roles y permisos",
+                  "descripcion": "Definir tabla User con campos para usuarios normales y administradores, incluyendo RBAC",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.4.2",
+                  "nombre": "Modelo Driver y Vehicle",
+                  "descripcion": "Definir tablas Driver, Vehicle, VehicleType con relaciones y estados de verificación",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.4.3",
+                  "nombre": "Modelo Ride con tiers y pricing",
+                  "descripcion": "Definir tabla Ride, RideTier, TierVehicleType para sistema de viajes",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.4.4",
+                  "nombre": "Modelos de Marketplace",
+                  "descripcion": "Definir tablas Store, Product, DeliveryOrder, OrderItem para marketplace y delivery",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.4.5",
+                  "nombre": "Modelos de comunicación y notificaciones",
+                  "descripcion": "Definir tablas ChatMessage, Notification, PushToken, NotificationPreferences",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.4.6",
+                  "nombre": "Modelos administrativos",
+                  "descripcion": "Definir tablas AdminAuditLog, FeatureFlag, APIKey, SystemConfig",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.4.7",
+                  "nombre": "Ejecutar migraciones iniciales",
+                  "descripcion": "Crear y aplicar primera migración de Prisma con todas las tablas",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T1.1.5",
+              "nombre": "Configuración de servidor principal",
+              "descripcion": "Configurar main.ts con todos los middlewares, guards globales y documentación",
+              "subtareas": [
+                {
+                  "id": "ST1.1.5.1",
+                  "nombre": "Configuración de CORS",
+                  "descripcion": "Implementar CORS seguro con orígenes permitidos y credenciales",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.5.2",
+                  "nombre": "Guards y interceptors globales",
+                  "descripcion": "Configurar ValidationPipe, LoggingInterceptor, TransformInterceptor",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.5.3",
+                  "nombre": "Sistema de manejo de excepciones",
+                  "descripcion": "Implementar AllExceptionsFilter y PrismaExceptionFilter globales",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.5.4",
+                  "nombre": "Documentación Swagger/OpenAPI",
+                  "descripcion": "Configurar documentación completa con tags organizados y ejemplos",
+                  "completado": true
+                },
+                {
+                  "id": "ST1.1.5.5",
+                  "nombre": "Health checks y métricas",
+                  "descripcion": "Implementar endpoints de health check para monitoreo del sistema",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.2",
+          "nombre": "Sistema de Autenticación y Autorización",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema completo de autenticación JWT con soporte dual (JWT nativo + Clerk) y autorización RBAC",
+          "dependencias": [
+            "src/auth/auth.module.ts",
+            "src/config/config.service.ts",
+            "prisma/schema.prisma"
+          ],
+          "tareas": [
+            {
+              "id": "T1.2.1",
+              "nombre": "Implementación JWT nativa",
+              "descripcion": "Crear sistema de autenticación JWT completo con access y refresh tokens",
+              "subtareas": [
+                {
+                  "id": "ST1.2.1.1",
+                  "nombre": "JWT Service y estrategias",
+                  "descripcion": "Implementar JwtService, JwtStrategy, RefreshTokenStrategy"
+                },
+                {
+                  "id": "ST1.2.1.2",
+                  "nombre": "DTOs de autenticación",
+                  "descripcion": "Crear LoginDto, RegisterDto, RefreshTokenDto, ChangePasswordDto"
+                },
+                {
+                  "id": "ST1.2.1.3",
+                  "nombre": "Endpoints de auth",
+                  "descripcion": "Implementar POST /auth/login, POST /auth/register, POST /auth/refresh"
+                },
+                {
+                  "id": "ST1.2.1.4",
+                  "nombre": "Hashing seguro de contraseñas",
+                  "descripcion": "Implementar bcrypt para hash de contraseñas con salt rounds configurables"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.2",
+              "nombre": "Sistema RBAC (Role-Based Access Control)",
+              "descripcion": "Implementar control de acceso basado en roles con permisos granulares",
+              "subtareas": [
+                {
+                  "id": "ST1.2.2.1",
+                  "nombre": "Definición de roles y permisos",
+                  "descripcion": "Crear enums Role y Permission con jerarquía SuperAdmin > Admin > Moderator > Support"
+                },
+                {
+                  "id": "ST1.2.2.2",
+                  "nombre": "Guards de autorización",
+                  "descripcion": "Implementar JwtAuthGuard, RolesGuard, PermissionsGuard, AdminGuard"
+                },
+                {
+                  "id": "ST1.2.2.3",
+                  "nombre": "Decoradores de permisos",
+                  "descripcion": "Crear @RequirePermissions(), @RequireRoles() decorators"
+                },
+                {
+                  "id": "ST1.2.2.4",
+                  "nombre": "Matriz de permisos por rol",
+                  "descripcion": "Definir qué permisos tiene cada rol (users:read, rides:write, etc.)"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.3",
+              "nombre": "Integración opcional con Clerk",
+              "descripcion": "Implementar soporte para autenticación externa con Clerk como alternativa",
+              "subtareas": [
+                {
+                  "id": "ST1.2.3.1",
+                  "nombre": "Configuración Clerk",
+                  "descripcion": "Variables de entorno y validación para Clerk SDK"
+                },
+                {
+                  "id": "ST1.2.3.2",
+                  "nombre": "Guards duales",
+                  "descripcion": "Implementar lógica para alternar entre JWT nativo y Clerk"
+                },
+                {
+                  "id": "ST1.2.3.3",
+                  "nombre": "Migración de usuarios",
+                  "descripcion": "Soporte para importar usuarios existentes a Clerk"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.4",
+              "nombre": "Sistema de sesiones y refresh tokens",
+              "descripcion": "Implementar manejo seguro de sesiones con tokens rotativos",
+              "subtareas": [
+                {
+                  "id": "ST1.2.4.1",
+                  "nombre": "Almacenamiento de refresh tokens",
+                  "descripcion": "Guardar refresh tokens hasheados en base de datos"
+                },
+                {
+                  "id": "ST1.2.4.2",
+                  "nombre": "Rotación automática de tokens",
+                  "descripcion": "Invalidar refresh tokens usados y generar nuevos pares"
+                },
+                {
+                  "id": "ST1.2.4.3",
+                  "nombre": "Limpieza de tokens expirados",
+                  "descripcion": "Job programado para eliminar tokens expirados de la BD"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.3",
+          "nombre": "Sistema de Comunicación en Tiempo Real",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar WebSocket gateway completo con Redis adapter para comunicación bidireccional",
+          "dependencias": [
+            "src/websocket/websocket.module.ts",
+            "src/redis/redis.module.ts",
+            "socket.io",
+            "@socket.io/redis-adapter"
+          ],
+          "tareas": [
+            {
+              "id": "T1.3.1",
+              "nombre": "Configuración base de WebSocket",
+              "descripcion": "Establecer gateway WebSocket con configuración de CORS y adaptadores",
+              "subtareas": [
+                {
+                  "id": "ST1.3.1.1",
+                  "nombre": "WebSocket Gateway principal",
+                  "descripcion": "Crear WebSocketGatewayClass con configuración básica de Socket.IO"
+                },
+                {
+                  "id": "ST1.3.1.2",
+                  "nombre": "Redis Adapter para escalabilidad",
+                  "descripcion": "Configurar @socket.io/redis-adapter para múltiples instancias"
+                },
+                {
+                  "id": "ST1.3.1.3",
+                  "nombre": "Configuración CORS para WebSocket",
+                  "descripcion": "Permitir conexiones desde orígenes específicos con credenciales"
+                },
+                {
+                  "id": "ST1.3.1.4",
+                  "nombre": "Middleware de autenticación",
+                  "descripcion": "Implementar WsJwtGuard para validar conexiones WebSocket"
+                }
+              ]
+            },
+            {
+              "id": "T1.3.2",
+              "nombre": "Sistema de rooms y namespaces",
+              "descripcion": "Implementar organización lógica de conexiones por entidad",
+              "subtareas": [
+                {
+                  "id": "ST1.3.2.1",
+                  "nombre": "Rooms por ride",
+                  "descripcion": "Sistema de rooms ride-{rideId} para seguimiento en tiempo real de viajes"
+                },
+                {
+                  "id": "ST1.3.2.2",
+                  "nombre": "Rooms por order",
+                  "descripcion": "Sistema de rooms order-{orderId} para delivery tracking"
+                },
+                {
+                  "id": "ST1.3.2.3",
+                  "nombre": "Broadcast channels",
+                  "descripcion": "Canales para notificaciones globales y actualizaciones del sistema"
+                },
+                {
+                  "id": "ST1.3.2.4",
+                  "nombre": "Gestión de suscripciones",
+                  "descripcion": "Lógica para join/leave rooms basada en permisos del usuario"
+                }
+              ]
+            },
+            {
+              "id": "T1.3.3",
+              "nombre": "Eventos y mensajes del sistema",
+              "descripcion": "Definir y implementar todos los eventos WebSocket del sistema",
+              "subtareas": [
+                {
+                  "id": "ST1.3.3.1",
+                  "nombre": "Eventos de rides",
+                  "descripcion": "ride:requested, ride:accepted, ride:arrived, ride:started, ride:completed, ride:cancelled"
+                },
+                {
+                  "id": "ST1.3.3.2",
+                  "nombre": "Eventos de delivery",
+                  "descripcion": "order:created, order:accepted, order:picked_up, order:delivered, order:cancelled"
+                },
+                {
+                  "id": "ST1.3.3.3",
+                  "nombre": "Eventos de ubicación",
+                  "descripcion": "driver:location:update, driver:status:changed"
+                },
+                {
+                  "id": "ST1.3.3.4",
+                  "nombre": "Eventos de chat",
+                  "descripcion": "chat:message, chat:new-message, chat:typing"
+                },
+                {
+                  "id": "ST1.3.3.5",
+                  "nombre": "Eventos de notificaciones",
+                  "descripcion": "notification:new, notification:read, notification:bulk-read"
+                }
+              ]
+            },
+            {
+              "id": "T1.3.4",
+              "nombre": "Gestión de conexiones y estado",
+              "descripcion": "Implementar manejo robusto de conexiones, reconexiones y estado del cliente",
+              "subtareas": [
+                {
+                  "id": "ST1.3.4.1",
+                  "nombre": "Lifecycle de conexiones",
+                  "descripcion": "Manejar connect, disconnect, error, reconnect events"
+                },
+                {
+                  "id": "ST1.3.4.2",
+                  "nombre": "Heartbeat y timeouts",
+                  "descripcion": "Implementar ping/pong para detectar conexiones caídas"
+                },
+                {
+                  "id": "ST1.3.4.3",
+                  "nombre": "Rate limiting",
+                  "descripcion": "Prevenir spam de mensajes y proteger contra abuso"
+                },
+                {
+                  "id": "ST1.3.4.4",
+                  "nombre": "Logging de conexiones",
+                  "descripcion": "Registro detallado de conexiones para debugging y monitoreo"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.4",
+          "nombre": "Sistema de Caché y Pub/Sub con Redis",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar sistema de caché distribuido y comunicación pub/sub con Redis",
+          "dependencias": [
+            "src/redis/redis.module.ts",
+            "redis",
+            "ioredis"
+          ],
+          "tareas": [
+            {
+              "id": "T1.4.1",
+              "nombre": "Configuración base de Redis",
+              "descripcion": "Establecer conexión y configuración fundamental con Redis",
+              "subtareas": [
+                {
+                  "id": "ST1.4.1.1",
+                  "nombre": "RedisModule y servicio",
+                  "descripcion": "Crear RedisModule con RedisService para gestión de conexiones"
+                },
+                {
+                  "id": "ST1.4.1.2",
+                  "nombre": "Configuración de conexión",
+                  "descripcion": "Variables de entorno REDIS_URL, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD"
+                },
+                {
+                  "id": "ST1.4.1.3",
+                  "nombre": "Manejo de reconexiones",
+                  "descripcion": "Implementar retry logic y circuit breaker para conexiones Redis"
+                },
+                {
+                  "id": "ST1.4.1.4",
+                  "nombre": "Health checks",
+                  "descripcion": "Endpoint de health check para verificar estado de Redis"
+                }
+              ]
+            },
+            {
+              "id": "T1.4.2",
+              "nombre": "Sistema de caché inteligente",
+              "descripcion": "Implementar caché distribuido para datos frecuentemente accedidos",
+              "subtareas": [
+                {
+                  "id": "ST1.4.2.1",
+                  "nombre": "Cache de configuración",
+                  "descripcion": "Cache de FeatureFlags, SystemConfig, y configuraciones globales"
+                },
+                {
+                  "id": "ST1.4.2.2",
+                  "nombre": "Cache de usuarios/drivers",
+                  "descripcion": "Cache de perfiles de usuario y conductor con TTL apropiado"
+                },
+                {
+                  "id": "ST1.4.2.3",
+                  "nombre": "Cache de pricing",
+                  "descripcion": "Cache de cálculos de precio y tiers para evitar recálculos"
+                },
+                {
+                  "id": "ST1.4.2.4",
+                  "nombre": "Invalidación inteligente",
+                  "descripcion": "Sistema de invalidación automática cuando cambian los datos fuente"
+                }
+              ]
+            },
+            {
+              "id": "T1.4.3",
+              "nombre": "Sistema Pub/Sub para eventos",
+              "descripcion": "Implementar comunicación asíncrona entre servicios usando Redis Pub/Sub",
+              "subtareas": [
+                {
+                  "id": "ST1.4.3.1",
+                  "nombre": "Publisher service",
+                  "descripcion": "Servicio para publicar eventos en canales Redis"
+                },
+                {
+                  "id": "ST1.4.3.2",
+                  "nombre": "Subscriber service",
+                  "descripcion": "Servicio para suscribirse y procesar eventos de canales"
+                },
+                {
+                  "id": "ST1.4.3.3",
+                  "nombre": "Eventos del sistema",
+                  "descripcion": "Definir eventos para ride updates, driver status, notifications"
+                },
+                {
+                  "id": "ST1.4.3.4",
+                  "nombre": "Dead letter queue",
+                  "descripcion": "Sistema de respaldo para eventos que no se procesan correctamente"
+                }
+              ]
+            },
+            {
+              "id": "T1.4.4",
+              "nombre": "Location Tracking Service",
+              "descripcion": "Sistema especializado para tracking GPS de conductores con Redis",
+              "subtareas": [
+                {
+                  "id": "ST1.4.4.1",
+                  "nombre": "Almacenamiento de ubicaciones",
+                  "descripcion": "Estructuras Redis para coordenadas GPS con timestamps"
+                },
+                {
+                  "id": "ST1.4.4.2",
+                  "nombre": "Búsqueda geoespacial",
+                  "descripcion": "Queries para encontrar conductores cercanos usando Redis GEO"
+                },
+                {
+                  "id": "ST1.4.4.3",
+                  "nombre": "Historial de ubicaciones",
+                  "descripcion": "Mantener historial limitado de posiciones por conductor"
+                },
+                {
+                  "id": "ST1.4.4.4",
+                  "nombre": "Limpieza automática",
+                  "descripcion": "Jobs para eliminar ubicaciones antiguas y optimizar memoria"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "nombre": "Optimizaciones de Performance y Arquitectura",
+      "progreso": 0,
+      "modulos": [
+        {
+          "id": "M2.1",
+          "nombre": "Optimización del Algoritmo de Matching de Conductores",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Refactorizar y optimizar el algoritmo de matching para mejorar velocidad, eficiencia y mantenibilidad",
+          "dependencias": [
+            "src/rides/flow/rides-flow.service.ts",
+            "src/redis/location-tracking.service.ts",
+            "src/config/config.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T2.1.1",
+              "nombre": "Refactorizar findBestDriverMatch() - Eliminación de código debug",
+              "descripcion": "Remover todo el código de logging excesivo y separar lógica de debug de lógica de negocio",
+              "subtareas": [
+                {
+                  "id": "ST2.1.1.1",
+                  "nombre": "Extraer lógica de debug a método separado",
+                  "descripcion": "Crear método privado logDebugInfo() para centralizar todo el logging de debug",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.1.2",
+                  "nombre": "Simplificar estructura del método principal",
+                  "descripcion": "Reducir el método de 400+ líneas a métodos más pequeños y enfocados",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.1.3",
+                  "nombre": "Implementar logging condicional",
+                  "descripcion": "Activar logging detallado solo en modo desarrollo con variable de entorno",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T2.1.2",
+              "nombre": "Optimización de consultas a base de datos",
+              "descripcion": "Reducir el número de consultas y optimizar las existentes usando técnicas avanzadas",
+              "subtareas": [
+                {
+                  "id": "ST2.1.2.1",
+                  "nombre": "Implementar consultas paralelas",
+                  "descripcion": "Usar Promise.all() para ejecutar consultas de filtros y compatibilidad en paralelo",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.2.2",
+                  "nombre": "Optimizar getDriverDetailedInfo()",
+                  "descripcion": "Crear método que obtenga múltiples drivers en una sola consulta con JOINs optimizados",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.2.3",
+                  "nombre": "Implementar batch processing",
+                  "descripcion": "Procesar scoring de conductores en lotes para mejor performance",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.2.4",
+                  "nombre": "Agregar índices estratégicos",
+                  "descripcion": "Crear índices compuestos para consultas frecuentes (driver.status + verificationStatus)",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T2.1.3",
+              "nombre": "Sistema de caché inteligente para matching",
+              "descripcion": "Implementar caché distribuido para reducir tiempo de respuesta y carga en BD",
+              "subtareas": [
+                {
+                  "id": "ST2.1.3.1",
+                  "nombre": "Caché de drivers disponibles",
+                  "descripcion": "Cache de 30 segundos para lista de conductores online por zona geográfica",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.3.2",
+                  "nombre": "Caché de información de drivers",
+                  "descripcion": "Cache de 5 minutos para perfiles de conductor (rating, vehicles, etc.)",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.3.3",
+                  "nombre": "Caché de cálculos de pricing",
+                  "descripcion": "Cache de cálculos de tarifa por tier, distancia y tiempo",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.3.4",
+                  "nombre": "Invalidación inteligente de caché",
+                  "descripcion": "Sistema de invalidación automática cuando cambian datos fuente",
+                  "completado": true
+                }
+              ]
+            },
+            {
+              "id": "T2.1.4",
+              "nombre": "Refactorización de arquitectura del servicio",
+              "descripcion": "Mejorar la estructura del código para mejor mantenibilidad y testabilidad",
+              "subtareas": [
+                {
+                  "id": "ST2.1.4.1",
+                  "nombre": "Crear clase MatchingEngine dedicada",
+                  "descripcion": "Extraer lógica de matching a clase separada con responsabilidades claras",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.4.2",
+                  "nombre": "Implementar patrón Strategy para scoring",
+                  "descripcion": "Crear diferentes estrategias de scoring (DistanceFirst, RatingFirst, Balanced)",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.4.3",
+                  "nombre": "Separar lógica de filtros",
+                  "descripcion": "Crear clases especializadas para diferentes tipos de filtros (GeoFilter, VehicleFilter, AvailabilityFilter)"
+                },
+                {
+                  "id": "ST2.1.4.4",
+                  "nombre": "Implementar patrón Builder para configuración",
+                  "descripcion": "Usar patrón Builder para configurar búsquedas de matching con fluent API"
+                }
+              ]
+            },
+            {
+              "id": "T2.1.5",
+              "nombre": "Mejoras en métricas y monitoreo",
+              "descripcion": "Implementar métricas detalladas para monitoreo del rendimiento del algoritmo",
+              "subtareas": [
+                {
+                  "id": "ST2.1.5.1",
+                  "nombre": "Métricas de performance",
+                  "descripcion": "Tiempo de respuesta, consultas por segundo, tasa de éxito de matching",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.5.2",
+                  "nombre": "Métricas de calidad",
+                  "descripcion": "Distancia promedio, rating promedio de matches, tiempo de aceptación",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.5.3",
+                  "nombre": "Alertas automáticas",
+                  "descripcion": "Alertas cuando performance baja o tasa de matching es insuficiente",
+                  "completado": true
+                },
+                {
+                  "id": "ST2.1.5.4",
+                  "nombre": "Logging estructurado",
+                  "descripcion": "Logs JSON estructurados para mejor análisis y debugging",
+                  "completado": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.2",
+          "nombre": "Optimización del Sistema de Caché Global",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Mejorar el sistema de caché existente para mejor performance y confiabilidad",
+          "dependencias": [
+            "src/redis/redis.service.ts",
+            "src/redis/redis-pubsub.service.ts",
+            "src/config/config.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T2.2.1",
+              "nombre": "Implementar estrategias de caché avanzadas",
+              "descripcion": "Mejorar estrategias de expiración, invalidación y consistencia",
+              "subtareas": [
+                {
+                  "id": "ST2.2.1.1",
+                  "nombre": "Cache con TTL dinámico",
+                  "descripcion": "TTL variable basado en frecuencia de acceso y criticidad de datos"
+                },
+                {
+                  "id": "ST2.2.1.2",
+                  "nombre": "Cache warming automático",
+                  "descripcion": "Precargar datos críticos al iniciar la aplicación"
+                },
+                {
+                  "id": "ST2.2.1.3",
+                  "nombre": "Cache distribuido con consistencia",
+                  "descripcion": "Garantizar consistencia entre múltiples instancias con Redis"
+                }
+              ]
+            },
+            {
+              "id": "T2.2.2",
+              "nombre": "Sistema de Pub/Sub optimizado",
+              "descripcion": "Mejorar el sistema de eventos para mejor performance y confiabilidad",
+              "subtareas": [
+                {
+                  "id": "ST2.2.2.1",
+                  "nombre": "Dead letter queues",
+                  "descripcion": "Sistema de respaldo para eventos no procesados correctamente"
+                },
+                {
+                  "id": "ST2.2.2.2",
+                  "nombre": "Rate limiting por canal",
+                  "descripcion": "Prevenir sobrecarga de canales específicos"
+                },
+                {
+                  "id": "ST2.2.2.3",
+                  "nombre": "Compresión de mensajes",
+                  "descripcion": "Comprimir mensajes grandes para mejor throughput"
+                }
+              ]
+            },
+            {
+              "id": "T2.2.3",
+              "nombre": "Location Tracking optimizado",
+              "descripcion": "Mejorar el servicio de tracking GPS con mejor performance",
+              "subtareas": [
+                {
+                  "id": "ST2.2.3.1",
+                  "nombre": "Geo-indexing avanzado",
+                  "descripcion": "Usar Redis GEO para búsquedas geoespaciales ultra rápidas"
+                },
+                {
+                  "id": "ST2.2.3.2",
+                  "nombre": "Batching de ubicaciones",
+                  "descripcion": "Actualizar múltiples ubicaciones en una sola operación"
+                },
+                {
+                  "id": "ST2.2.3.3",
+                  "nombre": "Compresión de historial",
+                  "descripcion": "Reducir tamaño del historial eliminando ubicaciones antiguas"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.3",
+          "nombre": "Mejoras en Manejo de Errores y Logging",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Implementar sistema de errores más robusto y logging estructurado",
+          "dependencias": [
+            "src/common/exceptions/all-exceptions.filter.ts",
+            "src/common/interceptors/logging.interceptor.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T2.3.1",
+              "nombre": "Sistema de errores tipificado",
+              "descripcion": "Crear jerarquía de errores específicos para mejor manejo",
+              "subtareas": [
+                {
+                  "id": "ST2.3.1.1",
+                  "nombre": "Errores de negocio específicos",
+                  "descripcion": "Crear clases de error para casos de negocio (NoDriversAvailable, InvalidRideState, etc.)"
+                },
+                {
+                  "id": "ST2.3.1.2",
+                  "nombre": "Mapeo de errores HTTP",
+                  "descripcion": "Mapeo consistente entre errores de negocio y códigos HTTP apropiados"
+                },
+                {
+                  "id": "ST2.3.1.3",
+                  "nombre": "Contextualización de errores",
+                  "descripcion": "Agregar contexto relevante a cada error para mejor debugging"
+                }
+              ]
+            },
+            {
+              "id": "T2.3.2",
+              "nombre": "Logging estructurado avanzado",
+              "descripcion": "Implementar logging JSON con niveles apropiados y contexto",
+              "subtareas": [
+                {
+                  "id": "ST2.3.2.1",
+                  "nombre": "Logger centralizado",
+                  "descripcion": "Servicio de logging unificado con configuración por módulo"
+                },
+                {
+                  "id": "ST2.3.2.2",
+                  "nombre": "Niveles de logging apropiados",
+                  "descripcion": "ERROR, WARN, INFO, DEBUG con configuración por entorno"
+                },
+                {
+                  "id": "ST2.3.2.3",
+                  "nombre": "Tracing distribuido",
+                  "descripcion": "Request IDs para rastrear operaciones a través de servicios"
+                }
+              ]
+            },
+            {
+              "id": "T2.3.3",
+              "nombre": "Sistema de recuperación automática",
+              "descripcion": "Implementar circuit breakers y retry logic para mayor resiliencia",
+              "subtareas": [
+                {
+                  "id": "ST2.3.3.1",
+                  "nombre": "Circuit breaker para servicios externos",
+                  "descripcion": "Proteger contra fallos en Stripe, Firebase, Redis, etc."
+                },
+                {
+                  "id": "ST2.3.3.2",
+                  "nombre": "Retry con backoff exponencial",
+                  "descripcion": "Reintentar operaciones fallidas con delay creciente"
+                },
+                {
+                  "id": "ST2.3.3.3",
+                  "nombre": "Fallback strategies",
+                  "descripcion": "Estrategias de respaldo cuando servicios principales fallan"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

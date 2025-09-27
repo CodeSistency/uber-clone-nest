@@ -29,6 +29,9 @@ model VehicleType {
   rides   Ride[]   @relation("RequestedVehicleType")
   tiers       TierVehicleType[]
 
+  // Performance indexes
+  @@index([isActive])
+
   @@map("vehicle_types")
 }
 
@@ -74,6 +77,11 @@ model Vehicle {
   rides           Ride[]                     @relation("VehicleRides")
   vehicleHistory  VehicleChangeHistory[]
   driverReports   DriverReport[]
+
+  // Performance indexes for matching
+  @@index([driverId, isDefault])
+  @@index([vehicleTypeId, status])
+  @@index([status, verificationStatus])
 
   @@map("vehicles")
 }
@@ -205,6 +213,7 @@ model Driver {
   status             String   @default("offline") @db.VarChar(20) // online, offline, busy, suspended
   verificationStatus String   @default("pending") @map("verification_status") @db.VarChar(20)
   canDoDeliveries    Boolean  @default(false) @map("can_do_deliveries")
+  carSeats           Int      @default(4) @map("car_seats") // Number of passenger seats in vehicle
 
   // Location tracking fields
   currentLatitude    Decimal? @map("current_latitude") @db.Decimal(9, 6)
@@ -250,12 +259,18 @@ model Driver {
   locationHistory     DriverLocationHistory[]
   driverReports       DriverReport[]
   vehicleHistory      VehicleChangeHistory[]
-
-  // New relations for complete driver management
   driverPayments      DriverPayment[]
   driverPaymentMethods DriverPaymentMethod[]
   driverVerificationHistory DriverVerificationHistory[]
   workZoneAssignments DriverWorkZone[]
+
+
+  // Performance indexes for matching algorithm
+  @@index([status, verificationStatus])
+  @@index([status, verificationStatus, canDoDeliveries])
+  @@index([status, lastLocationUpdate])
+  @@index([isLocationActive, lastLocationUpdate])
+  @@index([averageRating, totalRides])
 
   @@map("drivers")
 }
@@ -582,6 +597,8 @@ model TierVehicleType {
   vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
 
   @@unique([tierId, vehicleTypeId])
+  @@index([tierId, isActive])
+  @@index([vehicleTypeId, isActive])
   @@map("tier_vehicle_types")
 }
 
