@@ -18,6 +18,15 @@ import { RedisService } from '../redis/redis.service';
 import { RidesFlowService } from '../rides/flow/rides-flow.service';
 import { MatchingEngine } from '../rides/flow/matching-engine';
 import { MatchingMetricsService } from '../rides/flow/matching-metrics.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { WebSocketGatewayClass } from '../websocket/websocket.gateway';
+import { RidesService } from '../rides/rides.service';
+import { OrdersService } from '../orders/orders.service';
+import { StripeService } from '../stripe/stripe.service';
+import { ErrandsService } from '../errands/errands.service';
+import { ParcelsService } from '../parcels/parcels.service';
+import { LocationTrackingService } from '../redis/location-tracking.service';
+import { WalletService } from '../wallet/wallet.service';
 
 // ============================================================================
 // 📊 DATOS DUMMY REALISTAS EXPANDIDOS
@@ -658,12 +667,29 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
     // Crear módulo de testing
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        // System under test
         RidesFlowService,
-        PrismaService,
-        RedisService,
         MatchingEngine,
         MatchingMetricsService,
+        // Real services
+        PrismaService,
+        RedisService,
         Logger,
+        // Mocks/dummies para dependencias no críticas al matching directo
+        { provide: NotificationsService, useValue: { sendNotification: jest.fn(), notifyNearbyDrivers: jest.fn(), notifyRideStatusUpdate: jest.fn() } },
+        { provide: WebSocketGatewayClass, useValue: { server: { to: jest.fn().mockReturnThis(), emit: jest.fn() }, emit: jest.fn() } },
+        { provide: RidesService, useValue: { createRide: jest.fn(), getFareEstimate: jest.fn() } },
+        { provide: OrdersService, useValue: {} },
+        { provide: StripeService, useValue: {} },
+        { provide: ErrandsService, useValue: {} },
+        { provide: ParcelsService, useValue: {} },
+        { provide: LocationTrackingService, useValue: {
+            getNearbyDrivers: jest.fn().mockResolvedValue([]),
+            getDriverCurrentLocation: jest.fn().mockResolvedValue(null),
+            findNearbyDrivers: jest.fn().mockResolvedValue([]),
+          }
+        },
+        { provide: WalletService, useValue: {} },
       ],
     }).compile();
 
