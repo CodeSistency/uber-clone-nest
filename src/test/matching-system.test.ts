@@ -707,6 +707,33 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
     matchingEngine = module.get<MatchingEngine>(MatchingEngine);
     matchingMetrics = module.get<MatchingMetricsService>(MatchingMetricsService);
     logger = module.get<Logger>(Logger);
+
+    // --- Mock de dependencias externas para evitar fallos por infra en CI ---
+    // 1) Bypass de health-check interno para no depender de DB/Redis reales
+    //    (el test 1 valida manualmente con mocks controlados)
+    jest.spyOn(ridesFlowService as any, 'validateSystemHealth').mockResolvedValue(undefined);
+
+    // 2) Prisma: evitar conexión real durante validaciones dentro del SUT
+    //    (el test 1 usa su propia verificación controlada)
+    // @ts-ignore - $queryRaw existe en runtime
+    jest.spyOn(prismaService, '$queryRaw').mockResolvedValue(1 as any);
+
+    // 3) Redis: evitar errores READONLY en set/incr/incrby durante caches y métricas
+    //    Devolvemos valores neutros
+    // @ts-ignore
+    jest.spyOn(redisService, 'set').mockResolvedValue(undefined as any);
+    // @ts-ignore
+    jest.spyOn(redisService, 'incr').mockResolvedValue(1 as any);
+    // @ts-ignore
+    jest.spyOn(redisService, 'incrby').mockResolvedValue(1 as any);
+    // @ts-ignore
+    jest.spyOn(redisService, 'del').mockResolvedValue(0 as any);
+    // Lecturas de salud y métricas básicas
+    // @ts-ignore
+    jest.spyOn(redisService, 'get').mockImplementation(async (key: string) => {
+      if (key === 'health_check') return 'ok';
+      return null;
+    });
   });
 
   beforeEach(() => {
