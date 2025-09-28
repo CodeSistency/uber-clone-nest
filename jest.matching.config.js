@@ -3,23 +3,23 @@ module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: 'src',
   testEnvironment: 'node',
-  testRegex: '.matching.test.ts$',
+  // Detecta específicamente nuestro test de matching
+  testMatch: ['<rootDir>/test/matching-system.test.ts'],
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  testTimeout: 30000, // 30 segundos para tests complejos
+  testTimeout: 60000,
   setupFilesAfterEnv: ['<rootDir>/../test/setup/integration-setup.ts'],
   globalSetup: '<rootDir>/../test/setup/global-setup.ts',
   globalTeardown: '<rootDir>/../test/setup/global-teardown.ts',
   verbose: true,
   forceExit: true,
   detectOpenHandles: true,
-  // Configuración específica para tests de matching
-  testPathPattern: ['test/matching-system.test.ts'],
-  moduleNameMapping: {
+  // Alias de módulos
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
   // Configuración de logging para tests

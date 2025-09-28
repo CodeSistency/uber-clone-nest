@@ -45,7 +45,7 @@
     "test:env:setup": "cp .env.test .env",
     "test:ci": "npm run lint && npm run build && npm run test:full && npm run test:report",
     "test:flows": "node test-flows.js",
-    "test:matching": "npm run db:seed:fresh && node -e \"console.log('🚀 Ejecutando Test Completo del Sistema de Matching Optimizado\\n'); console.log('📋 Características del test:'); console.log('   ✅ Sistema de caché inteligente con Redis'); console.log('   ✅ Scoring por lotes con MatchingEngine'); console.log('   ✅ Comparación OPTIMIZADO vs BÁSICO'); console.log('   ✅ Logging detallado y explicaciones'); console.log('   ✅ Datos dummy realistas'); console.log('   ✅ Métricas de performance\\n');\" && jest src/test/matching-system.test.ts --verbose --runInBand --testTimeout=60000"
+    "test:matching": "npm run db:seed:fresh && node -e \"console.log('🚀 Ejecutando Test Completo del Sistema de Matching Optimizado\\n'); console.log('📋 Características del test:'); console.log('   ✅ Sistema de caché inteligente con Redis'); console.log('   ✅ Scoring por lotes con MatchingEngine'); console.log('   ✅ Comparación OPTIMIZADO vs BÁSICO'); console.log('   ✅ Logging detallado y explicaciones'); console.log('   ✅ Datos dummy realistas'); console.log('   ✅ Métricas de performance\\n');\" && jest --config jest.matching.config.js --verbose --runInBand --testTimeout=60000"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",
