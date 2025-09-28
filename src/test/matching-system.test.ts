@@ -98,8 +98,8 @@ const summaryTracker: SummaryTracker = {
     durationBasicMs: 0,
     bestScoreOptimized: 0,
     bestScoreBasic: 0,
-    distanceOptimized: 0,
-    distanceBasic: 0,
+    distanceOptimized: Number.POSITIVE_INFINITY,
+    distanceBasic: Number.POSITIVE_INFINITY,
     sampleOptimizedResult: null,
     sampleBasicResult: null,
   },
@@ -945,7 +945,7 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         5
       );
 
-      const duration1 = Date.now() - startTime1;
+      const duration1 = Math.max(Date.now() - startTime1, 1);
       console.log(`⏱️ Duración primera consulta: ${duration1}ms`);
       console.log('📊 Resultado primera consulta:', result1?.length || 0, 'conductores');
 
@@ -963,7 +963,7 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         5
       );
 
-      const duration2 = Date.now() - startTime2;
+      const duration2 = Math.max(Date.now() - startTime2, 1);
       console.log(`⏱️ Duración segunda consulta: ${duration2}ms`);
       console.log('📊 Resultado segunda consulta:', result2?.length || 0, 'conductores');
 
@@ -971,7 +971,7 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
     summaryTracker.cache.driversCache = result2?.length || 0;
 
       // COMPARACIÓN DE RENDIMIENTO
-      const speedup = ((duration1 - duration2) / duration1 * 100).toFixed(1);
+      const speedup = (((duration1 - duration2) / duration1) * 100).toFixed(1);
       console.log(`\n🚀 MEJORA DE RENDIMIENTO:`);
       console.log(`   • Primera consulta (BD): ${duration1}ms`);
       console.log(`   • Segunda consulta (Redis): ${duration2}ms`);
@@ -1037,25 +1037,40 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         const driver = matchingResult.matchedDriver.driver;
         const location = matchingResult.matchedDriver.location;
 
+        const distance = location?.distance ?? null;
+        const score = matchingResult.matchedDriver.matchScore ?? null;
+
         summaryTracker.matching.matchesSuccessful += 1;
         summaryTracker.matching.bestScore = Math.max(
           summaryTracker.matching.bestScore,
-          matchingResult.matchedDriver.matchScore || 0,
+          score || 0,
         );
-      summaryTracker.matching.bestDistance = Math.min(
-        summaryTracker.matching.bestDistance,
-        location.distance ?? Number.POSITIVE_INFINITY,
-      );
+        if (distance != null) {
+          summaryTracker.matching.bestDistance = Math.min(
+            summaryTracker.matching.bestDistance,
+            distance,
+          );
+        }
         summaryTracker.matching.totalSearchDurationMs +=
           (matchingResult.searchCriteria.searchDuration || 0) * 1000;
-      if (!summaryTracker.matching.sampleOptimizedResult) {
-        summaryTracker.matching.sampleOptimizedResult = {
+
+        const currentSample = {
           driverName: `${driver.firstName} ${driver.lastName}`,
-          distance: location.distance ?? null,
-          score: matchingResult.matchedDriver.matchScore ?? null,
+          distance,
+          score,
           tier: matchingResult.matchedDriver.vehicle?.vehicleType ?? null,
+          searchDurationMs: (matchingResult.searchCriteria.searchDuration || 0) * 1000,
         };
-      }
+        summaryTracker.matching.sampleOptimizedResult = currentSample;
+        summaryTracker.comparison.sampleOptimizedResult = summaryTracker.comparison.sampleOptimizedResult || currentSample;
+        if (
+          !summaryTracker.comparison.sampleOptimizedResult ||
+          (score != null &&
+            (summaryTracker.comparison.sampleOptimizedResult.score == null ||
+              (summaryTracker.comparison.sampleOptimizedResult.score ?? 0) < score))
+        ) {
+          summaryTracker.comparison.sampleOptimizedResult = currentSample;
+        }
 
         console.log('🏆 CONDUCTOR GANADOR:');
         console.log(`   🏅 ${driver.firstName} ${driver.lastName} (ID: ${driver.driverId})`);
@@ -1101,6 +1116,14 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         console.log(`   🔍 Radio de búsqueda: 5km`);
         console.log(`   💡 Sugerencia: Intentar en horario pico o expandir radio de búsqueda`);
         summaryTracker.matching.matchesFailed += 1;
+        summaryTracker.matching.sampleOptimizedResult = summaryTracker.matching.sampleOptimizedResult || {
+          driverName: null,
+          distance: null,
+          score: null,
+          tier: null,
+          searchDurationMs: (matchingResult?.searchCriteria?.searchDuration || 0) * 1000,
+          message: 'Sin conductor disponible en RUN principal',
+        };
       }
 
       expect(matchingResult).toBeDefined();
@@ -1130,11 +1153,12 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
       );
 
       const durationOptimized = Date.now() - startTimeOptimized;
+      const safeDurationOptimized = Math.max(durationOptimized, 1);
 
       console.log(`⏱️ Duración optimizada: ${durationOptimized}ms`);
       console.log(`📊 Conductores procesados: ${optimizedResult.length}`);
 
-      summaryTracker.scoring.durationOptimizedMs = durationOptimized;
+      summaryTracker.scoring.durationOptimizedMs = safeDurationOptimized;
       summaryTracker.scoring.driversProcessedOptimized = optimizedResult.length;
 
       // Mostrar resultados del scoring
@@ -1150,8 +1174,8 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
       console.log('\n📈 MÉTRICAS DE PERFORMANCE:');
       console.log(`   • Algoritmo: Procesamiento por lotes`);
       console.log(`   • Tamaño de lote: 5 conductores`);
-      console.log(`   • Tiempo total: ${durationOptimized}ms`);
-      console.log(`   • Velocidad: ${((drivers.length * 1000) / durationOptimized).toFixed(0)} conductores/segundo`);
+      console.log(`   • Tiempo total: ${safeDurationOptimized}ms`);
+      console.log(`   • Velocidad: ${((drivers.length * 1000) / safeDurationOptimized).toFixed(0)} conductores/segundo`);
 
       expect(optimizedResult).toBeDefined();
       expect(optimizedResult.length).toBeGreaterThan(0);
@@ -1182,18 +1206,41 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         radiusKm: 5
       });
 
+        const distance = result?.matchedDriver?.location?.distance ?? null;
+        const score = result?.matchedDriver?.matchScore ?? null;
+
         if (result && result.matchedDriver) {
           console.log(`   ✅ Matching exitoso - Conductor ID: ${result.matchedDriver.driver.driverId}`);
           summaryTracker.matching.matchesSuccessful += 1;
           summaryTracker.matching.bestScore = Math.max(
             summaryTracker.matching.bestScore,
-            result.matchedDriver.matchScore || 0,
+            score || 0,
           );
-          summaryTracker.matching.bestDistance = Math.min(
-            summaryTracker.matching.bestDistance,
-            result.matchedDriver.location.distance || Number.POSITIVE_INFINITY,
-          );
+          if (distance != null) {
+            summaryTracker.matching.bestDistance = Math.min(
+              summaryTracker.matching.bestDistance,
+              distance,
+            );
+          }
           summaryTracker.matching.totalSearchDurationMs += (result.searchCriteria.searchDuration || 0) * 1000;
+
+          const runSample = {
+            driverName: `${result.matchedDriver.driver.firstName} ${result.matchedDriver.driver.lastName}`,
+            distance,
+            score,
+            tier: result.matchedDriver.vehicle?.vehicleType ?? null,
+            searchDurationMs: (result.searchCriteria.searchDuration || 0) * 1000,
+            run: i + 1,
+          };
+          summaryTracker.matching.sampleOptimizedResult = runSample;
+          if (
+            !summaryTracker.comparison.sampleOptimizedResult ||
+            (score != null &&
+              (summaryTracker.comparison.sampleOptimizedResult.score == null ||
+                (summaryTracker.comparison.sampleOptimizedResult.score ?? 0) < score))
+          ) {
+            summaryTracker.comparison.sampleOptimizedResult = runSample;
+          }
         } else {
           console.log(`   ⚠️ Sin matching disponible`);
           summaryTracker.matching.matchesFailed += 1;
@@ -1279,8 +1326,23 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         console.log(`   ⏱️ Tiempo total: ${optimizedTime}ms`);
         console.log(`   📍 Distancia: ${optimizedResult.matchedDriver.location.distance}km`);
         console.log(`   👥 Score del match: ${optimizedResult.matchedDriver.matchScore}`);
-        summaryTracker.comparison.bestScoreOptimized = optimizedResult.matchedDriver.matchScore || 0;
-        summaryTracker.comparison.distanceOptimized = optimizedResult.matchedDriver.location.distance || 0;
+        summaryTracker.comparison.bestScoreOptimized = optimizedResult.matchedDriver.matchScore || summaryTracker.comparison.bestScoreOptimized;
+        summaryTracker.comparison.distanceOptimized = Math.min(
+          summaryTracker.comparison.distanceOptimized,
+          optimizedResult.matchedDriver.location.distance ?? Number.POSITIVE_INFINITY,
+        );
+        summaryTracker.comparison.durationOptimizedMs = Math.min(
+          summaryTracker.comparison.durationOptimizedMs || Number.POSITIVE_INFINITY,
+          optimizedTime,
+        );
+        if (!summaryTracker.comparison.sampleOptimizedResult) {
+          summaryTracker.comparison.sampleOptimizedResult = {
+            driverName: `${optimizedResult.matchedDriver.driver.firstName} ${optimizedResult.matchedDriver.driver.lastName}`,
+            distance: optimizedResult.matchedDriver.location.distance ?? null,
+            score: optimizedResult.matchedDriver.matchScore ?? null,
+            tier: optimizedResult.matchedDriver.vehicle?.vehicleType ?? null,
+          };
+        }
       }
 
       // ========================================================================
@@ -1301,7 +1363,6 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
 
       const basicTime = Date.now() - basicStart;
 
-      summaryTracker.comparison.durationOptimizedMs = optimizedTime;
       summaryTracker.comparison.durationBasicMs = basicTime;
 
       console.log('\n📊 RESULTADO BÁSICO:');
@@ -1311,14 +1372,17 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         console.log(`   ⏱️ Tiempo total: ${basicTime}ms`);
         console.log(`   📍 Distancia: ${basicWinner.distance}km`);
         console.log(`   👥 Candidatos evaluados: ${basicDrivers.length}`);
-        summaryTracker.comparison.bestScoreBasic = basicWinner.score || 0;
-        summaryTracker.comparison.distanceBasic = basicWinner.distance || 0;
-        if (!summaryTracker.matching.sampleBasicResult) {
-          summaryTracker.matching.sampleBasicResult = {
+        summaryTracker.comparison.bestScoreBasic = basicWinner.score || summaryTracker.comparison.bestScoreBasic;
+        summaryTracker.comparison.distanceBasic = Math.min(
+          summaryTracker.comparison.distanceBasic,
+          basicWinner.distance ?? Number.POSITIVE_INFINITY,
+        );
+        if (!summaryTracker.comparison.sampleBasicResult) {
+          summaryTracker.comparison.sampleBasicResult = {
             driverName: `${basicWinner.firstName} ${basicWinner.lastName}`,
             distance: basicWinner.distance,
-          score: basicWinner.score,
-          tier: basicWinner.preferredTier ?? null,
+            score: basicWinner.score,
+            tier: basicWinner.preferredTier ?? null,
           };
         }
       }
@@ -1503,15 +1567,23 @@ afterAll(() => {
   console.log('🚦 RESUMEN GLOBAL DEL SISTEMA DE MATCHING');
   console.log('======================================================================');
 
-  // --- Cache Intelligence ---
   const { cache, matching, scoring, comparison, overload } = summaryTracker;
+
+  const formatScore = (value: number | null | undefined) =>
+    typeof value === 'number' && Number.isFinite(value) ? value.toFixed(2) : 'N/A';
+  const formatDistance = (value: number | null | undefined) =>
+    typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(2)} km` : 'N/A';
+  const formatMs = (value: number | null | undefined) =>
+    typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(0)} ms` : 'N/A';
+
+  // --- Cache Intelligence ---
   const safeDbMs = Math.max(cache.durationDbMs, 1);
   const safeCacheMs = Math.max(cache.durationCacheMs, 1);
   const cacheSpeedup = (((safeDbMs - safeCacheMs) / safeDbMs) * 100).toFixed(1);
 
   console.log('\n⚡ Cache Inteligente');
-  console.log(`   • Query BD: ${safeDbMs} ms (${cache.driversDb} conductores)`);
-  console.log(`   • Query Redis: ${safeCacheMs} ms (${cache.driversCache} conductores)`);
+  console.log(`   • Query BD: ${formatMs(safeDbMs)} (${cache.driversDb} conductores)`);
+  console.log(`   • Query Redis: ${formatMs(safeCacheMs)} (${cache.driversCache} conductores)`);
   console.log(`   • Aceleración: ${cacheSpeedup}% más rápido`);
 
   // --- Matching ---
@@ -1521,21 +1593,26 @@ afterAll(() => {
   const successRate = totalRuns
     ? ((successes / totalRuns) * 100).toFixed(1)
     : '0.0';
-  const avgSearchDuration = successes
-    ? (matching.totalSearchDurationMs / successes).toFixed(0)
-    : '0';
-  const bestDistance = Number.isFinite(matching.bestDistance)
-    ? matching.bestDistance.toFixed(2)
+  const avgSearchDurationValue = successes
+    ? matching.totalSearchDurationMs / successes
+    : null;
+  const bestScoreText = successes ? formatScore(matching.bestScore) : 'N/A';
+  const bestDistanceText = successes && Number.isFinite(matching.bestDistance)
+    ? formatDistance(matching.bestDistance)
     : 'N/A';
+  const avgSearchDurationText = formatMs(avgSearchDurationValue);
 
   console.log('\n🎯 Matching');
   console.log(`   • Intentos totales: ${totalRuns}`);
   console.log(`   • Exitosos/Fallidos: ${successes}/${failures} (éxito ${successRate}%)`);
-  console.log(`   • Mejor score observado: ${matching.bestScore.toFixed(2)}`);
-  console.log(`   • Distancia mínima ganadora: ${bestDistance} km`);
-  console.log(`   • Latencia media por búsqueda: ${avgSearchDuration} ms`);
+  console.log(`   • Mejor score observado: ${bestScoreText}`);
+  console.log(`   • Distancia mínima ganadora: ${bestDistanceText}`);
+  console.log(`   • Latencia media por búsqueda: ${avgSearchDurationText}`);
   if (matching.sampleOptimizedResult) {
-    console.log('   • Ejemplo OPT: ', matching.sampleOptimizedResult);
+    const sample = matching.sampleOptimizedResult;
+    console.log(
+      `   • Ejemplo OPT: ${sample.driverName ?? 'Sin conductor'} | Score ${formatScore(sample.score)} | Dist ${formatDistance(sample.distance)} | Tier ${sample.tier ?? 'N/A'} | Búsqueda ${formatMs(sample.searchDurationMs)}`,
+    );
   }
 
   // --- Scoring ---
@@ -1544,26 +1621,55 @@ afterAll(() => {
 
   console.log('\n📈 Scoring por Lotes');
   console.log(`   • Conductores procesados (lote): ${scoring.driversProcessedOptimized}`);
-  console.log(`   • Tiempo total: ${scoringDuration} ms`);
+  console.log(`   • Tiempo total: ${formatMs(scoringDuration)}`);
   console.log(`   • Throughput: ${throughput} conductores/segundo`);
 
   // --- Comparison ---
-  const compOpt = Math.max(comparison.durationOptimizedMs, 1);
-  const compBasic = Math.max(comparison.durationBasicMs, compOpt);
-  const compImprovement = (((compBasic - compOpt) / compBasic) * 100).toFixed(1);
-  const compMultiplier = (compBasic / compOpt).toFixed(1);
+  const durationOptimizedValue = Number.isFinite(comparison.durationOptimizedMs)
+    ? comparison.durationOptimizedMs
+    : null;
+  const durationBasicValue = Number.isFinite(comparison.durationBasicMs)
+    ? comparison.durationBasicMs
+    : null;
+  const improvementAvailable =
+    durationOptimizedValue !== null &&
+    durationBasicValue !== null &&
+    durationOptimizedValue > 0 &&
+    durationBasicValue > 0;
+  const compImprovementPercent = improvementAvailable
+    ? (((durationBasicValue - durationOptimizedValue) / durationBasicValue) * 100).toFixed(1)
+    : null;
+  const compMultiplier = improvementAvailable
+    ? (durationBasicValue / durationOptimizedValue).toFixed(1)
+    : null;
+  const improvementLine = compImprovementPercent
+    ? `${compImprovementPercent}%${compMultiplier ? ` (${compMultiplier}x más rápido)` : ''}`
+    : 'N/A';
+
+  const hasOptimizedMatch = Number.isFinite(comparison.distanceOptimized);
+  const hasBasicMatch = Number.isFinite(comparison.distanceBasic);
+  const scoreOptimizedText = hasOptimizedMatch ? formatScore(comparison.bestScoreOptimized) : 'N/A';
+  const scoreBasicText = hasBasicMatch ? formatScore(comparison.bestScoreBasic) : 'N/A';
+  const distanceOptimizedText = hasOptimizedMatch ? formatDistance(comparison.distanceOptimized) : 'N/A';
+  const distanceBasicText = hasBasicMatch ? formatDistance(comparison.distanceBasic) : 'N/A';
 
   console.log('\n⚖️ Optimizado vs Básico');
-  console.log(`   • Tiempo Optimizado: ${compOpt} ms`);
-  console.log(`   • Tiempo Básico: ${compBasic} ms`);
-  console.log(`   • Mejora: ${compImprovement}% (${compMultiplier}x más rápido)`);
-  console.log(`   • Score ganador (OPT/BAS): ${comparison.bestScoreOptimized.toFixed(2)} / ${comparison.bestScoreBasic.toFixed(2)}`);
-  console.log(`   • Distancia ganador (OPT/BAS): ${comparison.distanceOptimized.toFixed(2)} km / ${comparison.distanceBasic.toFixed(2)} km`);
+  console.log(`   • Tiempo Optimizado: ${formatMs(durationOptimizedValue)}`);
+  console.log(`   • Tiempo Básico: ${formatMs(durationBasicValue)}`);
+  console.log(`   • Mejora: ${improvementLine}`);
+  console.log(`   • Score ganador (OPT/BAS): ${scoreOptimizedText} / ${scoreBasicText}`);
+  console.log(`   • Distancia ganador (OPT/BAS): ${distanceOptimizedText} / ${distanceBasicText}`);
   if (comparison.sampleOptimizedResult) {
-    console.log('   • Ejemplo OPT:', comparison.sampleOptimizedResult);
+    const sample = comparison.sampleOptimizedResult;
+    console.log(
+      `   • Ejemplo OPT: ${sample.driverName ?? 'Sin conductor'} | Score ${formatScore(sample.score)} | Dist ${formatDistance(sample.distance)} | Tier ${sample.tier ?? 'N/A'} | Búsqueda ${formatMs(sample.searchDurationMs)}`,
+    );
   }
   if (comparison.sampleBasicResult) {
-    console.log('   • Ejemplo BAS:', comparison.sampleBasicResult);
+    const sample = comparison.sampleBasicResult;
+    console.log(
+      `   • Ejemplo BAS: ${sample.driverName ?? 'Sin conductor'} | Score ${formatScore(sample.score)} | Dist ${formatDistance(sample.distance)} | Tier ${sample.tier ?? 'N/A'}`,
+    );
   }
 
   // --- Overload ---
@@ -1572,7 +1678,7 @@ afterAll(() => {
 
   console.log('\n⚡ Sobrecarga (stress test)');
   console.log(`   • Requests simultáneos: ${overload.concurrentRequests}`);
-  console.log(`   • Tiempo total: ${overloadDuration} ms`);
+  console.log(`   • Tiempo total: ${formatMs(overloadDuration)}`);
   console.log(`   • Requests/segundo: ${overloadRps}`);
   console.log(`   • Éxitos/Fallos: ${overload.successful}/${overload.failed}`);
 
