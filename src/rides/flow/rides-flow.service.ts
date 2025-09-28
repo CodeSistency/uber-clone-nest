@@ -851,7 +851,7 @@ export class RidesFlowService {
       });
 
       return drivers.map(driver => {
-        const recentRatings = driver.rides.flatMap((ride: any) =>
+        const recentRatings = (driver.rides || []).flatMap((ride: any) =>
           ride.ratings?.map((r: any) => r.ratingValue) || []
         ).filter(Boolean);
         const avgRating = recentRatings.length > 0
@@ -862,12 +862,12 @@ export class RidesFlowService {
                 id: driver.id,
                 firstName: driver.firstName,
                 lastName: driver.lastName,
-          profileImageUrl: driver.profileImageUrl,
-          rating: avgRating,
-          totalRides: driver.rides.length,
-          createdAt: driver.createdAt,
-          vehicles: driver.vehicles
-        };
+                profileImageUrl: driver.profileImageUrl,
+                rating: avgRating,
+                totalRides: (driver.rides || []).length,
+                createdAt: driver.createdAt,
+                vehicles: driver.vehicles || []
+              };
       });
     } catch (error) {
       this.logger.error('❌ Error obteniendo información detallada de conductores:', error);
