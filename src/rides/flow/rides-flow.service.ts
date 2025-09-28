@@ -989,8 +989,31 @@ export class RidesFlowService {
         return null;
       }
 
-      // 5. Calcular scores para cada conductor usando procesamiento por lotes
-      const scoredDrivers = await this.calculateDriversScores(detailedDrivers, lat, lng, radiusKm);
+      // 5. Calcular distancias y scores para cada conductor usando procesamiento por lotes
+      // Agregar distancia a cada driver usando LocationTrackingService
+      const driversWithDistance = await Promise.all(
+        detailedDrivers.map(async (driver) => {
+          try {
+            const driverLocation = await this.locationTrackingService.getDriverLocation(driver.id);
+            if (driverLocation) {
+              const distance = this.calculateDistance(
+                lat, lng,
+                driverLocation.latitude,
+                driverLocation.longitude
+              );
+              return { ...driver, distance, currentLocation: driverLocation };
+            } else {
+              // Si no hay ubicación, usar distancia máxima
+              return { ...driver, distance: radiusKm || 5, currentLocation: null };
+            }
+          } catch (error) {
+            this.logger.warn(`⚠️ [MATCHING] Error obteniendo ubicación para driver ${driver.id}:`, error);
+            return { ...driver, distance: radiusKm || 5, currentLocation: null };
+          }
+        })
+      );
+
+      const scoredDrivers = await this.calculateDriversScores(driversWithDistance, lat, lng, radiusKm);
 
       if (scoredDrivers.length === 0) {
         this.logger.warn('⚠️ [MATCHING] No se pudieron calcular scores para los conductores');
