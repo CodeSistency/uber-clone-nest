@@ -1298,6 +1298,11 @@ export class RidesFlowService {
         console.timeEnd('📋 Driver Details Fetch');
       }
 
+      // 📏 [TIMING] Distance Calculation Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('📏 Distance Calculation');
+      }
+
       if (detailedDrivers.length === 0) {
         this.logger.error('❌ [MATCHING] No se pudo obtener información detallada de conductores');
         return null;
@@ -1326,10 +1331,16 @@ export class RidesFlowService {
         console.time('🧮 Scoring');
       }
 
+      // 6. Calcular scores para todos los conductores usando MatchingEngine optimizado
       const scoredDrivers = await this.calculateDriversScores(driversWithDistance, lat, lng, radiusKm);
 
       if (process.env.NODE_ENV === 'development') {
         console.timeEnd('🧮 Scoring');
+      }
+
+      // 🏆 [TIMING] Winner Details Fetch Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🏆 Winner Details Fetch');
       }
 
       if (scoredDrivers.length === 0) {

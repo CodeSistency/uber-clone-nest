@@ -6,6 +6,7 @@ import { createClient, RedisClientType } from 'redis';
 export class RedisService {
   private readonly logger = new Logger(RedisService.name);
   private client: RedisClientType;
+  private isReadOnly: boolean = false;
 
   constructor(private configService: ConfigService) {
     this.initializeClient();
@@ -22,6 +23,10 @@ export class RedisService {
 
       this.client.on('error', (err) => {
         this.logger.error('Redis Client Error', err);
+        // Check if it's a read-only replica error
+        if (err.message && err.message.includes('READONLY')) {
+          this.logger.warn('Redis is configured as read-only replica. Cache writes will be skipped.');
+        }
       });
 
       this.client.on('connect', () => {
@@ -29,6 +34,19 @@ export class RedisService {
       });
 
       await this.client.connect();
+
+      // Test if we can write to Redis (check if it's read-only)
+      try {
+        await this.client.setEx('redis:health:check', 10, 'ok');
+        this.logger.log('Redis write test successful');
+      } catch (writeError: any) {
+        if (writeError.message && writeError.message.includes('READONLY')) {
+          this.logger.warn('Redis is read-only. Cache operations will fallback to database queries.');
+          this.isReadOnly = true;
+        } else {
+          this.logger.error('Redis write test failed:', writeError);
+        }
+      }
     } catch (error) {
       this.logger.error('Failed to initialize Redis client', error);
       throw error;
@@ -45,22 +63,44 @@ export class RedisService {
   }
 
   async set(key: string, value: string, ttl?: number): Promise<void> {
+    // Skip write operations if Redis is read-only
+    if (this.isReadOnly) {
+      this.logger.debug(`Skipping set operation for key ${key} - Redis is read-only`);
+      return;
+    }
+
     try {
       if (ttl) {
         await this.client.setEx(key, ttl, value);
       } else {
         await this.client.set(key, value);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message && error.message.includes('READONLY')) {
+        this.logger.warn(`Redis is read-only. Skipping set operation for key ${key}`);
+        this.isReadOnly = true;
+        return;
+      }
       this.logger.error(`Error setting key ${key}:`, error);
       throw error;
     }
   }
 
   async del(...keys: string[]): Promise<number> {
+    // Skip write operations if Redis is read-only
+    if (this.isReadOnly) {
+      this.logger.debug(`Skipping del operation for keys ${keys} - Redis is read-only`);
+      return keys.length; // Return number of keys as if they were deleted
+    }
+
     try {
       return await this.client.del(keys);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message && error.message.includes('READONLY')) {
+        this.logger.warn(`Redis is read-only. Skipping del operation for keys ${keys}`);
+        this.isReadOnly = true;
+        return keys.length;
+      }
       this.logger.error(`Error deleting keys ${keys}:`, error);
       return 0;
     }
@@ -85,9 +125,20 @@ export class RedisService {
   }
 
   async expire(key: string, seconds: number): Promise<number> {
+    // Skip write operations if Redis is read-only
+    if (this.isReadOnly) {
+      this.logger.debug(`Skipping expire operation for key ${key} - Redis is read-only`);
+      return 1; // Return 1 to indicate "success" for read-only mode
+    }
+
     try {
       return await this.client.expire(key, seconds);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message && error.message.includes('READONLY')) {
+        this.logger.warn(`Redis is read-only. Skipping expire operation for key ${key}`);
+        this.isReadOnly = true;
+        return 1;
+      }
       this.logger.error(`Error setting expiry for key ${key}:`, error);
       return 0;
     }
@@ -103,18 +154,40 @@ export class RedisService {
   }
 
   async incr(key: string): Promise<number> {
+    // Skip write operations if Redis is read-only
+    if (this.isReadOnly) {
+      this.logger.debug(`Skipping incr operation for key ${key} - Redis is read-only`);
+      return 0;
+    }
+
     try {
       return await this.client.incr(key);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message && error.message.includes('READONLY')) {
+        this.logger.warn(`Redis is read-only. Skipping incr operation for key ${key}`);
+        this.isReadOnly = true;
+        return 0;
+      }
       this.logger.error(`Error incrementing key ${key}:`, error);
       return 0;
     }
   }
 
   async incrby(key: string, increment: number): Promise<number> {
+    // Skip write operations if Redis is read-only
+    if (this.isReadOnly) {
+      this.logger.debug(`Skipping incrBy operation for key ${key} - Redis is read-only`);
+      return 0;
+    }
+
     try {
       return await this.client.incrBy(key, increment);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message && error.message.includes('READONLY')) {
+        this.logger.warn(`Redis is read-only. Skipping incrBy operation for key ${key}`);
+        this.isReadOnly = true;
+        return 0;
+      }
       this.logger.error(`Error incrementing key ${key} by ${increment}:`, error);
       return 0;
     }
