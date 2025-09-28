@@ -6,7 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AdminAuthService } from '../services/admin-auth.service';
-import { AdminLoginDto, AdminLoginResponseDto } from '../dto/admin-login.dto';
+import { AdminLoginDto, AdminLoginResponseDto, AdminRefreshTokenDto } from '../dto/admin-login.dto';
 
 @ApiTags('Admin Authentication')
 @Controller('admin/auth')
@@ -57,8 +57,8 @@ export class AdminAuthController {
     description: 'Refresh token inválido',
   })
   async refreshToken(
-    @Body('refresh_token') refreshToken: string,
+    @Body() refreshTokenDto: AdminRefreshTokenDto,
   ): Promise<AdminLoginResponseDto> {
-    return this.adminAuthService.refreshToken(refreshToken);
+    return this.adminAuthService.refreshToken(refreshTokenDto.refresh_token);
   }
 }

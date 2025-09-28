@@ -22,6 +22,14 @@ export class AdminLoginDto {
   password: string;
 }
 
+export class AdminRefreshTokenDto {
+  @ApiProperty({
+    description: 'Token de refresco del administrador',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  refresh_token: string;
+}
+
 export class AdminLoginResponseDto {
   @ApiProperty({
     description: 'Token de acceso JWT para el administrador',
