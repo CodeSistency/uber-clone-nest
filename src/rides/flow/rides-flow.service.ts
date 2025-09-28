@@ -1198,8 +1198,8 @@ export class RidesFlowService {
     }
 
     // Calcular rating promedio de los últimos 30 días
-    const recentRatings = driver.rides.flatMap((ride) =>
-      ride.ratings.map((r) => r.ratingValue),
+    const recentRatings = (driver.rides || []).flatMap((ride) =>
+      (ride.ratings || []).map((r) => r.ratingValue),
     );
     const avgRating =
       recentRatings.length > 0
@@ -1210,7 +1210,7 @@ export class RidesFlowService {
     return {
       ...driver,
       rating: Math.round(avgRating * 10) / 10, // Redondear a 1 decimal
-      totalRides: driver.rides.length,
+      totalRides: (driver.rides || []).length,
     };
   }
 
