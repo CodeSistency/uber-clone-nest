@@ -70,6 +70,16 @@ interface SummaryTracker {
     successful: number;
     failed: number;
   };
+  stress: {
+    scenarios: Array<{
+      driverCount: number;
+      iterations: number;
+      avgOptimizedMs: number;
+      avgBasicMs: number;
+      improvementPercent: number;
+      successRate: number;
+    }>;
+  };
 }
 
 const summaryTracker: SummaryTracker = {
@@ -108,6 +118,9 @@ const summaryTracker: SummaryTracker = {
     durationMs: 0,
     successful: 0,
     failed: 0,
+  },
+  stress: {
+    scenarios: [],
   },
 };
 
@@ -720,6 +733,82 @@ const DUMMY_DATA = {
     { id: 14, displayName: 'Motorcycle', seats: 1 }
   ]
 };
+
+const BASE_DATASET: typeof DUMMY_DATA = JSON.parse(JSON.stringify(DUMMY_DATA));
+
+const VEHICLE_TYPES = ['sedan', 'suv', 'hatchback', 'van', 'luxury'] as const;
+const TIERS = ['UberX', 'UberXL', 'UberComfort', 'UberBlack'] as const;
+const STATUSES = ['online', 'busy', 'offline'] as const;
+const VERIFICATIONS = ['approved', 'pending'] as const;
+
+type DriverProfile = (typeof DUMMY_DATA)['drivers'][number];
+type DriverStatus = DriverProfile['status'];
+type VerificationStatus = DriverProfile['verificationStatus'];
+type VehicleType = DriverProfile['vehicleType'];
+type TierType = DriverProfile['preferredTier'];
+
+type StressDataset = typeof DUMMY_DATA & { drivers: DriverProfile[] };
+
+function pseudoRandom(seed: number) {
+  let value = seed % 2147483647;
+  if (value <= 0) {
+    value += 2147483646;
+  }
+  return () => (value = (value * 16807) % 2147483647) / 2147483647;
+}
+
+function randomFromArray<T>(items: readonly T[], rnd: () => number): T {
+  return items[Math.floor(rnd() * items.length) % items.length];
+}
+
+function createRandomDrivers(count: number, seed = Date.now()): DriverProfile[] {
+  const rnd = pseudoRandom(seed);
+  const drivers: DriverProfile[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const id = i + 1;
+    const status = randomFromArray(STATUSES, rnd) as DriverStatus;
+    const verificationStatus = status === 'online'
+      ? (randomFromArray(VERIFICATIONS, rnd) as VerificationStatus)
+      : 'approved';
+    const vehicleType = randomFromArray(VEHICLE_TYPES, rnd) as VehicleType;
+    const preferredTier = randomFromArray(TIERS, rnd) as TierType;
+    const rating = Number((3.5 + rnd() * 1.5).toFixed(2));
+    const totalRides = Math.floor(50 + rnd() * 2200);
+    const distance = Number((rnd() * 8).toFixed(2));
+    const carSeats = vehicleType === 'van' ? 7 : vehicleType === 'suv' ? 5 : 4;
+    const firstName = `Driver${id}`;
+    const lastName = `Auto${Math.floor(rnd() * 1000)}`;
+
+    drivers.push({
+      id,
+      firstName,
+      lastName,
+      rating,
+      totalRides,
+      status,
+      verificationStatus,
+      canDoDeliveries: rnd() > 0.4,
+      carSeats,
+      vehicleType,
+      preferredTier,
+      lastLocationUpdate: new Date(Date.now() - Math.floor(rnd() * 10 * 60 * 1000)),
+      isLocationActive: status !== 'offline',
+      averageRating: rating,
+      completionRate: Number((80 + rnd() * 20).toFixed(1)),
+      distance,
+      estimatedArrival: `${Math.max(1, Math.floor(distance * 6))} min`,
+    });
+  }
+
+  return drivers;
+}
+
+function buildRandomDataset(driverCount: number, seed = Date.now()): StressDataset {
+  const base: StressDataset = JSON.parse(JSON.stringify(BASE_DATASET));
+  base.drivers = createRandomDrivers(driverCount, seed);
+  return base;
+}
 
 // ============================================================================
 // 🧪 CLASE DE TEST PRINCIPAL
@@ -1560,6 +1649,163 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
       expect(results.length).toBe(concurrentRequests);
     });
   });
+
+  // =========================================================================
+  // 🧪 TEST 8: Stress Paramétrico (dataset dinámico)
+  // =========================================================================
+
+  describe('🔥 Mini Stress Paramétrico', () => {
+    const defaultCounts = process.env.MATCH_STRESS_COUNTS
+      ? process.env.MATCH_STRESS_COUNTS.split(',').map(v => parseInt(v.trim(), 10)).filter(Boolean)
+      : [50, 150, 500];
+    const iterationsPerScenario = process.env.MATCH_STRESS_ITERATIONS
+      ? Math.max(1, parseInt(process.env.MATCH_STRESS_ITERATIONS, 10))
+      : 3;
+
+    const askCountsFromStdin = async (): Promise<number[] | null> => {
+      if (process.env.MATCH_STRESS_PROMPT !== 'true') {
+        return null;
+      }
+      const readline = await import('readline');
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+      const question = (prompt: string) => new Promise<string>(resolve => rl.question(prompt, resolve));
+      const answer = await question('Ingrese cantidades de conductores separadas por coma: ');
+      rl.close();
+      const parsed = answer
+        .split(',')
+        .map(value => parseInt(value.trim(), 10))
+        .filter(number => Number.isFinite(number) && number > 0);
+      return parsed.length ? parsed : null;
+    };
+
+    const resolveDriverCounts = async () => {
+      const stdinCounts = await askCountsFromStdin();
+      if (stdinCounts && stdinCounts.length) {
+        return stdinCounts;
+      }
+      return defaultCounts;
+    };
+
+    let resolvedCounts: number[] = defaultCounts;
+
+    beforeAll(async () => {
+      resolvedCounts = await resolveDriverCounts();
+      console.log('\n🧪 Configuración Stress Test:', resolvedCounts.join(', '));
+    });
+
+    const restorePrismaMocks = () => {
+      jest.restoreAllMocks();
+      jest.spyOn(prismaService.driver, 'findMany').mockResolvedValue(DUMMY_DATA.drivers as any);
+      jest.spyOn(prismaService.driver, 'findUnique').mockResolvedValue(DUMMY_DATA.drivers[0] as any);
+    };
+
+    resolvedCounts.forEach(driverCount => {
+      test(`🚗 Stress con ${driverCount} conductores`, async () => {
+        console.log(`\n🔥 === STRESS TEST: ${driverCount} CONDUCTORES ===`);
+
+        const seed = Date.now();
+        const stressData = buildRandomDataset(driverCount, seed);
+        let totalOptimizedMs = 0;
+        let totalBasicMs = 0;
+        let successes = 0;
+
+        for (let i = 0; i < iterationsPerScenario; i++) {
+          console.log(`\n   ▶️ Iteración ${i + 1}/${iterationsPerScenario}`);
+
+          const findManySpy = prismaService.driver.findMany as jest.MockedFunction<typeof prismaService.driver.findMany>;
+          findManySpy.mockResolvedValue(stressData.drivers as any);
+
+          const findUniqueSpy = prismaService.driver.findUnique as jest.MockedFunction<typeof prismaService.driver.findUnique>;
+          findUniqueSpy.mockImplementation((args: any) => {
+            const where = args?.where ?? {};
+            const id = where.id ?? where.driverId;
+            const found = stressData.drivers.find(driver => driver.id === id) || null;
+            return {
+              then: (resolve: any) => {
+                resolve(found as any);
+                return {
+                  catch: () => undefined,
+                  finally: () => undefined,
+                };
+              },
+              catch: () => (
+                {
+                  finally: () => undefined,
+                }
+              ),
+              finally: () => undefined,
+            } as unknown as ReturnType<typeof prismaService.driver.findUnique>;
+          });
+
+          const targetLocation = {
+            lat: stressData.testLocations.userPickup.lat + (Math.random() - 0.5) * 0.01,
+            lng: stressData.testLocations.userPickup.lng + (Math.random() - 0.5) * 0.01,
+          };
+
+          const optimizedStart = Date.now();
+          const optimizedResult = await ridesFlowService.findBestDriverMatch({
+            lat: targetLocation.lat,
+            lng: targetLocation.lng,
+            tierId: 1,
+            radiusKm: 8,
+          });
+          const optimizedTime = Date.now() - optimizedStart;
+          totalOptimizedMs += optimizedTime;
+
+          if (optimizedResult?.matchedDriver) {
+            successes += 1;
+            console.log(
+              `      ✅ OPT: ${optimizedTime} ms | Ganador ${optimizedResult.matchedDriver.driver.firstName} ` +
+              `(score ${optimizedResult.matchedDriver.matchScore?.toFixed(2) ?? 'N/A'})`
+            );
+          } else {
+            console.log(`      ⚠️ OPT: ${optimizedTime} ms | Sin conductor asignado`);
+          }
+
+          const basicStart = Date.now();
+          const basicDrivers = await simulateBasicMatching(targetLocation.lat, targetLocation.lng, {
+            drivers: stressData.drivers,
+          });
+          const basicTime = Date.now() - basicStart;
+          totalBasicMs += basicTime;
+
+          if (basicDrivers.length > 0) {
+            console.log(
+              `      🐌 BAS: ${basicTime} ms | Ganador ${basicDrivers[0].firstName} (score ${basicDrivers[0].score?.toFixed(2) ?? 'N/A'})`
+            );
+          } else {
+            console.log(`      ⚠️ BAS: ${basicTime} ms | Sin candidato`);
+          }
+
+          restorePrismaMocks();
+        }
+
+        const avgOptimized = totalOptimizedMs / iterationsPerScenario;
+        const avgBasic = totalBasicMs / iterationsPerScenario;
+        const improvement = avgBasic ? ((avgBasic - avgOptimized) / avgBasic) * 100 : 0;
+        const successRate = (successes / iterationsPerScenario) * 100;
+
+        summaryTracker.stress.scenarios.push({
+          driverCount,
+          iterations: iterationsPerScenario,
+          avgOptimizedMs: avgOptimized,
+          avgBasicMs: avgBasic,
+          improvementPercent: improvement,
+          successRate,
+        });
+
+        console.log('\n   📈 RESUMEN PARCIAL');
+        console.log(`      • Promedio Optimizado: ${avgOptimized.toFixed(1)} ms`);
+        console.log(`      • Promedio Básico: ${avgBasic.toFixed(1)} ms`);
+        console.log(`      • Mejora: ${improvement.toFixed(1)}%`);
+        console.log(`      • Tasa de éxito OPT: ${successRate.toFixed(1)}% (` +
+          `${successes}/${iterationsPerScenario})`);
+      });
+    });
+  });
 });
 
 afterAll(() => {
@@ -1672,6 +1918,15 @@ afterAll(() => {
     );
   }
 
+  if (summaryTracker.stress.scenarios.length > 0) {
+    console.log('\n🔥 Stress Paramétrico');
+    summaryTracker.stress.scenarios.forEach(scenario => {
+      console.log(
+        `   • ${scenario.driverCount} conductores | ${scenario.iterations} iteraciones | OPT ${formatMs(scenario.avgOptimizedMs)} | BAS ${formatMs(scenario.avgBasicMs)} | Mejora ${scenario.improvementPercent.toFixed(1)}% | Éxito ${scenario.successRate.toFixed(1)}%`
+      );
+    });
+  }
+
   // --- Overload ---
   const overloadDuration = Math.max(overload.durationMs, 1);
   const overloadRps = ((overload.concurrentRequests * 1000) / overloadDuration).toFixed(1);
@@ -1707,55 +1962,45 @@ afterAll(() => {
  * - Scoring secuencial
  * - Sin métricas avanzadas
  */
-async function simulateBasicMatching(userLat: number, userLng: number): Promise<any[]> {
+async function simulateBasicMatching(
+  userLat: number,
+  userLng: number,
+  options?: {
+    drivers?: any[];
+  }
+): Promise<any[]> {
   console.log('   🔄 Ejecutando consultas directas a BD (sistema básico)...');
 
-  // Simular consulta básica a BD (sin caché, sin optimizaciones)
-  const availableDrivers = DUMMY_DATA.drivers.filter(driver =>
+  const driverPool = options?.drivers ?? DUMMY_DATA.drivers;
+
+  const availableDrivers = driverPool.filter(driver =>
     driver.status === 'online' &&
     driver.verificationStatus === 'approved' &&
     driver.distance <= 5 // Radio de 5km
   );
 
-  console.log(`   📊 Encontrados ${availableDrivers.length} conductores disponibles (de ${DUMMY_DATA.drivers.length} total)`);
+  console.log(`   📊 Encontrados ${availableDrivers.length} conductores disponibles (de ${driverPool.length} total)`);
 
-  // Scoring SECUENCIAL (sin lotes paralelos, sin optimizaciones)
   console.log('   🔄 Calculando scores de forma secuencial (uno por uno)...');
   const scoredDrivers: any[] = [];
 
   for (const driver of availableDrivers) {
-    // Calcular distancia simple (sin optimizaciones GPS)
     const distance = driver.distance;
+    const ratingScore = driver.rating * 20;
+    const distanceScore = Math.max(0, 100 - distance * 20);
+    const experienceScore = Math.min(driver.totalRides / 10, 50);
+    const statusPenalty = driver.status === 'busy' ? -20 : 0;
+    const verificationBonus = driver.verificationStatus === 'approved' ? 10 : -30;
 
-    // Calcular score básico con fórmula simple
-    const ratingScore = driver.rating * 20; // Rating * 20 puntos (0-100 puntos)
-    const distanceScore = Math.max(0, 100 - distance * 20); // Distancia inversa (0-100 puntos)
-    const experienceScore = Math.min(driver.totalRides / 10, 50); // Experiencia (0-50 puntos)
-    const statusBonus = driver.status === 'online' ? 30 : 0; // Bonus por estar online
-
-    const totalScore = ratingScore + distanceScore + experienceScore + statusBonus;
+    const score = ratingScore + distanceScore + experienceScore + statusPenalty + verificationBonus;
 
     scoredDrivers.push({
       ...driver,
-      score: totalScore,
-      distance: distance,
-      scoringBreakdown: {
-        ratingScore,
-        distanceScore,
-        experienceScore,
-        statusBonus
-      }
+      score,
     });
-
-    // Simular demora mayor (sistema básico es más lento)
-    await new Promise(resolve => setTimeout(resolve, 8));
   }
 
-  // Ordenar por score descendente
-  scoredDrivers.sort((a, b) => b.score - a.score);
-
-  console.log(`   ✅ Scoring secuencial completado para ${scoredDrivers.length} conductores`);
-  console.log(`   🏆 Mejor score: ${scoredDrivers[0]?.score?.toFixed(2) || 'N/A'}`);
+  scoredDrivers.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
   return scoredDrivers;
 }
