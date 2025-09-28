@@ -75,18 +75,41 @@ export class MatchingMetricsService {
     tierId?: number;
     strategy?: string;
   }): Promise<void> {
+    if (process.env.NODE_ENV === 'development') {
+      console.time('📈 Metrics Recording');
+    }
+
     try {
       const timestamp = Date.now();
       const metricsKey = `${this.METRICS_PREFIX}:${timestamp}`;
 
+      // 📝 [TIMING] Store Detailed Metrics
+      if (process.env.NODE_ENV === 'development') {
+        console.time('📝 Store Detailed Metrics');
+      }
+
       // Almacenar métricas detalladas
       await this.redisService.set(metricsKey, JSON.stringify(metrics), 86400); // 24 horas
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('📝 Store Detailed Metrics');
+      }
+
+      // 🔢 [TIMING] Update Aggregated Metrics
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🔢 Update Aggregated Metrics');
+      }
 
       // Actualizar contadores agregados
       await this.updateAggregatedMetrics(metrics);
 
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🔢 Update Aggregated Metrics');
+      }
+
       // Log de métricas en desarrollo
       if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('📈 Metrics Recording');
         this.logger.log(`📊 [METRICS] Matching completado - ${metrics.duration}ms, ${metrics.driversFound} drivers, Winner: ${metrics.hasWinner ? 'SÍ' : 'NO'}`);
       }
 
@@ -94,6 +117,9 @@ export class MatchingMetricsService {
       await this.checkPerformanceAlerts(metrics);
 
     } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('📈 Metrics Recording');
+      }
       this.logger.warn('⚠️ [METRICS] Error registrando métricas:', error);
     }
   }

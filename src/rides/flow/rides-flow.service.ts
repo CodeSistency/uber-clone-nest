@@ -622,12 +622,30 @@ export class RidesFlowService {
    */
   private async validateSystemHealth(): Promise<void> {
     try {
+      // 🗄️ [TIMING] Database Health Check
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🗄️ Database Health Check');
+      }
+
       // Verificar conexión a base de datos
       await this.prisma.$queryRaw`SELECT 1`;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🗄️ Database Health Check');
+      }
+
+      // 🔴 [TIMING] Redis Health Check
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🔴 Redis Health Check');
+      }
 
       // Verificar Redis si está disponible
       if (this.redisService) {
         await this.redisService.ping();
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🔴 Redis Health Check');
       }
     } catch (error) {
       this.logger.error('❌ [MATCHING] Error en validación de servicios críticos:', error);
@@ -752,39 +770,262 @@ export class RidesFlowService {
   }
 
   /**
-   * Sistema de caché inteligente para matching
+   * Sistema de caché inteligente para matching con prefetching y expiración adaptativa
    */
   private async getCachedDriversList(
     cacheKey: string,
     fetchFunction: () => Promise<any[]>,
-    ttlSeconds: number = 30
+    ttlSeconds: number = 30,
+    options?: {
+      enablePrefetching?: boolean;
+      compression?: boolean;
+      adaptiveTTL?: boolean;
+    }
   ): Promise<any[]> {
+    const { enablePrefetching = true, compression = false, adaptiveTTL = true } = options || {};
+
     try {
-      // Intentar obtener del caché
-      const cached = await this.redisService.get(cacheKey);
+      // Calcular TTL adaptativo basado en frecuencia de uso
+      let actualTTL = ttlSeconds;
+      if (adaptiveTTL) {
+        actualTTL = await this.calculateAdaptiveTTL(cacheKey, ttlSeconds);
+      }
+
+      // 🔍 [TIMING] Cache Lookup
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🔍 Cache Lookup');
+      }
+
+      // Intentar obtener del caché (con descompresión si aplica)
+      let cached = await this.redisService.get(cacheKey);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🔍 Cache Lookup');
+      }
+
       if (cached) {
         if (process.env.NODE_ENV === 'development') {
           this.logger.log(`✅ [CACHE] Hit para ${cacheKey}`);
         }
-        return JSON.parse(cached);
+
+        // Descomprimir si fue comprimido
+        if (compression && cached.startsWith('COMPRESSED:')) {
+          cached = cached.substring('COMPRESSED:'.length);
+          // Nota: En producción usaríamos zlib, aquí simulamos
+        }
+
+        const parsedData = JSON.parse(cached);
+
+        // Registrar acceso para métricas de prefetching
+        if (enablePrefetching) {
+          await this.updateAccessPatterns(cacheKey, parsedData);
+        }
+
+        return parsedData;
+      }
+
+      // 📡 [TIMING] Database Fetch (Cache Miss)
+      if (process.env.NODE_ENV === 'development') {
+        console.time('📡 Database Fetch');
       }
 
       // Si no está en caché, obtener datos frescos
       const data = await fetchFunction();
 
-      // Guardar en caché
-      await this.redisService.set(cacheKey, JSON.stringify(data), ttlSeconds);
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('📡 Database Fetch');
+      }
+
+      // 🚀 [PREFETCHING] Prefetch datos relacionados si está habilitado
+      if (enablePrefetching && data.length > 0) {
+        await this.prefetchRelatedData(cacheKey, data);
+      }
+
+      // 💾 [TIMING] Cache Storage
+      if (process.env.NODE_ENV === 'development') {
+        console.time('💾 Cache Storage');
+      }
+
+      // Preparar datos para caché (con compresión si aplica)
+      let cacheData = JSON.stringify(data);
+      if (compression && cacheData.length > 1000) { // Comprimir si > 1KB
+        // Nota: En producción usaríamos zlib, aquí simulamos compresión
+        cacheData = 'COMPRESSED:' + cacheData;
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🗜️ [CACHE] Datos comprimidos para ${cacheKey} (${cacheData.length} chars)`);
+        }
+      }
+
+      // Guardar en caché con TTL adaptativo
+      await this.redisService.set(cacheKey, cacheData, actualTTL);
 
       if (process.env.NODE_ENV === 'development') {
-        this.logger.log(`💾 [CACHE] Miss para ${cacheKey} - guardado por ${ttlSeconds}s`);
+        console.timeEnd('💾 Cache Storage');
+        this.logger.log(`💾 [CACHE] Miss para ${cacheKey} - guardado por ${actualTTL}s (adaptativo: ${adaptiveTTL})`);
       }
 
       return data;
     } catch (error) {
       this.logger.warn(`⚠️ [CACHE] Error con caché ${cacheKey}:`, error);
+
+      // 🗂️ [TIMING] Fallback Fetch
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🗂️ Fallback Fetch');
+      }
+
       // Fallback: obtener datos frescos sin caché
-      return await fetchFunction();
+      const data = await fetchFunction();
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🗂️ Fallback Fetch');
+      }
+
+      return data;
     }
+  }
+
+  /**
+   * Calcular TTL adaptativo basado en frecuencia de uso
+   */
+  private async calculateAdaptiveTTL(cacheKey: string, baseTTL: number): Promise<number> {
+    try {
+      // Obtener contador de accesos para esta clave
+      const accessKey = `cache:access:${cacheKey}`;
+      const accessCount = parseInt(await this.redisService.get(accessKey) || '0');
+
+      // Incrementar contador de accesos
+      await this.redisService.incr(accessKey);
+      // Expirar contador en 1 hora
+      await this.redisService.expire(accessKey, 3600);
+
+      // TTL adaptativo: más accesos = más tiempo en caché
+      if (accessCount > 10) {
+        return baseTTL * 2; // Doble tiempo para datos muy accedidos
+      } else if (accessCount > 5) {
+        return Math.floor(baseTTL * 1.5); // 50% más para datos moderadamente accedidos
+      } else if (accessCount > 2) {
+        return Math.floor(baseTTL * 1.2); // 20% más para datos poco accedidos
+      }
+
+      return baseTTL; // TTL base para datos nuevos
+    } catch (error) {
+      // En caso de error, usar TTL base
+      return baseTTL;
+    }
+  }
+
+  /**
+   * Actualizar patrones de acceso para prefetching inteligente
+   */
+  private async updateAccessPatterns(cacheKey: string, data: any[]): Promise<void> {
+    try {
+      // Solo para datos de conductores
+      if (cacheKey.includes('drivers:available') && data.length > 0) {
+        const patternKey = 'cache:patterns:driver_access';
+        const driverIds = data.map(d => d.id).join(',');
+
+        // Registrar patrón de acceso reciente
+        await this.redisService.set(`pattern:${Date.now()}`, driverIds, 300); // 5 minutos
+
+        // Mantener solo los últimos 10 patrones
+        const patternKeys = await this.redisService.keys('pattern:*');
+        if (patternKeys.length > 10) {
+          // Eliminar patrones antiguos (simplificado)
+          for (let i = 0; i < patternKeys.length - 10; i++) {
+            await this.redisService.del(patternKeys[i]);
+          }
+        }
+      }
+    } catch (error) {
+      // No crítico, continuar sin prefetching
+    }
+  }
+
+  /**
+   * Prefetch datos relacionados basados en patrones de acceso
+   */
+  private async prefetchRelatedData(cacheKey: string, data: any[]): Promise<void> {
+    try {
+      // Prefetch de detalles de conductores si tenemos datos de disponibilidad
+      if (cacheKey.includes('drivers:available') && data.length > 0) {
+        const driverIds = data.map(d => d.id || d.driverId).filter(id => id);
+
+        if (driverIds.length > 0 && driverIds.length <= 10) { // Limitar prefetch a 10 conductores
+          // Prefetch en background sin esperar
+          setImmediate(async () => {
+            try {
+              const detailsKey = `drivers:details:${driverIds.sort().join(',')}`;
+              const existing = await this.redisService.get(detailsKey);
+
+              if (!existing) {
+                // Solo prefetch si no existe en caché
+                await this.getDriverDetailsWithCache(driverIds);
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`🚀 [PREFETCH] Detalles prefetched para ${driverIds.length} conductores`);
+                }
+              }
+            } catch (error) {
+              // Prefetch falló, no crítico
+            }
+          });
+        }
+      }
+    } catch (error) {
+      // Prefetch falló, continuar normalmente
+    }
+  }
+
+  /**
+   * Calcular distancias con control de concurrencia para evitar sobrecargar Redis
+   */
+  private async calculateDistancesWithConcurrencyLimit(
+    drivers: any[],
+    userLat: number,
+    userLng: number,
+    maxDistance: number,
+    concurrencyLimit: number = 8
+  ): Promise<any[]> {
+    const results: any[] = [];
+    const batches: any[][] = [];
+
+    // Dividir conductores en lotes según límite de concurrencia
+    for (let i = 0; i < drivers.length; i += concurrencyLimit) {
+      batches.push(drivers.slice(i, i + concurrencyLimit));
+    }
+
+    // Procesar cada lote
+    for (const batch of batches) {
+      const batchPromises = batch.map(async (driver) => {
+        try {
+          const driverLocation = await this.locationTrackingService.getDriverLocation(driver.id);
+          if (driverLocation) {
+            const distance = this.calculateDistance(
+              userLat, userLng,
+              driverLocation.location.lat,
+              driverLocation.location.lng
+            );
+            return { ...driver, distance, currentLocation: driverLocation };
+          } else {
+            // Si no hay ubicación, usar distancia máxima
+            return { ...driver, distance: maxDistance, currentLocation: null };
+          }
+        } catch (error) {
+          this.logger.warn(`⚠️ [MATCHING] Error obteniendo ubicación para driver ${driver.id}:`, error);
+          return { ...driver, distance: maxDistance, currentLocation: null };
+        }
+      });
+
+      // Esperar a que termine el lote actual antes de procesar el siguiente
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+
+      // Pequeña pausa entre lotes para no sobrecargar (opcional)
+      if (batches.length > 1 && batch !== batches[batches.length - 1]) {
+        await new Promise(resolve => setTimeout(resolve, 5)); // 5ms pause
+      }
+    }
+
+    return results;
   }
 
   /**
@@ -801,7 +1042,12 @@ export class RidesFlowService {
     return this.getCachedDriversList(
       cacheKey,
       () => this.findNearbyDrivers(userLat, userLng, radiusKm, filters),
-      30 // 30 segundos de caché
+      30, // 30 segundos base
+      {
+        enablePrefetching: true,
+        compression: false, // Datos de disponibilidad son pequeños
+        adaptiveTTL: true
+      }
     );
   }
 
@@ -816,7 +1062,12 @@ export class RidesFlowService {
     return this.getCachedDriversList(
       cacheKey,
       () => this.getDriverDetailedInfoBatch(driverIds),
-      300 // 5 minutos de caché para detalles
+      300, // 5 minutos base
+      {
+        enablePrefetching: false, // Los detalles ya son el resultado final
+        compression: true, // Datos de detalles pueden ser grandes
+        adaptiveTTL: true
+      }
     );
   }
 
@@ -827,23 +1078,48 @@ export class RidesFlowService {
     if (driverIds.length === 0) return [];
 
     try {
+      // Query optimizada: seleccionar solo campos necesarios
       const drivers = await this.prisma.driver.findMany({
-          where: {
+        where: {
           id: { in: driverIds }
-          },
-          include: {
-            vehicles: {
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          profileImageUrl: true,
+          createdAt: true,
+          // Incluir solo vehículo por defecto con campos esenciales
+          vehicles: {
             where: { isDefault: true },
-            take: 1
+            take: 1,
+            select: {
+              make: true,
+              model: true,
+              licensePlate: true,
+              seatingCapacity: true,
+              vehicleType: {
+                select: {
+                  displayName: true
+                }
+              }
+            }
+          },
+          // Optimizar query de ratings: usar agregación en lugar de cargar todos
+          _count: {
+            select: {
+              rides: true
+            }
           },
           rides: {
-            take: 10,
+            take: 20, // Aumentar para mejor promedio
             orderBy: { createdAt: 'desc' },
             select: {
               ratings: {
                 select: {
                   ratingValue: true
-                }
+                },
+                take: 1 // Solo necesitamos el rating de cada ride
               }
             }
           }
@@ -851,23 +1127,25 @@ export class RidesFlowService {
       });
 
       return drivers.map(driver => {
+        // Calcular promedio de ratings de forma optimizada
         const recentRatings = (driver.rides || []).flatMap((ride: any) =>
           ride.ratings?.map((r: any) => r.ratingValue) || []
         ).filter(Boolean);
+
         const avgRating = recentRatings.length > 0
           ? recentRatings.reduce((sum: number, rating: number) => sum + rating, 0) / recentRatings.length
           : 0;
 
-              return {
-                id: driver.id,
-                firstName: driver.firstName,
-                lastName: driver.lastName,
-                profileImageUrl: driver.profileImageUrl,
-                rating: avgRating,
-                totalRides: (driver.rides || []).length,
-                createdAt: driver.createdAt,
-                vehicles: driver.vehicles || []
-              };
+        return {
+          id: driver.id,
+          firstName: driver.firstName,
+          lastName: driver.lastName,
+          profileImageUrl: driver.profileImageUrl,
+          rating: avgRating,
+          totalRides: driver._count?.rides || 0, // Usar el contador optimizado
+          createdAt: driver.createdAt,
+          vehicles: driver.vehicles || []
+        };
       });
     } catch (error) {
       this.logger.error('❌ Error obteniendo información detallada de conductores:', error);
@@ -942,8 +1220,22 @@ export class RidesFlowService {
     }
 
     try {
+      // 🔍 [TIMING] Health Check Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🔍 Health Check');
+      }
+
       // Verificar servicios críticos antes de proceder
       await this.validateSystemHealth();
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🔍 Health Check');
+      }
+
+      // 🔧 [TIMING] Filters Building Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🔧 Filters Building');
+      }
 
       // 1. Obtener conductores candidatos con filtros básicos
       const driverFilters: any = {
@@ -961,6 +1253,15 @@ export class RidesFlowService {
 
       this.logDebugInfo('Filtros aplicados', { driverFilters, searchParams: { lat, lng, radiusKm } });
 
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🔧 Filters Building');
+      }
+
+      // 🗂️ [TIMING] Drivers Search Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🗂️ Drivers Search');
+      }
+
       // 3. Buscar conductores candidatos cercanos (con caché inteligente)
       const candidateDrivers = await this.getAvailableDriversWithCache(
         driverFilters,
@@ -968,6 +1269,10 @@ export class RidesFlowService {
         lat,
         lng
       );
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🗂️ Drivers Search');
+      }
 
       this.logDebugInfo('Conductores candidatos encontrados', {
         count: candidateDrivers.length,
@@ -980,40 +1285,52 @@ export class RidesFlowService {
         return null;
       }
 
+      // 📋 [TIMING] Driver Details Fetch Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('📋 Driver Details Fetch');
+      }
+
       // 4. Obtener información detallada de conductores para scoring (con caché)
       const driverIds = candidateDrivers.map(d => d.id || d.driverId);
       const detailedDrivers = await this.getDriverDetailsWithCache(driverIds);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('📋 Driver Details Fetch');
+      }
 
       if (detailedDrivers.length === 0) {
         this.logger.error('❌ [MATCHING] No se pudo obtener información detallada de conductores');
         return null;
       }
 
-      // 5. Calcular distancias y scores para cada conductor usando procesamiento por lotes
-      // Agregar distancia a cada driver usando LocationTrackingService
-      const driversWithDistance = await Promise.all(
-        detailedDrivers.map(async (driver) => {
-          try {
-            const driverLocation = await this.locationTrackingService.getDriverLocation(driver.id);
-            if (driverLocation) {
-              const distance = this.calculateDistance(
-                lat, lng,
-                driverLocation.location.lat,
-                driverLocation.location.lng
-              );
-              return { ...driver, distance, currentLocation: driverLocation };
-            } else {
-              // Si no hay ubicación, usar distancia máxima
-              return { ...driver, distance: radiusKm || 5, currentLocation: null };
-            }
-          } catch (error) {
-            this.logger.warn(`⚠️ [MATCHING] Error obteniendo ubicación para driver ${driver.id}:`, error);
-            return { ...driver, distance: radiusKm || 5, currentLocation: null };
-          }
-        })
+      // 📏 [TIMING] Distance Calculation Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('📏 Distance Calculation');
+      }
+
+      // 5. Calcular distancias con paralelización controlada
+      // Limitar concurrencia para evitar sobrecargar Redis
+      const driversWithDistance = await this.calculateDistancesWithConcurrencyLimit(
+        detailedDrivers,
+        lat,
+        lng,
+        radiusKm || 5
       );
 
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('📏 Distance Calculation');
+      }
+
+      // 🧮 [TIMING] Scoring Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🧮 Scoring');
+      }
+
       const scoredDrivers = await this.calculateDriversScores(driversWithDistance, lat, lng, radiusKm);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🧮 Scoring');
+      }
 
       if (scoredDrivers.length === 0) {
         this.logger.warn('⚠️ [MATCHING] No se pudieron calcular scores para los conductores');
@@ -1030,14 +1347,37 @@ export class RidesFlowService {
         location: bestDriver.currentLocation
       });
 
+      // 🏆 [TIMING] Winner Details Fetch Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('🏆 Winner Details Fetch');
+      }
+
       // 6. Preparar respuesta final
       const driverDetails = await this.getDriverDetailedInfo(bestDriver.id);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🏆 Winner Details Fetch');
+      }
+
+      // ⏰ [TIMING] ETA Calculation Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('⏰ ETA Calculation');
+      }
 
       // 7. Calcular tiempo estimado de llegada (velocidad promedio 30 km/h en ciudad)
       const estimatedMinutes = Math.max(
         1,
         Math.round(((bestDriver.distance * 1000) / 30) * 60),
       ); // Convertir km a minutos
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('⏰ ETA Calculation');
+      }
+
+      // 📊 [TIMING] Response Preparation Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('📊 Response Preparation');
+      }
 
       // 8. Preparar respuesta
       const processingTime = Date.now() - startTime;
@@ -1046,6 +1386,11 @@ export class RidesFlowService {
       this.logger.log(
           `✅ [MATCHING] Matching completado en ${processingTime}ms - Conductor: ${driverDetails.firstName} ${driverDetails.lastName} (ID: ${bestDriver.id})`,
         );
+      }
+
+      // 📈 [TIMING] Metrics Recording Phase
+      if (process.env.NODE_ENV === 'development') {
+        console.time('📈 Metrics Recording');
       }
 
       // Registrar métricas completas de matching
@@ -1061,6 +1406,12 @@ export class RidesFlowService {
         tierId,
         strategy: 'balanced'
       });
+
+      if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('📈 Metrics Recording');
+        console.timeEnd('📊 Response Preparation');
+        console.log(`🎯 [TIMING] Total Matching Process: ${processingTime}ms`);
+      }
 
       const result = {
         matchedDriver: {

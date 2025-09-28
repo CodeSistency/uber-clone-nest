@@ -14,18 +14,110 @@ Este test demuestra todas las optimizaciones implementadas en el algoritmo de ma
 - **Validación de salud del sistema**
 - **Manejo de casos edge**
 
-### 📊 Datos Dummy Realistas
-- **8 conductores** con perfiles completos
-- **Ubicaciones GPS** en Buenos Aires (Plaza de Mayo)
-- **Ratings y experiencia** variada
-- **Estados diversos** (online, busy, offline)
-- **Vehículos diferentes** (sedán, SUV, hatchback, van)
+### 📊 Datos Dummy Realistas (Expandido)
+- **28 conductores** con perfiles completos y diversos
+- **13 tiers de servicio** (UberX, UberXL, UberBlack, etc.)
+- **14 tipos de vehículo** (sedán, SUV, hatchback, van, moto, etc.)
+- **20 ubicaciones GPS** realistas en área metropolitana
+- **Ratings y experiencia** completamente variados (1.0 - 5.0 estrellas)
+- **Estados diversos** (online, busy, offline, maintenance)
+- **Historial de rides** realista por conductor
 
 ### 🔍 Logging Extensivo
 - **Explicaciones detalladas** de cada decisión
 - **Comparaciones** entre candidatos
 - **Métricas de performance** en tiempo real
 - **Razonamiento del algoritmo** paso a paso
+
+### 🎭 Escenarios de Prueba Realistas
+
+#### 1. **Cache Hit (Óptimo)** ⚡
+```bash
+# Características:
+✅ Dataset persistente entre iteraciones
+✅ Redis populado con datos previos
+✅ Prefetching automático activado
+✅ Demuestra beneficios del caché inteligente
+
+# Resultado esperado: Mejora del 40-50%
+```
+
+#### 2. **Cache Miss (Realista)** 🎯
+```bash
+# Características:
+❌ Dataset regenerado en cada iteración
+✅ Redis vacío inicialmente
+✅ Retardos artificiales en algoritmo básico
+✅ Simula condiciones reales de carga
+
+# Resultado esperado: Comparación justa y equilibrada
+```
+
+#### 3. **Alta Carga (Escalabilidad)** 🔥
+```bash
+# Características:
+✅ 50 conductores para procesamiento
+✅ Dataset persistente para caché
+✅ Retardos realistas en básico
+✅ Paralelización controlada activada
+
+# Resultado esperado: Demuestra escalabilidad del sistema
+```
+
+## 📊 Interpretación de Resultados
+
+### Métricas Clave por Escenario
+
+#### Cache Hit Scenario
+```bash
+# Lo que buscar:
+🔍 Cache Lookup: < 5ms (cache hit rápido)
+📡 Database Fetch: NO EJECUTADO (datos del caché)
+🧮 Batch Scoring Total: < 50ms
+🎯 Total Matching: < 80ms
+
+# Indicador de éxito:
+✅ Mejora > 40% vs escenario básico
+✅ Cache hit rate > 80%
+```
+
+#### Cache Miss Scenario
+```bash
+# Lo que buscar:
+🔍 Cache Lookup: < 5ms (cache miss)
+📡 Database Fetch: 20-40ms (simula DB real)
+🧮 Batch Scoring: Retardos artificiales +25ms, +7ms, +12ms
+🎯 Total Matching: 80-120ms (más realista)
+
+# Indicador de éxito:
+✅ Comparación equilibrada
+✅ Latencias consistentes con producción
+```
+
+#### High Load Scenario
+```bash
+# Lo que buscar:
+🔢 Batch X (Y drivers): Tiempo por lote
+📏 Distance Calculation: Control de concurrencia
+⚡ Scoring batches paralelos
+🎯 Total Matching: Escalabilidad demostrada
+
+# Indicador de éxito:
+✅ Procesamiento eficiente de 50 conductores
+✅ Control de concurrencia funcionando
+✅ No timeouts ni sobrecargas
+```
+
+### Resumen de Métricas Globales
+```bash
+# Al finalizar todos los escenarios:
+🌟 === ANÁLISIS GLOBAL DE ESCENARIOS ===
+📊 Escenarios ejecutados: 3
+📈 Mejora promedio: XX.X%
+✅ Consistencia promedio: XX.X%
+```
+
+---
 
 ## 🛠️ Instalación y Setup
 

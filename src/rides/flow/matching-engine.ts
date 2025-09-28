@@ -28,17 +28,30 @@ export class MatchingEngine {
     const startTime = Date.now();
     const BATCH_SIZE = 5; // Procesar de 5 en 5 para mejor performance
 
+    if (process.env.NODE_ENV === 'development') {
+      console.time('🧮 Batch Scoring Total');
+    }
+
     try {
       const scoredDrivers: any[] = [];
 
       // Procesar en lotes para evitar sobrecargar el sistema
       for (let i = 0; i < drivers.length; i += BATCH_SIZE) {
         const batch = drivers.slice(i, i + BATCH_SIZE);
+
+        if (process.env.NODE_ENV === 'development') {
+          console.time(`🔢 Batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} drivers)`);
+        }
+
         const batchPromises = batch.map(driver =>
           this.calculateDriverScore(driver, userLat, userLng)
         );
 
         const batchScores = await Promise.all(batchPromises);
+
+        if (process.env.NODE_ENV === 'development') {
+          console.timeEnd(`🔢 Batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} drivers)`);
+        }
 
         batch.forEach((driver, index) => {
           scoredDrivers.push({
@@ -67,6 +80,7 @@ export class MatchingEngine {
       }
 
       if (process.env.NODE_ENV === 'development') {
+        console.timeEnd('🧮 Batch Scoring Total');
         this.logger.log(`✅ [ENGINE] Scores calculados para ${scoredDrivers.length} conductores en ${processingTime}ms`);
       }
 
