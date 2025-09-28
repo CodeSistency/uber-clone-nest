@@ -33,6 +33,76 @@ import { WalletService } from '../wallet/wallet.service';
 // 📊 DATOS DUMMY REALISTAS EXPANDIDOS
 // ============================================================================
 
+interface SummaryTracker {
+  cache: {
+    durationDbMs: number;
+    durationCacheMs: number;
+    driversDb: number;
+    driversCache: number;
+  };
+  matching: {
+    runsAttempted: number;
+    matchesSuccessful: number;
+    matchesFailed: number;
+    bestScore: number;
+    bestDistance: number;
+    totalSearchDurationMs: number;
+  };
+  scoring: {
+    durationOptimizedMs: number;
+    driversProcessedOptimized: number;
+  };
+  comparison: {
+    durationOptimizedMs: number;
+    durationBasicMs: number;
+    bestScoreOptimized: number;
+    bestScoreBasic: number;
+    distanceOptimized: number;
+    distanceBasic: number;
+  };
+  overload: {
+    concurrentRequests: number;
+    durationMs: number;
+    successful: number;
+    failed: number;
+  };
+}
+
+const summaryTracker: SummaryTracker = {
+  cache: {
+    durationDbMs: 0,
+    durationCacheMs: 0,
+    driversDb: 0,
+    driversCache: 0,
+  },
+  matching: {
+    runsAttempted: 0,
+    matchesSuccessful: 0,
+    matchesFailed: 0,
+    bestScore: 0,
+    bestDistance: Number.POSITIVE_INFINITY,
+    totalSearchDurationMs: 0,
+  },
+  scoring: {
+    durationOptimizedMs: 0,
+    driversProcessedOptimized: 0,
+  },
+  comparison: {
+    durationOptimizedMs: 0,
+    durationBasicMs: 0,
+    bestScoreOptimized: 0,
+    bestScoreBasic: 0,
+    distanceOptimized: 0,
+    distanceBasic: 0,
+  },
+  overload: {
+    concurrentRequests: 0,
+    durationMs: 0,
+    successful: 0,
+    failed: 0,
+  },
+};
+
 const DUMMY_DATA = {
   // Ubicaciones de prueba (Centro de Buenos Aires y alrededores)
   testLocations: {
@@ -871,6 +941,9 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
       console.log(`⏱️ Duración primera consulta: ${duration1}ms`);
       console.log('📊 Resultado primera consulta:', result1?.length || 0, 'conductores');
 
+    summaryTracker.cache.durationDbMs = duration1;
+    summaryTracker.cache.driversDb = result1?.length || 0;
+
       // SEGUNDA CONSULTA - CACHE HIT (debe venir de Redis)
       console.log('\n🔄 SEGUNDA CONSULTA - Esperando CACHE HIT...');
       const startTime2 = Date.now();
@@ -885,6 +958,9 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
       const duration2 = Date.now() - startTime2;
       console.log(`⏱️ Duración segunda consulta: ${duration2}ms`);
       console.log('📊 Resultado segunda consulta:', result2?.length || 0, 'conductores');
+
+    summaryTracker.cache.durationCacheMs = duration2;
+    summaryTracker.cache.driversCache = result2?.length || 0;
 
       // COMPARACIÓN DE RENDIMIENTO
       const speedup = ((duration1 - duration2) / duration1 * 100).toFixed(1);
@@ -946,10 +1022,24 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         radiusKm: 5 // 5km radio
       });
 
+      summaryTracker.matching.runsAttempted += 1;
+
       console.log('\n🎉 RESULTADO DEL MATCHING:');
       if (matchingResult && matchingResult.matchedDriver) {
         const driver = matchingResult.matchedDriver.driver;
         const location = matchingResult.matchedDriver.location;
+
+        summaryTracker.matching.matchesSuccessful += 1;
+        summaryTracker.matching.bestScore = Math.max(
+          summaryTracker.matching.bestScore,
+          matchingResult.matchedDriver.matchScore || 0,
+        );
+        summaryTracker.matching.bestDistance =
+          summaryTracker.matching.bestDistance === 0
+            ? location.distance
+            : Math.min(summaryTracker.matching.bestDistance, location.distance || 0);
+        summaryTracker.matching.totalSearchDurationMs +=
+          (matchingResult.searchCriteria.searchDuration || 0) * 1000;
 
         console.log('🏆 CONDUCTOR GANADOR:');
         console.log(`   🏅 ${driver.firstName} ${driver.lastName} (ID: ${driver.driverId})`);
@@ -994,6 +1084,7 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         console.log(`   📍 Ubicación: ${userLocation.lat}, ${userLocation.lng}`);
         console.log(`   🔍 Radio de búsqueda: 5km`);
         console.log(`   💡 Sugerencia: Intentar en horario pico o expandir radio de búsqueda`);
+        summaryTracker.matching.matchesFailed += 1;
       }
 
       expect(matchingResult).toBeDefined();
@@ -1026,6 +1117,9 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
 
       console.log(`⏱️ Duración optimizada: ${durationOptimized}ms`);
       console.log(`📊 Conductores procesados: ${optimizedResult.length}`);
+
+      summaryTracker.scoring.durationOptimizedMs = durationOptimized;
+      summaryTracker.scoring.driversProcessedOptimized = optimizedResult.length;
 
       // Mostrar resultados del scoring
       console.log('\n🏆 RESULTADOS DEL SCORING (ordenados por score):');
@@ -1074,9 +1168,22 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
 
         if (result && result.matchedDriver) {
           console.log(`   ✅ Matching exitoso - Conductor ID: ${result.matchedDriver.driver.driverId}`);
+          summaryTracker.matching.matchesSuccessful += 1;
+          summaryTracker.matching.bestScore = Math.max(
+            summaryTracker.matching.bestScore,
+            result.matchedDriver.matchScore || 0,
+          );
+          summaryTracker.matching.bestDistance = Math.min(
+            summaryTracker.matching.bestDistance,
+            result.matchedDriver.location.distance || Number.POSITIVE_INFINITY,
+          );
+          summaryTracker.matching.totalSearchDurationMs += (result.searchCriteria.searchDuration || 0) * 1000;
         } else {
           console.log(`   ⚠️ Sin matching disponible`);
+          summaryTracker.matching.matchesFailed += 1;
         }
+
+        summaryTracker.matching.runsAttempted += 1;
       }
 
       // Verificar métricas almacenadas
@@ -1156,6 +1263,17 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         console.log(`   ⏱️ Tiempo total: ${optimizedTime}ms`);
         console.log(`   📍 Distancia: ${optimizedResult.matchedDriver.location.distance}km`);
         console.log(`   👥 Score del match: ${optimizedResult.matchedDriver.matchScore}`);
+        summaryTracker.comparison.bestScoreOptimized = optimizedResult.matchedDriver.matchScore || 0;
+        summaryTracker.comparison.distanceOptimized = optimizedResult.matchedDriver.location.distance || 0;
+        summaryTracker.matching.bestScore = Math.max(
+          summaryTracker.matching.bestScore,
+          optimizedResult.matchedDriver.matchScore || 0,
+        );
+        summaryTracker.matching.bestDistance = Math.min(
+          summaryTracker.matching.bestDistance,
+          optimizedResult.matchedDriver.location.distance || Number.POSITIVE_INFINITY,
+        );
+        summaryTracker.matching.matchesSuccessful += 1;
       }
 
       // ========================================================================
@@ -1176,6 +1294,9 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
 
       const basicTime = Date.now() - basicStart;
 
+      summaryTracker.comparison.durationOptimizedMs = optimizedTime;
+      summaryTracker.comparison.durationBasicMs = basicTime;
+
       console.log('\n📊 RESULTADO BÁSICO:');
       if (basicDrivers.length > 0) {
         const basicWinner = basicDrivers[0];
@@ -1183,6 +1304,8 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         console.log(`   ⏱️ Tiempo total: ${basicTime}ms`);
         console.log(`   📍 Distancia: ${basicWinner.distance}km`);
         console.log(`   👥 Candidatos evaluados: ${basicDrivers.length}`);
+        summaryTracker.comparison.bestScoreBasic = basicWinner.score || 0;
+        summaryTracker.comparison.distanceBasic = basicWinner.distance || 0;
       }
 
       // ========================================================================
@@ -1313,6 +1436,7 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
 
       if (!result || !result.matchedDriver) {
         console.log('✅ Comportamiento correcto: Sistema maneja gracefully el caso edge');
+        summaryTracker.matching.matchesFailed += 1;
       }
 
       expect(result).toBeDefined();
@@ -1345,6 +1469,11 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
       console.log(`   ✅ Requests exitosos: ${results.filter(r => r && r.matchedDriver).length}/${concurrentRequests}`);
       console.log(`   ❌ Requests fallidos: ${results.filter(r => !r || !r.matchedDriver).length}/${concurrentRequests}`);
 
+      summaryTracker.overload.concurrentRequests = concurrentRequests;
+      summaryTracker.overload.durationMs = totalTime;
+      summaryTracker.overload.successful = results.filter(r => r && r.matchedDriver).length;
+      summaryTracker.overload.failed = results.filter(r => !r || !r.matchedDriver).length;
+
       console.log('\n🔍 ANÁLISIS DE CACHE:');
       console.log('   ⚡ Sistema debe usar caché para evitar sobrecarga de BD');
       console.log('   📊 Requests simultáneas no deben degradar performance significativamente');
@@ -1352,6 +1481,78 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
       expect(results.length).toBe(concurrentRequests);
     });
   });
+});
+
+afterAll(() => {
+  console.log('\n======================================================================');
+  console.log('🚦 RESUMEN GLOBAL DEL SISTEMA DE MATCHING');
+  console.log('======================================================================');
+
+  // --- Cache Intelligence ---
+  const { cache, matching, scoring, comparison, overload } = summaryTracker;
+  const safeDbMs = Math.max(cache.durationDbMs, 1);
+  const safeCacheMs = Math.max(cache.durationCacheMs, 1);
+  const cacheSpeedup = (((safeDbMs - safeCacheMs) / safeDbMs) * 100).toFixed(1);
+
+  console.log('\n⚡ Cache Inteligente');
+  console.log(`   • Query BD: ${safeDbMs} ms (${cache.driversDb} conductores)`);
+  console.log(`   • Query Redis: ${safeCacheMs} ms (${cache.driversCache} conductores)`);
+  console.log(`   • Aceleración: ${cacheSpeedup}% más rápido`);
+
+  // --- Matching ---
+  const totalRuns = matching.runsAttempted;
+  const successes = matching.matchesSuccessful;
+  const failures = matching.matchesFailed;
+  const successRate = totalRuns
+    ? ((successes / totalRuns) * 100).toFixed(1)
+    : '0.0';
+  const avgSearchDuration = successes
+    ? (matching.totalSearchDurationMs / successes).toFixed(0)
+    : '0';
+  const bestDistance = Number.isFinite(matching.bestDistance)
+    ? matching.bestDistance.toFixed(2)
+    : 'N/A';
+
+  console.log('\n🎯 Matching');
+  console.log(`   • Intentos totales: ${totalRuns}`);
+  console.log(`   • Exitosos/Fallidos: ${successes}/${failures} (éxito ${successRate}%)`);
+  console.log(`   • Mejor score observado: ${matching.bestScore.toFixed(2)}`);
+  console.log(`   • Distancia mínima ganadora: ${bestDistance} km`);
+  console.log(`   • Latencia media por búsqueda: ${avgSearchDuration} ms`);
+
+  // --- Scoring ---
+  const scoringDuration = Math.max(scoring.durationOptimizedMs, 1);
+  const throughput = ((scoring.driversProcessedOptimized * 1000) / scoringDuration).toFixed(1);
+
+  console.log('\n📈 Scoring por Lotes');
+  console.log(`   • Conductores procesados (lote): ${scoring.driversProcessedOptimized}`);
+  console.log(`   • Tiempo total: ${scoringDuration} ms`);
+  console.log(`   • Throughput: ${throughput} conductores/segundo`);
+
+  // --- Comparison ---
+  const compOpt = Math.max(comparison.durationOptimizedMs, 1);
+  const compBasic = Math.max(comparison.durationBasicMs, compOpt);
+  const compImprovement = (((compBasic - compOpt) / compBasic) * 100).toFixed(1);
+  const compMultiplier = (compBasic / compOpt).toFixed(1);
+
+  console.log('\n⚖️ Optimizado vs Básico');
+  console.log(`   • Tiempo Optimizado: ${compOpt} ms`);
+  console.log(`   • Tiempo Básico: ${compBasic} ms`);
+  console.log(`   • Mejora: ${compImprovement}% (${compMultiplier}x más rápido)`);
+  console.log(`   • Score ganador (OPT/BAS): ${comparison.bestScoreOptimized.toFixed(2)} / ${comparison.bestScoreBasic.toFixed(2)}`);
+  console.log(`   • Distancia ganador (OPT/BAS): ${comparison.distanceOptimized.toFixed(2)} km / ${comparison.distanceBasic.toFixed(2)} km`);
+
+  // --- Overload ---
+  const overloadDuration = Math.max(overload.durationMs, 1);
+  const overloadRps = ((overload.concurrentRequests * 1000) / overloadDuration).toFixed(1);
+
+  console.log('\n⚡ Sobrecarga (stress test)');
+  console.log(`   • Requests simultáneos: ${overload.concurrentRequests}`);
+  console.log(`   • Tiempo total: ${overloadDuration} ms`);
+  console.log(`   • Requests/segundo: ${overloadRps}`);
+  console.log(`   • Éxitos/Fallos: ${overload.successful}/${overload.failed}`);
+
+  console.log('\n======================================================================\n');
 });
 
 // ============================================================================
