@@ -998,8 +998,8 @@ export class RidesFlowService {
             if (driverLocation) {
               const distance = this.calculateDistance(
                 lat, lng,
-                driverLocation.latitude,
-                driverLocation.longitude
+                driverLocation.location.lat,
+                driverLocation.location.lng
               );
               return { ...driver, distance, currentLocation: driverLocation };
             } else {
