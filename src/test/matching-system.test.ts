@@ -1682,6 +1682,17 @@ afterAll(() => {
   console.log(`   • Requests/segundo: ${overloadRps}`);
   console.log(`   • Éxitos/Fallos: ${overload.successful}/${overload.failed}`);
 
+  console.log('\n🧾 Resumen Ejecutivo');
+  console.log(
+    `   • Matching: ${successes}/${totalRuns} OK | Mejor score ${bestScoreText} | Dist ${bestDistanceText}`,
+  );
+  console.log(
+    `   • Performance: ${formatMs(durationOptimizedValue)} (OPT) vs ${formatMs(durationBasicValue)} (BÁS) | Mejora ${improvementLine}`,
+  );
+  console.log(
+    `   • Cache Redis: ${formatMs(safeDbMs)} ➜ ${formatMs(safeCacheMs)} (${cacheSpeedup}% más rápido)`,
+  );
+
   console.log('\n======================================================================\n');
 });
 
