@@ -13,6 +13,7 @@ import { ParcelsModule } from '../../parcels/parcels.module';
 import { RedisModule } from '../../redis/redis.module';
 import { RidesFlowService } from './rides-flow.service';
 import { DriverReportsService } from './driver-reports.service';
+import { MatchingMetricsService } from './matching-metrics.service';
 import { TransportClientController } from './transport.client.controller';
 import { TransportDriverController } from './transport.driver.controller';
 import { DeliveryClientController } from './delivery.client.controller';
@@ -50,6 +51,6 @@ import { DriverAvailabilityController } from './driver.availability.controller';
     ParcelDriverController,
     DriverAvailabilityController,
   ],
-  providers: [RidesFlowService, DriverReportsService, IdempotencyService],
+  providers: [RidesFlowService, DriverReportsService, MatchingMetricsService, IdempotencyService],
 })
 export class RidesFlowModule {}
