@@ -1,23 +1,13 @@
-import { execSync } from 'child_process';
+/**
+ * Limpieza global para tests de matching
+ * Se ejecuta después de todos los tests
+ */
 
-// Global teardown for integration tests
-export default async function globalTeardown(): Promise<void> {
-  try {
-    console.log('🧹 Cleaning up integration test environment...');
+export default async function globalTeardown() {
+  console.log('🧹 Ejecutando limpieza global...');
 
-    // Reset test database
-    console.log('🗑️ Resetting test database...');
-    execSync('npx prisma migrate reset --force --skip-generate', {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
-      },
-    });
+  // Aquí se pueden agregar limpiezas adicionales si son necesarias
+  // Por ejemplo: limpiar caché, cerrar conexiones, etc.
 
-    console.log('✅ Integration test cleanup complete!');
-  } catch (error) {
-    console.error('❌ Failed to cleanup integration test environment:', error);
-    // Don't throw error in teardown to avoid masking test failures
-  }
+  console.log('✅ Limpieza global completada');
 }

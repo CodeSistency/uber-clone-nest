@@ -1,40 +1,17 @@
-import { execSync } from 'child_process';
+/**
+ * Configuración global para tests de matching
+ * Se ejecuta antes de todos los tests
+ */
 
-// Global setup for integration tests
-export default async function globalSetup(): Promise<void> {
-  try {
-    console.log('🚀 Setting up integration test environment...');
+export default async function globalSetup() {
+  console.log('🚀 Iniciando setup global para tests de matching...');
 
-    // Create test database if it doesn't exist
-    console.log('📦 Ensuring test database exists...');
+  // Configurar variables de entorno para tests
+  process.env.NODE_ENV = 'test';
+  process.env.MATCHING_DEBUG = 'true';
+  process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test_db';
+  process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
-    // Run Prisma migrations for test database
-    console.log('🗄️ Running Prisma migrations...');
-    execSync('npx prisma migrate deploy', {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
-      },
-    });
-
-    // Generate Prisma client
-    console.log('🔧 Generating Prisma client...');
-    execSync('npx prisma generate', { stdio: 'inherit' });
-
-    // Seed test data
-    console.log('🌱 Seeding test data...');
-    execSync('npm run db:seed', {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
-      },
-    });
-
-    console.log('✅ Integration test setup complete!');
-  } catch (error) {
-    console.error('❌ Failed to setup integration test environment:', error);
-    throw error;
-  }
+  console.log('✅ Variables de entorno configuradas');
+  console.log('✅ Setup global completado');
 }
