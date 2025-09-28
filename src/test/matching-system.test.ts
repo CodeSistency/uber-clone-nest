@@ -14,6 +14,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
 import { RidesFlowService } from '../rides/flow/rides-flow.service';
 import { MatchingEngine } from '../rides/flow/matching-engine';
@@ -674,6 +675,13 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
         // Real services
         PrismaService,
         RedisService,
+        { provide: ConfigService, useValue: { get: jest.fn((key: string) => {
+              if (key === 'REDIS_URL') return process.env.REDIS_URL || 'redis://localhost:6379';
+              if (key === 'NODE_ENV') return process.env.NODE_ENV || 'test';
+              return undefined;
+            })
+          }
+        },
         Logger,
         // Mocks/dummies para dependencias no críticas al matching directo
         { provide: NotificationsService, useValue: { sendNotification: jest.fn(), notifyNearbyDrivers: jest.fn(), notifyRideStatusUpdate: jest.fn() } },
