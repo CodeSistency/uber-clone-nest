@@ -12,7 +12,10 @@ module.exports = {
   coverageDirectory: '../coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   testTimeout: 60000,
-  setupFilesAfterEnv: ['<rootDir>/../test/setup/integration-setup.ts'],
+  setupFilesAfterEnv: [
+    '<rootDir>/../test/setup/integration-setup.ts',
+    '<rootDir>/../test/setup/test-logger.ts',
+  ],
   globalSetup: '<rootDir>/../test/setup/global-setup.ts',
   globalTeardown: '<rootDir>/../test/setup/global-teardown.ts',
   verbose: true,
@@ -22,6 +25,6 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
-  // Configuración de logging para tests
-  setupFiles: ['<rootDir>/../test/setup/test-logger.ts'],
+  // No usar setupFiles porque corre antes de que Jest inyecte beforeAll/afterAll
+  setupFiles: [],
 };
