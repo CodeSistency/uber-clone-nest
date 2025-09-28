@@ -654,6 +654,7 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
   let matchingEngine: MatchingEngine;
   let matchingMetrics: MatchingMetricsService;
   let logger: Logger;
+  let cacheCallCount = 0;
 
   // Configurar logging detallado
   const originalLog = console.log;
@@ -728,10 +729,58 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
     jest.spyOn(redisService, 'incrby').mockResolvedValue(1 as any);
     // @ts-ignore
     jest.spyOn(redisService, 'del').mockResolvedValue(0 as any);
-    // Lecturas de salud y métricas básicas
+    // 4) Mock de consultas específicas de Prisma usadas por el servicio
+    // @ts-ignore
+    jest.spyOn(prismaService.tierVehicleType, 'findMany').mockResolvedValue([
+      { tierId: 1, vehicleTypeId: 1, isActive: true },
+      { tierId: 1, vehicleTypeId: 2, isActive: true },
+      { tierId: 1, vehicleTypeId: 3, isActive: true }
+    ] as any);
+
+    // @ts-ignore
+    jest.spyOn(prismaService.driver, 'findMany').mockResolvedValue(DUMMY_DATA.drivers as any);
+
+    // @ts-ignore
+    jest.spyOn(prismaService.driver, 'findUnique').mockResolvedValue(DUMMY_DATA.drivers[0] as any);
+
+    // @ts-ignore
+    jest.spyOn(prismaService.driver, 'findFirst').mockResolvedValue(DUMMY_DATA.drivers[0] as any);
+
+    // @ts-ignore
+    jest.spyOn(prismaService.rideTier, 'findUnique').mockResolvedValue({
+      id: 1,
+      name: 'UberX',
+      basePrice: 5.0,
+      pricePerKm: 1.5,
+      pricePerMinute: 0.3,
+      minimumFare: 8.0,
+      isActive: true
+    } as any);
+
+    // @ts-ignore
+    jest.spyOn(prismaService.vehicleType, 'findUnique').mockResolvedValue({
+      id: 1,
+      name: 'Sedan',
+      baseSeats: 4,
+      maxSeats: 4,
+      isActive: true
+    } as any);
+
+    // 5) Redis: Lecturas de salud y métricas básicas con simulación de caché
     // @ts-ignore
     jest.spyOn(redisService, 'get').mockImplementation(async (key: string) => {
       if (key === 'health_check') return 'ok';
+      if (key.startsWith('drivers:available:')) {
+        cacheCallCount++;
+        if (cacheCallCount === 1) {
+          // Primera llamada: cache miss, simular delay de BD
+          await new Promise(resolve => setTimeout(resolve, 15)); // 15ms de delay
+          return null;
+        } else {
+          // Segunda llamada: cache hit, devolver datos
+          return JSON.stringify(DUMMY_DATA.drivers.slice(0, 5));
+        }
+      }
       return null;
     });
   });
@@ -739,6 +788,8 @@ describe('🚗 Sistema de Matching Optimizado - Test Completo', () => {
   beforeEach(() => {
     // Limpiar caché Redis antes de cada test
     jest.clearAllMocks();
+    // Reset cache counter
+    cacheCallCount = 0;
 
     // Configurar logging personalizado para el test
     console.log = (...args) => {
