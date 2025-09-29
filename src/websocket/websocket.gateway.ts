@@ -9,7 +9,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { RedisAdapter } from '@socket.io/redis-adapter';
+import { createAdapter } from '@socket.io/redis-adapter';
 import { Logger } from '@nestjs/common';
 import { createClient } from 'redis';
 import { RealTimeService } from './real-time.service';
@@ -61,14 +61,14 @@ export class WebSocketGatewayClass
     this.logger.log(`- Password: ${redisConfig?.password ? 'Set' : 'Not set'}`);
     this.logger.log(`- DB: ${redisConfig?.db || 'Not set'}`);
 
-    // Log Socket.IO version and RedisAdapter availability
+    // Log Socket.IO version and createAdapter availability
     this.logger.log('🔍 Socket.IO Debug:');
     this.logger.log(`- Server version: ${this.getSocketIOVersion()}`);
-    this.logger.log(`- RedisAdapter available: ${!!RedisAdapter}`);
-    if (RedisAdapter) {
-      this.logger.log(`- RedisAdapter type: ${typeof RedisAdapter}`);
+    this.logger.log(`- createAdapter available: ${!!createAdapter}`);
+    if (createAdapter) {
+      this.logger.log(`- createAdapter type: ${typeof createAdapter}`);
       this.logger.log(
-        `- RedisAdapter constructor: ${RedisAdapter.constructor.name}`,
+        `- createAdapter function: ${createAdapter.name}`,
       );
     }
 
@@ -131,102 +131,33 @@ export class WebSocketGatewayClass
           throw connectError;
         }
 
-        // Set Redis adapter for the server
+        // Crear Redis adapter usando createAdapter
         try {
-          this.logger.log('🔄 Creating Redis adapter...');
+          this.logger.log('🔄 Creating Redis adapter using createAdapter...');
 
-          // Check if RedisAdapter is available and properly imported
-          if (!RedisAdapter) {
-            throw new Error(
-              'RedisAdapter is not available - check @socket.io/redis-adapter installation',
-            );
-          }
+          // createAdapter espera (pubClient, subClient)
+          const adapter = createAdapter(pubClient, subClient);
 
-          // Try different adapter creation approaches
-          let redisAdapter: any;
+          // Aplicar adapter al servidor principal (desde el namespace)
+          (server as any).server.adapter(adapter);
 
-          try {
-            // Approach 1: Standard constructor with server namespace
-            // RedisAdapter expects (nsp, pubClient, subClient, opts?)
-            redisAdapter = new RedisAdapter(
-              server.sockets,
-              pubClient,
-              subClient,
-            );
-            this.logger.log(
-              '✅ Redis adapter created with standard constructor',
-            );
-          } catch (constructorError: any) {
-            this.logger.warn(
-              '⚠️ Standard constructor failed, trying alternative approach:',
-              constructorError.message,
-            );
-
-            try {
-              // Approach 2: Type assertion with server namespace
-              redisAdapter = new (RedisAdapter as any)(
-                server.sockets,
-                pubClient,
-                subClient,
-              );
-              this.logger.log('✅ Redis adapter created with type assertion');
-            } catch (assertionError: any) {
-              this.logger.error('❌ Both adapter creation approaches failed');
-              this.logger.error(
-                '❌ Constructor error:',
-                constructorError.message,
-              );
-              this.logger.error('❌ Assertion error:', assertionError.message);
-              throw assertionError;
-            }
-          }
-
-          // Verify adapter before applying
-          if (!redisAdapter) {
-            throw new Error('Redis adapter is null or undefined');
-          }
-
-          // Check if adapter has required properties
-          if (typeof redisAdapter !== 'object') {
-            throw new Error('Redis adapter is not an object');
-          }
-
-          this.logger.log('🔄 Applying Redis adapter to server...');
-
-          // Apply adapter to server
-          server.adapter(redisAdapter);
-
-          this.logger.log(
-            '✅ Redis adapter configured successfully for WebSocket horizontal scaling',
-          );
-          this.logger.log(
-            '🚀 Multiple WebSocket server instances can now share connections and rooms',
-          );
+          this.logger.log('✅ Redis adapter configured successfully for WebSocket horizontal scaling');
+          this.logger.log('🚀 Multiple WebSocket server instances can now share connections and rooms');
         } catch (adapterError: any) {
-          this.logger.error(
-            '❌ Failed to configure Redis adapter:',
-            adapterError.message,
-          );
+          this.logger.error('❌ Failed to configure Redis adapter:', adapterError.message);
           this.logger.error('❌ Adapter error details:', adapterError);
           this.logger.error('❌ Adapter error stack:', adapterError.stack);
 
-          // Fallback to in-memory adapter
-          this.logger.warn(
-            '⚠️ Falling back to in-memory adapter for WebSocket',
-          );
-          this.logger.warn(
-            '💡 To enable horizontal scaling, check Redis connection and Socket.IO version compatibility',
-          );
+          // Fallback a adapter en memoria (Socket.IO ya usa por defecto el in-memory adapter)
+          this.logger.warn('⚠️ Falling back to in-memory adapter for WebSocket');
+          this.logger.warn('💡 To enable horizontal scaling, check Redis connection and Socket.IO version compatibility');
 
-          // Try to clean up Redis connections
+          // Intentar cerrar conexiones redis
           try {
-            pubClient.quit().catch(() => {});
-            subClient.quit().catch(() => {});
+            await pubClient.disconnect().catch(() => {});
+            await subClient.disconnect().catch(() => {});
           } catch (cleanupError) {
-            this.logger.warn(
-              '⚠️ Failed to clean up Redis connections:',
-              cleanupError.message,
-            );
+            this.logger.warn('⚠️ Failed to clean up Redis connections:', cleanupError?.message || cleanupError);
           }
         }
       } else {
