@@ -27,7 +27,9 @@ export class AdminRefreshTokenDto {
     description: 'Token de refresco del administrador',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  refresh_token: string;
+  @IsString({ message: 'El refresh token debe ser una cadena de texto' })
+  @IsNotEmpty({ message: 'El refresh token es requerido' })
+  refreshToken: string;
 }
 
 export class AdminLoginResponseDto {

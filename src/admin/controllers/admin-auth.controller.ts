@@ -59,6 +59,6 @@ export class AdminAuthController {
   async refreshToken(
     @Body() refreshTokenDto: AdminRefreshTokenDto,
   ): Promise<AdminLoginResponseDto> {
-    return this.adminAuthService.refreshToken(refreshTokenDto.refresh_token);
+    return this.adminAuthService.refreshToken(refreshTokenDto.refreshToken);
   }
 }
