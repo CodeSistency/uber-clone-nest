@@ -32,6 +32,7 @@ import {
   AdjustWalletDto,
   AddEmergencyContactDto,
   BulkUpdateStatusDto,
+  DeleteUserDto,
   UserListResponseDto,
   UserDetailsDto,
 } from '../dtos/user-management.dto';
@@ -310,6 +311,48 @@ export class UserManagementController {
       bulkDto.isActive,
       adminId,
       bulkDto.reason,
+    );
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.USERS_DELETE)
+  @ApiOperation({
+    summary: 'Eliminar un usuario',
+    description: 'Elimina permanentemente un usuario y todos sus datos relacionados del sistema',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID único del usuario a eliminar',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuario eliminado exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Usuario no encontrado',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permisos insuficientes - se requiere permiso users:delete',
+  })
+  async deleteUser(
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() deleteDto: DeleteUserDto,
+    // @Req() req: Request
+  ): Promise<void> {
+    const adminId = 1; // Should come from JWT
+
+    return this.userManagementService.deleteUser(
+      userId,
+      adminId,
+      deleteDto.reason,
     );
   }
 }

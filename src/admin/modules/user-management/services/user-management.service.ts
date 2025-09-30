@@ -488,6 +488,61 @@ export class UserManagementService {
     return result;
   }
 
+  async deleteUser(
+    userId: number,
+    adminId: number,
+    reason?: string,
+  ): Promise<void> {
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Get related data counts for logging
+    const relatedData = await this.getUserRelatedDataCounts(userId);
+
+    // Delete user - this will cascade delete related records based on Prisma schema
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'user_delete',
+      `user_${userId}`,
+      `Deleted user ${userId} (${user.email}). Reason: ${reason || 'No reason provided'}`,
+      {
+        userId,
+        userEmail: user.email,
+        userName: user.name,
+        wasActive: user.isActive,
+        relatedData,
+      },
+      {
+        userId,
+        userEmail: user.email,
+        userName: user.name,
+        reason,
+        relatedData,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} deleted user ${userId} (${user.email})`,
+    );
+  }
+
   private async getUserRideStats(userId: number) {
     const rides = await this.prisma.ride.findMany({
       where: { userId },
@@ -518,6 +573,31 @@ export class UserManagementService {
       ratings.reduce((sum, r) => sum + r.ratingValue, 0) / ratings.length;
 
     return { averageRating: Math.round(averageRating * 10) / 10 };
+  }
+
+  private async getUserRelatedDataCounts(userId: number) {
+    const [rideCount, walletTransactionsCount, emergencyContactsCount, ratingsCount] = await Promise.all([
+      this.prisma.ride.count({ where: { userId } }),
+      this.prisma.walletTransaction.count({
+        where: { wallet: { userId } }
+      }),
+      this.prisma.emergencyContact.count({ where: { userId } }),
+      this.prisma.rating.count({
+        where: {
+          OR: [
+            { ratedUserId: userId },
+            { ratedByUserId: userId },
+          ],
+        },
+      }),
+    ]);
+
+    return {
+      rides: rideCount,
+      walletTransactions: walletTransactionsCount,
+      emergencyContacts: emergencyContactsCount,
+      ratings: ratingsCount,
+    };
   }
 
   private async logAdminAction(

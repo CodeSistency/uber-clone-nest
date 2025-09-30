@@ -211,6 +211,16 @@ export class BulkUpdateStatusDto {
   reason?: string;
 }
 
+export class DeleteUserDto {
+  @ApiPropertyOptional({
+    description: 'Reason for user deletion',
+    example: 'Account violation - spam and abuse',
+  })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
 // Response DTOs
 export class UserListItemDto {
   @ApiPropertyOptional({
