@@ -33,9 +33,12 @@ import {
   AddEmergencyContactDto,
   BulkUpdateStatusDto,
   DeleteUserDto,
+  RestoreUserDto,
   UserListResponseDto,
   UserDetailsDto,
 } from '../dtos/user-management.dto';
+
+import { UserDetails } from '../services/user-management.service';
 
 @ApiTags('Admin User Management')
 @Controller('admin/users')
@@ -316,23 +319,24 @@ export class UserManagementController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @RequirePermissions(AdminPermission.USERS_DELETE)
+  @RequirePermissions(AdminPermission.USERS_SUSPEND)
   @ApiOperation({
-    summary: 'Eliminar un usuario',
-    description: 'Elimina permanentemente un usuario y todos sus datos relacionados del sistema',
+    summary: 'Soft Delete de un usuario',
+    description: 'Desactiva un usuario (soft delete) manteniendo todos sus datos. El usuario puede ser reactivado posteriormente.',
   })
   @ApiParam({
     name: 'id',
-    description: 'ID único del usuario a eliminar',
+    description: 'ID único del usuario a desactivar',
     example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'Usuario eliminado exitosamente',
+    description: 'Usuario desactivado exitosamente',
+    type: UserDetailsDto,
   })
   @ApiResponse({
     status: 404,
-    description: 'Usuario no encontrado',
+    description: 'Usuario no encontrado o ya está desactivado',
   })
   @ApiResponse({
     status: 401,
@@ -340,19 +344,62 @@ export class UserManagementController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Permisos insuficientes - se requiere permiso users:delete',
+    description: 'Permisos insuficientes - se requiere permiso users:suspend',
   })
-  async deleteUser(
+  async softDeleteUser(
     @Param('id', ParseIntPipe) userId: number,
     @Body() deleteDto: DeleteUserDto,
     // @Req() req: Request
-  ): Promise<void> {
+  ): Promise<UserDetails> {
     const adminId = 1; // Should come from JWT
 
-    return this.userManagementService.deleteUser(
+    return this.userManagementService.softDeleteUser(
       userId,
       adminId,
       deleteDto.reason,
+    );
+  }
+
+  @Put(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.USERS_SUSPEND)
+  @ApiOperation({
+    summary: 'Restaurar usuario soft deleted',
+    description: 'Restaura un usuario que fue soft deleted, limpiando los campos de eliminación y reactivando la cuenta',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID único del usuario a restaurar',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuario restaurado exitosamente',
+    type: UserDetailsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Usuario no encontrado o no está soft deleted',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Permisos insuficientes - se requiere permiso users:suspend',
+  })
+  async restoreUser(
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() restoreDto: RestoreUserDto,
+    // @Req() req: Request
+  ): Promise<UserDetails> {
+    const adminId = 1; // Should come from JWT
+
+    return this.userManagementService.restoreUser(
+      userId,
+      adminId,
+      restoreDto.reason,
     );
   }
 }

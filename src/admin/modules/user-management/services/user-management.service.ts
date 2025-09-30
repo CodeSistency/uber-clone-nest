@@ -39,6 +39,8 @@ export interface UserDetails {
   timezone?: string;
   currency?: string;
   isActive: boolean;
+  deletedAt?: Date; // Soft delete timestamp
+  deletedReason?: string; // Reason for soft delete
   emailVerified: boolean;
   phoneVerified: boolean;
   identityVerified: boolean;
@@ -61,6 +63,12 @@ export interface UserDetails {
   recentRides: any[];
 }
 
+export interface SoftDeleteResult extends UserDetails {
+  softDeletedAt: Date;
+  softDeleteReason: string;
+  softDeletedBy: number;
+}
+
 @Injectable()
 export class UserManagementService {
   private readonly logger = new Logger(UserManagementService.name);
@@ -75,7 +83,9 @@ export class UserManagementService {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = {};
+    const where: any = {
+      deletedAt: null, // Exclude soft deleted users
+    };
 
     if (filters.status) {
       if (filters.status.includes('active')) {
@@ -242,6 +252,8 @@ export class UserManagementService {
       timezone: user.timezone || 'UTC',
       currency: user.currency || 'USD',
       isActive: user.isActive,
+      deletedAt: user.deletedAt || undefined,
+      deletedReason: user.deletedReason || undefined,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
       identityVerified: user.identityVerified,
@@ -488,11 +500,11 @@ export class UserManagementService {
     return result;
   }
 
-  async deleteUser(
+  async softDeleteUser(
     userId: number,
     adminId: number,
-    reason?: string,
-  ): Promise<void> {
+    reason: string,
+  ): Promise<UserDetails> {
     // Verify user exists
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -501,6 +513,7 @@ export class UserManagementService {
         email: true,
         name: true,
         isActive: true,
+        deletedAt: true,
       },
     });
 
@@ -508,20 +521,31 @@ export class UserManagementService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
+    if (user.deletedAt) {
+      throw new NotFoundException(`User with ID ${userId} is already soft deleted`);
+    }
+
     // Get related data counts for logging
     const relatedData = await this.getUserRelatedDataCounts(userId);
 
-    // Delete user - this will cascade delete related records based on Prisma schema
-    await this.prisma.user.delete({
+    // Soft delete: set deletedAt timestamp, deletedReason and isActive to false
+    const softDeletedAt = new Date();
+    await this.prisma.user.update({
       where: { id: userId },
+      data: {
+        deletedAt: softDeletedAt,
+        deletedReason: reason,
+        isActive: false,
+        updatedAt: softDeletedAt,
+      },
     });
 
     // Log the action
     await this.logAdminAction(
       adminId,
-      'user_delete',
+      'user_soft_delete',
       `user_${userId}`,
-      `Deleted user ${userId} (${user.email}). Reason: ${reason || 'No reason provided'}`,
+      `Soft deleted user ${userId} (${user.email}). Reason saved to database: ${reason}`,
       {
         userId,
         userEmail: user.email,
@@ -534,13 +558,90 @@ export class UserManagementService {
         userEmail: user.email,
         userName: user.name,
         reason,
+        softDeletedAt,
         relatedData,
       },
     );
 
     this.logger.log(
-      `Admin ${adminId} deleted user ${userId} (${user.email})`,
+      `Admin ${adminId} soft deleted user ${userId} (${user.email}) with reason: ${reason}`,
     );
+
+    // Return updated user details with new status
+    return this.getUserDetails(userId);
+  }
+
+  async restoreUser(
+    userId: number,
+    adminId: number,
+    reason?: string,
+  ): Promise<UserDetails> {
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        deletedAt: true,
+        deletedReason: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    if (!user.deletedAt) {
+      throw new NotFoundException(`User with ID ${userId} is not soft deleted`);
+    }
+
+    // Get related data counts for logging
+    const relatedData = await this.getUserRelatedDataCounts(userId);
+
+    // Restore user: clear deletedAt, deletedReason and set isActive to true
+    const restoredAt = new Date();
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletedAt: null,
+        deletedReason: null,
+        isActive: true,
+        updatedAt: restoredAt,
+      },
+    });
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      'user_restore',
+      `user_${userId}`,
+      `Restored user ${userId} (${user.email}). Previous delete reason: ${user.deletedReason || 'No reason provided'}. Restore reason: ${reason || 'No reason provided'}`,
+      {
+        userId,
+        userEmail: user.email,
+        userName: user.name,
+        wasSoftDeleted: true,
+        previousDeleteReason: user.deletedReason,
+        relatedData,
+      },
+      {
+        userId,
+        userEmail: user.email,
+        userName: user.name,
+        reason,
+        restoredAt,
+        relatedData,
+      },
+    );
+
+    this.logger.log(
+      `Admin ${adminId} restored user ${userId} (${user.email})`,
+    );
+
+    // Return updated user details with restored status
+    return this.getUserDetails(userId);
   }
 
   private async getUserRideStats(userId: number) {

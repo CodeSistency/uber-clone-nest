@@ -130,6 +130,8 @@ model User {
   password  String?   @db.VarChar(255) // Hashed password for authentication
   refreshToken String? @db.VarChar(255) // Hashed refresh token
   isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at") // Soft delete timestamp
+  deletedReason String? @map("deleted_reason") // Reason for soft delete
   lastLogin DateTime? @map("last_login")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
