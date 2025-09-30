@@ -53,11 +53,51 @@ export interface DriverDetails {
     state?: string;
     postalCode?: string;
   };
+
+  // Driver documents (DriverDocument[])
   documents: any[];
+
+  // Vehicles with their documents and history
   vehicles: any[];
+
+  // Current work zone
   currentWorkZone?: any;
+
+  // Work zone assignments
+  workZoneAssignments: any[];
+
+  // Payment methods
   paymentMethods: any[];
+
+  // Driver payments/earnings
+  driverPayments: any[];
+
+  // Recent rides with full details
   recentRides: any[];
+
+  // Delivery orders if driver does deliveries
+  recentDeliveryOrders: any[];
+
+  // Errands and parcels if applicable
+  recentErrands: any[];
+  recentParcels: any[];
+
+  // Driver reports (issues during rides)
+  driverReports: any[];
+
+  // Location history
+  recentLocationHistory: any[];
+
+  // Vehicle change history
+  vehicleHistory: any[];
+
+  // Driver verification history
+  verificationHistory: any[];
+
+  // Emergency contacts (if applicable)
+  emergencyContacts?: any[];
+
+  // Performance stats
   performanceStats: {
     todayRides: number;
     weekRides: number;
@@ -244,25 +284,61 @@ export class DriverManagementService {
     const driver = await this.prisma.driver.findUnique({
       where: { id: driverId },
       include: {
+        // Work zone assignments
         workZoneAssignments: {
-          where: { status: 'active' },
           include: { zone: true },
+          orderBy: { assignedAt: 'desc' },
         },
+
+        // Driver documents
+        documents: {
+          orderBy: { uploadedAt: 'desc' },
+        },
+
+        // Vehicles with full details
         vehicles: {
-          where: { status: 'active' },
           include: {
             vehicleType: true,
             vehicleDocuments: {
-              where: { verificationStatus: 'verified' },
+              orderBy: { uploadedAt: 'desc' },
+            },
+            driverReports: {
+              orderBy: { reportedAt: 'desc' },
+              take: 5,
+            },
+            rides: {
+              where: { status: 'completed' },
+              orderBy: { createdAt: 'desc' },
+              take: 5,
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
             },
           },
           orderBy: {
             isDefault: 'desc', // Default vehicle first
           },
         },
+
+        // Payment methods
         driverPaymentMethods: {
           where: { isActive: true },
+          orderBy: { createdAt: 'desc' },
         },
+
+        // Driver payments/earnings
+        driverPayments: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+
+        // Rides with full details
         rides: {
           orderBy: { createdAt: 'desc' },
           take: 10,
@@ -272,6 +348,45 @@ export class DriverManagementService {
                 id: true,
                 name: true,
                 email: true,
+                phone: true,
+              },
+            },
+            tier: true,
+            vehicle: {
+              select: {
+                id: true,
+                make: true,
+                model: true,
+                licensePlate: true,
+                vehicleType: {
+                  select: {
+                    name: true,
+                    displayName: true,
+                  },
+                },
+              },
+            },
+            ratings: {
+              where: { ratedByUserId: { not: driverId } },
+            },
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 5,
+            },
+          },
+        },
+
+        // Delivery orders if driver does deliveries
+        deliveryOrders: {
+          where: { status: { not: 'cancelled' } },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            store: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
               },
             },
             ratings: {
@@ -279,9 +394,81 @@ export class DriverManagementService {
             },
           },
         },
-        driverPayments: {
+
+        // Errands
+        errands: {
           orderBy: { createdAt: 'desc' },
           take: 5,
+          include: {
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            },
+          },
+        },
+
+        // Parcels
+        parcels: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          include: {
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            },
+          },
+        },
+
+        // Driver reports (issues during rides)
+        driverReports: {
+          orderBy: { reportedAt: 'desc' },
+          take: 10,
+          include: {
+            ride: {
+              select: {
+                rideId: true,
+                originAddress: true,
+                destinationAddress: true,
+                createdAt: true,
+              },
+            },
+            vehicle: {
+              select: {
+                id: true,
+                make: true,
+                model: true,
+                licensePlate: true,
+              },
+            },
+          },
+        },
+
+        // Location history
+        locationHistory: {
+          orderBy: { timestamp: 'desc' },
+          take: 20,
+        },
+
+        // Vehicle change history
+        vehicleHistory: {
+          orderBy: { changedAt: 'desc' },
+          take: 10,
+          include: {
+            vehicle: {
+              select: {
+                id: true,
+                make: true,
+                model: true,
+                licensePlate: true,
+              },
+            },
+          },
+        },
+
+        // Driver verification history
+        driverVerificationHistory: {
+          orderBy: { changedAt: 'desc' },
+          take: 10,
         },
       },
     });
@@ -323,7 +510,11 @@ export class DriverManagementService {
         state: driver.state || undefined,
         postalCode: driver.postalCode || undefined,
       },
-      documents: [], // Driver documents not directly related in schema
+
+      // Driver documents
+      documents: (driver as any).documents || [],
+
+      // Vehicles with full details
       vehicles: (driver as any).vehicles.map((vehicle: any) => ({
         id: vehicle.id,
         make: vehicle.make,
@@ -348,16 +539,57 @@ export class DriverManagementService {
         backImageUrl: vehicle.backImageUrl,
         interiorImageUrl: vehicle.interiorImageUrl,
         documents: vehicle.vehicleDocuments,
+        recentRides: vehicle.rides,
+        recentReports: vehicle.driverReports,
         createdAt: vehicle.createdAt,
         updatedAt: vehicle.updatedAt,
       })),
-      currentWorkZone: (driver as any).workZoneAssignments?.[0]?.zone || undefined,
+
+      // Current work zone (first active assignment)
+      currentWorkZone: (driver as any).workZoneAssignments?.find((wza: any) => wza.status === 'active')?.zone || undefined,
+
+      // Work zone assignments
+      workZoneAssignments: (driver as any).workZoneAssignments || [],
+
+      // Payment methods
       paymentMethods: (driver as any).driverPaymentMethods || [],
+
+      // Driver payments
+      driverPayments: (driver as any).driverPayments || [],
+
+      // Recent rides with full details
       recentRides: ((driver as any).rides || []).map((ride: any) => ({
         ...ride,
-        driverRating: ride.ratings.find((r) => r.ratedByUserId)?.ratingValue,
+        driverRating: ride.ratings.find((r: any) => r.ratedByUserId)?.ratingValue,
         ratings: undefined,
       })),
+
+      // Recent delivery orders
+      recentDeliveryOrders: ((driver as any).deliveryOrders || []).map((order: any) => ({
+        ...order,
+        driverRating: order.ratings.find((r: any) => r.ratedByUserId)?.ratingValue,
+        ratings: undefined,
+      })),
+
+      // Recent errands
+      recentErrands: (driver as any).errands || [],
+
+      // Recent parcels
+      recentParcels: (driver as any).parcels || [],
+
+      // Driver reports
+      driverReports: (driver as any).driverReports || [],
+
+      // Recent location history
+      recentLocationHistory: (driver as any).locationHistory || [],
+
+      // Vehicle change history
+      vehicleHistory: (driver as any).vehicleHistory || [],
+
+      // Verification history
+      verificationHistory: (driver as any).driverVerificationHistory || [],
+
+      // Performance stats
       performanceStats,
     };
   }

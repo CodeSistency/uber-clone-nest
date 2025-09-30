@@ -534,7 +534,22 @@ Retrieves complete details of a specific driver.
         "state": null,
         "postalCode": null
       },
-      "documents": [],
+
+      // Driver documents (license, ID, etc.)
+      "documents": [
+        {
+          "id": 1,
+          "documentType": "license",
+          "documentUrl": "https://example.com/docs/driver-license.pdf",
+          "uploadedAt": "2025-09-30T03:02:27.621Z",
+          "verificationStatus": "verified",
+          "verifiedAt": "2025-09-30T03:02:27.622Z",
+          "verifiedBy": 1,
+          "rejectionReason": null
+        }
+      ],
+
+      // Vehicles with full details including documents and history
       "vehicles": [
         {
           "id": 1,
@@ -574,25 +589,319 @@ Retrieves complete details of a specific driver.
               "documentUrl": "https://example.com/docs/vehicle-reg.pdf",
               "uploadedAt": "2025-09-30T03:02:27.621Z",
               "verificationStatus": "verified",
-              "verifiedAt": "2025-09-30T03:02:27.622Z"
+              "verifiedAt": "2025-09-30T03:02:27.622Z",
+              "verifiedBy": 1,
+              "rejectionReason": null
             }
           ],
+          "recentRides": [
+            {
+              "rideId": 123,
+              "status": "completed",
+              "createdAt": "2025-09-29T10:00:00Z",
+              "farePrice": 15.50,
+              "user": {
+                "id": 1,
+                "name": "John Doe",
+                "email": "john@example.com"
+              }
+            }
+          ],
+          "recentReports": [],
           "createdAt": "2025-09-30T03:02:27.621Z",
           "updatedAt": "2025-09-30T03:02:27.621Z"
         }
       ],
-      "currentWorkZone": null,
-      "paymentMethods": [],
-      "recentRides": [],
+
+      // Current active work zone assignment
+      "currentWorkZone": {
+        "id": 1,
+        "name": "Downtown Caracas",
+        "city": "Caracas",
+        "state": "Distrito Capital",
+        "isActive": true
+      },
+
+      // All work zone assignments history
+      "workZoneAssignments": [
+        {
+          "id": 1,
+          "zoneId": 1,
+          "assignedAt": "2025-09-30T03:02:27.623Z",
+          "assignedBy": 1,
+          "isPrimary": true,
+          "status": "active",
+          "zone": {
+            "id": 1,
+            "name": "Downtown Caracas",
+            "city": "Caracas",
+            "state": "Distrito Capital",
+            "isActive": true
+          }
+        }
+      ],
+
+      // Active payment methods for receiving earnings
+      "paymentMethods": [
+        {
+          "id": 1,
+          "methodType": "bank_transfer",
+          "accountNumber": "1234567890",
+          "accountName": "Luis Martinez",
+          "bankName": "Banco Nacional",
+          "routingNumber": "021000021",
+          "isDefault": true,
+          "isActive": true,
+          "createdAt": "2025-09-30T03:02:27.623Z",
+          "updatedAt": "2025-09-30T03:02:27.623Z"
+        }
+      ],
+
+      // Driver payment/earnings history
+      "driverPayments": [
+        {
+          "id": 1,
+          "amount": 150.75,
+          "currency": "USD",
+          "paymentType": "ride_earning",
+          "referenceType": "ride",
+          "referenceId": 123,
+          "description": "Ride payment - Downtown to Airport",
+          "periodStart": "2025-09-29T00:00:00Z",
+          "periodEnd": "2025-09-29T23:59:59Z",
+          "status": "processed",
+          "processedAt": "2025-09-30T02:00:00Z",
+          "paymentMethodId": 1,
+          "createdAt": "2025-09-30T01:00:00Z",
+          "updatedAt": "2025-09-30T02:00:00Z"
+        }
+      ],
+
+      // Recent rides with full details
+      "recentRides": [
+        {
+          "rideId": 123,
+          "originAddress": "Centro de Caracas",
+          "destinationAddress": "Aeropuerto Internacional",
+          "rideTime": 45,
+          "farePrice": 25.50,
+          "status": "completed",
+          "paymentStatus": "completed",
+          "userId": 1,
+          "tierId": 1,
+          "vehicleId": 1,
+          "createdAt": "2025-09-29T10:00:00Z",
+          "updatedAt": "2025-09-29T11:15:00Z",
+          "user": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john@example.com",
+            "phone": "+1234567890"
+          },
+          "tier": {
+            "id": 1,
+            "name": "UberX",
+            "baseFare": 2.5,
+            "perMinuteRate": 0.25,
+            "perMileRate": 1.25
+          },
+          "vehicle": {
+            "id": 1,
+            "make": "Yamaha",
+            "model": "MT-07",
+            "licensePlate": "MOT789",
+            "vehicleType": {
+              "name": "motorcycle",
+              "displayName": "Moto"
+            }
+          },
+          "ratings": [
+            {
+              "id": 1,
+              "ratingValue": 5,
+              "comment": "Excelente conductor, muy seguro",
+              "createdAt": "2025-09-29T11:20:00Z"
+            }
+          ],
+          "messages": [
+            {
+              "id": 1,
+              "messageText": "¿Dónde te encuentro exactamente?",
+              "senderId": 8,
+              "createdAt": "2025-09-29T10:05:00Z"
+            }
+          ],
+          "driverRating": 5
+        }
+      ],
+
+      // Recent delivery orders (if driver does deliveries)
+      "recentDeliveryOrders": [
+        {
+          "orderId": 456,
+          "userId": 2,
+          "storeId": 1,
+          "deliveryAddress": "Av. Principal 123",
+          "deliveryLatitude": 10.4806,
+          "deliveryLongitude": -66.9036,
+          "totalPrice": 35.75,
+          "deliveryFee": 5.00,
+          "tip": 3.00,
+          "status": "completed",
+          "paymentStatus": "completed",
+          "createdAt": "2025-09-29T14:00:00Z",
+          "store": {
+            "id": 1,
+            "name": "Pizza Express",
+            "category": "Restaurant",
+            "rating": 4.5
+          },
+          "driverRating": 4
+        }
+      ],
+
+      // Recent errands (personal tasks)
+      "recentErrands": [
+        {
+          "id": 789,
+          "description": "Comprar medicamentos en farmacia",
+          "pickupAddress": "Centro Médico Caracas",
+          "dropoffAddress": "Av. Universidad",
+          "status": "completed",
+          "serviceFee": 12.50,
+          "totalAmount": 15.00,
+          "createdAt": "2025-09-28T16:00:00Z",
+          "messages": [
+            {
+              "id": 1,
+              "messageText": "Los medicamentos están listos",
+              "senderId": 8,
+              "createdAt": "2025-09-28T16:15:00Z"
+            }
+          ]
+        }
+      ],
+
+      // Recent parcels delivery
+      "recentParcels": [
+        {
+          "id": 101,
+          "pickupAddress": "Oficina Central",
+          "dropoffAddress": "Centro de Distribución",
+          "type": "documents",
+          "description": "Paquete de documentos importantes",
+          "weight": 1.5,
+          "status": "completed",
+          "serviceFee": 8.50,
+          "totalAmount": 10.00,
+          "recipientName": "María González",
+          "recipientPhone": "+584169876543",
+          "createdAt": "2025-09-28T09:00:00Z",
+          "messages": [
+            {
+              "id": 1,
+              "messageText": "Documento entregado exitosamente",
+              "senderId": 8,
+              "createdAt": "2025-09-28T10:30:00Z"
+            }
+          ]
+        }
+      ],
+
+      // Driver reports (issues during rides)
+      "driverReports": [
+        {
+          "id": 1,
+          "rideId": 123,
+          "vehicleId": 1,
+          "reportType": "traffic_jam",
+          "description": "Gran congestión de tráfico en la autopista",
+          "severity": "medium",
+          "locationLat": 10.4806,
+          "locationLng": -66.9036,
+          "estimatedDelay": 20,
+          "requiresCancellation": false,
+          "status": "resolved",
+          "adminNotes": "Tráfico normal para la hora",
+          "reportedAt": "2025-09-29T10:30:00Z",
+          "resolvedAt": "2025-09-29T11:00:00Z",
+          "ride": {
+            "rideId": 123,
+            "originAddress": "Centro de Caracas",
+            "destinationAddress": "Aeropuerto Internacional",
+            "createdAt": "2025-09-29T10:00:00Z"
+          },
+          "vehicle": {
+            "id": 1,
+            "make": "Yamaha",
+            "model": "MT-07",
+            "licensePlate": "MOT789"
+          }
+        }
+      ],
+
+      // Recent location tracking history
+      "recentLocationHistory": [
+        {
+          "id": 1,
+          "driverId": 8,
+          "latitude": 10.4806,
+          "longitude": -66.9036,
+          "accuracy": 5.2,
+          "speed": 25.5,
+          "heading": 90.0,
+          "altitude": 850.0,
+          "rideId": null,
+          "timestamp": "2025-09-30T03:00:00Z",
+          "source": "gps"
+        }
+      ],
+
+      // Vehicle change history for audit trail
+      "vehicleHistory": [
+        {
+          "id": 1,
+          "vehicleId": 1,
+          "driverId": 8,
+          "changeType": "update",
+          "oldValue": { "status": "pending" },
+          "newValue": { "status": "active" },
+          "reason": "Vehicle verification completed",
+          "changedBy": 1,
+          "changedAt": "2025-09-30T03:02:27.623Z",
+          "vehicle": {
+            "id": 1,
+            "make": "Yamaha",
+            "model": "MT-07",
+            "licensePlate": "MOT789"
+          }
+        }
+      ],
+
+      // Driver verification status change history
+      "verificationHistory": [
+        {
+          "id": 1,
+          "driverId": 8,
+          "previousStatus": "pending",
+          "newStatus": "approved",
+          "changeReason": "All documents verified successfully",
+          "additionalNotes": "License and vehicle documents approved",
+          "changedBy": 1,
+          "changedAt": "2025-09-30T03:02:27.623Z"
+        }
+      ],
+
+      // Performance statistics by period
       "performanceStats": {
-        "todayRides": 0,
-        "weekRides": 0,
-        "monthRides": 0,
-        "todayEarnings": 0,
-        "weekEarnings": 0,
-        "monthEarnings": 0,
-        "averageResponseTime": null,
-        "customerSatisfaction": null
+        "todayRides": 2,
+        "weekRides": 15,
+        "monthRides": 67,
+        "todayEarnings": 45.50,
+        "weekEarnings": 325.75,
+        "monthEarnings": 1450.25,
+        "averageResponseTime": 45,
+        "customerSatisfaction": 4.8
       }
     },
     "message": "Success",

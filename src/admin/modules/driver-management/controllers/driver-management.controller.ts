@@ -117,7 +117,7 @@ export class DriverManagementController {
     const details =
       await this.driverManagementService.getDriverDetails(driverId);
 
-    // Format the response
+    // Format the response with all relations
     return {
       basic: {
         id: details.id,
@@ -142,11 +142,38 @@ export class DriverManagementController {
         completionRate: details.completionRate,
       },
       address: details.address,
+
+      // Driver documents
       documents: details.documents,
+
+      // Vehicles with full details
       vehicles: details.vehicles,
+
+      // Work zone information
       currentWorkZone: details.currentWorkZone,
+      workZoneAssignments: details.workZoneAssignments,
+
+      // Payment information
       paymentMethods: details.paymentMethods,
+      driverPayments: details.driverPayments,
+
+      // Service history
       recentRides: details.recentRides,
+      recentDeliveryOrders: details.recentDeliveryOrders,
+      recentErrands: details.recentErrands,
+      recentParcels: details.recentParcels,
+
+      // Reports and issues
+      driverReports: details.driverReports,
+
+      // Location and tracking
+      recentLocationHistory: details.recentLocationHistory,
+
+      // History and audit
+      vehicleHistory: details.vehicleHistory,
+      verificationHistory: details.verificationHistory,
+
+      // Performance stats
       performanceStats: details.performanceStats,
     };
   }

@@ -389,33 +389,87 @@ export class DriverDetailsDto {
   };
 
   @ApiPropertyOptional({
-    description: 'Driver documents',
+    description: 'Driver documents (license, ID, etc.)',
     type: [Object],
   })
   documents: any[];
 
   @ApiPropertyOptional({
-    description: 'Driver vehicles',
+    description: 'Driver vehicles with full details including documents and history',
     type: [Object],
   })
   vehicles: any[];
 
   @ApiPropertyOptional({
-    description: 'Current work zone',
+    description: 'Current active work zone assignment',
   })
   currentWorkZone?: any;
 
   @ApiPropertyOptional({
-    description: 'Payment methods',
+    description: 'All work zone assignments history',
+    type: [Object],
+  })
+  workZoneAssignments: any[];
+
+  @ApiPropertyOptional({
+    description: 'Active payment methods for receiving earnings',
     type: [Object],
   })
   paymentMethods: any[];
 
   @ApiPropertyOptional({
-    description: 'Recent rides',
+    description: 'Driver payment/earnings history',
+    type: [Object],
+  })
+  driverPayments: any[];
+
+  @ApiPropertyOptional({
+    description: 'Recent rides with full details',
     type: [Object],
   })
   recentRides: any[];
+
+  @ApiPropertyOptional({
+    description: 'Recent delivery orders (if driver does deliveries)',
+    type: [Object],
+  })
+  recentDeliveryOrders: any[];
+
+  @ApiPropertyOptional({
+    description: 'Recent errands (personal tasks)',
+    type: [Object],
+  })
+  recentErrands: any[];
+
+  @ApiPropertyOptional({
+    description: 'Recent parcels delivery',
+    type: [Object],
+  })
+  recentParcels: any[];
+
+  @ApiPropertyOptional({
+    description: 'Driver reports (issues during rides)',
+    type: [Object],
+  })
+  driverReports: any[];
+
+  @ApiPropertyOptional({
+    description: 'Recent location tracking history',
+    type: [Object],
+  })
+  recentLocationHistory: any[];
+
+  @ApiPropertyOptional({
+    description: 'Vehicle change history for audit trail',
+    type: [Object],
+  })
+  vehicleHistory: any[];
+
+  @ApiPropertyOptional({
+    description: 'Driver verification status change history',
+    type: [Object],
+  })
+  verificationHistory: any[];
 
   @ApiPropertyOptional({
     description: 'Performance statistics by period',
