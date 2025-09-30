@@ -114,25 +114,34 @@ export class EncryptionService {
   /**
    * Get encryption key from environment or generate one
    */
-  private getEncryptionKey(): string {
-    let key = this.configService.get<string>('ENCRYPTION_KEY');
+  private getEncryptionKey(): Buffer {
+    let keyString = this.configService.get<string>('ENCRYPTION_KEY');
 
-    if (!key) {
+    if (!keyString) {
       this.logger.warn(
         'ENCRYPTION_KEY not found in environment, using default (NOT SECURE FOR PRODUCTION)',
       );
       // Generate a default key for development (NEVER use in production)
-      key = 'a'.repeat(64); // 256-bit key as hex string
+      // Use a fixed but valid 256-bit key for development consistency
+      keyString = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     }
 
-    // Ensure key is the correct length
-    if (key.length !== 64) {
+    // Ensure key is the correct length and format
+    if (keyString.length !== 64) {
       throw new Error(
         'ENCRYPTION_KEY must be a 64-character hex string (256-bit key)',
       );
     }
 
-    return key;
+    // Validate that it's a valid hex string
+    if (!/^[a-fA-F0-9]{64}$/.test(keyString)) {
+      throw new Error(
+        'ENCRYPTION_KEY must be a valid hexadecimal string',
+      );
+    }
+
+    // Convert hex string to Buffer for crypto operations
+    return Buffer.from(keyString, 'hex');
   }
 
   /**

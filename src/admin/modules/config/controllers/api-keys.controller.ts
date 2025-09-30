@@ -231,9 +231,13 @@ export class APIKeysController {
   })
   async toggleActive(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { active: boolean },
+    @Body() body?: { active?: boolean },
   ): Promise<APIKeyResponseDto> {
-    return this.apiKeysService.toggleActive(id, body.active, 'system'); // TODO: Get from JWT
+    // If no body provided, default to toggling the current state
+    const apiKey = await this.apiKeysService.findOne(id);
+    const newActiveState = body?.active !== undefined ? body.active : !apiKey.isActive;
+
+    return this.apiKeysService.toggleActive(id, newActiveState, 'system'); // TODO: Get from JWT
   }
 
   @Post(':id/rotate')
