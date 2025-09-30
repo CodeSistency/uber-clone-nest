@@ -171,6 +171,15 @@ export class DriverManagementService {
           include: { zone: true },
           take: 1,
         },
+        vehicles: {
+          where: { status: 'active' },
+          include: {
+            vehicleType: true,
+          },
+          orderBy: {
+            isDefault: 'desc', // Default vehicle first
+          },
+        },
         _count: {
           select: {
             rides: true,
@@ -201,7 +210,20 @@ export class DriverManagementService {
               ? (rideStats.completed / rideStats.total) * 100
               : 0,
           currentWorkZone: driver.workZoneAssignments?.[0]?.zone || null,
-          defaultVehicle: null, // Will be populated separately if needed
+          vehicles: driver.vehicles.map(vehicle => ({
+            id: vehicle.id,
+            make: vehicle.make,
+            model: vehicle.model,
+            year: vehicle.year,
+            color: vehicle.color,
+            licensePlate: vehicle.licensePlate,
+            status: vehicle.status,
+            verificationStatus: vehicle.verificationStatus,
+            isDefault: vehicle.isDefault,
+            vehicleType: vehicle.vehicleType,
+            seatingCapacity: vehicle.seatingCapacity,
+            fuelType: vehicle.fuelType,
+          })),
           _count: undefined, // Remove the _count field
         };
       }),
@@ -225,6 +247,18 @@ export class DriverManagementService {
         workZoneAssignments: {
           where: { status: 'active' },
           include: { zone: true },
+        },
+        vehicles: {
+          where: { status: 'active' },
+          include: {
+            vehicleType: true,
+            vehicleDocuments: {
+              where: { verificationStatus: 'verified' },
+            },
+          },
+          orderBy: {
+            isDefault: 'desc', // Default vehicle first
+          },
         },
         driverPaymentMethods: {
           where: { isActive: true },
@@ -290,10 +324,36 @@ export class DriverManagementService {
         postalCode: driver.postalCode || undefined,
       },
       documents: [], // Driver documents not directly related in schema
-      vehicles: [], // Vehicles not directly related in current schema
-      currentWorkZone: driver.workZoneAssignments?.[0]?.zone || undefined,
-      paymentMethods: driver.driverPaymentMethods || [],
-      recentRides: (driver.rides || []).map((ride) => ({
+      vehicles: (driver as any).vehicles.map((vehicle: any) => ({
+        id: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        color: vehicle.color,
+        licensePlate: vehicle.licensePlate,
+        vin: vehicle.vin,
+        seatingCapacity: vehicle.seatingCapacity,
+        fuelType: vehicle.fuelType,
+        hasAC: vehicle.hasAC,
+        hasGPS: vehicle.hasGPS,
+        status: vehicle.status,
+        verificationStatus: vehicle.verificationStatus,
+        isDefault: vehicle.isDefault,
+        vehicleType: vehicle.vehicleType,
+        insuranceProvider: vehicle.insuranceProvider,
+        insurancePolicyNumber: vehicle.insurancePolicyNumber,
+        insuranceExpiryDate: vehicle.insuranceExpiryDate,
+        frontImageUrl: vehicle.frontImageUrl,
+        sideImageUrl: vehicle.sideImageUrl,
+        backImageUrl: vehicle.backImageUrl,
+        interiorImageUrl: vehicle.interiorImageUrl,
+        documents: vehicle.vehicleDocuments,
+        createdAt: vehicle.createdAt,
+        updatedAt: vehicle.updatedAt,
+      })),
+      currentWorkZone: (driver as any).workZoneAssignments?.[0]?.zone || undefined,
+      paymentMethods: (driver as any).driverPaymentMethods || [],
+      recentRides: ((driver as any).rides || []).map((ride: any) => ({
         ...ride,
         driverRating: ride.ratings.find((r) => r.ratedByUserId)?.ratingValue,
         ratings: undefined,

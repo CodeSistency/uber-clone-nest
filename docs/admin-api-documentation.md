@@ -411,37 +411,86 @@ Lists drivers with advanced filters and pagination.
 - `200 OK`: Drivers list retrieved successfully.
   ```json
   {
-    "drivers": [
-      {
-        "id": 1,
-        "firstName": "John",
-        "lastName": "Doe",
-        "email": "john.doe@example.com",
-        "phone": "+1234567890",
-        "status": "online",
-        "verificationStatus": "approved",
-        "canDoDeliveries": true,
-        "averageRating": 4.7,
-        "totalRides": 150,
-        "completedRides": 145,
-        "cancelledRides": 5,
-        "totalEarnings": 2500.5,
-        "completionRate": 96.7,
-        "currentWorkZone": {
-          "id": 1,
-          "name": "Downtown"
-        },
-        "defaultVehicle": {
-          "make": "Toyota",
-          "model": "Camry",
-          "licensePlate": "ABC-123"
+    "data": {
+      "drivers": [
+        {
+          "id": 8,
+          "firstName": "Luis",
+          "lastName": "Martinez",
+          "email": "luis.driver@example.com",
+          "phone": "+58-416-9876543",
+          "address": null,
+          "city": null,
+          "state": null,
+          "postalCode": null,
+          "profileImageUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=luis",
+          "dateOfBirth": null,
+          "gender": null,
+          "status": "offline",
+          "verificationStatus": "approved",
+          "canDoDeliveries": true,
+          "carSeats": 4,
+          "currentLatitude": "10.4806",
+          "currentLongitude": "-66.9036",
+          "lastLocationUpdate": "2025-09-30T03:02:27.621Z",
+          "locationAccuracy": null,
+          "isLocationActive": true,
+          "preferredWorkZones": [],
+          "workSchedule": null,
+          "bankAccountNumber": null,
+          "bankName": null,
+          "taxId": null,
+          "averageRating": "4.9",
+          "totalRides": 0,
+          "totalEarnings": 0,
+          "completionRate": 0,
+          "suspensionReason": null,
+          "suspensionEndDate": null,
+          "lastStatusChange": null,
+          "statusChangedBy": null,
+          "createdAt": "2025-09-30T03:02:27.623Z",
+          "updatedAt": "2025-09-30T03:02:27.623Z",
+          "lastLogin": null,
+          "lastActive": null,
+          "workZoneAssignments": [],
+          "vehicles": [
+            {
+              "id": 1,
+              "make": "Yamaha",
+              "model": "MT-07",
+              "year": 2021,
+              "color": "Black",
+              "licensePlate": "MOT789",
+              "status": "active",
+              "verificationStatus": "verified",
+              "isDefault": true,
+              "vehicleType": {
+                "id": 1,
+                "name": "motorcycle",
+                "displayName": "Moto",
+                "icon": "🏍️",
+                "isActive": true,
+                "createdAt": "2025-09-30T03:02:26.801Z",
+                "updatedAt": "2025-09-30T03:02:26.801Z"
+              },
+              "seatingCapacity": 2,
+              "fuelType": "gasoline"
+            }
+          ],
+          "completedRides": 0,
+          "cancelledRides": 0,
+          "currentWorkZone": null
         }
-      }
-    ],
-    "total": 150,
-    "page": 1,
-    "limit": 20,
-    "totalPages": 8
+      ],
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
+    },
+    "message": "Success",
+    "statusCode": 200,
+    "timestamp": "2025-09-30T03:23:55.557Z",
+    "path": "/admin/drivers?status=offline&status=busy&status=suspended&canDoDeliveries=true&limit=20"
   }
   ```
 
@@ -456,84 +505,100 @@ Retrieves complete details of a specific driver.
 - `200 OK`: Driver details retrieved successfully.
   ```json
   {
-    "basic": {
-      "id": 1,
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john.doe@example.com",
-      "phone": "+1234567890",
-      "dateOfBirth": "1985-01-01T00:00:00Z",
-      "gender": "male",
-      "status": "online",
-      "verificationStatus": "approved",
-      "canDoDeliveries": true,
-      "lastActive": "2024-01-15T10:25:00Z",
-      "createdAt": "2024-01-01T10:00:00Z"
-    },
-    "stats": {
-      "averageRating": 4.7,
-      "totalRides": 150,
-      "completedRides": 145,
-      "cancelledRides": 5,
-      "totalEarnings": 2500.5,
-      "completionRate": 96.7
-    },
-    "address": {
-      "address": "123 Driver St",
-      "city": "New York",
-      "state": "NY",
-      "postalCode": "10001"
-    },
-    "documents": [
-      {
-        "id": 1,
-        "documentType": "license",
-        "documentUrl": "https://example.com/docs/license.pdf",
-        "uploadedAt": "2024-01-01T10:00:00Z",
-        "verificationStatus": "approved"
+    "data": {
+      "basic": {
+        "id": 8,
+        "firstName": "Luis",
+        "lastName": "Martinez",
+        "email": "luis.driver@example.com",
+        "phone": "+58-416-9876543",
+        "dateOfBirth": null,
+        "gender": null,
+        "status": "offline",
+        "verificationStatus": "approved",
+        "canDoDeliveries": true,
+        "lastActive": null,
+        "createdAt": "2025-09-30T03:02:27.623Z"
+      },
+      "stats": {
+        "averageRating": 4.9,
+        "totalRides": 0,
+        "completedRides": 0,
+        "cancelledRides": 0,
+        "totalEarnings": 0,
+        "completionRate": 0
+      },
+      "address": {
+        "address": null,
+        "city": null,
+        "state": null,
+        "postalCode": null
+      },
+      "documents": [],
+      "vehicles": [
+        {
+          "id": 1,
+          "make": "Yamaha",
+          "model": "MT-07",
+          "year": 2021,
+          "color": "Black",
+          "licensePlate": "MOT789",
+          "vin": "JH2SC4519LK123456",
+          "seatingCapacity": 2,
+          "fuelType": "gasoline",
+          "hasAC": true,
+          "hasGPS": true,
+          "status": "active",
+          "verificationStatus": "verified",
+          "isDefault": true,
+          "vehicleType": {
+            "id": 1,
+            "name": "motorcycle",
+            "displayName": "Moto",
+            "icon": "🏍️",
+            "isActive": true,
+            "createdAt": "2025-09-30T03:02:26.801Z",
+            "updatedAt": "2025-09-30T03:02:26.801Z"
+          },
+          "insuranceProvider": "Seguros Venezuela",
+          "insurancePolicyNumber": "POL-2021-001",
+          "insuranceExpiryDate": "2026-12-31T00:00:00Z",
+          "frontImageUrl": "https://example.com/vehicles/1/front.jpg",
+          "sideImageUrl": "https://example.com/vehicles/1/side.jpg",
+          "backImageUrl": "https://example.com/vehicles/1/back.jpg",
+          "interiorImageUrl": "https://example.com/vehicles/1/interior.jpg",
+          "documents": [
+            {
+              "id": 1,
+              "documentType": "registration",
+              "documentUrl": "https://example.com/docs/vehicle-reg.pdf",
+              "uploadedAt": "2025-09-30T03:02:27.621Z",
+              "verificationStatus": "verified",
+              "verifiedAt": "2025-09-30T03:02:27.622Z"
+            }
+          ],
+          "createdAt": "2025-09-30T03:02:27.621Z",
+          "updatedAt": "2025-09-30T03:02:27.621Z"
+        }
+      ],
+      "currentWorkZone": null,
+      "paymentMethods": [],
+      "recentRides": [],
+      "performanceStats": {
+        "todayRides": 0,
+        "weekRides": 0,
+        "monthRides": 0,
+        "todayEarnings": 0,
+        "weekEarnings": 0,
+        "monthEarnings": 0,
+        "averageResponseTime": null,
+        "customerSatisfaction": null
       }
-    ],
-    "vehicles": [
-      {
-        "id": 1,
-        "make": "Toyota",
-        "model": "Camry",
-        "year": 2020,
-        "licensePlate": "ABC-123",
-        "color": "White",
-        "isDefault": true
-      }
-    ],
-    "currentWorkZone": {
-      "id": 1,
-      "name": "Downtown",
-      "city": "New York"
     },
-    "paymentMethods": [
-      {
-        "id": 1,
-        "type": "bank_account",
-        "isDefault": true
-      }
-    ],
-    "recentRides": [
-      {
-        "id": 123,
-        "status": "completed",
-        "createdAt": "2024-01-15T08:00:00Z",
-        "farePrice": 25.5
-      }
-    ],
-    "performanceStats": {
-      "todayRides": 8,
-      "weekRides": 45,
-      "monthRides": 180,
-      "todayEarnings": 180.0,
-      "weekEarnings": 950.0,
-      "monthEarnings": 3800.0,
-      "averageResponseTime": 45,
-      "customerSatisfaction": 4.8
-    }
+    "message": "Success",
+    "statusCode": 200,
+    "timestamp": "2025-09-30T03:25:12.345Z",
+    "path": "/admin/drivers/8"
   }
   ```
 
