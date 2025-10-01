@@ -51,6 +51,11 @@ import { DriverAvailabilityController } from './driver.availability.controller';
     ParcelDriverController,
     DriverAvailabilityController,
   ],
-  providers: [RidesFlowService, DriverReportsService, MatchingMetricsService, IdempotencyService],
+  providers: [
+    RidesFlowService,
+    DriverReportsService,
+    MatchingMetricsService,
+    IdempotencyService,
+  ],
 })
 export class RidesFlowModule {}

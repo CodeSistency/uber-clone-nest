@@ -609,10 +609,7 @@ export class NotificationsService {
     }
   }
 
-  async markAsRead(
-    notificationId: number,
-    userId: string,
-  ): Promise<void> {
+  async markAsRead(notificationId: number, userId: string): Promise<void> {
     return this.markNotificationAsRead(notificationId, userId);
   }
 

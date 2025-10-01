@@ -476,9 +476,12 @@ export class APIKeysRotationService {
         environment: audit.apiKey.environment,
         rotatedAt: audit.performedAt,
         performedBy: audit.performedBy,
-        reason: (audit.metadata && typeof audit.metadata === 'object' && !Array.isArray(audit.metadata))
-          ? (audit.metadata as any).reason
-          : null,
+        reason:
+          audit.metadata &&
+          typeof audit.metadata === 'object' &&
+          !Array.isArray(audit.metadata)
+            ? (audit.metadata as any).reason
+            : null,
       })),
       rotationPolicies: {
         manual: await this.prisma.aPIKey.count({

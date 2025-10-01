@@ -67,9 +67,7 @@ export class WebSocketGatewayClass
     this.logger.log(`- createAdapter available: ${!!createAdapter}`);
     if (createAdapter) {
       this.logger.log(`- createAdapter type: ${typeof createAdapter}`);
-      this.logger.log(
-        `- createAdapter function: ${createAdapter.name}`,
-      );
+      this.logger.log(`- createAdapter function: ${createAdapter.name}`);
     }
 
     // Configure Redis adapter for scalability if Redis is available
@@ -141,23 +139,37 @@ export class WebSocketGatewayClass
           // Aplicar adapter al servidor principal (desde el namespace)
           (server as any).server.adapter(adapter);
 
-          this.logger.log('✅ Redis adapter configured successfully for WebSocket horizontal scaling');
-          this.logger.log('🚀 Multiple WebSocket server instances can now share connections and rooms');
+          this.logger.log(
+            '✅ Redis adapter configured successfully for WebSocket horizontal scaling',
+          );
+          this.logger.log(
+            '🚀 Multiple WebSocket server instances can now share connections and rooms',
+          );
         } catch (adapterError: any) {
-          this.logger.error('❌ Failed to configure Redis adapter:', adapterError.message);
+          this.logger.error(
+            '❌ Failed to configure Redis adapter:',
+            adapterError.message,
+          );
           this.logger.error('❌ Adapter error details:', adapterError);
           this.logger.error('❌ Adapter error stack:', adapterError.stack);
 
           // Fallback a adapter en memoria (Socket.IO ya usa por defecto el in-memory adapter)
-          this.logger.warn('⚠️ Falling back to in-memory adapter for WebSocket');
-          this.logger.warn('💡 To enable horizontal scaling, check Redis connection and Socket.IO version compatibility');
+          this.logger.warn(
+            '⚠️ Falling back to in-memory adapter for WebSocket',
+          );
+          this.logger.warn(
+            '💡 To enable horizontal scaling, check Redis connection and Socket.IO version compatibility',
+          );
 
           // Intentar cerrar conexiones redis
           try {
             await pubClient.disconnect().catch(() => {});
             await subClient.disconnect().catch(() => {});
           } catch (cleanupError) {
-            this.logger.warn('⚠️ Failed to clean up Redis connections:', cleanupError?.message || cleanupError);
+            this.logger.warn(
+              '⚠️ Failed to clean up Redis connections:',
+              cleanupError?.message || cleanupError,
+            );
           }
         }
       } else {

@@ -210,28 +210,30 @@ describe('RideTiersService', () => {
     });
 
     it('should filter by active status', async () => {
-      const mockTiers = [{
-        id: 1,
-        name: 'UberX',
-        baseFare: 250,
-        perMinuteRate: 15,
-        perMileRate: 120,
-        imageUrl: null,
-        tierMultiplier: 1.0,
-        surgeMultiplier: 1.0,
-        demandMultiplier: 1.0,
-        luxuryMultiplier: 1.0,
-        comfortMultiplier: 1.0,
-        minPassengers: 1,
-        maxPassengers: 4,
-        isActive: true,
-        priority: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        ridesCount: 0,
-        vehicleTypes: [],
-        _count: undefined,
-      }];
+      const mockTiers = [
+        {
+          id: 1,
+          name: 'UberX',
+          baseFare: 250,
+          perMinuteRate: 15,
+          perMileRate: 120,
+          imageUrl: null,
+          tierMultiplier: 1.0,
+          surgeMultiplier: 1.0,
+          demandMultiplier: 1.0,
+          luxuryMultiplier: 1.0,
+          comfortMultiplier: 1.0,
+          minPassengers: 1,
+          maxPassengers: 4,
+          isActive: true,
+          priority: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ridesCount: 0,
+          vehicleTypes: [],
+          _count: undefined,
+        },
+      ];
 
       mockPrismaService.rideTier.findMany.mockResolvedValue(mockTiers);
       mockPrismaService.rideTier.count.mockResolvedValue(1);

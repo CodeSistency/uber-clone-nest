@@ -112,7 +112,12 @@ describe('NotificationsService', () => {
       });
 
       const mockPushTokens = [
-        createMockPushToken({ userId: 123, token: 'push_token_123', deviceType: 'ios', isActive: true }),
+        createMockPushToken({
+          userId: 123,
+          token: 'push_token_123',
+          deviceType: 'ios',
+          isActive: true,
+        }),
       ];
 
       // Mock the save notification to avoid errors
@@ -122,7 +127,9 @@ describe('NotificationsService', () => {
         mockPreferences,
       );
       prismaService.pushToken.findMany.mockResolvedValue(mockPushTokens);
-      mockFirebaseService.sendNotificationToUser.mockResolvedValue('batch_sent');
+      mockFirebaseService.sendNotificationToUser.mockResolvedValue(
+        'batch_sent',
+      );
 
       const result = await service.sendNotification(payload);
 
@@ -135,12 +142,14 @@ describe('NotificationsService', () => {
       });
       expect(mockFirebaseService.sendNotificationToUser).toHaveBeenCalledWith(
         '123',
-        [{
-          token: 'push_token_123',
-          deviceType: 'ios',
-          deviceId: 'device_123',
-          isActive: true,
-        }],
+        [
+          {
+            token: 'push_token_123',
+            deviceType: 'ios',
+            deviceId: 'device_123',
+            isActive: true,
+          },
+        ],
         expect.objectContaining({
           title: 'Ride Completed',
           body: 'Your ride has been completed successfully',

@@ -142,24 +142,16 @@ export class CitiesService {
 
     const cities = await this.prisma.city.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        isActive: true,
+        population: true,
         state: {
           select: {
-            id: true,
             name: true,
-            code: true,
-            country: {
-              select: {
-                id: true,
-                name: true,
-                isoCode2: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            serviceZones: true,
           },
         },
       },
@@ -171,7 +163,7 @@ export class CitiesService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      cities: cities.map((city) => this.transformCityWithCount(city)),
+      cities: cities.map((city) => this.transformCityListItem(city)),
       total,
       page,
       limit,
@@ -459,6 +451,18 @@ export class CitiesService {
       ...this.transformCity(city),
       serviceZonesCount: city._count?.serviceZones || 0,
       _count: undefined,
+    };
+  }
+
+  private transformCityListItem(city: any) {
+    return {
+      id: city.id,
+      name: city.name,
+      stateName: city.state?.name || 'Unknown',
+      latitude: city.latitude,
+      longitude: city.longitude,
+      isActive: city.isActive,
+      population: city.population ? Number(city.population) : null,
     };
   }
 }

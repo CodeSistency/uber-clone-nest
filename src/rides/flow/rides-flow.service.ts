@@ -648,7 +648,10 @@ export class RidesFlowService {
         console.timeEnd('🔴 Redis Health Check');
       }
     } catch (error) {
-      this.logger.error('❌ [MATCHING] Error en validación de servicios críticos:', error);
+      this.logger.error(
+        '❌ [MATCHING] Error en validación de servicios críticos:',
+        error,
+      );
       throw new Error('Sistema no disponible temporalmente');
     }
   }
@@ -659,7 +662,7 @@ export class RidesFlowService {
   private logDebugInfo(
     step: string,
     data: any,
-    level: 'info' | 'warn' | 'error' = 'info'
+    level: 'info' | 'warn' | 'error' = 'info',
   ): void {
     if (process.env.NODE_ENV !== 'development' || !process.env.MATCHING_DEBUG) {
       return;
@@ -669,7 +672,7 @@ export class RidesFlowService {
     const logData = {
       timestamp,
       step,
-      data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data
+      data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data,
     };
 
     switch (level) {
@@ -689,22 +692,22 @@ export class RidesFlowService {
    */
   private async buildVehicleTypeFilters(
     tierId?: number,
-    vehicleTypeId?: number
+    vehicleTypeId?: number,
   ): Promise<any> {
     if (vehicleTypeId) {
       return vehicleTypeId;
     }
 
-      if (tierId) {
+    if (tierId) {
       const compatibleTypes = await this.prisma.tierVehicleType.findMany({
-            where: { tierId, isActive: true },
-            select: { vehicleTypeId: true },
-          });
+        where: { tierId, isActive: true },
+        select: { vehicleTypeId: true },
+      });
 
       if (compatibleTypes.length === 0) return null;
       if (compatibleTypes.length === 1) return compatibleTypes[0].vehicleTypeId;
 
-      return { in: compatibleTypes.map(vt => vt.vehicleTypeId) };
+      return { in: compatibleTypes.map((vt) => vt.vehicleTypeId) };
     }
 
     return null;
@@ -717,26 +720,33 @@ export class RidesFlowService {
     lat: number,
     lng: number,
     radiusKm: number,
-    filters: any
+    filters: any,
   ): Promise<any[]> {
     try {
       const drivers = await this.locationTrackingService.findNearbyDrivers(
-          lat,
-          lng,
+        lat,
+        lng,
         radiusKm,
-        filters
+        filters,
       );
 
       if (process.env.NODE_ENV === 'development') {
-        this.logger.log(`✅ [MATCHING] Encontrados ${drivers.length} conductores cercanos`);
+        this.logger.log(
+          `✅ [MATCHING] Encontrados ${drivers.length} conductores cercanos`,
+        );
       }
 
       return drivers;
     } catch (error) {
-      this.logger.error('❌ [MATCHING] Error buscando conductores cercanos:', error);
+      this.logger.error(
+        '❌ [MATCHING] Error buscando conductores cercanos:',
+        error,
+      );
 
       // Fallback: buscar conductores online sin considerar ubicación GPS
-      this.logger.warn('⚠️ [MATCHING] Usando fallback - buscando conductores online sin GPS');
+      this.logger.warn(
+        '⚠️ [MATCHING] Usando fallback - buscando conductores online sin GPS',
+      );
       return await this.fallbackDriverSearch(filters);
     }
   }
@@ -751,17 +761,17 @@ export class RidesFlowService {
         include: {
           vehicles: {
             where: { isDefault: true },
-            take: 1
-          }
+            take: 1,
+          },
         },
-        take: 10 // Limitar resultados en fallback
+        take: 10, // Limitar resultados en fallback
       });
 
-      return drivers.map(driver => ({
+      return drivers.map((driver) => ({
         ...driver,
         distance: 999, // Distancia máxima para ordenar al final
         currentLocation: null,
-        lastLocationUpdate: null
+        lastLocationUpdate: null,
       }));
     } catch (error) {
       this.logger.error('❌ [MATCHING] Error en búsqueda de fallback:', error);
@@ -780,9 +790,13 @@ export class RidesFlowService {
       enablePrefetching?: boolean;
       compression?: boolean;
       adaptiveTTL?: boolean;
-    }
+    },
   ): Promise<any[]> {
-    const { enablePrefetching = true, compression = false, adaptiveTTL = true } = options || {};
+    const {
+      enablePrefetching = true,
+      compression = false,
+      adaptiveTTL = true,
+    } = options || {};
 
     try {
       // Calcular TTL adaptativo basado en frecuencia de uso
@@ -848,11 +862,14 @@ export class RidesFlowService {
 
       // Preparar datos para caché (con compresión si aplica)
       let cacheData = JSON.stringify(data);
-      if (compression && cacheData.length > 1000) { // Comprimir si > 1KB
+      if (compression && cacheData.length > 1000) {
+        // Comprimir si > 1KB
         // Nota: En producción usaríamos zlib, aquí simulamos compresión
         cacheData = 'COMPRESSED:' + cacheData;
         if (process.env.NODE_ENV === 'development') {
-          console.log(`🗜️ [CACHE] Datos comprimidos para ${cacheKey} (${cacheData.length} chars)`);
+          console.log(
+            `🗜️ [CACHE] Datos comprimidos para ${cacheKey} (${cacheData.length} chars)`,
+          );
         }
       }
 
@@ -861,7 +878,9 @@ export class RidesFlowService {
 
       if (process.env.NODE_ENV === 'development') {
         console.timeEnd('💾 Cache Storage');
-        this.logger.log(`💾 [CACHE] Miss para ${cacheKey} - guardado por ${actualTTL}s (adaptativo: ${adaptiveTTL})`);
+        this.logger.log(
+          `💾 [CACHE] Miss para ${cacheKey} - guardado por ${actualTTL}s (adaptativo: ${adaptiveTTL})`,
+        );
       }
 
       return data;
@@ -887,11 +906,16 @@ export class RidesFlowService {
   /**
    * Calcular TTL adaptativo basado en frecuencia de uso
    */
-  private async calculateAdaptiveTTL(cacheKey: string, baseTTL: number): Promise<number> {
+  private async calculateAdaptiveTTL(
+    cacheKey: string,
+    baseTTL: number,
+  ): Promise<number> {
     try {
       // Obtener contador de accesos para esta clave
       const accessKey = `cache:access:${cacheKey}`;
-      const accessCount = parseInt(await this.redisService.get(accessKey) || '0');
+      const accessCount = parseInt(
+        (await this.redisService.get(accessKey)) || '0',
+      );
 
       // Incrementar contador de accesos
       await this.redisService.incr(accessKey);
@@ -917,12 +941,15 @@ export class RidesFlowService {
   /**
    * Actualizar patrones de acceso para prefetching inteligente
    */
-  private async updateAccessPatterns(cacheKey: string, data: any[]): Promise<void> {
+  private async updateAccessPatterns(
+    cacheKey: string,
+    data: any[],
+  ): Promise<void> {
     try {
       // Solo para datos de conductores
       if (cacheKey.includes('drivers:available') && data.length > 0) {
         const patternKey = 'cache:patterns:driver_access';
-        const driverIds = data.map(d => d.id).join(',');
+        const driverIds = data.map((d) => d.id).join(',');
 
         // Registrar patrón de acceso reciente
         await this.redisService.set(`pattern:${Date.now()}`, driverIds, 300); // 5 minutos
@@ -944,13 +971,19 @@ export class RidesFlowService {
   /**
    * Prefetch datos relacionados basados en patrones de acceso
    */
-  private async prefetchRelatedData(cacheKey: string, data: any[]): Promise<void> {
+  private async prefetchRelatedData(
+    cacheKey: string,
+    data: any[],
+  ): Promise<void> {
     try {
       // Prefetch de detalles de conductores si tenemos datos de disponibilidad
       if (cacheKey.includes('drivers:available') && data.length > 0) {
-        const driverIds = data.map(d => d.id || d.driverId).filter(id => id);
+        const driverIds = data
+          .map((d) => d.id || d.driverId)
+          .filter((id) => id);
 
-        if (driverIds.length > 0 && driverIds.length <= 10) { // Limitar prefetch a 10 conductores
+        if (driverIds.length > 0 && driverIds.length <= 10) {
+          // Limitar prefetch a 10 conductores
           // Prefetch en background sin esperar
           setImmediate(async () => {
             try {
@@ -961,7 +994,9 @@ export class RidesFlowService {
                 // Solo prefetch si no existe en caché
                 await this.getDriverDetailsWithCache(driverIds);
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🚀 [PREFETCH] Detalles prefetched para ${driverIds.length} conductores`);
+                  console.log(
+                    `🚀 [PREFETCH] Detalles prefetched para ${driverIds.length} conductores`,
+                  );
                 }
               }
             } catch (error) {
@@ -983,7 +1018,7 @@ export class RidesFlowService {
     userLat: number,
     userLng: number,
     maxDistance: number,
-    concurrencyLimit: number = 8
+    concurrencyLimit: number = 8,
   ): Promise<any[]> {
     const results: any[] = [];
     const batches: any[][] = [];
@@ -997,12 +1032,14 @@ export class RidesFlowService {
     for (const batch of batches) {
       const batchPromises = batch.map(async (driver) => {
         try {
-          const driverLocation = await this.locationTrackingService.getDriverLocation(driver.id);
+          const driverLocation =
+            await this.locationTrackingService.getDriverLocation(driver.id);
           if (driverLocation) {
             const distance = this.calculateDistance(
-              userLat, userLng,
+              userLat,
+              userLng,
               driverLocation.location.lat,
-              driverLocation.location.lng
+              driverLocation.location.lng,
             );
             return { ...driver, distance, currentLocation: driverLocation };
           } else {
@@ -1010,7 +1047,10 @@ export class RidesFlowService {
             return { ...driver, distance: maxDistance, currentLocation: null };
           }
         } catch (error) {
-          this.logger.warn(`⚠️ [MATCHING] Error obteniendo ubicación para driver ${driver.id}:`, error);
+          this.logger.warn(
+            `⚠️ [MATCHING] Error obteniendo ubicación para driver ${driver.id}:`,
+            error,
+          );
           return { ...driver, distance: maxDistance, currentLocation: null };
         }
       });
@@ -1021,7 +1061,7 @@ export class RidesFlowService {
 
       // Pequeña pausa entre lotes para no sobrecargar (opcional)
       if (batches.length > 1 && batch !== batches[batches.length - 1]) {
-        await new Promise(resolve => setTimeout(resolve, 5)); // 5ms pause
+        await new Promise((resolve) => setTimeout(resolve, 5)); // 5ms pause
       }
     }
 
@@ -1035,7 +1075,7 @@ export class RidesFlowService {
     filters: any,
     radiusKm: number,
     userLat: number,
-    userLng: number
+    userLng: number,
   ): Promise<any[]> {
     const cacheKey = `drivers:available:${JSON.stringify(filters)}:r${radiusKm}`;
 
@@ -1046,8 +1086,8 @@ export class RidesFlowService {
       {
         enablePrefetching: true,
         compression: false, // Datos de disponibilidad son pequeños
-        adaptiveTTL: true
-      }
+        adaptiveTTL: true,
+      },
     );
   }
 
@@ -1066,22 +1106,24 @@ export class RidesFlowService {
       {
         enablePrefetching: false, // Los detalles ya son el resultado final
         compression: true, // Datos de detalles pueden ser grandes
-        adaptiveTTL: true
-      }
+        adaptiveTTL: true,
+      },
     );
   }
 
   /**
    * Obtener información detallada de múltiples conductores
    */
-  private async getDriverDetailedInfoBatch(driverIds: number[]): Promise<any[]> {
+  private async getDriverDetailedInfoBatch(
+    driverIds: number[],
+  ): Promise<any[]> {
     if (driverIds.length === 0) return [];
 
     try {
       // Query optimizada: seleccionar solo campos necesarios
       const drivers = await this.prisma.driver.findMany({
         where: {
-          id: { in: driverIds }
+          id: { in: driverIds },
         },
         select: {
           id: true,
@@ -1100,16 +1142,16 @@ export class RidesFlowService {
               seatingCapacity: true,
               vehicleType: {
                 select: {
-                  displayName: true
-                }
-              }
-            }
+                  displayName: true,
+                },
+              },
+            },
           },
           // Optimizar query de ratings: usar agregación en lugar de cargar todos
           _count: {
             select: {
-              rides: true
-            }
+              rides: true,
+            },
           },
           rides: {
             take: 20, // Aumentar para mejor promedio
@@ -1117,24 +1159,30 @@ export class RidesFlowService {
             select: {
               ratings: {
                 select: {
-                  ratingValue: true
+                  ratingValue: true,
                 },
-                take: 1 // Solo necesitamos el rating de cada ride
-              }
-            }
-          }
-        }
+                take: 1, // Solo necesitamos el rating de cada ride
+              },
+            },
+          },
+        },
       });
 
-      return drivers.map(driver => {
+      return drivers.map((driver) => {
         // Calcular promedio de ratings de forma optimizada
-        const recentRatings = (driver.rides || []).flatMap((ride: any) =>
-          ride.ratings?.map((r: any) => r.ratingValue) || []
-        ).filter(Boolean);
+        const recentRatings = (driver.rides || [])
+          .flatMap(
+            (ride: any) => ride.ratings?.map((r: any) => r.ratingValue) || [],
+          )
+          .filter(Boolean);
 
-        const avgRating = recentRatings.length > 0
-          ? recentRatings.reduce((sum: number, rating: number) => sum + rating, 0) / recentRatings.length
-          : 0;
+        const avgRating =
+          recentRatings.length > 0
+            ? recentRatings.reduce(
+                (sum: number, rating: number) => sum + rating,
+                0,
+              ) / recentRatings.length
+            : 0;
 
         return {
           id: driver.id,
@@ -1144,11 +1192,14 @@ export class RidesFlowService {
           rating: avgRating,
           totalRides: driver._count?.rides || 0, // Usar el contador optimizado
           createdAt: driver.createdAt,
-          vehicles: driver.vehicles || []
+          vehicles: driver.vehicles || [],
         };
       });
     } catch (error) {
-      this.logger.error('❌ Error obteniendo información detallada de conductores:', error);
+      this.logger.error(
+        '❌ Error obteniendo información detallada de conductores:',
+        error,
+      );
       return [];
     }
   }
@@ -1161,7 +1212,7 @@ export class RidesFlowService {
       const patterns = [
         'drivers:available:*',
         'drivers:details:*',
-        'pricing:*'
+        'pricing:*',
       ];
 
       for (const pattern of patterns) {
@@ -1171,14 +1222,18 @@ export class RidesFlowService {
           const keys = await this.redisService.keys(pattern);
           if (keys.length > 0) {
             await this.redisService.del(...keys);
-            this.logger.log(`🗑️ [CACHE] Invalidado ${keys.length} claves con patrón ${pattern}`);
+            this.logger.log(
+              `🗑️ [CACHE] Invalidado ${keys.length} claves con patrón ${pattern}`,
+            );
           }
         }
       }
 
       if (driverId) {
-        this.logger.log(`🗑️ [CACHE] Caché invalidado para conductor ${driverId}`);
-        } else {
+        this.logger.log(
+          `🗑️ [CACHE] Caché invalidado para conductor ${driverId}`,
+        );
+      } else {
         this.logger.log(`🗑️ [CACHE] Caché global de matching invalidado`);
       }
     } catch (error) {
@@ -1193,9 +1248,13 @@ export class RidesFlowService {
     drivers: any[],
     userLat: number,
     userLng: number,
-    searchRadius?: number
+    searchRadius?: number,
   ): Promise<any[]> {
-    const engine = new MatchingEngine(this.prisma, this.matchingMetrics, this.logger);
+    const engine = new MatchingEngine(
+      this.prisma,
+      this.matchingMetrics,
+      this.logger,
+    );
     return engine.calculateBatchScores(drivers, userLat, userLng, searchRadius);
   }
 
@@ -1214,7 +1273,7 @@ export class RidesFlowService {
 
     // Log inicial solo en desarrollo
     if (process.env.NODE_ENV === 'development') {
-          this.logger.log(
+      this.logger.log(
         `🎯 [MATCHING] Iniciando búsqueda de conductor - Usuario: (${lat}, ${lng}) - Radio: ${radiusKm}km - Tier: ${tierId || 'auto'} - VehicleType: ${vehicleTypeId || 'auto'}`,
       );
     }
@@ -1245,13 +1304,19 @@ export class RidesFlowService {
 
       // 2. Aplicar filtros de compatibilidad de vehículo
       if (tierId || vehicleTypeId) {
-        const vehicleTypeFilters = await this.buildVehicleTypeFilters(tierId, vehicleTypeId);
+        const vehicleTypeFilters = await this.buildVehicleTypeFilters(
+          tierId,
+          vehicleTypeId,
+        );
         if (vehicleTypeFilters) {
           driverFilters.vehicleTypeId = vehicleTypeFilters;
         }
       }
 
-      this.logDebugInfo('Filtros aplicados', { driverFilters, searchParams: { lat, lng, radiusKm } });
+      this.logDebugInfo('Filtros aplicados', {
+        driverFilters,
+        searchParams: { lat, lng, radiusKm },
+      });
 
       if (process.env.NODE_ENV === 'development') {
         console.timeEnd('🔧 Filters Building');
@@ -1267,7 +1332,7 @@ export class RidesFlowService {
         driverFilters,
         radiusKm,
         lat,
-        lng
+        lng,
       );
 
       if (process.env.NODE_ENV === 'development') {
@@ -1276,12 +1341,14 @@ export class RidesFlowService {
 
       this.logDebugInfo('Conductores candidatos encontrados', {
         count: candidateDrivers.length,
-        searchArea: { lat, lng, radiusKm }
+        searchArea: { lat, lng, radiusKm },
       });
 
       // Si no hay conductores candidatos, retornar null
       if (candidateDrivers.length === 0) {
-        this.logger.warn(`⚠️ [MATCHING] No se encontraron conductores disponibles en el área`);
+        this.logger.warn(
+          `⚠️ [MATCHING] No se encontraron conductores disponibles en el área`,
+        );
         return null;
       }
 
@@ -1291,7 +1358,7 @@ export class RidesFlowService {
       }
 
       // 4. Obtener información detallada de conductores para scoring (con caché)
-      const driverIds = candidateDrivers.map(d => d.id || d.driverId);
+      const driverIds = candidateDrivers.map((d) => d.id || d.driverId);
       const detailedDrivers = await this.getDriverDetailsWithCache(driverIds);
 
       if (process.env.NODE_ENV === 'development') {
@@ -1304,7 +1371,9 @@ export class RidesFlowService {
       }
 
       if (detailedDrivers.length === 0) {
-        this.logger.error('❌ [MATCHING] No se pudo obtener información detallada de conductores');
+        this.logger.error(
+          '❌ [MATCHING] No se pudo obtener información detallada de conductores',
+        );
         return null;
       }
 
@@ -1315,12 +1384,13 @@ export class RidesFlowService {
 
       // 5. Calcular distancias con paralelización controlada
       // Limitar concurrencia para evitar sobrecargar Redis
-      const driversWithDistance = await this.calculateDistancesWithConcurrencyLimit(
-        detailedDrivers,
-        lat,
-        lng,
-        radiusKm || 5
-      );
+      const driversWithDistance =
+        await this.calculateDistancesWithConcurrencyLimit(
+          detailedDrivers,
+          lat,
+          lng,
+          radiusKm || 5,
+        );
 
       if (process.env.NODE_ENV === 'development') {
         console.timeEnd('📏 Distance Calculation');
@@ -1332,7 +1402,12 @@ export class RidesFlowService {
       }
 
       // 6. Calcular scores para todos los conductores usando MatchingEngine optimizado
-      const scoredDrivers = await this.calculateDriversScores(driversWithDistance, lat, lng, radiusKm);
+      const scoredDrivers = await this.calculateDriversScores(
+        driversWithDistance,
+        lat,
+        lng,
+        radiusKm,
+      );
 
       if (process.env.NODE_ENV === 'development') {
         console.timeEnd('🧮 Scoring');
@@ -1344,7 +1419,9 @@ export class RidesFlowService {
       }
 
       if (scoredDrivers.length === 0) {
-        this.logger.warn('⚠️ [MATCHING] No se pudieron calcular scores para los conductores');
+        this.logger.warn(
+          '⚠️ [MATCHING] No se pudieron calcular scores para los conductores',
+        );
         return null;
       }
 
@@ -1355,7 +1432,7 @@ export class RidesFlowService {
         driverId: bestDriver.id,
         score: bestDriver.score.toFixed(2),
         distance: bestDriver.distance.toFixed(2),
-        location: bestDriver.currentLocation
+        location: bestDriver.currentLocation,
       });
 
       // 🏆 [TIMING] Winner Details Fetch Phase
@@ -1394,7 +1471,7 @@ export class RidesFlowService {
       const processingTime = Date.now() - startTime;
 
       if (process.env.NODE_ENV === 'development') {
-      this.logger.log(
+        this.logger.log(
           `✅ [MATCHING] Matching completado en ${processingTime}ms - Conductor: ${driverDetails.firstName} ${driverDetails.lastName} (ID: ${bestDriver.id})`,
         );
       }
@@ -1411,11 +1488,13 @@ export class RidesFlowService {
         driversScored: scoredDrivers.length,
         winnerScore: bestDriver.score,
         winnerDistance: bestDriver.distance,
-        winnerRating: Number(driverDetails.rating || driverDetails.averageRating || 0),
+        winnerRating: Number(
+          driverDetails.rating || driverDetails.averageRating || 0,
+        ),
         searchRadius: radiusKm,
         hasWinner: true,
         tierId,
-        strategy: 'balanced'
+        strategy: 'balanced',
       });
 
       if (process.env.NODE_ENV === 'development') {

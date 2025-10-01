@@ -143,7 +143,9 @@ export class AdminAuthService {
   async refreshToken(refreshToken: string): Promise<AdminLoginResponseDto> {
     try {
       if (!refreshToken || typeof refreshToken !== 'string') {
-        this.logger.error(`Invalid refresh token provided: ${typeof refreshToken}`);
+        this.logger.error(
+          `Invalid refresh token provided: ${typeof refreshToken}`,
+        );
         throw new UnauthorizedException('Refresh token inválido');
       }
 

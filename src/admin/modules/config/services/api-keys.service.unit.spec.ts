@@ -9,7 +9,11 @@ import { APIKeysService } from './api-keys.service';
 import { EncryptionService } from './encryption.service';
 import { PrismaService } from '../../../../../src/prisma/prisma.service';
 import { jest } from '@jest/globals';
-import { CreateAPIKeyDto, UpdateAPIKeyDto, APIKeyListQueryDto } from '../dtos/api-key.dto';
+import {
+  CreateAPIKeyDto,
+  UpdateAPIKeyDto,
+  APIKeyListQueryDto,
+} from '../dtos/api-key.dto';
 import {
   setupUnitTestModule,
   testUtils,
@@ -77,7 +81,9 @@ describe('APIKeysService', () => {
 
     service = module.get<APIKeysService>(APIKeysService);
     prismaService = jest.mocked(module.get<PrismaService>(PrismaService));
-    encryptionService = jest.mocked(module.get<EncryptionService>(EncryptionService));
+    encryptionService = jest.mocked(
+      module.get<EncryptionService>(EncryptionService),
+    );
 
     testUtils.resetAllMocks();
   });
@@ -134,21 +140,23 @@ describe('APIKeysService', () => {
         ...mockEncrypted,
         hash: 'hash_value',
       });
-      prismaService.aPIKey.create.mockResolvedValue(createMockAPIKey({
-        id: 1,
-        ...createDto,
-        encryptedKey: `${mockEncrypted.encrypted}:${mockEncrypted.iv}:${mockEncrypted.tag}`,
-        keyHash: 'hash_value',
-        isActive: true,
-        usageCount: 0,
-        errorCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        description: createDto.description,
-        isPrimary: createDto.isPrimary,
-        accessLevel: createDto.accessLevel,
-        tags: createDto.tags,
-      }));
+      prismaService.aPIKey.create.mockResolvedValue(
+        createMockAPIKey({
+          id: 1,
+          ...createDto,
+          encryptedKey: `${mockEncrypted.encrypted}:${mockEncrypted.iv}:${mockEncrypted.tag}`,
+          keyHash: 'hash_value',
+          isActive: true,
+          usageCount: 0,
+          errorCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          description: createDto.description,
+          isPrimary: createDto.isPrimary,
+          accessLevel: createDto.accessLevel,
+          tags: createDto.tags,
+        }),
+      );
       prismaService.aPIKey.findFirst.mockResolvedValue(null); // No existing key
 
       const result = await service.create(createDto, 'admin');
@@ -180,10 +188,12 @@ describe('APIKeysService', () => {
         keyValue: 'sk_live_1234567890abcdef',
       };
 
-      prismaService.aPIKey.findFirst.mockResolvedValue(createMockAPIKey({
-        id: 1,
-        name: 'Existing Key',
-      }));
+      prismaService.aPIKey.findFirst.mockResolvedValue(
+        createMockAPIKey({
+          id: 1,
+          name: 'Existing Key',
+        }),
+      );
 
       await expect(service.create(createDto)).rejects.toThrow(
         ConflictException,
@@ -200,14 +210,16 @@ describe('APIKeysService', () => {
         isPrimary: true,
       };
 
-      prismaService.aPIKey.findFirst.mockResolvedValue(createMockAPIKey({
-        id: 1,
-        name: 'Existing Primary',
-        service: 'stripe',
-        environment: 'production',
-        keyType: 'secret',
-        isPrimary: true,
-      }));
+      prismaService.aPIKey.findFirst.mockResolvedValue(
+        createMockAPIKey({
+          id: 1,
+          name: 'Existing Primary',
+          service: 'stripe',
+          environment: 'production',
+          keyType: 'secret',
+          isPrimary: true,
+        }),
+      );
 
       await expect(service.create(createDto)).rejects.toThrow(
         ConflictException,
@@ -253,21 +265,23 @@ describe('APIKeysService', () => {
         tag: 'tag',
         hash: 'hash',
       });
-      prismaService.aPIKey.create.mockResolvedValue(createMockAPIKey({
-        id: 2,
-        ...createDto,
-        encryptedKey: 'encrypted:key',
-        keyHash: 'hash',
-        description: null,
-        isPrimary: false,
-        accessLevel: 'read',
-        isActive: true,
-        usageCount: 0,
-        errorCount: 0,
-        tags: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
+      prismaService.aPIKey.create.mockResolvedValue(
+        createMockAPIKey({
+          id: 2,
+          ...createDto,
+          encryptedKey: 'encrypted:key',
+          keyHash: 'hash',
+          description: null,
+          isPrimary: false,
+          accessLevel: 'read',
+          isActive: true,
+          usageCount: 0,
+          errorCount: 0,
+          tags: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
       prismaService.aPIKey.findFirst.mockResolvedValue(null);
 
       const result = await service.create(createDto);
@@ -573,12 +587,14 @@ describe('APIKeysService', () => {
 
       prismaService.aPIKey.findUnique.mockResolvedValue(existingKey);
       encryptionService.encryptAPIKey.mockReturnValue(newEncrypted);
-      prismaService.aPIKey.update.mockResolvedValue(createMockAPIKey({
-        ...existingKey,
-        encryptedKey: `${newEncrypted.encrypted}:${newEncrypted.iv}:${newEncrypted.tag}`,
-        keyHash: newEncrypted.hash,
-        lastRotated: new Date(),
-      }));
+      prismaService.aPIKey.update.mockResolvedValue(
+        createMockAPIKey({
+          ...existingKey,
+          encryptedKey: `${newEncrypted.encrypted}:${newEncrypted.iv}:${newEncrypted.tag}`,
+          keyHash: newEncrypted.hash,
+          lastRotated: new Date(),
+        }),
+      );
 
       await service.update(1, updateDto, 'admin');
 
@@ -719,7 +735,9 @@ describe('APIKeysService', () => {
 
       prismaService.aPIKey.create.mockResolvedValue(mockCreatedKey);
       prismaService.aPIKey.findFirst.mockResolvedValue(null); // No existing key
-      mockEncryptionService.generateSecureAPIKey.mockReturnValue('placeholder_key_123');
+      mockEncryptionService.generateSecureAPIKey.mockReturnValue(
+        'placeholder_key_123',
+      );
 
       const result = await service.createStandardKeys(
         {
@@ -735,10 +753,12 @@ describe('APIKeysService', () => {
     });
 
     it('should skip existing keys', async () => {
-      prismaService.aPIKey.findFirst.mockResolvedValue(createMockAPIKey({
-        id: 1,
-        name: 'Existing Stripe Key',
-      }));
+      prismaService.aPIKey.findFirst.mockResolvedValue(
+        createMockAPIKey({
+          id: 1,
+          name: 'Existing Stripe Key',
+        }),
+      );
 
       const result = await service.createStandardKeys(
         {
@@ -797,7 +817,9 @@ describe('APIKeysService', () => {
         updatedBy: 'admin',
       };
 
-      prismaService.aPIKey.findUnique.mockResolvedValue(createMockAPIKey({ id: 1 }));
+      prismaService.aPIKey.findUnique.mockResolvedValue(
+        createMockAPIKey({ id: 1 }),
+      );
       prismaService.aPIKey.update.mockResolvedValue(mockUpdatedKey);
 
       const result = await service.bulkUpdate(bulkUpdateDto, 'admin');
@@ -820,11 +842,13 @@ describe('APIKeysService', () => {
 
       // First update succeeds
       prismaService.aPIKey.update
-        .mockResolvedValueOnce(createMockAPIKey({
-          id: 1,
-          name: 'Key 1',
-          isActive: false,
-        }))
+        .mockResolvedValueOnce(
+          createMockAPIKey({
+            id: 1,
+            name: 'Key 1',
+            isActive: false,
+          }),
+        )
         // Second update fails
         .mockRejectedValueOnce(new Error('Update failed'));
 
@@ -854,19 +878,21 @@ describe('APIKeysService', () => {
         hash: 'hash',
       });
 
-      prismaService.aPIKey.create.mockResolvedValue(createMockAPIKey({
-        id: 1,
-        ...createDto,
-        encryptedKey: 'enc:iv:tag',
-        keyHash: 'hash',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        description: createDto.description,
-        isPrimary: createDto.isPrimary,
-        accessLevel: createDto.accessLevel,
-        tags: createDto.tags,
-      }));
+      prismaService.aPIKey.create.mockResolvedValue(
+        createMockAPIKey({
+          id: 1,
+          ...createDto,
+          encryptedKey: 'enc:iv:tag',
+          keyHash: 'hash',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          description: createDto.description,
+          isPrimary: createDto.isPrimary,
+          accessLevel: createDto.accessLevel,
+          tags: createDto.tags,
+        }),
+      );
 
       prismaService.aPIKey.findFirst.mockResolvedValue(null); // No existing key
 

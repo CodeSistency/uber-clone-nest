@@ -50,7 +50,7 @@ export class APIKeysController {
   ) {}
 
   @Post()
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Crear API key',
     description:
@@ -71,7 +71,7 @@ export class APIKeysController {
   }
 
   @Get()
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Listar API keys',
     description:
@@ -89,7 +89,7 @@ export class APIKeysController {
   }
 
   @Get(':id')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Obtener detalles de API key',
     description: 'Obtiene información completa de una clave API específica',
@@ -112,7 +112,7 @@ export class APIKeysController {
   }
 
   @Get('service/:service/:environment')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Obtener API keys por servicio y entorno',
     description:
@@ -144,7 +144,7 @@ export class APIKeysController {
   }
 
   @Get(':id/decrypt')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Obtener clave API desencriptada',
     description:
@@ -167,7 +167,7 @@ export class APIKeysController {
   }
 
   @Patch(':id')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Actualizar API key',
     description: 'Actualiza la configuración de una clave API existente',
@@ -194,7 +194,7 @@ export class APIKeysController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Eliminar API key',
     description: 'Elimina una clave API del sistema',
@@ -214,7 +214,7 @@ export class APIKeysController {
   }
 
   @Post(':id/toggle')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Alternar estado de API key',
     description: 'Activa o desactiva una clave API',
@@ -235,13 +235,14 @@ export class APIKeysController {
   ): Promise<APIKeyResponseDto> {
     // If no body provided, default to toggling the current state
     const apiKey = await this.apiKeysService.findOne(id);
-    const newActiveState = body?.active !== undefined ? body.active : !apiKey.isActive;
+    const newActiveState =
+      body?.active !== undefined ? body.active : !apiKey.isActive;
 
     return this.apiKeysService.toggleActive(id, newActiveState, 'system'); // TODO: Get from JWT
   }
 
   @Post(':id/rotate')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Rotar API key',
     description: 'Rota una clave API con un nuevo valor',
@@ -264,7 +265,7 @@ export class APIKeysController {
   }
 
   @Post('bulk-update')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Actualización masiva de API keys',
     description: 'Actualiza múltiples claves API con cambios en lote',
@@ -278,7 +279,7 @@ export class APIKeysController {
   }
 
   @Post('create-standard-keys')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Crear API keys estándar',
     description:
@@ -297,7 +298,7 @@ export class APIKeysController {
   }
 
   @Get('analytics/overview')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Análisis de API keys',
     description: 'Obtiene estadísticas y análisis de todas las claves API',
@@ -307,15 +308,13 @@ export class APIKeysController {
     description: 'Análisis obtenido exitosamente',
   })
   async getAnalytics() {
-    const allKeys = await this.apiKeysService.findAll({
-      limit: 1000, // Get all keys for analytics
-    });
+    const allKeys = await this.apiKeysService.getAnalyticsData();
 
     const analytics = {
-      totalKeys: allKeys.total,
-      activeKeys: allKeys.keys.filter((k) => k.isActive).length,
-      inactiveKeys: allKeys.keys.filter((k) => !k.isActive).length,
-      expiringSoon: allKeys.keys.filter((k) => {
+      totalKeys: allKeys.length,
+      activeKeys: allKeys.filter((k) => k.isActive).length,
+      inactiveKeys: allKeys.filter((k) => !k.isActive).length,
+      expiringSoon: allKeys.filter((k) => {
         if (!k.expiresAt) return false;
         const daysUntilExpiry = Math.floor(
           (new Date(k.expiresAt).getTime() - Date.now()) /
@@ -323,24 +322,23 @@ export class APIKeysController {
         );
         return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
       }).length,
-      expired: allKeys.keys.filter(
+      expired: allKeys.filter(
         (k) => k.expiresAt && new Date(k.expiresAt) < new Date(),
       ).length,
-      byService: this.groupByService(allKeys.keys),
-      byEnvironment: this.groupByEnvironment(allKeys.keys),
-      byKeyType: this.groupByKeyType(allKeys.keys),
+      byService: this.groupByService(allKeys),
+      byEnvironment: this.groupByEnvironment(allKeys),
+      byKeyType: this.groupByKeyType(allKeys),
       usageStats: {
-        totalUsage: allKeys.keys.reduce((sum, k) => sum + k.usageCount, 0),
+        totalUsage: allKeys.reduce((sum, k) => sum + k.usageCount, 0),
         averageUsage:
-          allKeys.total > 0
-            ? allKeys.keys.reduce((sum, k) => sum + k.usageCount, 0) /
-              allKeys.total
+          allKeys.length > 0
+            ? allKeys.reduce((sum, k) => sum + k.usageCount, 0) / allKeys.length
             : 0,
-        mostUsed: allKeys.keys
+        mostUsed: allKeys
           .sort((a, b) => b.usageCount - a.usageCount)
           .slice(0, 5)
           .map((k) => ({ name: k.name, usage: k.usageCount })),
-        leastUsed: allKeys.keys
+        leastUsed: allKeys
           .filter((k) => k.usageCount > 0)
           .sort((a, b) => a.usageCount - b.usageCount)
           .slice(0, 5)
@@ -352,7 +350,7 @@ export class APIKeysController {
   }
 
   @Get('audit/:id')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Obtener historial de auditoría',
     description:
@@ -417,7 +415,7 @@ export class APIKeysController {
   // ========== ENDPOINTS DE ROTACIÓN AUTOMÁTICA ==========
 
   @Post(':id/force-rotate')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Forzar rotación inmediata de API key',
     description:
@@ -442,7 +440,7 @@ export class APIKeysController {
   }
 
   @Get(':id/rotation-validation')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Validar si una API key necesita rotación',
     description:
@@ -466,7 +464,7 @@ export class APIKeysController {
   }
 
   @Get('rotation/stats')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Estadísticas de rotación de API keys',
     description:
@@ -481,7 +479,7 @@ export class APIKeysController {
   }
 
   @Post('rotation/bulk-rotate')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Rotación masiva de API keys',
     description: 'Rota múltiples claves API que necesitan rotación',
@@ -527,7 +525,7 @@ export class APIKeysController {
   }
 
   @Get('rotation/audit-history')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.CONFIG_READ)
   @ApiOperation({
     summary: 'Historial de rotaciones de API keys',
     description: 'Obtiene el historial completo de rotaciones realizadas',
@@ -597,18 +595,24 @@ export class APIKeysController {
         action: audit.action,
         rotatedAt: audit.performedAt,
         performedBy: audit.performedBy,
-        reason: (audit.metadata && typeof audit.metadata === 'object' && !Array.isArray(audit.metadata))
-          ? (audit.metadata as any).reason
-          : null,
-        autoRotated: (audit.metadata && typeof audit.metadata === 'object' && !Array.isArray(audit.metadata))
-          ? (audit.metadata as any).autoRotated || false
-          : false,
+        reason:
+          audit.metadata &&
+          typeof audit.metadata === 'object' &&
+          !Array.isArray(audit.metadata)
+            ? (audit.metadata as any).reason
+            : null,
+        autoRotated:
+          audit.metadata &&
+          typeof audit.metadata === 'object' &&
+          !Array.isArray(audit.metadata)
+            ? (audit.metadata as any).autoRotated || false
+            : false,
       })),
     };
   }
 
   @Post('rotation/test-auto-rotation')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.CONFIG_WRITE)
   @ApiOperation({
     summary: 'Probar rotación automática (solo desarrollo)',
     description:

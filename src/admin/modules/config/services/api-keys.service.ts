@@ -14,6 +14,7 @@ import {
   APIKeyRotationDto,
   CreateStandardAPIKeysDto,
   BulkAPIKeyUpdateDto,
+  APIKeyListItemDto,
 } from '../dtos/api-key.dto';
 
 @Injectable()
@@ -135,6 +136,16 @@ export class APIKeysService {
 
     const apiKeys = await this.prisma.aPIKey.findMany({
       where,
+      select: {
+        id: true,
+        name: true,
+        service: true,
+        environment: true,
+        isActive: true,
+        isPrimary: true,
+        expiresAt: true,
+        usageCount: true,
+      },
       orderBy: { [sortBy]: sortOrder },
       skip,
       take: limit,
@@ -143,7 +154,7 @@ export class APIKeysService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      keys: apiKeys.map((key) => this.transformAPIKey(key)),
+      keys: apiKeys.map((key) => this.transformAPIKeyListItem(key)),
       total,
       page,
       limit,
@@ -464,6 +475,24 @@ export class APIKeysService {
     };
   }
 
+  async getAnalyticsData(): Promise<any[]> {
+    const apiKeys = await this.prisma.aPIKey.findMany({
+      select: {
+        id: true,
+        name: true,
+        service: true,
+        environment: true,
+        keyType: true,
+        isActive: true,
+        isPrimary: true,
+        expiresAt: true,
+        usageCount: true,
+      },
+    });
+
+    return apiKeys.map((key) => this.transformAPIKey(key));
+  }
+
   async createStandardKeys(
     standardDto: CreateStandardAPIKeysDto,
     createdBy?: string,
@@ -646,6 +675,19 @@ export class APIKeysService {
       this.logger.error('Failed to create audit log:', error);
       // Don't throw - audit logging failure shouldn't break the main operation
     }
+  }
+
+  private transformAPIKeyListItem(apiKey: any): APIKeyListItemDto {
+    return {
+      id: apiKey.id,
+      name: apiKey.name,
+      service: apiKey.service,
+      environment: apiKey.environment,
+      isActive: apiKey.isActive,
+      isPrimary: apiKey.isPrimary,
+      expiresAt: apiKey.expiresAt,
+      usageCount: Number(apiKey.usageCount),
+    };
   }
 
   private transformAPIKey(apiKey: any) {

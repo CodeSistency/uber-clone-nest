@@ -395,7 +395,8 @@ export class DriverDetailsDto {
   documents: any[];
 
   @ApiPropertyOptional({
-    description: 'Driver vehicles with full details including documents and history',
+    description:
+      'Driver vehicles with full details including documents and history',
     type: [Object],
   })
   vehicles: any[];

@@ -359,9 +359,10 @@ export class FeatureFlagsService {
     // Combined targeting: if any targeting is specified, user must match all specified criteria
     const hasUserTargeting = flag.userRoles || flag.userIds;
     const hasEnvironmentTargeting = flag.environments;
-    const isTargeted = hasUserTargeting || hasEnvironmentTargeting
-      ? isUserTargeted && isEnvironmentTargeted
-      : true; // If no targeting specified, all users are targeted
+    const isTargeted =
+      hasUserTargeting || hasEnvironmentTargeting
+        ? isUserTargeted && isEnvironmentTargeted
+        : true; // If no targeting specified, all users are targeted
 
     // Check rollout percentage
     const userHash = userId ? this.hashUserId(userId) : 0;
@@ -730,7 +731,7 @@ export class FeatureFlagsService {
       return undefined;
     }
     if (Array.isArray(value)) {
-      return value.map(item => String(item));
+      return value.map((item) => String(item));
     }
     return undefined;
   }
@@ -740,7 +741,7 @@ export class FeatureFlagsService {
       return undefined;
     }
     if (Array.isArray(value)) {
-      return value.map(item => Number(item)).filter(item => !isNaN(item));
+      return value.map((item) => Number(item)).filter((item) => !isNaN(item));
     }
     return undefined;
   }

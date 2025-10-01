@@ -545,12 +545,63 @@ export class APIKeyListQueryDto {
   limit?: number = 20;
 }
 
+// DTO for API key list items (minimal data for performance)
+export class APIKeyListItemDto {
+  @ApiProperty({
+    description: 'API key ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Human readable name',
+    example: 'Stripe Production Secret Key',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Service name',
+    example: 'stripe',
+  })
+  service: string;
+
+  @ApiProperty({
+    description: 'Environment',
+    example: 'production',
+  })
+  environment: string;
+
+  @ApiProperty({
+    description: 'Whether key is active',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Whether this is the primary key',
+    example: true,
+  })
+  isPrimary: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Expiration date of the API key',
+    example: '2024-12-31T23:59:59.000Z',
+  })
+  expiresAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Number of times this key has been used',
+    example: 150,
+  })
+  usageCount?: number;
+}
+
 export class APIKeyListResponseDto {
   @ApiProperty({
     description: 'Array of API keys',
-    type: [APIKeyResponseDto],
+    type: [APIKeyListItemDto],
   })
-  keys: APIKeyResponseDto[];
+  keys: APIKeyListItemDto[];
 
   @ApiProperty({
     description: 'Total number of keys',

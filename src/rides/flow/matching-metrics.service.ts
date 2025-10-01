@@ -36,11 +36,15 @@ export class MatchingMetricsService {
       await this.updateScoringAggregatedMetrics(metrics);
 
       if (process.env.NODE_ENV === 'development') {
-        this.logger.log(`📊 [METRICS] Scoring completado - ${metrics.duration}ms, ${metrics.driversScored} drivers, Avg Score: ${metrics.avgScore.toFixed(2)}`);
+        this.logger.log(
+          `📊 [METRICS] Scoring completado - ${metrics.duration}ms, ${metrics.driversScored} drivers, Avg Score: ${metrics.avgScore.toFixed(2)}`,
+        );
       }
-
     } catch (error) {
-      this.logger.warn('⚠️ [METRICS] Error registrando métricas de scoring:', error);
+      this.logger.warn(
+        '⚠️ [METRICS] Error registrando métricas de scoring:',
+        error,
+      );
     }
   }
 
@@ -51,12 +55,23 @@ export class MatchingMetricsService {
     try {
       // Usar operaciones individuales ya que RedisService no tiene pipeline
       await Promise.all([
-        this.redisService.incr(`${this.METRICS_PREFIX}:scoring:total_operations`),
-        this.redisService.incrby(`${this.METRICS_PREFIX}:scoring:total_drivers_processed`, metrics.driversProcessed),
-        this.redisService.incrby(`${this.METRICS_PREFIX}:scoring:total_drivers_scored`, metrics.driversScored),
+        this.redisService.incr(
+          `${this.METRICS_PREFIX}:scoring:total_operations`,
+        ),
+        this.redisService.incrby(
+          `${this.METRICS_PREFIX}:scoring:total_drivers_processed`,
+          metrics.driversProcessed,
+        ),
+        this.redisService.incrby(
+          `${this.METRICS_PREFIX}:scoring:total_drivers_scored`,
+          metrics.driversScored,
+        ),
       ]);
     } catch (error) {
-      this.logger.warn('⚠️ [METRICS] Error actualizando métricas agregadas de scoring:', error);
+      this.logger.warn(
+        '⚠️ [METRICS] Error actualizando métricas agregadas de scoring:',
+        error,
+      );
     }
   }
 
@@ -110,12 +125,13 @@ export class MatchingMetricsService {
       // Log de métricas en desarrollo
       if (process.env.NODE_ENV === 'development') {
         console.timeEnd('📈 Metrics Recording');
-        this.logger.log(`📊 [METRICS] Matching completado - ${metrics.duration}ms, ${metrics.driversFound} drivers, Winner: ${metrics.hasWinner ? 'SÍ' : 'NO'}`);
+        this.logger.log(
+          `📊 [METRICS] Matching completado - ${metrics.duration}ms, ${metrics.driversFound} drivers, Winner: ${metrics.hasWinner ? 'SÍ' : 'NO'}`,
+        );
       }
 
       // Alertas automáticas para problemas de performance
       await this.checkPerformanceAlerts(metrics);
-
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.timeEnd('📈 Metrics Recording');
@@ -130,19 +146,25 @@ export class MatchingMetricsService {
   private async updateAggregatedMetrics(metrics: any): Promise<void> {
     try {
       const operations = [
-        this.redisService.incr(`${this.METRICS_PREFIX}:total_requests`)
+        this.redisService.incr(`${this.METRICS_PREFIX}:total_requests`),
       ];
 
       if (metrics.hasWinner) {
-        operations.push(this.redisService.incr(`${this.METRICS_PREFIX}:successful_matches`));
+        operations.push(
+          this.redisService.incr(`${this.METRICS_PREFIX}:successful_matches`),
+        );
       } else {
-        operations.push(this.redisService.incr(`${this.METRICS_PREFIX}:failed_matches`));
+        operations.push(
+          this.redisService.incr(`${this.METRICS_PREFIX}:failed_matches`),
+        );
       }
 
       await Promise.all(operations);
-
     } catch (error) {
-      this.logger.warn('⚠️ [METRICS] Error actualizando métricas agregadas:', error);
+      this.logger.warn(
+        '⚠️ [METRICS] Error actualizando métricas agregadas:',
+        error,
+      );
     }
   }
 
@@ -164,17 +186,22 @@ export class MatchingMetricsService {
 
     // Alerta: Radio de búsqueda muy grande
     if (metrics.searchRadius > 10) {
-      alerts.push(`⚠️ ADVERTENCIA: Radio de búsqueda amplio (${metrics.searchRadius}km)`);
+      alerts.push(
+        `⚠️ ADVERTENCIA: Radio de búsqueda amplio (${metrics.searchRadius}km)`,
+      );
     }
 
     // Alerta: Tasa de éxito baja
     const successRate = await this.calculateSuccessRate();
-    if (successRate < 0.7) { // Menos del 70% de éxito
-      alerts.push(`⚠️ ADVERTENCIA: Tasa de éxito baja (${(successRate * 100).toFixed(1)}%)`);
+    if (successRate < 0.7) {
+      // Menos del 70% de éxito
+      alerts.push(
+        `⚠️ ADVERTENCIA: Tasa de éxito baja (${(successRate * 100).toFixed(1)}%)`,
+      );
     }
 
     // Log de alertas
-    alerts.forEach(alert => {
+    alerts.forEach((alert) => {
       this.logger.warn(alert);
       // Aquí se podría enviar notificación al equipo de devops
     });
@@ -186,10 +213,14 @@ export class MatchingMetricsService {
   private async calculateSuccessRate(): Promise<number> {
     try {
       const totalRequests = parseInt(
-        await this.redisService.get(`${this.METRICS_PREFIX}:total_requests`) || '0'
+        (await this.redisService.get(
+          `${this.METRICS_PREFIX}:total_requests`,
+        )) || '0',
       );
       const successfulMatches = parseInt(
-        await this.redisService.get(`${this.METRICS_PREFIX}:successful_matches`) || '0'
+        (await this.redisService.get(
+          `${this.METRICS_PREFIX}:successful_matches`,
+        )) || '0',
       );
 
       return totalRequests > 0 ? successfulMatches / totalRequests : 0;
@@ -203,16 +234,23 @@ export class MatchingMetricsService {
    */
   async getPerformanceMetrics(hours: number = 24): Promise<any> {
     try {
-      const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
+      const cutoffTime = Date.now() - hours * 60 * 60 * 1000;
 
       // Obtener métricas recientes (simplificado)
-      const totalRequests = await this.redisService.get(`${this.METRICS_PREFIX}:total_requests`);
-      const successfulMatches = await this.redisService.get(`${this.METRICS_PREFIX}:successful_matches`);
-      const failedMatches = await this.redisService.get(`${this.METRICS_PREFIX}:failed_matches`);
+      const totalRequests = await this.redisService.get(
+        `${this.METRICS_PREFIX}:total_requests`,
+      );
+      const successfulMatches = await this.redisService.get(
+        `${this.METRICS_PREFIX}:successful_matches`,
+      );
+      const failedMatches = await this.redisService.get(
+        `${this.METRICS_PREFIX}:failed_matches`,
+      );
 
-      const successRate = totalRequests && successfulMatches
-        ? (parseInt(successfulMatches) / parseInt(totalRequests)) * 100
-        : 0;
+      const successRate =
+        totalRequests && successfulMatches
+          ? (parseInt(successfulMatches) / parseInt(totalRequests)) * 100
+          : 0;
 
       return {
         period: `${hours} horas`,
@@ -221,11 +259,13 @@ export class MatchingMetricsService {
         failedMatches: parseInt(failedMatches || '0'),
         successRate: `${successRate.toFixed(1)}%`,
         avgResponseTime: await this.getAverageResponseTime(hours),
-        alerts: await this.getRecentAlerts()
+        alerts: await this.getRecentAlerts(),
       };
-
     } catch (error) {
-      this.logger.error('❌ [METRICS] Error obteniendo métricas de performance:', error);
+      this.logger.error(
+        '❌ [METRICS] Error obteniendo métricas de performance:',
+        error,
+      );
       return null;
     }
   }
@@ -257,13 +297,16 @@ export class MatchingMetricsService {
         timestamp: new Date().toISOString(),
         reason,
         context,
-        severity: this.getFailureSeverity(reason)
+        severity: this.getFailureSeverity(reason),
       };
 
-      await this.redisService.set(failureKey, JSON.stringify(failureData), 604800); // 7 días
+      await this.redisService.set(
+        failureKey,
+        JSON.stringify(failureData),
+        604800,
+      ); // 7 días
 
       this.logger.warn(`📊 [METRICS] Matching fallido: ${reason}`, context);
-
     } catch (error) {
       this.logger.warn('⚠️ [METRICS] Error registrando fallo:', error);
     }
@@ -272,7 +315,9 @@ export class MatchingMetricsService {
   /**
    * Determina la severidad de un fallo
    */
-  private getFailureSeverity(reason: string): 'low' | 'medium' | 'high' | 'critical' {
+  private getFailureSeverity(
+    reason: string,
+  ): 'low' | 'medium' | 'high' | 'critical' {
     if (reason.includes('NO_DRIVERS_AVAILABLE')) return 'high';
     if (reason.includes('SYSTEM_ERROR')) return 'critical';
     if (reason.includes('TIMEOUT')) return 'medium';
@@ -284,12 +329,13 @@ export class MatchingMetricsService {
    */
   async cleanupOldMetrics(daysToKeep: number = 7): Promise<void> {
     try {
-      const cutoffTime = Date.now() - (daysToKeep * 24 * 60 * 60 * 1000);
+      const cutoffTime = Date.now() - daysToKeep * 24 * 60 * 60 * 1000;
 
       // Nota: En implementación completa, buscar y eliminar claves antiguas
       // Por simplicidad, solo log
-      this.logger.log(`🧹 [METRICS] Cleanup completado - manteniendo ${daysToKeep} días de métricas`);
-
+      this.logger.log(
+        `🧹 [METRICS] Cleanup completado - manteniendo ${daysToKeep} días de métricas`,
+      );
     } catch (error) {
       this.logger.warn('⚠️ [METRICS] Error en cleanup de métricas:', error);
     }

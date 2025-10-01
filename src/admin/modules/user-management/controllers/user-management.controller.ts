@@ -322,7 +322,8 @@ export class UserManagementController {
   @RequirePermissions(AdminPermission.USERS_SUSPEND)
   @ApiOperation({
     summary: 'Soft Delete de un usuario',
-    description: 'Desactiva un usuario (soft delete) manteniendo todos sus datos. El usuario puede ser reactivado posteriormente.',
+    description:
+      'Desactiva un usuario (soft delete) manteniendo todos sus datos. El usuario puede ser reactivado posteriormente.',
   })
   @ApiParam({
     name: 'id',
@@ -365,7 +366,8 @@ export class UserManagementController {
   @RequirePermissions(AdminPermission.USERS_SUSPEND)
   @ApiOperation({
     summary: 'Restaurar usuario soft deleted',
-    description: 'Restaura un usuario que fue soft deleted, limpiando los campos de eliminación y reactivando la cuenta',
+    description:
+      'Restaura un usuario que fue soft deleted, limpiando los campos de eliminación y reactivando la cuenta',
   })
   @ApiParam({
     name: 'id',

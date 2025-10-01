@@ -131,12 +131,14 @@ export class StatesService {
 
     const states = await this.prisma.state.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        isActive: true,
         country: {
           select: {
-            id: true,
             name: true,
-            isoCode2: true,
           },
         },
         _count: {
@@ -153,7 +155,7 @@ export class StatesService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      states: states.map((state) => this.transformStateWithCount(state)),
+      states: states.map((state) => this.transformStateListItem(state)),
       total,
       page,
       limit,
@@ -418,6 +420,17 @@ export class StatesService {
       ...this.transformState(state),
       citiesCount: state._count?.cities || 0,
       _count: undefined,
+    };
+  }
+
+  private transformStateListItem(state: any) {
+    return {
+      id: state.id,
+      name: state.name,
+      code: state.code,
+      countryName: state.country?.name || 'Unknown',
+      isActive: state.isActive,
+      citiesCount: state._count?.cities || 0,
     };
   }
 }

@@ -123,7 +123,8 @@ export class EncryptionService {
       );
       // Generate a default key for development (NEVER use in production)
       // Use a fixed but valid 256-bit key for development consistency
-      keyString = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      keyString =
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     }
 
     // Ensure key is the correct length and format
@@ -135,9 +136,7 @@ export class EncryptionService {
 
     // Validate that it's a valid hex string
     if (!/^[a-fA-F0-9]{64}$/.test(keyString)) {
-      throw new Error(
-        'ENCRYPTION_KEY must be a valid hexadecimal string',
-      );
+      throw new Error('ENCRYPTION_KEY must be a valid hexadecimal string');
     }
 
     // Convert hex string to Buffer for crypto operations

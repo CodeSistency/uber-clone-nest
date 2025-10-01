@@ -24,9 +24,9 @@ describe('FeatureFlagsService', () => {
     });
 
     service = module.get<FeatureFlagsService>(FeatureFlagsService);
-    cacheService = jest.mocked(module.get<FeatureFlagsCacheService>(
-      FeatureFlagsCacheService,
-    ));
+    cacheService = jest.mocked(
+      module.get<FeatureFlagsCacheService>(FeatureFlagsCacheService),
+    );
     prismaService = jest.mocked(module.get<PrismaService>(PrismaService));
 
     testUtils.resetAllMocks();
@@ -60,9 +60,13 @@ describe('FeatureFlagsService', () => {
         isEnabled: createDto.isEnabled ?? false,
         config: null,
         rolloutPercentage: createDto.rolloutPercentage ?? 100,
-        userRoles: createDto.userRoles ? JSON.parse(JSON.stringify(createDto.userRoles)) : null,
+        userRoles: createDto.userRoles
+          ? JSON.parse(JSON.stringify(createDto.userRoles))
+          : null,
         userIds: undefined,
-        environments: createDto.environments ? JSON.parse(JSON.stringify(createDto.environments)) : null,
+        environments: createDto.environments
+          ? JSON.parse(JSON.stringify(createDto.environments))
+          : null,
         isActive: createDto.isActive ?? true,
         autoEnable: createDto.autoEnable ?? false,
         createdAt: new Date(),
@@ -71,7 +75,9 @@ describe('FeatureFlagsService', () => {
         updatedBy: 'admin',
       };
 
-      (prismaService.featureFlag.create as jest.MockedFunction<any>).mockResolvedValue(expectedResult);
+      (
+        prismaService.featureFlag.create as jest.MockedFunction<any>
+      ).mockResolvedValue(expectedResult);
 
       const result = await service.create(createDto, 'admin');
 
@@ -114,7 +120,9 @@ describe('FeatureFlagsService', () => {
         updatedBy: 'admin',
       };
 
-      (prismaService.featureFlag.create as jest.MockedFunction<any>).mockResolvedValue(expectedResult);
+      (
+        prismaService.featureFlag.create as jest.MockedFunction<any>
+      ).mockResolvedValue(expectedResult);
 
       const result = await service.create(createDto, 'admin');
 
@@ -151,7 +159,9 @@ describe('FeatureFlagsService', () => {
         updatedBy: null,
       } as any);
 
-      await expect(service.create(createDto, 'admin')).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto, 'admin')).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -182,7 +192,9 @@ describe('FeatureFlagsService', () => {
       jest.spyOn(cacheService, 'getCachedFlag').mockResolvedValue(null);
       prismaService.featureFlag.findUnique.mockResolvedValue(null);
 
-      await expect(service.findByKey('non_existent_key')).rejects.toThrow(NotFoundException);
+      await expect(service.findByKey('non_existent_key')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -397,7 +409,9 @@ describe('FeatureFlagsService', () => {
       };
 
       const getCachedFlagSpy = jest.spyOn(cacheService, 'getCachedFlag');
-      jest.spyOn(cacheService, 'getCachedEvaluation').mockResolvedValue(cachedEvaluation);
+      jest
+        .spyOn(cacheService, 'getCachedEvaluation')
+        .mockResolvedValue(cachedEvaluation);
 
       const result = await service.evaluateFeature(evaluationDto);
 
@@ -475,9 +489,13 @@ describe('FeatureFlagsService', () => {
     it('should throw NotFoundException for non-existent flag', async () => {
       prismaService.featureFlag.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(999, { name: 'Test', key: 'test_key', category: 'test' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(999, {
+          name: 'Test',
+          key: 'test_key',
+          category: 'test',
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -560,7 +578,9 @@ describe('FeatureFlagsService', () => {
 
       const result = await service.createStandardFlags({});
 
-      expect(result.message).toContain('Standard feature flags creation completed');
+      expect(result.message).toContain(
+        'Standard feature flags creation completed',
+      );
       expect(result.created).toBeGreaterThan(0);
       expect(prismaService.featureFlag.create).toHaveBeenCalled();
     });
@@ -577,7 +597,9 @@ describe('FeatureFlagsService', () => {
       };
 
       // Mock findUnique to return existing flags
-      (prismaService.featureFlag.findUnique as jest.MockedFunction<any>).mockResolvedValue({
+      (
+        prismaService.featureFlag.findUnique as jest.MockedFunction<any>
+      ).mockResolvedValue({
         id: 1,
         name: 'Flag 1',
         key: 'flag_1',
@@ -598,7 +620,9 @@ describe('FeatureFlagsService', () => {
       } as any);
 
       // Mock update to return updated flags
-      (prismaService.featureFlag.update as jest.MockedFunction<any>).mockResolvedValue({
+      (
+        prismaService.featureFlag.update as jest.MockedFunction<any>
+      ).mockResolvedValue({
         id: 1,
         name: 'Flag 1',
         key: 'flag_1',
@@ -691,7 +715,16 @@ describe('FeatureFlagsService', () => {
       });
       cacheService.invalidateFlagCache = jest.fn();
 
-      await service.update(1, { name: 'Test Feature', key: 'test_feature', category: 'test', isEnabled: true }, 'admin');
+      await service.update(
+        1,
+        {
+          name: 'Test Feature',
+          key: 'test_feature',
+          category: 'test',
+          isEnabled: true,
+        },
+        'admin',
+      );
 
       expect(cacheService.invalidateFlagCache).toHaveBeenCalledWith(
         'test_feature',

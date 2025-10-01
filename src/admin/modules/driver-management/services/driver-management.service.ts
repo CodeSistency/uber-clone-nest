@@ -250,7 +250,7 @@ export class DriverManagementService {
               ? (rideStats.completed / rideStats.total) * 100
               : 0,
           currentWorkZone: driver.workZoneAssignments?.[0]?.zone || null,
-          vehicles: driver.vehicles.map(vehicle => ({
+          vehicles: driver.vehicles.map((vehicle) => ({
             id: vehicle.id,
             make: vehicle.make,
             model: vehicle.model,
@@ -546,7 +546,10 @@ export class DriverManagementService {
       })),
 
       // Current work zone (first active assignment)
-      currentWorkZone: (driver as any).workZoneAssignments?.find((wza: any) => wza.status === 'active')?.zone || undefined,
+      currentWorkZone:
+        (driver as any).workZoneAssignments?.find(
+          (wza: any) => wza.status === 'active',
+        )?.zone || undefined,
 
       // Work zone assignments
       workZoneAssignments: (driver as any).workZoneAssignments || [],
@@ -560,16 +563,20 @@ export class DriverManagementService {
       // Recent rides with full details
       recentRides: ((driver as any).rides || []).map((ride: any) => ({
         ...ride,
-        driverRating: ride.ratings.find((r: any) => r.ratedByUserId)?.ratingValue,
+        driverRating: ride.ratings.find((r: any) => r.ratedByUserId)
+          ?.ratingValue,
         ratings: undefined,
       })),
 
       // Recent delivery orders
-      recentDeliveryOrders: ((driver as any).deliveryOrders || []).map((order: any) => ({
-        ...order,
-        driverRating: order.ratings.find((r: any) => r.ratedByUserId)?.ratingValue,
-        ratings: undefined,
-      })),
+      recentDeliveryOrders: ((driver as any).deliveryOrders || []).map(
+        (order: any) => ({
+          ...order,
+          driverRating: order.ratings.find((r: any) => r.ratedByUserId)
+            ?.ratingValue,
+          ratings: undefined,
+        }),
+      ),
 
       // Recent errands
       recentErrands: (driver as any).errands || [],

@@ -491,12 +491,51 @@ export class CountryResponseDto {
   statesCount?: number | null;
 }
 
+// DTO for country list items (minimal data for performance)
+export class CountryListItemDto {
+  @ApiProperty({
+    description: 'Country ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Full country name',
+    example: 'United States',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'ISO 3166-1 alpha-2 code',
+    example: 'US',
+  })
+  isoCode2: string;
+
+  @ApiProperty({
+    description: 'Continent',
+    example: 'North America',
+  })
+  continent: string;
+
+  @ApiProperty({
+    description: 'Active status',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Number of states/provinces',
+    example: 50,
+  })
+  statesCount: number;
+}
+
 export class CountryListResponseDto {
   @ApiProperty({
     description: 'Array of countries',
-    type: [CountryResponseDto],
+    type: [CountryListItemDto],
   })
-  countries: CountryResponseDto[];
+  countries: CountryListItemDto[];
 
   @ApiProperty({
     description: 'Total number of countries',
@@ -1018,12 +1057,51 @@ export class StateListQueryDto {
   limit?: number = 20;
 }
 
+// DTO for state list items (minimal data for performance)
+export class StateListItemDto {
+  @ApiProperty({
+    description: 'State ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Full state/province name',
+    example: 'California',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'State/province code',
+    example: 'CA',
+  })
+  code: string;
+
+  @ApiProperty({
+    description: 'Country name',
+    example: 'United States',
+  })
+  countryName: string;
+
+  @ApiProperty({
+    description: 'Active status',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Number of cities',
+    example: 58,
+  })
+  citiesCount: number;
+}
+
 export class StateListResponseDto {
   @ApiProperty({
     description: 'Array of states',
-    type: [StateResponseDto],
+    type: [StateListItemDto],
   })
-  states: StateResponseDto[];
+  states: StateListItemDto[];
 
   @ApiProperty({
     description: 'Total number of states',
@@ -1406,12 +1484,57 @@ export class CityListQueryDto {
   limit?: number = 20;
 }
 
+// DTO for city list items (minimal data for performance)
+export class CityListItemDto {
+  @ApiProperty({
+    description: 'City ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Full city name',
+    example: 'Los Angeles',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'State name',
+    example: 'California',
+  })
+  stateName: string;
+
+  @ApiProperty({
+    description: 'City center latitude',
+    example: 34.0522,
+  })
+  latitude: number;
+
+  @ApiProperty({
+    description: 'City center longitude',
+    example: -118.2437,
+  })
+  longitude: number;
+
+  @ApiProperty({
+    description: 'Active status',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'Population count',
+    example: 3976322,
+  })
+  population: number | null;
+}
+
 export class CityListResponseDto {
   @ApiProperty({
     description: 'Array of cities',
-    type: [CityResponseDto],
+    type: [CityListItemDto],
   })
-  cities: CityResponseDto[];
+  cities: CityListItemDto[];
 
   @ApiProperty({
     description: 'Total number of cities',

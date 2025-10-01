@@ -230,14 +230,35 @@ async function bootstrap() {
     .addTag('Admin Driver Management', 'Admin driver management')
     .addTag('Admin Reports & Analytics', 'Admin reporting and analytics')
     .addTag('Admin Notifications', 'Admin notification management')
-    .addTag('Admin Geography - Countries', 'Admin geographical management - Countries')
-    .addTag('Admin Geography - States', 'Admin geographical management - States')
-    .addTag('Admin Geography - Cities', 'Admin geographical management - Cities')
-    .addTag('Admin Geography - Service Zones', 'Admin geographical management - Service Zones')
-    .addTag('Admin Pricing - Ride Tiers', 'Admin pricing and tier management - Ride Tiers')
-    .addTag('Admin Pricing - Temporal Rules', 'Admin pricing and tier management - Temporal Rules')
+    .addTag(
+      'Admin Geography - Countries',
+      'Admin geographical management - Countries',
+    )
+    .addTag(
+      'Admin Geography - States',
+      'Admin geographical management - States',
+    )
+    .addTag(
+      'Admin Geography - Cities',
+      'Admin geographical management - Cities',
+    )
+    .addTag(
+      'Admin Geography - Service Zones',
+      'Admin geographical management - Service Zones',
+    )
+    .addTag(
+      'Admin Pricing - Ride Tiers',
+      'Admin pricing and tier management - Ride Tiers',
+    )
+    .addTag(
+      'Admin Pricing - Temporal Rules',
+      'Admin pricing and tier management - Temporal Rules',
+    )
     .addTag('Admin Config - API Keys', 'Admin system configuration - API Keys')
-    .addTag('Admin Config - Feature Flags', 'Admin system configuration - Feature Flags')
+    .addTag(
+      'Admin Config - Feature Flags',
+      'Admin system configuration - Feature Flags',
+    )
     .addTag('Analytics', 'Analytics and reporting endpoints')
     .addTag('Stores', 'Store management endpoints')
     .addTag('Orders', 'Order management endpoints')

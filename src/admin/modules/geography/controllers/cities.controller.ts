@@ -33,6 +33,7 @@ import {
   CityListQueryDto,
   CityResponseDto,
   CityListResponseDto,
+  CityListItemDto,
 } from '../dtos/country.dto';
 
 @ApiTags('Admin Geography - Cities')

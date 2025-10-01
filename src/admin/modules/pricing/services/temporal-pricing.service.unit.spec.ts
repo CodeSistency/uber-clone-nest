@@ -85,9 +85,7 @@ describe('TemporalPricingService', () => {
         multiplier: createDto.multiplier, // Service transforms Decimal to number
       };
 
-      prismaService.temporalPricingRule.create.mockResolvedValue(
-        prismaResult,
-      );
+      prismaService.temporalPricingRule.create.mockResolvedValue(prismaResult);
 
       const result = await service.create(createDto);
 
@@ -470,7 +468,9 @@ describe('TemporalPricingService', () => {
 
       const result = await service.createStandardRules({} as any);
 
-      expect(result.message).toContain('Standard temporal pricing rules creation completed');
+      expect(result.message).toContain(
+        'Standard temporal pricing rules creation completed',
+      );
       expect(result.created).toBeGreaterThan(0);
       expect(prismaService.temporalPricingRule.create).toHaveBeenCalled();
     });
@@ -523,7 +523,7 @@ describe('TemporalPricingService', () => {
 
       // Should throw BadRequestException for missing required fields
       await expect(service.create(createDto)).rejects.toThrow(
-        'Time range rules must specify startTime and endTime'
+        'Time range rules must specify startTime and endTime',
       );
     });
   });

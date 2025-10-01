@@ -522,7 +522,9 @@ export class UserManagementService {
     }
 
     if (user.deletedAt) {
-      throw new NotFoundException(`User with ID ${userId} is already soft deleted`);
+      throw new NotFoundException(
+        `User with ID ${userId} is already soft deleted`,
+      );
     }
 
     // Get related data counts for logging
@@ -636,9 +638,7 @@ export class UserManagementService {
       },
     );
 
-    this.logger.log(
-      `Admin ${adminId} restored user ${userId} (${user.email})`,
-    );
+    this.logger.log(`Admin ${adminId} restored user ${userId} (${user.email})`);
 
     // Return updated user details with restored status
     return this.getUserDetails(userId);
@@ -677,18 +677,20 @@ export class UserManagementService {
   }
 
   private async getUserRelatedDataCounts(userId: number) {
-    const [rideCount, walletTransactionsCount, emergencyContactsCount, ratingsCount] = await Promise.all([
+    const [
+      rideCount,
+      walletTransactionsCount,
+      emergencyContactsCount,
+      ratingsCount,
+    ] = await Promise.all([
       this.prisma.ride.count({ where: { userId } }),
       this.prisma.walletTransaction.count({
-        where: { wallet: { userId } }
+        where: { wallet: { userId } },
       }),
       this.prisma.emergencyContact.count({ where: { userId } }),
       this.prisma.rating.count({
         where: {
-          OR: [
-            { ratedUserId: userId },
-            { ratedByUserId: userId },
-          ],
+          OR: [{ ratedUserId: userId }, { ratedByUserId: userId }],
         },
       }),
     ]);

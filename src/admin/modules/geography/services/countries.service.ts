@@ -143,7 +143,12 @@ export class CountriesService {
 
     const countries = await this.prisma.country.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        isoCode2: true,
+        continent: true,
+        isActive: true,
         _count: {
           select: {
             states: true,
@@ -159,7 +164,7 @@ export class CountriesService {
 
     return {
       countries: countries.map((country) =>
-        this.transformCountryWithCount(country),
+        this.transformCountryListItem(country),
       ),
       total,
       page,
@@ -404,6 +409,17 @@ export class CountriesService {
       ...this.transformCountry(country),
       statesCount: country._count?.states || 0,
       _count: undefined,
+    };
+  }
+
+  private transformCountryListItem(country: any) {
+    return {
+      id: country.id,
+      name: country.name,
+      isoCode2: country.isoCode2,
+      continent: country.continent,
+      isActive: country.isActive,
+      statesCount: country._count?.states || 0,
     };
   }
 

@@ -86,13 +86,10 @@ Esta guía explica cómo consumir los endpoints de gestión de API Keys desde el
       "name": "Stripe Production Key",
       "service": "stripe",
       "environment": "production",
-      "keyType": "secret",
       "isActive": true,
       "isPrimary": true,
-      "usageCount": 1250,
-      "lastRotated": "2024-01-10T08:30:00.000Z",
       "expiresAt": "2024-12-31T23:59:59.000Z",
-      "createdAt": "2024-01-01T10:00:00.000Z"
+      "usageCount": 1250
     }
   ],
   "total": 25,
@@ -220,11 +217,25 @@ Esta guía explica cómo consumir los endpoints de gestión de API Keys desde el
 
 **MÉTODO:** `GET /admin/config/api-keys/service/{service}/{environment}`
 
-**DESCRIPCIÓN:** Lista todas las claves activas de un servicio específico en un entorno.
+**DESCRIPCIÓN:** Lista todas las claves activas de un servicio específico en un entorno, ordenadas por prioridad (primarias primero).
 
 **EJEMPLO:** `GET /admin/config/api-keys/service/stripe/production`
 
-**RECIBE:** Array de API Keys (mismo formato que listar)
+**RECIBE:** Array de API Keys con información básica incluyendo expiración y uso
+```json
+[
+  {
+    "id": 1,
+    "name": "Stripe Production Key",
+    "service": "stripe",
+    "environment": "production",
+    "isActive": true,
+    "isPrimary": true,
+    "expiresAt": "2024-12-31T23:59:59.000Z",
+    "usageCount": 1250
+  }
+]
+```
 
 ---
 
@@ -514,6 +525,37 @@ Esta guía explica cómo consumir los endpoints de gestión de API Keys desde el
 
 ---
 
+## 📋 CAMPOS EN LISTAS (OPTIMIZADOS)
+
+### Campos en lista de API Keys (8 campos):
+- `id`: ID único de la API key
+- `name`: Nombre legible de la API key
+- `service`: Servicio al que pertenece
+- `environment`: Entorno (development/staging/production)
+- `isActive`: Estado activo de la clave
+- `isPrimary`: Si es la clave primaria del servicio/entorno
+- `expiresAt` *(opcional)*: Fecha de expiración de la clave
+- `usageCount` *(opcional)*: Número de veces que se ha usado la clave
+
+### Campos en detalles completos (18+ campos):
+Incluye todos los campos anteriores más información detallada como:
+- `keyType`: Tipo de clave
+- `description`: Descripción detallada
+- `lastRotated`: Última rotación
+- `errorCount`: Conteo de errores
+- `rateLimit`: Límite de requests
+- `tags`: Etiquetas de organización
+- `createdAt`/`updatedAt`: Fechas de creación/actualización
+- `createdBy`/`updatedBy`: Usuarios que crearon/actualizaron
+- Y otros campos administrativos
+
+### Optimización Balanceada:
+Los endpoints de listas paginadas retornan 8 campos incluyendo información útil como expiración y uso, manteniendo un buen balance entre rendimiento y funcionalidad. Para información completa (configuraciones avanzadas, auditoría, etc.), utiliza los endpoints de detalles por ID.
+
+**Nota sobre campos opcionales**: Los campos `expiresAt` y `usageCount` pueden ser `null` o no estar presentes en algunas claves API antiguas o en casos donde aún no se han establecido políticas de expiración.
+
+---
+
 ## 🔧 USO PRÁCTICO
 
 ### 1. Configurar Stripe para producción:
@@ -566,5 +608,7 @@ GET /admin/config/api-keys/service/stripe/production
 5. **Auditoría**: Todas las operaciones quedan registradas. Revisa el historial para troubleshooting.
 
 6. **Entornos**: Mantén claves separadas por entorno (development/staging/production) para evitar accidentes.
+
+11. **Optimización Balanceada**: Los endpoints de listas paginadas retornan 8 campos incluyendo información útil como expiración y uso, manteniendo un buen balance entre rendimiento y funcionalidad. Para información completa (configuraciones avanzadas, auditoría, etc.), utiliza los endpoints de detalles por ID.
 
 Esta documentación cubre todas las operaciones necesarias para gestionar API Keys desde el panel de administración.
