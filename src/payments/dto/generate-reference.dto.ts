@@ -45,11 +45,11 @@ export class GenerateReferenceDto {
   @ApiPropertyOptional({
     description: 'Método de pago',
     example: 'transfer',
-    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'],
+    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash', 'wallet'],
   })
   @IsOptional()
-  @IsIn(['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'])
-  paymentMethod?: 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin' | 'cash';
+  @IsIn(['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash', 'wallet'])
+  paymentMethod?: 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin' | 'cash' | 'wallet';
 
   @ApiPropertyOptional({
     description: 'Código del banco venezolano',
@@ -148,11 +148,11 @@ export class PaymentMethodDto {
   @ApiProperty({
     description: 'Método de pago',
     example: 'transfer',
-    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'],
+    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash', 'wallet'],
   })
   @IsNotEmpty()
-  @IsIn(['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'])
-  method: 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin' | 'cash';
+  @IsIn(['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash', 'wallet'])
+  method: 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin' | 'cash' | 'wallet';
 
   @ApiProperty({
     description: 'Monto para este método de pago',

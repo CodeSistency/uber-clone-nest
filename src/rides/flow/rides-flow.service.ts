@@ -6,7 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationManagerService } from '../../notifications/notification-manager.service';
 import {
   NotificationType,
   NotificationChannel,
@@ -30,7 +30,7 @@ export class RidesFlowService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notifications: NotificationsService,
+    private readonly notificationManager: NotificationManagerService,
     private readonly gateway: WebSocketGatewayClass,
     private readonly ridesService: RidesService,
     private readonly ordersService: OrdersService,
@@ -140,14 +140,53 @@ export class RidesFlowService {
       driver_id: undefined,
     } as any);
 
-    // Join WS room logically and notify pending
-    this.gateway.server?.to(`ride-${ride.rideId}`).emit('ride:requested', {
-      rideId: ride.rideId,
-      userId: payload.userId,
-      timestamp: new Date(),
-    });
+    // Note: Driver notifications moved to after payment confirmation
+    // This ensures users pay before drivers are notified
 
     return ride;
+  }
+
+  /**
+   * Notifica conductores cercanos después de que el pago sea confirmado
+   * Se ejecuta automáticamente cuando paymentStatus cambia a 'paid'
+   */
+  async notifyDriversAfterPayment(rideId: number): Promise<void> {
+    this.logger.log(`🚗 [POST-PAYMENT] Starting driver notification for ride ${rideId}`);
+
+    const ride = await this.prisma.ride.findUnique({
+      where: { rideId },
+      include: { user: true, tier: true }
+    });
+
+    if (!ride) {
+      throw new Error(`Ride ${rideId} not found`);
+    }
+
+    if (ride.paymentStatus !== 'paid') {
+      throw new Error(`Ride ${rideId} payment not confirmed (status: ${ride.paymentStatus})`);
+    }
+
+    // Notificar conductores cercanos via WebSocket
+    this.gateway.server?.to(`ride-${ride.rideId}`).emit('ride:requested', {
+      rideId: ride.rideId,
+      userId: ride.userId,
+      timestamp: new Date(),
+      paymentConfirmed: true, // Flag adicional para indicar que ya está pagado
+      origin: {
+        lat: ride.originLatitude,
+        lng: ride.originLongitude,
+        address: ride.originAddress,
+      },
+      destination: {
+        lat: ride.destinationLatitude,
+        lng: ride.destinationLongitude,
+        address: ride.destinationAddress,
+      },
+      tier: ride.tier,
+      farePrice: ride.farePrice,
+    });
+
+    this.logger.log(`✅ [POST-PAYMENT] Successfully notified drivers for paid ride ${rideId}`);
   }
 
   async selectTransportVehicle(
@@ -246,7 +285,7 @@ export class RidesFlowService {
 
   async confirmTransportPayment(
     rideId: number,
-    method: 'cash' | 'card',
+    method: 'cash' | 'card' | 'wallet',
     _clientSecret?: string,
   ) {
     let payment:
@@ -274,6 +313,9 @@ export class RidesFlowService {
       } catch (e) {
         // Fallback to pending without PI
       }
+    } else if (method === 'wallet') {
+      // Wallet payment already processed, just confirm the ride
+      // No additional processing needed
     }
 
     const updated = await this.prisma.ride.update({
@@ -306,7 +348,7 @@ export class RidesFlowService {
     const ride = await this.prisma.ride.findUnique({ where: { rideId } });
     if (!ride) throw new Error('Ride not found');
     // Soft-cancel via notification and WS; DB status stays via paymentStatus for now
-    await this.notifications.notifyRideStatusUpdate(
+    await this.notificationManager.notifyRideStatusUpdate(
       rideId,
       ride.userId.toString(),
       ride.driverId ?? 0,
@@ -343,7 +385,7 @@ export class RidesFlowService {
       where: { rideId },
       data: { driverId },
     });
-    await this.notifications.notifyRideStatusUpdate(
+    await this.notificationManager.notifyRideStatusUpdate(
       rideId,
       userId,
       driverId,
@@ -360,7 +402,7 @@ export class RidesFlowService {
     driverId: number,
     userId: string,
   ) {
-    await this.notifications.notifyRideStatusUpdate(
+    await this.notificationManager.notifyRideStatusUpdate(
       rideId,
       userId,
       driverId,
@@ -373,7 +415,7 @@ export class RidesFlowService {
   }
 
   async driverStartTransport(rideId: number, driverId: number, userId: string) {
-    await this.notifications.notifyRideStatusUpdate(
+    await this.notificationManager.notifyRideStatusUpdate(
       rideId,
       userId,
       driverId,
@@ -395,7 +437,7 @@ export class RidesFlowService {
       where: { rideId },
       data: { farePrice: fare, paymentStatus: 'paid' },
     });
-    await this.notifications.notifyRideStatusUpdate(
+    await this.notificationManager.notifyRideStatusUpdate(
       rideId,
       userId,
       driverId,
@@ -463,7 +505,7 @@ export class RidesFlowService {
       where: { orderId },
     });
     if (!order) throw new Error('Order not found');
-    await this.notifications.sendNotification({
+    await this.notificationManager.sendNotification({
       userId: order.userId.toString(),
       type: 'order_cancelled' as any,
       title: 'Order Cancelled',
@@ -1811,7 +1853,7 @@ export class RidesFlowService {
       const distance = 5; // TODO: Calcular distancia real
       const duration = ride.rideTime || 15;
 
-      await this.notifications.sendNotification({
+      await this.notificationManager.sendNotification({
         userId: `driver_${driverId}`, // Placeholder - debería ser el userId real del conductor
         type: 'RIDE_REQUEST' as any,
         title: 'Nueva Solicitud de Viaje',
@@ -1894,7 +1936,7 @@ export class RidesFlowService {
         });
 
         // Notificar al usuario que el tiempo expiró
-        await this.notifications.sendNotification({
+        await this.notificationManager.sendNotification({
           userId: ride.userId.toString(),
           type: 'RIDE_REQUEST_EXPIRED' as any,
           title: 'Tiempo Agotado',
@@ -1918,7 +1960,7 @@ export class RidesFlowService {
         });
 
         // Notificar al usuario
-        await this.notifications.sendNotification({
+        await this.notificationManager.sendNotification({
           userId: ride.userId.toString(),
           type: 'RIDE_ACCEPTED' as any,
           title: '¡Viaje Aceptado!',
@@ -1962,7 +2004,7 @@ export class RidesFlowService {
         });
 
         // Notificar al usuario
-        await this.notifications.sendNotification({
+        await this.notificationManager.sendNotification({
           userId: ride.userId.toString(),
           type: 'RIDE_REJECTED' as any,
           title: 'Viaje Rechazado',
@@ -2089,7 +2131,7 @@ export class RidesFlowService {
       });
 
       // 7. Notificar al pasajero sobre el reembolso
-      await this.notifications.sendNotification({
+      await this.notificationManager.sendNotification({
         userId: ride.userId.toString(),
         type: NotificationType.RIDE_REFUND_PROCESSED,
         title: 'Viaje Cancelado - Reembolso Procesado',
@@ -2106,7 +2148,7 @@ export class RidesFlowService {
       });
 
       // 8. Notificar al conductor sobre la cancelación exitosa
-      await this.notifications.sendNotification({
+      await this.notificationManager.sendNotification({
         userId: driverId.toString(),
         type: NotificationType.DRIVER_CANCEL_RIDE,
         title: 'Viaje Cancelado Exitosamente',
@@ -2714,7 +2756,7 @@ export class RidesFlowService {
 
     // Notificar al pasajero sobre la calificación recibida
     try {
-      await this.notifications.sendNotification({
+      await this.notificationManager.sendNotification({
         userId: ride.userId.toString(),
         type: NotificationType.PASSENGER_RATED_BY_DRIVER,
         title: 'Calificación Recibida',

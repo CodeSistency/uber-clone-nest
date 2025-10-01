@@ -761,6 +761,141 @@ export class NotificationsController {
     };
   }
 
+  @Post('switch-provider')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Switch notification provider dynamically',
+    description: 'Change the active notification provider (firebase/expo) at runtime',
+  })
+  @ApiBody({
+    type: Object,
+    description: 'Provider configuration',
+    schema: {
+      type: 'object',
+      properties: {
+        provider: {
+          type: 'string',
+          enum: ['firebase', 'expo'],
+          example: 'expo',
+        },
+      },
+      required: ['provider'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification provider switched successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Notification provider switched to expo',
+        },
+        previousProvider: {
+          type: 'string',
+          example: 'firebase',
+        },
+        currentProvider: {
+          type: 'string',
+          example: 'expo',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid provider specified',
+  })
+  async switchProvider(@Body() body: { provider: 'firebase' | 'expo' }) {
+    const { provider } = body;
+
+    if (!['firebase', 'expo'].includes(provider)) {
+      throw new Error('Invalid provider. Must be "firebase" or "expo"');
+    }
+
+    const previousProvider = this.notificationsService.getCurrentProviderType();
+    this.notificationsService.switchProvider(provider);
+
+    return {
+      message: `Notification provider switched to ${provider}`,
+      previousProvider,
+      currentProvider: provider,
+    };
+  }
+
+  @Get('provider-status')
+  @ApiOperation({
+    summary: 'Get notification provider status',
+    description: 'Get information about the current notification provider configuration',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Provider status retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        currentProvider: {
+          type: 'string',
+          example: 'expo',
+        },
+        availableProviders: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['firebase', 'expo'],
+        },
+        provider: {
+          type: 'string',
+          example: 'expo',
+        },
+        expo: {
+          type: 'object',
+          properties: {
+            initialized: { type: 'boolean', example: true },
+            status: { type: 'string', example: 'configured' },
+          },
+        },
+        firebase: {
+          type: 'object',
+          properties: {
+            initialized: { type: 'boolean', example: false },
+            status: { type: 'string', example: 'not_configured' },
+          },
+        },
+        twilio: {
+          type: 'object',
+          properties: {
+            initialized: { type: 'boolean', example: true },
+            status: { type: 'string', example: 'configured' },
+            phoneNumber: { type: 'string', example: '+1234567890' },
+          },
+        },
+      },
+    },
+  })
+  async getProviderStatus() {
+    const providerStatus = this.notificationsService.getProviderStatus();
+
+    return {
+      currentProvider: providerStatus.currentProvider,
+      availableProviders: providerStatus.availableProviders,
+      provider: providerStatus.currentProvider,
+      expo: {
+        initialized: true,
+        status: 'configured', // Always configured for Expo
+      },
+      firebase: {
+        initialized: this.configService.get('FIREBASE_PROJECT_ID') ? true : false,
+        status: this.configService.get('FIREBASE_PROJECT_ID') ? 'configured' : 'not_configured',
+      },
+      twilio: {
+        initialized: this.configService.get('TWILIO_ACCOUNT_SID') ? true : false,
+        status: this.configService.get('TWILIO_ACCOUNT_SID') ? 'configured' : 'not_configured',
+        phoneNumber: this.configService.get('TWILIO_PHONE_NUMBER') || null,
+      },
+    };
+  }
+
   @Post('test/system-maintenance')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -865,29 +1000,6 @@ export class NotificationsController {
     },
   })
   async getNotificationStatus() {
-    const firebaseConfig = this.configService.firebase;
-    const twilioConfig = this.configService.twilio;
-
-    return {
-      firebase: {
-        initialized: firebaseConfig.initialized,
-        status: firebaseConfig.isConfigured()
-          ? 'configured'
-          : 'missing_credentials',
-        projectId: firebaseConfig.projectId || null,
-      },
-      twilio: {
-        initialized: twilioConfig.initialized,
-        status: twilioConfig.isConfigured()
-          ? 'configured'
-          : 'missing_credentials',
-        phoneNumber: twilioConfig.phoneNumber || null,
-      },
-      websocket: {
-        status: 'operational', // WebSocket is always available
-        activeConnections: 0, // Would need to get from WebSocket service
-      },
-      timestamp: new Date().toISOString(),
-    };
+    return await this.getProviderStatus();
   }
 }

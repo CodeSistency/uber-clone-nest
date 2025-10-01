@@ -1,0 +1,847 @@
+{
+  "proyecto": "referral_system",
+  "etapas": [
+    {
+      "id": "E1",
+      "nombre": "Diseño y Base de Datos",
+      "modulos": [
+        {
+          "id": "M1.1",
+          "nombre": "Esquema de Base de Datos",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Diseñar y crear las tablas necesarias para el sistema de referidos incluyendo códigos, recompensas, transacciones y relaciones con usuarios existentes",
+          "dependencias": ["src/prisma/schema.prisma", "src/config/config.service.ts"],
+          "tareas": [
+            {
+              "id": "T1.1.1",
+              "nombre": "Crear modelo ReferralCode",
+              "descripcion": "Definir la tabla para almacenar códigos de referido con campos como código único, usuario propietario, estado, fecha de creación y expiración",
+              "subtareas": [
+                {
+                  "id": "ST1.1.1.1",
+                  "nombre": "Definir campos principales del modelo",
+                  "descripcion": "Especificar campos: id, code (único), userId (referente), isActive, expiresAt, createdAt, usageCount, maxUses"
+                },
+                {
+                  "id": "ST1.1.1.2",
+                  "nombre": "Agregar índices de performance",
+                  "descripcion": "Crear índices para code, userId, isActive y expiresAt para optimizar consultas"
+                },
+                {
+                  "id": "ST1.1.1.3",
+                  "nombre": "Definir relaciones con User",
+                  "descripcion": "Establecer relación uno-a-muchos entre User y ReferralCode"
+                }
+              ]
+            },
+            {
+              "id": "T1.1.2",
+              "nombre": "Crear modelo Referral",
+              "descripcion": "Tabla para registrar cada referido exitoso con información del referente, referido, estado y fecha de conversión",
+              "subtareas": [
+                {
+                  "id": "ST1.1.2.1",
+                  "nombre": "Definir estructura básica",
+                  "descripcion": "Campos: id, referrerId, refereeId, referralCodeId, status, convertedAt, rewardAmount, rewardType"
+                },
+                {
+                  "id": "ST1.1.2.2",
+                  "nombre": "Agregar campos de auditoría",
+                  "descripcion": "Incluir createdAt, updatedAt, processedAt para tracking del proceso de recompensas"
+                },
+                {
+                  "id": "ST1.1.2.3",
+                  "nombre": "Establecer restricciones de integridad",
+                  "descripcion": "Foreign keys hacia User y ReferralCode con cascade deletes apropiados"
+                }
+              ]
+            },
+            {
+              "id": "T1.1.3",
+              "nombre": "Crear modelo ReferralReward",
+              "descripcion": "Tabla para gestionar las recompensas del sistema de referidos con configuraciones flexibles por tier y tipo",
+              "subtareas": [
+                {
+                  "id": "ST1.1.3.1",
+                  "nombre": "Definir tiers de recompensa",
+                  "descripcion": "Campos: id, tier (BASIC, ADVANCED, VIP), minReferrals, maxReferrals, rewardType, rewardAmount"
+                },
+                {
+                  "id": "ST1.1.3.2",
+                  "nombre": "Configurar tipos de recompensa",
+                  "descripcion": "Soporte para CREDIT, FREE_RIDE, PERCENTAGE_DISCOUNT con campos flexibles"
+                },
+                {
+                  "id": "ST1.1.3.3",
+                  "nombre": "Agregar condiciones de activación",
+                  "descripcion": "Campos para condiciones como firstRideCompleted, minRideValue, validityDays"
+                }
+              ]
+            },
+            {
+              "id": "T1.1.4",
+              "nombre": "Crear modelo ReferralTransaction",
+              "descripcion": "Tabla para auditar todas las transacciones de recompensas del sistema de referidos",
+              "subtareas": [
+                {
+                  "id": "ST1.1.4.1",
+                  "nombre": "Estructura de transacción",
+                  "descripcion": "Campos: id, referralId, userId, amount, type (EARNED, REDEEMED), description, transactionId"
+                },
+                {
+                  "id": "ST1.1.4.2",
+                  "nombre": "Integración con WalletTransaction",
+                  "descripcion": "Relación con el sistema de wallet existente para transacciones financieras"
+                },
+                {
+                  "id": "ST1.1.4.3",
+                  "nombre": "Campos de auditoría completos",
+                  "descripcion": "Incluir createdAt, processedAt, status para tracking completo del flujo"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.2",
+          "nombre": "Configuración de Prisma",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Actualizar el schema de Prisma con los nuevos modelos y generar la migración inicial",
+          "dependencias": ["prisma/schema.prisma", "package.json"],
+          "tareas": [
+            {
+              "id": "T1.2.1",
+              "nombre": "Actualizar schema.prisma",
+              "descripcion": "Agregar todos los nuevos modelos al archivo schema.prisma siguiendo las convenciones existentes del proyecto",
+              "subtareas": [
+                {
+                  "id": "ST1.2.1.1",
+                  "nombre": "Agregar modelos en sección apropiada",
+                  "descripcion": "Insertar los nuevos modelos en la sección correspondiente del schema siguiendo el orden lógico"
+                },
+                {
+                  "id": "ST1.2.1.2",
+                  "nombre": "Verificar compatibilidad de tipos",
+                  "descripcion": "Asegurar que todos los tipos de datos sean compatibles con PostgreSQL y sigan las convenciones del proyecto"
+                },
+                {
+                  "id": "ST1.2.1.3",
+                  "nombre": "Validar sintaxis del schema",
+                  "descripcion": "Ejecutar validación de sintaxis y verificar que no haya errores de formato"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.2",
+              "nombre": "Generar migración de base de datos",
+              "descripcion": "Crear la migración de Prisma para las nuevas tablas del sistema de referidos",
+              "subtareas": [
+                {
+                  "id": "ST1.2.2.1",
+                  "nombre": "Crear migración inicial",
+                  "descripcion": "Ejecutar 'npx prisma migrate dev --name add_referral_system' para generar archivos de migración"
+                },
+                {
+                  "id": "ST1.2.2.2",
+                  "nombre": "Revisar archivos de migración",
+                  "descripcion": "Verificar que los archivos SQL generados sean correctos y no afecten datos existentes"
+                },
+                {
+                  "id": "ST1.2.2.3",
+                  "nombre": "Actualizar cliente Prisma",
+                  "descripcion": "Ejecutar 'npx prisma generate' para actualizar los tipos de TypeScript"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.3",
+              "nombre": "Configurar seeds iniciales",
+              "descripcion": "Crear datos iniciales para el sistema de referidos incluyendo configuración de rewards por defecto",
+              "subtareas": [
+                {
+                  "id": "ST1.2.3.1",
+                  "nombre": "Crear configuración de rewards base",
+                  "descripcion": "Insertar en prisma/seed.ts la configuración inicial de tiers y recompensas del sistema"
+                },
+                {
+                  "id": "ST1.2.3.2",
+                  "nombre": "Agregar datos de prueba",
+                  "descripcion": "Crear algunos registros de prueba para testing incluyendo códigos de referido de ejemplo"
+                },
+                {
+                  "id": "ST1.2.3.3",
+                  "nombre": "Ejecutar seeds",
+                  "descripcion": "Ejecutar 'npm run db:seed' para poblar la base de datos con datos iniciales"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.3",
+          "nombre": "Configuración del Sistema",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Configurar las variables de entorno y servicios necesarios para el funcionamiento del sistema de referidos",
+          "dependencias": ["src/config/config.service.ts", "env-config-template.txt"],
+          "tareas": [
+            {
+              "id": "T1.3.1",
+              "nombre": "Agregar variables de entorno",
+              "descripcion": "Incluir todas las configuraciones necesarias para el sistema de referidos en los archivos de configuración",
+              "subtareas": [
+                {
+                  "id": "ST1.3.1.1",
+                  "nombre": "Configurar límites del sistema",
+                  "descripcion": "Variables como REFERRAL_CODE_LENGTH, MAX_REFERRALS_PER_USER, REFERRAL_EXPIRY_DAYS"
+                },
+                {
+                  "id": "ST1.3.1.2",
+                  "nombre": "Configurar recompensas base",
+                  "descripcion": "Variables como REFERRAL_REWARD_REFERRER_BASE, REFERRAL_REWARD_REFEREE_BASE, etc."
+                },
+                {
+                  "id": "ST1.3.1.3",
+                  "nombre": "Actualizar env-config-template.txt",
+                  "descripcion": "Agregar todas las nuevas variables al archivo de template con valores por defecto y descripciones"
+                }
+              ]
+            },
+            {
+              "id": "T1.3.2",
+              "nombre": "Actualizar AppConfigService",
+              "descripcion": "Extender el servicio de configuración para incluir las nuevas configuraciones del sistema de referidos",
+              "subtareas": [
+                {
+                  "id": "ST1.3.2.1",
+                  "nombre": "Crear interfaz ReferralConfig",
+                  "descripcion": "Definir la estructura TypeScript para la configuración del sistema de referidos"
+                },
+                {
+                  "id": "ST1.3.2.2",
+                  "nombre": "Implementar validación Joi",
+                  "descripcion": "Agregar validaciones en validation.schema.ts para las nuevas variables de entorno"
+                },
+                {
+                  "id": "ST1.3.2.3",
+                  "nombre": "Integrar con configuration.ts",
+                  "descripcion": "Actualizar el archivo de configuración principal para incluir la nueva sección de referidos"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "nombre": "Backend Core",
+      "modulos": [
+        {
+          "id": "M2.1",
+          "nombre": "Servicios Principales",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Implementar los servicios core del sistema de referidos incluyendo gestión de códigos, procesamiento de referidos y cálculo de recompensas",
+          "dependencias": ["src/prisma/prisma.service.ts", "src/config/config.service.ts"],
+          "tareas": [
+            {
+              "id": "T2.1.1",
+              "nombre": "Crear ReferralCodesService",
+              "descripcion": "Servicio para gestión completa de códigos de referido: generación, validación, expiración y estadísticas",
+              "subtareas": [
+                {
+                  "id": "ST2.1.1.1",
+                  "nombre": "Implementar generación automática de códigos",
+                  "descripcion": "Crear algoritmo para generar códigos únicos alfanuméricos siguiendo la configuración del sistema"
+                },
+                {
+                  "id": "ST2.1.1.2",
+                  "nombre": "Validar unicidad y formato de códigos",
+                  "descripcion": "Implementar validaciones para asegurar códigos únicos y formato correcto"
+                },
+                {
+                  "id": "ST2.1.1.3",
+                  "nombre": "Gestionar expiración de códigos",
+                  "descripcion": "Lógica para marcar códigos como expirados y limpiar códigos antiguos"
+                }
+              ]
+            },
+            {
+              "id": "T2.1.2",
+              "nombre": "Crear ReferralsService",
+              "descripcion": "Servicio para procesar referidos: validar códigos, crear relaciones y gestionar estado de conversiones",
+              "subtareas": [
+                {
+                  "id": "ST2.1.2.1",
+                  "nombre": "Implementar validación de códigos de referido",
+                  "descripcion": "Lógica para verificar códigos válidos, no expirados y con usos disponibles"
+                },
+                {
+                  "id": "ST2.1.2.2",
+                  "nombre": "Crear relaciones referrer-referee",
+                  "descripcion": "Establecer conexiones entre usuarios referentes y referidos en la base de datos"
+                },
+                {
+                  "id": "ST2.1.2.3",
+                  "nombre": "Gestionar conversión de referidos",
+                  "descripcion": "Marcar referidos como convertidos cuando completan su primer viaje"
+                }
+              ]
+            },
+            {
+              "id": "T2.1.3",
+              "nombre": "Crear ReferralRewardsService",
+              "descripcion": "Servicio para calcular y aplicar recompensas según tier del referente y reglas configurables",
+              "subtareas": [
+                {
+                  "id": "ST2.1.3.1",
+                  "nombre": "Implementar cálculo de recompensas por tier",
+                  "descripcion": "Lógica para determinar montos de recompensa basados en configuración BASIC/ADVANCED/VIP"
+                },
+                {
+                  "id": "ST2.1.3.2",
+                  "nombre": "Validar condiciones de activación",
+                  "descripcion": "Verificar requisitos como primer viaje completado, valor mínimo, etc."
+                },
+                {
+                  "id": "ST2.1.3.3",
+                  "nombre": "Integrar con sistema de wallet",
+                  "descripcion": "Aplicar recompensas automáticamente al balance del usuario"
+                }
+              ]
+            },
+            {
+              "id": "T2.1.4",
+              "nombre": "Crear ReferralAnalyticsService",
+              "descripcion": "Servicio para métricas y estadísticas del sistema de referidos con cache inteligente",
+              "subtareas": [
+                {
+                  "id": "ST2.1.4.1",
+                  "nombre": "Implementar métricas de rendimiento",
+                  "descripcion": "Cálculo de conversiones, ROI, engagement por usuario y globales"
+                },
+                {
+                  "id": "ST2.1.4.2",
+                  "nombre": "Sistema de cache para estadísticas",
+                  "descripcion": "Cache inteligente con Redis para métricas de alta frecuencia"
+                },
+                {
+                  "id": "ST2.1.4.3",
+                  "nombre": "Detección de fraude básica",
+                  "descripcion": "Alertas para patrones sospechosos basados en configuración"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.2",
+          "nombre": "Controladores REST API",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Crear endpoints REST completos para gestión de referidos con autenticación, validación y documentación Swagger",
+          "dependencias": ["src/auth/guards/jwt.guard.ts", "src/common/interceptors/transform.interceptor.ts"],
+          "tareas": [
+            {
+              "id": "T2.2.1",
+              "nombre": "Crear ReferralCodesController",
+              "descripcion": "Controlador para gestión de códigos de referido con endpoints CRUD y funcionalidades avanzadas",
+              "subtareas": [
+                {
+                  "id": "ST2.2.1.1",
+                  "nombre": "Implementar endpoint GET /referral-codes/my-code",
+                  "descripcion": "Obtener código de referido del usuario autenticado, creándolo si no existe"
+                },
+                {
+                  "id": "ST2.2.1.2",
+                  "nombre": "Crear endpoint GET /referral-codes/:code/stats",
+                  "descripcion": "Obtener estadísticas públicas del código (usos, conversiones) sin datos sensibles"
+                },
+                {
+                  "id": "ST2.2.1.3",
+                  "nombre": "Implementar endpoint POST /referral-codes/regenerate",
+                  "descripcion": "Regenerar código de referido (con límites de frecuencia)"
+                }
+              ]
+            },
+            {
+              "id": "T2.2.2",
+              "nombre": "Crear ReferralsController",
+              "descripcion": "Controlador para gestión de referidos con endpoints para consultar y administrar relaciones",
+              "subtareas": [
+                {
+                  "id": "ST2.2.2.1",
+                  "nombre": "Implementar endpoint GET /referrals/my-referrals",
+                  "descripcion": "Listar referidos del usuario con estado, fechas y recompensas ganadas"
+                },
+                {
+                  "id": "ST2.2.2.2",
+                  "nombre": "Crear endpoint POST /referrals/use-code",
+                  "descripcion": "Aplicar código de referido durante registro de nuevo usuario"
+                },
+                {
+                  "id": "ST2.2.2.3",
+                  "nombre": "Implementar endpoint GET /referrals/stats",
+                  "descripcion": "Obtener estadísticas personales: referidos activos, recompensas totales, tier actual"
+                }
+              ]
+            },
+            {
+              "id": "T2.2.3",
+              "nombre": "Crear ReferralRewardsController",
+              "descripcion": "Controlador para consultar información de recompensas y tiers disponibles",
+              "subtareas": [
+                {
+                  "id": "ST2.2.3.1",
+                  "nombre": "Implementar endpoint GET /referral-rewards/tiers",
+                  "descripcion": "Listar todos los tiers disponibles con requisitos y recompensas"
+                },
+                {
+                  "id": "ST2.2.3.2",
+                  "nombre": "Crear endpoint GET /referral-rewards/my-tier",
+                  "descripcion": "Obtener tier actual del usuario basado en su historial de referidos"
+                },
+                {
+                  "id": "ST2.2.3.3",
+                  "nombre": "Implementar endpoint GET /referral-rewards/calculate",
+                  "descripcion": "Calcular recompensas potenciales para diferentes escenarios"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.3",
+          "nombre": "DTOs y Validación",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Crear Data Transfer Objects con validación class-validator para todos los endpoints del sistema de referidos",
+          "dependencias": ["class-validator", "class-transformer"],
+          "tareas": [
+            {
+              "id": "T2.3.1",
+              "nombre": "Crear DTOs para ReferralCodes",
+              "descripcion": "DTOs para request/response de operaciones con códigos de referido",
+              "subtareas": [
+                {
+                  "id": "ST2.3.1.1",
+                  "nombre": "CreateReferralCodeDto",
+                  "descripcion": "DTO para creación de códigos de referido (si no es automático)"
+                },
+                {
+                  "id": "ST2.3.1.2",
+                  "nombre": "ReferralCodeResponseDto",
+                  "descripcion": "DTO de respuesta con información completa del código y estadísticas"
+                },
+                {
+                  "id": "ST2.3.1.3",
+                  "nombre": "ReferralCodeStatsDto",
+                  "descripcion": "DTO con estadísticas públicas del código (para compartir)"
+                }
+              ]
+            },
+            {
+              "id": "T2.3.2",
+              "nombre": "Crear DTOs para Referrals",
+              "descripcion": "DTOs para gestión de referidos y sus operaciones",
+              "subtareas": [
+                {
+                  "id": "ST2.3.2.1",
+                  "nombre": "UseReferralCodeDto",
+                  "descripcion": "DTO para aplicar código de referido durante registro"
+                },
+                {
+                  "id": "ST2.3.2.2",
+                  "nombre": "ReferralResponseDto",
+                  "descripcion": "DTO con información completa de un referido"
+                },
+                {
+                  "id": "ST2.3.2.3",
+                  "nombre": "ReferralStatsDto",
+                  "descripcion": "DTO con estadísticas personales del usuario referente"
+                }
+              ]
+            },
+            {
+              "id": "T2.3.3",
+              "nombre": "Crear DTOs para Rewards",
+              "descripcion": "DTOs para información de recompensas y tiers",
+              "subtareas": [
+                {
+                  "id": "ST2.3.3.1",
+                  "nombre": "ReferralTierDto",
+                  "descripcion": "DTO con información completa de un tier de recompensas"
+                },
+                {
+                  "id": "ST2.3.3.2",
+                  "nombre": "RewardCalculationDto",
+                  "descripcion": "DTO para parámetros de cálculo de recompensas"
+                },
+                {
+                  "id": "ST2.3.3.3",
+                  "nombre": "RewardCalculationResponseDto",
+                  "descripcion": "DTO con resultado del cálculo de recompensas"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.4",
+          "nombre": "Módulo de Referidos",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Crear el módulo principal de NestJS que agrupa todos los servicios, controladores y dependencias del sistema de referidos",
+          "dependencias": ["@nestjs/common", "@nestjs/jwt"],
+          "tareas": [
+            {
+              "id": "T2.4.1",
+              "nombre": "Crear ReferralsModule",
+              "descripcion": "Módulo principal de NestJS para el sistema de referidos con configuración completa",
+              "subtareas": [
+                {
+                  "id": "ST2.4.1.1",
+                  "nombre": "Configurar providers e imports",
+                  "descripcion": "Registrar todos los servicios, controladores y dependencias necesarias"
+                },
+                {
+                  "id": "ST2.4.1.2",
+                  "nombre": "Implementar guards de autenticación",
+                  "descripcion": "Aplicar guards JWT a endpoints que requieren usuario autenticado"
+                },
+                {
+                  "id": "ST2.4.1.3",
+                  "nombre": "Configurar interceptors y filters",
+                  "descripcion": "Agregar transformación de respuestas y manejo de errores específico"
+                }
+              ]
+            },
+            {
+              "id": "T2.4.2",
+              "nombre": "Integrar con AppModule",
+              "descripcion": "Agregar ReferralsModule al AppModule principal de la aplicación",
+              "subtareas": [
+                {
+                  "id": "ST2.4.2.1",
+                  "nombre": "Importar ReferralsModule",
+                  "descripcion": "Agregar la importación del módulo en AppModule"
+                },
+                {
+                  "id": "ST2.4.2.2",
+                  "nombre": "Configurar dependencias globales",
+                  "descripcion": "Asegurar que PrismaModule y ConfigModule estén disponibles"
+                },
+                {
+                  "id": "ST2.4.2.3",
+                  "nombre": "Verificar rutas de API",
+                  "descripcion": "Confirmar que los endpoints estén accesibles bajo /referral-*"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "nombre": "Integración con Sistemas Existentes",
+      "modulos": [
+        {
+          "id": "M3.1",
+          "nombre": "Integración con RidesService",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Conectar el sistema de referidos con el servicio de viajes para conversión automática de referidos cuando completan su primer viaje",
+          "dependencias": ["src/rides/rides.service.ts", "src/rides/rides-flow.service.ts"],
+          "tareas": [
+            {
+              "id": "T3.1.1",
+              "nombre": "Crear hook de conversión automática",
+              "descripcion": "Implementar hook que se ejecuta cuando un usuario completa su primer viaje exitoso",
+              "subtareas": [
+                {
+                  "id": "ST3.1.1.1",
+                  "nombre": "Identificar punto de integración en RidesService",
+                  "descripcion": "Localizar el método que marca viajes como completados exitosamente"
+                },
+                {
+                  "id": "ST3.1.1.2",
+                  "nombre": "Implementar llamada automática a convertReferral",
+                  "descripcion": "Agregar llamada al método convertReferral cuando se completa el primer viaje"
+                },
+                {
+                  "id": "ST3.1.1.3",
+                  "nombre": "Manejar errores sin afectar flujo principal",
+                  "descripcion": "Asegurar que fallos en conversión no interrumpan el proceso de viaje"
+                }
+              ]
+            },
+            {
+              "id": "T3.1.2",
+              "nombre": "Validar condiciones de conversión",
+              "descripcion": "Implementar lógica para verificar que se cumplen todas las condiciones antes de convertir un referido",
+              "subtareas": [
+                {
+                  "id": "ST3.1.2.1",
+                  "nombre": "Verificar primer viaje completado",
+                  "descripcion": "Confirmar que es efectivamente el primer viaje exitoso del usuario"
+                },
+                {
+                  "id": "ST3.1.2.2",
+                  "nombre": "Validar importe mínimo del viaje",
+                  "descripcion": "Verificar que el viaje cumple con el importe mínimo requerido"
+                },
+                {
+                  "id": "ST3.1.2.3",
+                  "nombre": "Chequear período de validez",
+                  "descripcion": "Asegurar que el referido no ha expirado según configuración"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M3.2",
+          "nombre": "Integración con WalletService",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Conectar el procesamiento de recompensas con el sistema de billetera para pagos automáticos",
+          "dependencias": ["src/wallet/wallet.service.ts", "src/stripe/stripe.service.ts"],
+          "tareas": [
+            {
+              "id": "T3.2.1",
+              "nombre": "Implementar procesamiento automático de recompensas",
+              "descripcion": "Crear sistema que automáticamente agrega fondos a wallets cuando se convierten referidos",
+              "subtareas": [
+                {
+                  "id": "ST3.2.1.1",
+                  "nombre": "Integrar applyReferralRewards en conversión",
+                  "descripcion": "Conectar el método de aplicación de recompensas con el hook de conversión"
+                },
+                {
+                  "id": "ST3.2.1.2",
+                  "nombre": "Manejar transacciones wallet seguras",
+                  "descripcion": "Implementar manejo de errores y rollback en caso de fallos"
+                },
+                {
+                  "id": "ST3.2.1.3",
+                  "nombre": "Crear registros de auditoría",
+                  "descripcion": "Registrar todas las transacciones de recompensas para compliance"
+                }
+              ]
+            },
+            {
+              "id": "T3.2.2",
+              "nombre": "Sincronización con transacciones financieras",
+              "descripcion": "Asegurar que las recompensas se reflejan correctamente en todos los sistemas financieros",
+              "subtareas": [
+                {
+                  "id": "ST3.2.2.1",
+                  "nombre": "Integrar con Stripe para payouts",
+                  "descripcion": "Conectar con sistema de pagos para recompensas monetarias"
+                },
+                {
+                  "id": "ST3.2.2.2",
+                  "nombre": "Actualizar balances en tiempo real",
+                  "descripcion": "Asegurar que los balances se actualicen inmediatamente"
+                },
+                {
+                  "id": "ST3.2.2.3",
+                  "nombre": "Manejar límites y validaciones",
+                  "descripcion": "Implementar controles de cantidad máxima y frecuencia"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M3.3",
+          "nombre": "Integración con NotificationService",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Conectar el envío automático de notificaciones para eventos del sistema de referidos",
+          "dependencias": ["src/notifications/notifications.service.ts", "src/services/firebase.service.ts"],
+          "tareas": [
+            {
+              "id": "T3.3.1",
+              "nombre": "Notificaciones de conversión",
+              "descripcion": "Enviar notificaciones cuando un referido se convierte exitosamente",
+              "subtareas": [
+                {
+                  "id": "ST3.3.1.1",
+                  "nombre": "Notificar al referrer de conversión",
+                  "descripcion": "Enviar push/email al referente cuando su referido completa primer viaje"
+                },
+                {
+                  "id": "ST3.3.1.2",
+                  "nombre": "Notificar al referee de bonos recibidos",
+                  "descripcion": "Informar al referido sobre créditos/bonos obtenidos"
+                },
+                {
+                  "id": "ST3.3.1.3",
+                  "nombre": "Plantillas de notificación específicas",
+                  "descripcion": "Crear templates personalizados para eventos de referidos"
+                }
+              ]
+            },
+            {
+              "id": "T3.3.2",
+              "nombre": "Notificaciones de tier upgrades",
+              "descripcion": "Enviar notificaciones cuando un usuario asciende de tier",
+              "subtareas": [
+                {
+                  "id": "ST3.3.2.1",
+                  "nombre": "Detectar cambios de tier",
+                  "descripcion": "Monitorear cuando un usuario alcanza umbrales de tier"
+                },
+                {
+                  "id": "ST3.3.2.2",
+                  "nombre": "Enviar notificación de felicitación",
+                  "descripcion": "Celebrar el ascenso con mensaje personalizado"
+                },
+                {
+                  "id": "ST3.3.2.3",
+                  "nombre": "Informar beneficios desbloqueados",
+                  "descripcion": "Detallar las nuevas recompensas disponibles"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M3.4",
+          "nombre": "Jobs Programados",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Implementar tareas programadas para mantenimiento y procesamiento automático del sistema de referidos",
+          "dependencias": ["@nestjs/schedule", "src/redis/redis.service.ts"],
+          "tareas": [
+            {
+              "id": "T3.4.1",
+              "nombre": "Job de procesamiento de conversiones",
+              "descripcion": "Tarea programada que procesa referidos pendientes que han completado viajes",
+              "subtareas": [
+                {
+                  "id": "ST3.4.1.1",
+                  "nombre": "Programar ejecución cada 5 minutos",
+                  "descripcion": "Configurar cron job para verificación frecuente"
+                },
+                {
+                  "id": "ST3.4.1.2",
+                  "nombre": "Procesar conversiones masivas",
+                  "descripcion": "Manejar múltiples conversiones de forma eficiente"
+                },
+                {
+                  "id": "ST3.4.1.3",
+                  "nombre": "Logging y monitoreo del job",
+                  "descripcion": "Registrar métricas de ejecución y errores"
+                }
+              ]
+            },
+            {
+              "id": "T3.4.2",
+              "nombre": "Job de limpieza de datos",
+              "descripcion": "Tarea programada para limpiar códigos expirados y datos antiguos",
+              "subtareas": [
+                {
+                  "id": "ST3.4.2.1",
+                  "nombre": "Limpiar códigos expirados",
+                  "descripcion": "Marcar como inactivos códigos que han expirado"
+                },
+                {
+                  "id": "ST3.4.2.2",
+                  "nombre": "Archivar datos antiguos",
+                  "descripcion": "Mover transacciones antiguas a tablas de archivo"
+                },
+                {
+                  "id": "ST3.4.2.3",
+                  "nombre": "Optimizar índices",
+                  "descripcion": "Reorganizar índices para mejor performance"
+                }
+              ]
+            },
+            {
+              "id": "T3.4.3",
+              "nombre": "Job de procesamiento de recompensas pendientes",
+              "descripcion": "Procesar recompensas que no se aplicaron automáticamente",
+              "subtareas": [
+                {
+                  "id": "ST3.4.3.1",
+                  "nombre": "Identificar recompensas pendientes",
+                  "descripcion": "Encontrar referrals convertidos sin recompensas aplicadas"
+                },
+                {
+                  "id": "ST3.4.3.2",
+                  "nombre": "Reintentar aplicación de recompensas",
+                  "descripcion": "Aplicar recompensas con manejo de errores robusto"
+                },
+                {
+                  "id": "ST3.4.3.3",
+                  "nombre": "Reportar fallos persistentes",
+                  "descripcion": "Alertar sobre recompensas que no se pueden procesar"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M3.5",
+          "nombre": "Middlewares y Guards Especializados",
+          "progreso": 100,
+          "prioridad": "Baja",
+          "descripcion": "Implementar middlewares y guards específicos para validación y seguridad del sistema de referidos",
+          "dependencias": ["src/auth/guards/jwt.guard.ts", "src/common/interceptors/transform.interceptor.ts"],
+          "tareas": [
+            {
+              "id": "T3.5.1",
+              "nombre": "Rate limiting para endpoints de referidos",
+              "descripcion": "Implementar límites de frecuencia para prevenir abuso del sistema",
+              "subtareas": [
+                {
+                  "id": "ST3.5.1.1",
+                  "nombre": "Configurar límites por endpoint",
+                  "descripcion": "Diferentes límites para creación vs consulta de códigos"
+                },
+                {
+                  "id": "ST3.5.1.2",
+                  "nombre": "Implementar cache distribuido",
+                  "descripcion": "Usar Redis para rate limiting distribuido"
+                },
+                {
+                  "id": "ST3.5.1.3",
+                  "nombre": "Headers informativos",
+                  "descripcion": "Incluir headers X-RateLimit en respuestas"
+                }
+              ]
+            },
+            {
+              "id": "T3.5.2",
+              "nombre": "Validación de integridad referencial",
+              "descripcion": "Middlewares que validan la consistencia de datos entre entidades",
+              "subtareas": [
+                {
+                  "id": "ST3.5.2.1",
+                  "nombre": "Validar existencia de usuarios",
+                  "descripcion": "Asegurar que referrer y referee existen antes de operaciones"
+                },
+                {
+                  "id": "ST3.5.2.2",
+                  "nombre": "Prevenir auto-referencias",
+                  "descripcion": "Bloquear intentos de referirse a uno mismo"
+                },
+                {
+                  "id": "ST3.5.2.3",
+                  "nombre": "Validar estados de referral",
+                  "descripcion": "Asegurar transiciones de estado válidas"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

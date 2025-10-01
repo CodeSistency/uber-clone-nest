@@ -192,4 +192,78 @@ export const validationSchema = Joi.object({
       'number.max':
         'NOTIFICATION_ANALYTICS_RETENTION_DAYS debe ser menor a 365',
     }),
+
+  // ===============================
+  // REFERRAL SYSTEM CONFIGURATION
+  // ===============================
+  REFERRAL_CODE_LENGTH: Joi.number().min(8).max(20).default(12).messages({
+    'number.min': 'REFERRAL_CODE_LENGTH debe ser mayor o igual a 8',
+    'number.max': 'REFERRAL_CODE_LENGTH debe ser menor o igual a 20',
+  }),
+
+  REFERRAL_CODE_EXPIRY_DAYS: Joi.number().min(1).max(3650).default(365).messages({
+    'number.min': 'REFERRAL_CODE_EXPIRY_DAYS debe ser mayor a 0',
+    'number.max': 'REFERRAL_CODE_EXPIRY_DAYS debe ser menor a 3650',
+  }),
+
+  MAX_REFERRALS_PER_USER: Joi.number().min(1).max(1000).default(100).messages({
+    'number.min': 'MAX_REFERRALS_PER_USER debe ser mayor a 0',
+    'number.max': 'MAX_REFERRALS_PER_USER debe ser menor a 1000',
+  }),
+
+  REFERRAL_REWARD_REFERRER_BASE: Joi.number().min(0).max(1000).default(5.0).messages({
+    'number.min': 'REFERRAL_REWARD_REFERRER_BASE debe ser mayor o igual a 0',
+    'number.max': 'REFERRAL_REWARD_REFERRER_BASE debe ser menor a 1000',
+  }),
+
+  REFERRAL_REWARD_REFEREE_BASE: Joi.number().min(0).max(1000).default(10.0).messages({
+    'number.min': 'REFERRAL_REWARD_REFEREE_BASE debe ser mayor o igual a 0',
+    'number.max': 'REFERRAL_REWARD_REFEREE_BASE debe ser menor a 1000',
+  }),
+
+  REFERRAL_REWARD_ADVANCED_MULTIPLIER: Joi.number().min(0.1).max(10).default(1.5).messages({
+    'number.min': 'REFERRAL_REWARD_ADVANCED_MULTIPLIER debe ser mayor a 0.1',
+    'number.max': 'REFERRAL_REWARD_ADVANCED_MULTIPLIER debe ser menor a 10',
+  }),
+
+  REFERRAL_REWARD_VIP_MULTIPLIER: Joi.number().min(0.1).max(10).default(2.0).messages({
+    'number.min': 'REFERRAL_REWARD_VIP_MULTIPLIER debe ser mayor a 0.1',
+    'number.max': 'REFERRAL_REWARD_VIP_MULTIPLIER debe ser menor a 10',
+  }),
+
+  MAX_FREE_RIDES_PER_USER: Joi.number().min(0).max(100).default(5).messages({
+    'number.min': 'MAX_FREE_RIDES_PER_USER debe ser mayor o igual a 0',
+    'number.max': 'MAX_FREE_RIDES_PER_USER debe ser menor a 100',
+  }),
+
+  REFERRAL_CREDIT_VALIDITY_DAYS: Joi.number().min(1).max(3650).default(30).messages({
+    'number.min': 'REFERRAL_CREDIT_VALIDITY_DAYS debe ser mayor a 0',
+    'number.max': 'REFERRAL_CREDIT_VALIDITY_DAYS debe ser menor a 3650',
+  }),
+
+  REFERRAL_FREE_RIDE_VALIDITY_DAYS: Joi.number().min(1).max(3650).default(60).messages({
+    'number.min': 'REFERRAL_FREE_RIDE_VALIDITY_DAYS debe ser mayor a 0',
+    'number.max': 'REFERRAL_FREE_RIDE_VALIDITY_DAYS debe ser menor a 3650',
+  }),
+
+  REFERRAL_AUTO_PROCESS: Joi.boolean().default(true),
+
+  REFERRAL_PROCESS_DELAY_MINUTES: Joi.number().min(0).max(1440).default(5).messages({
+    'number.min': 'REFERRAL_PROCESS_DELAY_MINUTES debe ser mayor o igual a 0',
+    'number.max': 'REFERRAL_PROCESS_DELAY_MINUTES debe ser menor a 1440',
+  }),
+
+  REFERRAL_MAX_PROCESSING_ATTEMPTS: Joi.number().min(1).max(10).default(3).messages({
+    'number.min': 'REFERRAL_MAX_PROCESSING_ATTEMPTS debe ser mayor a 0',
+    'number.max': 'REFERRAL_MAX_PROCESSING_ATTEMPTS debe ser menor a 10',
+  }),
+
+  REFERRAL_ANALYTICS_ENABLED: Joi.boolean().default(true),
+
+  REFERRAL_FRAUD_DETECTION_ENABLED: Joi.boolean().default(true),
+
+  REFERRAL_MAX_SAME_IP_REFERRALS: Joi.number().min(1).max(100).default(3).messages({
+    'number.min': 'REFERRAL_MAX_SAME_IP_REFERRALS debe ser mayor a 0',
+    'number.max': 'REFERRAL_MAX_SAME_IP_REFERRALS debe ser menor a 100',
+  }),
 });

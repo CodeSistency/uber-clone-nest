@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationManagerService } from '../notifications/notification-manager.service';
 import { BanksService } from '../banks/banks.service';
+import { RidesFlowService } from '../rides/flow/rides-flow.service';
+import { WalletService } from '../wallet/wallet.service';
 import {
   GenerateReferenceDto,
   InitiateMultiplePaymentsDto,
@@ -18,8 +21,10 @@ export class PaymentsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationsService: NotificationsService,
+    private readonly notificationManager: NotificationManagerService,
     private readonly banksService: BanksService,
+    private readonly moduleRef: ModuleRef,
+    private readonly walletService: WalletService,
   ) {}
 
   private convertPrismaToPaymentReference(
@@ -81,7 +86,7 @@ export class PaymentsService {
 
     // Notificar al usuario
     try {
-      await this.notificationsService.sendNotification({
+      await this.notificationManager.sendNotification({
         userId: dto.userId.toString(),
         type: 'payment_reference_generated',
         title: 'Referencia de Pago Generada',
@@ -181,7 +186,7 @@ export class PaymentsService {
       );
 
       // Notificar confirmación exitosa
-      await this.notificationsService.sendNotification({
+      await this.notificationManager.sendNotification({
         userId: userId.toString(),
         type: 'payment_confirmed',
         title: 'Pago Confirmado',
@@ -300,6 +305,49 @@ Para completar el pago:
     return (timestamp + random).padStart(20, '0');
   }
 
+  /**
+   * Procesa un pago utilizando el saldo de la wallet del usuario
+   */
+  async processWalletPayment(
+    userId: number,
+    amount: number,
+    serviceType: string,
+    serviceId: number,
+  ): Promise<{ success: boolean; walletBalance: number; transactionId?: string }> {
+    this.logger.log(`💰 Procesando pago con wallet: ${amount} VES para ${serviceType} ${serviceId}`);
+
+    try {
+      // Verificar saldo de wallet
+      const walletData = await this.walletService.getUserWallet(userId);
+      if (!walletData || !walletData.wallet) {
+        throw new Error('Usuario no tiene wallet activa');
+      }
+
+      const currentBalance = Number(walletData.wallet.balance);
+      if (currentBalance < amount) {
+        throw new Error(`Saldo insuficiente. Disponible: ${currentBalance} VES, requerido: ${amount} VES`);
+      }
+
+      // Descontar el monto de la wallet
+      const updatedWallet = await this.walletService.deductFunds(
+        userId,
+        amount,
+        `Pago de ${serviceType} #${serviceId}`,
+      );
+
+      this.logger.log(`✅ Pago con wallet exitoso: ${amount} VES descontados. Saldo restante: ${updatedWallet.balance}`);
+
+      return {
+        success: true,
+        walletBalance: Number(updatedWallet.balance),
+        transactionId: `WALLET-${Date.now()}-${serviceId}`,
+      };
+    } catch (error) {
+      this.logger.error(`❌ Error procesando pago con wallet:`, error);
+      throw error;
+    }
+  }
+
   private async updateServicePaymentStatus(
     reference: PaymentReference,
   ): Promise<void> {
@@ -309,10 +357,32 @@ Para completar el pago:
 
     switch (reference.serviceType) {
       case 'ride':
+        // Si el pago es con wallet, procesarlo inmediatamente
+        if (reference.paymentMethod === 'wallet') {
+          this.logger.log(`💰 Procesando pago con wallet para ride ${reference.serviceId}`);
+          await this.processWalletPayment(
+            reference.userId,
+            Number(reference.amount),
+            reference.serviceType,
+            reference.serviceId,
+          );
+        }
+
+        // Marcar el ride como pagado (tanto para wallet como otros métodos)
         await this.prisma.ride.update({
           where: { rideId: reference.serviceId },
           data: { paymentStatus: 'paid' },
         });
+
+        // 🆕 NUEVO: Notificar conductores después del pago confirmado
+        try {
+          const ridesFlowService = this.moduleRef.get(RidesFlowService, { strict: false });
+          await ridesFlowService.notifyDriversAfterPayment(reference.serviceId);
+        } catch (error) {
+          this.logger.error(`Failed to notify drivers for ride ${reference.serviceId}:`, error);
+          // No fallar el pago por error en notificación, solo loggear
+        }
+
         break;
 
       case 'delivery':

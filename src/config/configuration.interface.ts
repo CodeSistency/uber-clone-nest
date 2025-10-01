@@ -68,6 +68,34 @@ export interface NotificationConfig {
   retentionDays: number;
 }
 
+export interface ReferralConfig {
+  // Code Configuration
+  codeLength: number;
+  maxReferralsPerUser: number;
+  codeExpiryDays: number;
+
+  // Reward Configuration
+  referrerBaseReward: number;
+  refereeBaseReward: number;
+  advancedMultiplier: number;
+  vipMultiplier: number;
+
+  // Limits Configuration
+  maxFreeRidesPerUser: number;
+  creditValidityDays: number;
+  freeRideValidityDays: number;
+
+  // Processing Configuration
+  autoProcess: boolean;
+  processDelayMinutes: number;
+  maxProcessingAttempts: number;
+
+  // Analytics & Security
+  analyticsEnabled: boolean;
+  fraudDetectionEnabled: boolean;
+  maxSameIpReferrals: number;
+}
+
 export interface AppConfig {
   port: number;
   environment: 'development' | 'production' | 'test';
@@ -94,4 +122,5 @@ export interface Config {
   jwt: JWTConfig;
   clerk: ClerkConfig;
   notification: NotificationConfig;
+  referral: ReferralConfig;
 }

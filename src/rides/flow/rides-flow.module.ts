@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AuthModule } from '../../auth/auth.module';
-import { NotificationsModule } from '../../notifications/notifications.module';
+import { NotificationManagerModule } from '../../notifications/notification-manager.module';
 import { WebSocketModule } from '../../websocket/websocket.module';
 import { RidesModule } from '../rides.module';
 import { OrdersModule } from '../../orders/orders.module';
@@ -29,7 +29,7 @@ import { DriverAvailabilityController } from './driver.availability.controller';
   imports: [
     PrismaModule,
     AuthModule,
-    NotificationsModule,
+    NotificationManagerModule,
     WebSocketModule,
     RidesModule,
     OrdersModule,

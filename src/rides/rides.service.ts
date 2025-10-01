@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationManagerService } from '../notifications/notification-manager.service';
+import { ReferralsService } from '../referrals/services/referrals.service';
+import { ReferralRewardsService } from '../referrals/services/referral-rewards.service';
 import { Ride, Rating } from '@prisma/client';
 import { CreateRideDto } from './dto/create-ride.dto';
 import { ScheduleRideDto } from './dto/schedule-ride.dto';
@@ -13,7 +15,9 @@ export class RidesService {
 
   constructor(
     private prisma: PrismaService,
-    private notificationsService: NotificationsService,
+    private notificationManager: NotificationManagerService,
+    private referralsService: ReferralsService,
+    private referralRewardsService: ReferralRewardsService,
   ) {}
 
   async createRide(createRideDto: CreateRideDto): Promise<Ride> {
@@ -78,7 +82,7 @@ export class RidesService {
         `🔍 Buscando drivers cercanos para ride ${ride.rideId}...`,
       );
       const matchingResult =
-        await this.notificationsService.findAndAssignNearbyDriver(ride.rideId, {
+        await this.notificationManager.findAndAssignNearbyDriver(ride.rideId, {
           lat: origin_latitude,
           lng: origin_longitude,
         });
@@ -287,7 +291,7 @@ export class RidesService {
 
     // Notify the passenger that the ride was accepted
     try {
-      await this.notificationsService.notifyRideStatusUpdate(
+      await this.notificationManager.notifyRideStatusUpdate(
         rideId,
         ride.userId.toString(),
         driverId,
@@ -384,7 +388,7 @@ export class RidesService {
 
     // Notify passenger that driver has arrived
     try {
-      await this.notificationsService.notifyRideStatusUpdate(
+      await this.notificationManager.notifyRideStatusUpdate(
         rideId,
         ride.userId.toString(),
         ride.driverId,
@@ -449,7 +453,7 @@ export class RidesService {
     // Notify affected parties about cancellation
     try {
       // Notify passenger
-      await this.notificationsService.notifyRideStatusUpdate(
+      await this.notificationManager.notifyRideStatusUpdate(
         rideId,
         ride.userId.toString(),
         ride.driverId,
@@ -465,7 +469,7 @@ export class RidesService {
         ride.driverId &&
         ride.driverId.toString() !== ride.userId.toString()
       ) {
-        await this.notificationsService.notifyRideStatusUpdate(
+        await this.notificationManager.notifyRideStatusUpdate(
           rideId,
           ride.driverId.toString(),
           null,
@@ -686,7 +690,7 @@ export class RidesService {
 
     // Notify passenger that ride has started
     try {
-      await this.notificationsService.notifyRideStatusUpdate(
+      await this.notificationManager.notifyRideStatusUpdate(
         rideId,
         ride.userId.toString(),
         ride.driverId,
@@ -787,7 +791,7 @@ export class RidesService {
 
     // Notify passenger that ride is completed
     try {
-      await this.notificationsService.notifyRideStatusUpdate(
+      await this.notificationManager.notifyRideStatusUpdate(
         rideId,
         ride.userId.toString(),
         ride.driverId,
@@ -807,6 +811,19 @@ export class RidesService {
       );
     }
 
+    // Process referral conversion if this is the user's first completed ride
+    try {
+      // ride.userId is Int according to the model, so we can use it directly
+      await this.processReferralConversion(ride.userId);
+      this.logger.log(`Processed referral conversion for user ${ride.userId} after completing ride ${rideId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to process referral conversion for ride ${rideId}:`,
+        error,
+      );
+      // Don't throw error - referral processing shouldn't break ride completion
+    }
+
     return {
       rideId: updatedRide.rideId,
       status: 'completed',
@@ -824,5 +841,125 @@ export class RidesService {
         platformFee: Math.round(finalFare * 0.2 * 100) / 100, // 20% for platform
       },
     };
+  }
+
+  /**
+   * Process referral conversion when a user completes their first ride
+   * This method identifies pending referrals for the user and converts them
+   */
+  private async processReferralConversion(userId: number): Promise<void> {
+    try {
+      // Check if user can be referred (has pending referrals)
+      const canBeReferred = await this.referralsService.canUserBeReferred(userId);
+      if (!canBeReferred) {
+        this.logger.debug(`User ${userId} cannot be referred (no pending referrals or already referred)`);
+        return;
+      }
+
+      // Find pending referrals for this user
+      const pendingReferrals = await this.referralsService.getUserReferrals(userId)
+        .then(referrals => referrals.filter(r => r.status === 'pending'));
+
+      if (pendingReferrals.length === 0) {
+        this.logger.debug(`No pending referrals found for user ${userId}`);
+        return;
+      }
+
+      // Process each pending referral
+      for (const referral of pendingReferrals) {
+        try {
+          // Validate conversion conditions
+          const isValid = await this.validateReferralConversionConditions(referral, userId);
+          if (!isValid) {
+            this.logger.debug(`Referral ${referral.id} does not meet conversion conditions`);
+            continue;
+          }
+
+          // Convert the referral
+          await this.referralsService.convertReferral(referral.id);
+
+          // Apply rewards
+          await this.referralRewardsService.applyReferralRewards(referral.id);
+
+          this.logger.log(`Successfully converted referral ${referral.id} for user ${userId}`);
+
+        } catch (error) {
+          this.logger.error(`Failed to convert referral ${referral.id} for user ${userId}:`, error);
+          // Continue processing other referrals even if one fails
+        }
+      }
+
+    } catch (error) {
+      this.logger.error(`Error processing referral conversion for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate conditions for referral conversion
+   */
+  private async validateReferralConversionConditions(referral: any, userIdNum: number): Promise<boolean> {
+    try {
+      // Condition 1: Check if this is the user's first completed ride
+      const completedRides = await this.prisma.ride.count({
+        where: {
+          userId: userIdNum, // userId is Int in Ride model
+          paymentStatus: 'completed',
+        },
+      });
+
+      if (completedRides !== 1) {
+        // Only convert on the FIRST completed ride
+        return false;
+      }
+
+      // Condition 2: Validate minimum ride value if configured
+      const recentRide = await this.prisma.ride.findFirst({
+        where: {
+          userId: userIdNum, // userId is Int in Ride model
+          paymentStatus: 'completed',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (recentRide) {
+        const minRideValue = 15.00; // Configurable minimum ride value
+        if (Number(recentRide.farePrice) < minRideValue) {
+          this.logger.debug(`Ride value ${recentRide.farePrice} below minimum ${minRideValue} for referral ${referral.id}`);
+          return false;
+        }
+      }
+
+      // Condition 3: Check referral code validity period
+      const codeValidDays = this.getConfigValue('REFERRAL_CODE_EXPIRY_DAYS', 365);
+      const codeAgeDays = Math.floor(
+        (Date.now() - referral.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (codeAgeDays > codeValidDays) {
+        this.logger.debug(`Referral code expired (${codeAgeDays} > ${codeValidDays} days) for referral ${referral.id}`);
+        return false;
+      }
+
+      return true;
+
+    } catch (error) {
+      this.logger.error(`Error validating conversion conditions for referral ${referral.id}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Helper method to get configuration values
+   * Note: In a real implementation, this would use the AppConfigService
+   */
+  private getConfigValue(key: string, defaultValue: any): any {
+    // This is a simplified version - in production, use AppConfigService
+    const envValue = process.env[key];
+    if (envValue !== undefined) {
+      const numValue = parseFloat(envValue);
+      return isNaN(numValue) ? envValue : numValue;
+    }
+    return defaultValue;
   }
 }

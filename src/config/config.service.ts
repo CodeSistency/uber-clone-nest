@@ -223,6 +223,77 @@ export class AppConfigService {
   }
 
   // ===============================
+  // REFERRAL SYSTEM CONFIGURATION
+  // ===============================
+  get referral() {
+    return {
+      // Code Configuration
+      codeLength: parseInt(
+        this.configService.get<string>('REFERRAL_CODE_LENGTH', '12'),
+        10,
+      ),
+      maxReferralsPerUser: parseInt(
+        this.configService.get<string>('MAX_REFERRALS_PER_USER', '100'),
+        10,
+      ),
+      codeExpiryDays: parseInt(
+        this.configService.get<string>('REFERRAL_CODE_EXPIRY_DAYS', '365'),
+        10,
+      ),
+
+      // Reward Configuration
+      referrerBaseReward: parseFloat(
+        this.configService.get<string>('REFERRAL_REWARD_REFERRER_BASE', '5.00'),
+      ),
+      refereeBaseReward: parseFloat(
+        this.configService.get<string>('REFERRAL_REWARD_REFEREE_BASE', '10.00'),
+      ),
+      advancedMultiplier: parseFloat(
+        this.configService.get<string>('REFERRAL_REWARD_ADVANCED_MULTIPLIER', '1.5'),
+      ),
+      vipMultiplier: parseFloat(
+        this.configService.get<string>('REFERRAL_REWARD_VIP_MULTIPLIER', '2.0'),
+      ),
+
+      // Limits Configuration
+      maxFreeRidesPerUser: parseInt(
+        this.configService.get<string>('MAX_FREE_RIDES_PER_USER', '5'),
+        10,
+      ),
+      creditValidityDays: parseInt(
+        this.configService.get<string>('REFERRAL_CREDIT_VALIDITY_DAYS', '30'),
+        10,
+      ),
+      freeRideValidityDays: parseInt(
+        this.configService.get<string>('REFERRAL_FREE_RIDE_VALIDITY_DAYS', '60'),
+        10,
+      ),
+
+      // Processing Configuration
+      autoProcess:
+        this.configService.get<string>('REFERRAL_AUTO_PROCESS', 'true') === 'true',
+      processDelayMinutes: parseInt(
+        this.configService.get<string>('REFERRAL_PROCESS_DELAY_MINUTES', '5'),
+        10,
+      ),
+      maxProcessingAttempts: parseInt(
+        this.configService.get<string>('REFERRAL_MAX_PROCESSING_ATTEMPTS', '3'),
+        10,
+      ),
+
+      // Analytics & Security
+      analyticsEnabled:
+        this.configService.get<string>('REFERRAL_ANALYTICS_ENABLED', 'true') === 'true',
+      fraudDetectionEnabled:
+        this.configService.get<string>('REFERRAL_FRAUD_DETECTION_ENABLED', 'true') === 'true',
+      maxSameIpReferrals: parseInt(
+        this.configService.get<string>('REFERRAL_MAX_SAME_IP_REFERRALS', '3'),
+        10,
+      ),
+    };
+  }
+
+  // ===============================
   // UTILITY METHODS
   // ===============================
   isProduction(): boolean {
@@ -248,6 +319,7 @@ export class AppConfigService {
       jwt: this.jwt,
       clerk: this.clerk,
       notification: this.notification,
+      referral: this.referral,
     };
   }
 

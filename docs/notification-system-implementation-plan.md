@@ -167,7 +167,7 @@ nest new notification-service
 npm install @nestjs/websockets @nestjs/platform-socket.io
 npm install @nestjs/config @nestjs/jwt @nestjs/passport
 npm install socket.io socket.io-redis
-npm install firebase-admin twilio
+npm install expo-server-sdk twilio  # EXPO SDK instead of Firebase
 npm install redis @nestjs/cache-manager cache-manager-redis-yet
 npm install @nestjs/typeorm typeorm pg
 npm install class-validator class-transformer
@@ -375,24 +375,29 @@ export class RidesGateway implements OnGatewayInit {
 
 ```typescript
 // src/modules/notifications/notifications.service.ts
+import { Expo, ExpoPushMessage, ExpoPushToken } from 'expo-server-sdk';
+
 @Injectable()
 export class NotificationsService {
+  private expo: Expo;
+
   constructor(
-    private firebaseService: FirebaseService,
     private twilioService: TwilioService,
     private cacheService: CacheService,
-  ) {}
+  ) {
+    this.expo = new Expo();
+  }
 
   async sendNotification(payload: NotificationPayload): Promise<void> {
     const { userId, type, data } = payload;
 
     // Get user device tokens and preferences
-    const userDevices = await this.getUserDevices(userId);
+    const userDevices = await this.getUserExpoTokens(userId);
     const preferences = await this.getUserNotificationPreferences(userId);
 
-    // Send push notifications
+    // Send push notifications via Expo
     if (preferences.pushEnabled && userDevices.length > 0) {
-      await this.sendPushNotifications(userDevices, payload);
+      await this.sendExpoPushNotifications(userDevices, payload);
     }
 
     // Send SMS fallback if critical
@@ -424,38 +429,58 @@ export class NotificationsService {
     );
   }
 
-  private async sendPushNotifications(
-    devices: DeviceToken[],
+  private async sendExpoPushNotifications(
+    tokens: string[],
     payload: NotificationPayload,
   ): Promise<void> {
-    const messages = devices.map(device => ({
-      token: device.token,
-      notification: {
-        title: this.getNotificationTitle(payload.type),
-        body: this.getNotificationBody(payload),
-      },
+    // Filter out invalid tokens
+    const validTokens = tokens.filter(token => Expo.isExpoPushToken(token));
+
+    if (validTokens.length === 0) return;
+
+    // Create Expo push messages
+    const messages: ExpoPushMessage[] = validTokens.map(token => ({
+      to: token as ExpoPushToken,
+      title: this.getNotificationTitle(payload.type),
+      body: this.getNotificationBody(payload),
       data: {
         type: payload.type,
         rideId: payload.data.rideId?.toString(),
+        ...payload.data,
       },
-      android: {
-        priority: 'high',
-        notification: {
-          sound: this.getNotificationSound(payload.type),
-          channelId: this.getNotificationChannel(payload.type),
-        },
-      },
-      apns: {
-        payload: {
-          aps: {
-            sound: this.getNotificationSound(payload.type),
-            badge: 1,
-          },
-        },
-      },
+      sound: this.getNotificationSound(payload.type),
+      priority: this.getNotificationPriority(payload.priority),
+      ttl: 86400, // 24 hours
+      expiration: Math.floor(Date.now() / 1000) + 86400,
     }));
 
-    await this.firebaseService.sendMulticast(messages);
+    // Send in chunks (Expo recommends max 100 messages per request)
+    const chunks = this.expo.chunkPushNotifications(messages);
+
+    for (const chunk of chunks) {
+      try {
+        const ticketChunk = await this.expo.sendPushNotificationsAsync(chunk);
+        console.log('Expo push tickets:', ticketChunk);
+
+        // Handle tickets for delivery tracking
+        await this.handleExpoTickets(ticketChunk);
+      } catch (error) {
+        console.error('Error sending Expo push notifications:', error);
+      }
+    }
+  }
+
+  private async handleExpoTickets(tickets: any[]): Promise<void> {
+    // Check for errors in tickets
+    for (const ticket of tickets) {
+      if (ticket.status === 'error') {
+        console.error('Expo push error:', ticket.message);
+        if (ticket.details?.error === 'DeviceNotRegistered') {
+          // Token is invalid/expired, should be removed from database
+          // Implementation depends on how you store token-user relationships
+        }
+      }
+    }
   }
 
   private async sendSMSFallback(
@@ -468,12 +493,68 @@ export class NotificationsService {
     const message = this.formatSMSMessage(payload);
     await this.twilioService.sendSMS(user.phoneNumber, message);
   }
+
+  private getNotificationPriority(priority?: string): 'default' | 'normal' | 'high' {
+    switch (priority) {
+      case 'critical': return 'high';
+      case 'high': return 'high';
+      case 'normal': return 'normal';
+      default: return 'default';
+    }
+  }
 }
 ```
 
 ---
 
-## Frontend Implementation (React Native)
+## 🎭 **Expo vs Firebase: ¿Cuál Elegir?**
+
+### **Comparativa de Opciones**
+
+| Aspecto | Firebase | Expo Notifications | OneSignal |
+|---------|----------|-------------------|-----------|
+| **Facilidad de Setup** | 🔴 Difícil (eject requerido) | 🟢 Muy fácil | 🟡 Medio |
+| **Tiempo de Desarrollo** | 🔴 2-3 días | 🟢 2-4 horas | 🟡 1 día |
+| **Mantenimiento** | 🔴 Alto | 🟢 Bajo | 🟡 Medio |
+| **Costo** | 🟢 Gratis | 🟢 Gratis | 🔴 Freemium |
+| **Escalabilidad** | 🟢 Excelente | 🟢 Buena | 🟢 Excelente |
+| **Soporte iOS/Android** | 🟢 Completo | 🟢 Completo | 🟢 Completo |
+| **Integración con Expo** | 🔴 Requiere eject | 🟢 Nativa | 🟡 Buena |
+
+### **🏆 Recomendación: Expo Notifications**
+
+**Para aplicaciones Expo, recomendamos usar Expo Notifications por:**
+
+1. **🔧 Simplicidad**: No requiere configuración compleja de Firebase
+2. **⚡ Rapidez**: Funciona inmediatamente sin configuración adicional
+3. **🛡️ Estabilidad**: Mantenido por el equipo de Expo
+4. **📱 Nativo**: Optimizado específicamente para apps Expo
+5. **💰 Costo**: Completamente gratis
+
+### **Configuración para Expo**
+
+#### **1. Variables de Entorno (Simplificadas)**
+```env
+# Solo necesitas Twilio para SMS
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=tu_auth_token_aqui
+TWILIO_PHONE_NUMBER=+1234567890
+
+# Base de datos y JWT (igual que antes)
+DATABASE_URL="postgresql://user:pass@localhost:5432/uber_clone"
+JWT_SECRET=tu-jwt-secret-key-aqui
+REDIS_URL=redis://localhost:6379
+```
+
+#### **2. Dependencias del Backend**
+```bash
+npm install expo-server-sdk twilio
+# ¡Ya no necesitas Firebase!
+```
+
+---
+
+## Frontend Implementation (Expo React Native)
 
 ### 1. Project Structure Updates
 
@@ -514,11 +595,13 @@ app/
     └── websocketHelpers.ts
 ```
 
-### 2. Notification Service Implementation
+### 2. Notification Service Implementation (Expo)
 
 ```typescript
 // app/services/notificationService.ts
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export class NotificationService {
@@ -531,7 +614,7 @@ export class NotificationService {
     return NotificationService.instance;
   }
 
-  async initialize(): Promise<void> {
+  async initialize(): Promise<string | null> {
     // Request permissions
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== 'granted') {
@@ -549,6 +632,30 @@ export class NotificationService {
 
     // Set up notification listeners
     this.setupNotificationListeners();
+
+    // Get Expo push token
+    const token = await this.getExpoPushToken();
+    return token;
+  }
+
+  private async getExpoPushToken(): Promise<string | null> {
+    try {
+      // Check if running on physical device
+      if (!Device.isDevice) {
+        console.log('Notifications only work on physical devices');
+        return null;
+      }
+
+      const { data: token } = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+
+      console.log('Expo push token:', token);
+      return token;
+    } catch (error) {
+      console.error('Error getting push token:', error);
+      return null;
+    }
   }
 
   private setupNotificationListeners(): void {
@@ -563,6 +670,37 @@ export class NotificationService {
       console.log('Notification tapped:', response);
       this.handleNotificationTapped(response);
     });
+  }
+
+  async registerPushToken(userId: string): Promise<void> {
+    const token = await this.getExpoPushToken();
+    if (!token) {
+      console.warn('No push token available');
+      return;
+    }
+
+    try {
+      // Send token to backend
+      const response = await fetch(`${API_BASE_URL}/notifications/push-token?userId=${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          deviceType: Device.osName?.toLowerCase() || 'unknown',
+          deviceId: Constants.installationId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to register push token');
+      }
+
+      console.log('Push token registered successfully');
+    } catch (error) {
+      console.error('Error registering push token:', error);
+    }
   }
 
   async sendLocalNotification(

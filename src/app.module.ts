@@ -28,6 +28,7 @@ import { ParcelsModule } from './parcels/parcels.module';
 import { CartModule } from './cart/cart.module';
 import { LocationsModule } from './locations/locations.module';
 import { TestingModule } from './testing/testing.module';
+import { ReferralsModule } from './referrals/referrals.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { TestingModule } from './testing/testing.module';
     CartModule,
     LocationsModule,
     TestingModule,
+    ReferralsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

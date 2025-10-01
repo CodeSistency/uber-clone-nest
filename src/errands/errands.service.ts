@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationManagerService } from '../notifications/notification-manager.service';
 import { WebSocketGatewayClass } from '../websocket/websocket.gateway';
 import {
   CreateErrandDto,
@@ -13,7 +13,7 @@ export class ErrandsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notifications: NotificationsService,
+    private readonly notificationManager: NotificationManagerService,
     private readonly gateway: WebSocketGatewayClass,
   ) {}
 

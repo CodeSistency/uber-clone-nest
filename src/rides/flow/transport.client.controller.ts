@@ -112,13 +112,16 @@ export class TransportClientController {
     **Flow:**
     1. Validates ride parameters and user authentication
     2. Creates ride in database with 'pending' status
-    3. Notifies nearby drivers via WebSocket
-    4. Returns ride ID for real-time tracking
+    3. Returns ride ID for payment processing
+    4. After payment confirmation, drivers will be notified automatically
 
-    **Real-time Events:**
-    - \`ride:requested\` - Broadcast to nearby drivers
+    **Real-time Events (after payment):**
+    - \`ride:requested\` - Broadcast to nearby drivers (only after payment confirmed)
     - \`ride:accepted\` - When driver accepts the ride
     - \`ride:location\` - Live driver location updates
+
+    **Important:** Drivers are only notified after payment is confirmed to ensure
+    users pay before drivers are engaged.
     `,
   })
   @ApiBody({
@@ -661,6 +664,7 @@ export class TransportClientController {
     - \`pago_movil\`: Pago móvil venezolano (requiere bankCode)
     - \`zelle\`: Transferencias Zelle
     - \`bitcoin\`: Pagos en Bitcoin
+    - \`wallet\`: Pago con saldo de wallet (inmediato)
     - \`cash\`: Pago en efectivo (sin referencia)
 
     **Flujo de pago:**
@@ -859,6 +863,7 @@ export class TransportClientController {
     - \`pago_movil\`: Pago móvil venezolano
     - \`zelle\`: Transferencias Zelle
     - \`bitcoin\`: Pagos en Bitcoin
+    - \`wallet\`: Pago con saldo de wallet (inmediato)
     - \`cash\`: Pago en efectivo (sin referencia)
 
     **Flujo de pago múltiple:**
@@ -1033,6 +1038,15 @@ export class TransportClientController {
           Number(rideId),
           payment.method,
         );
+
+        // 🆕 NUEVO: Notificar conductores inmediatamente para pagos en efectivo
+        try {
+          await this.flow.notifyDriversAfterPayment(Number(rideId));
+        } catch (error) {
+          console.error(`Failed to notify drivers for cash payment ride ${rideId}:`, error);
+          // No fallar el pago por error en notificación
+        }
+
         return {
           data: {
             rideId: Number(rideId),
@@ -1043,6 +1057,48 @@ export class TransportClientController {
             cashAmount: body.totalAmount,
           },
         };
+      } else if (payment.method === 'wallet') {
+        // 🆕 NUEVO: Pago con wallet - procesar inmediatamente
+        try {
+          // Verificar saldo de wallet y procesar pago
+          const walletResult = await this.paymentsService.processWalletPayment(
+            req.user.id,
+            payment.amount,
+            'ride',
+            Number(rideId),
+          );
+
+          // Confirmar el pago en el ride
+          await this.flow.confirmTransportPayment(
+            Number(rideId),
+            payment.method,
+          );
+
+          // 🆕 NUEVO: Notificar conductores inmediatamente para pagos con wallet
+          try {
+            await this.flow.notifyDriversAfterPayment(Number(rideId));
+          } catch (error) {
+            console.error(`Failed to notify drivers for wallet payment ride ${rideId}:`, error);
+            // No fallar el pago por error en notificación
+          }
+
+          return {
+            data: {
+              rideId: Number(rideId),
+              totalAmount: body.totalAmount,
+              paymentMethods: ['wallet'],
+              status: 'complete',
+              message: 'Pago con wallet procesado exitosamente',
+              walletBalance: walletResult.walletBalance,
+              transactionId: walletResult.transactionId,
+            },
+          };
+        } catch (error) {
+          throw new ConflictException({
+            error: 'WALLET_PAYMENT_FAILED',
+            message: error.message,
+          });
+        }
       } else {
         // Pago electrónico único - generar referencia
         const reference = await this.paymentsService.generateBankReference({

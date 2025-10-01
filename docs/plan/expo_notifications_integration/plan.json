@@ -1,0 +1,537 @@
+{
+  "proyecto": "expo_notifications_integration",
+  "etapas": [
+    {
+      "id": "E1",
+      "nombre": "Configuración Inicial y Análisis",
+      "modulos": [
+        {
+          "id": "M1.1",
+          "nombre": "Análisis del Sistema Actual",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Analizar el sistema de notificaciones Firebase existente y identificar todos los puntos de integración",
+          "dependencias": [
+            "src/notifications/notifications.service.ts",
+            "src/notifications/notifications.controller.ts",
+            "src/rides/rides.service.ts",
+            "src/rides/flow/rides-flow.service.ts",
+            "src/websocket/websocket.gateway.ts",
+            "src/orders/orders.service.ts",
+            "src/payments/payments.service.ts",
+            "src/parcels/parcels.service.ts",
+            "src/errands/errands.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T1.1.1",
+              "nombre": "Mapear uso del NotificationService",
+              "descripcion": "Identificar todos los lugares donde se inyecta y usa NotificationsService en el proyecto",
+              "subtareas": [
+                {
+                  "id": "ST1.1.1.1",
+                  "nombre": "Revisar inyección en módulos",
+                  "descripcion": "Verificar imports y providers en todos los módulos que usan NotificationsService"
+                },
+                {
+                  "id": "ST1.1.1.2",
+                  "nombre": "Documentar métodos utilizados",
+                  "descripcion": "Listar todos los métodos del NotificationService que se llaman desde otros servicios"
+                },
+                {
+                  "id": "ST1.1.1.3",
+                  "nombre": "Analizar flujo de datos",
+                  "descripcion": "Entender cómo fluyen las notificaciones desde eventos hasta dispositivos"
+                }
+              ]
+            },
+            {
+              "id": "T1.1.2",
+              "nombre": "Evaluar compatibilidad",
+              "descripcion": "Determinar qué partes del código actual son compatibles con Expo vs Firebase",
+              "subtareas": [
+                {
+                  "id": "ST1.1.2.1",
+                  "nombre": "Revisar interfaces",
+                  "descripcion": "Verificar si las interfaces de notificación son agnósticas al proveedor"
+                },
+                {
+                  "id": "ST1.1.2.2",
+                  "nombre": "Analizar dependencias",
+                  "descripcion": "Identificar qué partes dependen específicamente de Firebase"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.2",
+          "nombre": "Configuración del Entorno",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Configurar variables de entorno y dependencias para Expo Notifications",
+          "dependencias": [
+            "package.json",
+            "env-config-template.txt"
+          ],
+          "tareas": [
+            {
+              "id": "T1.2.1",
+              "nombre": "Instalar dependencias",
+              "descripcion": "Agregar expo-server-sdk al proyecto manteniendo Firebase como opción",
+              "subtareas": [
+                {
+                  "id": "ST1.2.1.1",
+                  "nombre": "Agregar expo-server-sdk",
+                  "descripcion": "Instalar la librería del servidor de Expo para push notifications"
+                },
+                {
+                  "id": "ST1.2.1.2",
+                  "nombre": "Actualizar package.json",
+                  "descripcion": "Agregar scripts y dependencias necesarias"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.2",
+              "nombre": "Configurar variables de entorno",
+              "descripcion": "Agregar configuración opcional para Expo manteniendo Firebase",
+              "subtareas": [
+                {
+                  "id": "ST1.2.2.1",
+                  "nombre": "Actualizar env template",
+                  "descripcion": "Agregar variables EXPO_PROJECT_ID como opcionales"
+                },
+                {
+                  "id": "ST1.2.2.2",
+                  "nombre": "Documentar configuración dual",
+                  "descripcion": "Crear documentación para usar Firebase o Expo según preferencia"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "nombre": "Creación del Módulo Expo Notifications",
+      "modulos": [
+        {
+          "id": "M2.1",
+          "nombre": "Servicio Expo Notifications",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Crear ExpoNotificationsService que implemente la misma interfaz que NotificationsService",
+          "dependencias": [
+            "src/notifications/interfaces/notification.interface.ts",
+            "src/services/firebase.service.ts",
+            "src/services/twilio.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T2.1.1",
+              "nombre": "Crear ExpoNotificationsService",
+              "descripcion": "Implementar servicio que use expo-server-sdk en lugar de Firebase",
+              "subtareas": [
+                {
+                  "id": "ST2.1.1.1",
+                  "nombre": "Implementar sendNotification",
+                  "descripcion": "Método principal que envía notificaciones via Expo"
+                },
+                {
+                  "id": "ST2.1.1.2",
+                  "nombre": "Implementar sendBulkNotifications",
+                  "descripcion": "Envío masivo de notificaciones usando chunking de Expo"
+                },
+                {
+                  "id": "ST2.1.1.3",
+                  "nombre": "Implementar manejo de tickets",
+                  "descripcion": "Procesar respuestas de Expo para tracking de delivery"
+                }
+              ]
+            },
+            {
+              "id": "T2.1.2",
+              "nombre": "Métodos específicos de Expo",
+              "descripcion": "Implementar métodos únicos de Expo como validación de tokens",
+              "subtareas": [
+                {
+                  "id": "ST2.1.2.1",
+                  "nombre": "Validación de tokens Expo",
+                  "descripcion": "Verificar formato de tokens Expo vs FCM"
+                },
+                {
+                  "id": "ST2.1.2.2",
+                  "nombre": "Manejo de tokens expirados",
+                  "descripcion": "Implementar limpieza automática de tokens inválidos"
+                }
+              ]
+            },
+            {
+              "id": "T2.1.3",
+              "nombre": "Integración con Twilio",
+              "descripcion": "Mantener compatibilidad con SMS usando Twilio",
+              "subtareas": [
+                {
+                  "id": "ST2.1.3.1",
+                  "nombre": "Mantener SMS fallback",
+                  "descripcion": "Asegurar que las notificaciones críticas usen SMS"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.2",
+          "nombre": "Módulo Expo Notifications",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Crear módulo separado para Expo Notifications",
+          "dependencias": [
+            "src/notifications/notifications.module.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T2.2.1",
+              "nombre": "Crear expo-notifications.module.ts",
+              "descripcion": "Módulo que encapsula ExpoNotificationsService",
+              "subtareas": [
+                {
+                  "id": "ST2.2.1.1",
+                  "nombre": "Definir providers",
+                  "descripcion": "Configurar inyección de dependencias"
+                },
+                {
+                  "id": "ST2.2.1.2",
+                  "nombre": "Configurar exports",
+                  "descripcion": "Permitir importación desde otros módulos"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "nombre": "Sistema de Selección Dinámica",
+      "modulos": [
+        {
+          "id": "M3.1",
+          "nombre": "Notification Provider Manager",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Crear manager que elija entre Firebase y Expo dinámicamente",
+          "dependencias": [
+            "src/config/config.service.ts",
+            "src/notifications/interfaces/notification.interface.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T3.1.1",
+              "nombre": "Crear NotificationProvider",
+              "descripcion": "Interfaz común para diferentes proveedores de notificaciones",
+              "subtareas": [
+                {
+                  "id": "ST3.1.1.1",
+                  "nombre": "Definir interfaz común",
+                  "descripcion": "Crear contrato que implementen Firebase y Expo"
+                },
+                {
+                  "id": "ST3.1.1.2",
+                  "nombre": "Factory pattern",
+                  "descripcion": "Implementar factory para crear instancia correcta"
+                }
+              ]
+            },
+            {
+              "id": "T3.1.2",
+              "nombre": "Configuración dinámica",
+              "descripcion": "Permitir cambiar proveedor via variables de entorno",
+              "subtareas": [
+                {
+                  "id": "ST3.1.2.1",
+                  "nombre": "Variable NOTIFICATION_PROVIDER",
+                  "descripcion": "Configurar selección via env (firebase/expo)"
+                },
+                {
+                  "id": "ST3.1.2.2",
+                  "nombre": "Validación de configuración",
+                  "descripcion": "Asegurar que el proveedor seleccionado esté configurado"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M3.2",
+          "nombre": "Wrapper Service Unificado",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Crear servicio que use el provider seleccionado manteniendo API igual",
+          "dependencias": [
+            "src/notifications/notifications.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T3.2.1",
+              "nombre": "Crear NotificationManager",
+              "descripcion": "Servicio que delega al provider correcto",
+              "subtareas": [
+                {
+                  "id": "ST3.2.1.1",
+                  "nombre": "Mantener misma interfaz",
+                  "descripcion": "Asegurar compatibilidad con código existente"
+                },
+                {
+                  "id": "ST3.2.1.2",
+                  "nombre": "Lazy loading de providers",
+                  "descripcion": "Cargar solo el provider seleccionado"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "nombre": "Integración y Migración",
+      "modulos": [
+        {
+          "id": "M4.1",
+          "nombre": "Actualizar Rides Service",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Reemplazar uso directo de NotificationsService en rides.service.ts",
+          "dependencias": [
+            "src/rides/rides.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T4.1.1",
+              "nombre": "Actualizar imports",
+              "descripcion": "Cambiar import de NotificationsService a NotificationManager",
+              "subtareas": [
+                {
+                  "id": "ST4.1.1.1",
+                  "nombre": "Modificar constructor",
+                  "descripcion": "Inyectar NotificationManager en lugar de NotificationsService"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M4.2",
+          "nombre": "Actualizar Rides Flow Service",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Reemplazar uso directo en rides-flow.service.ts",
+          "dependencias": [
+            "src/rides/flow/rides-flow.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T4.2.1",
+              "nombre": "Actualizar inyección",
+              "descripcion": "Cambiar dependencia a NotificationManager",
+              "subtareas": [
+                {
+                  "id": "ST4.2.1.1",
+                  "nombre": "Modificar constructor",
+                  "descripcion": "Actualizar inyección de dependencias"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M4.3",
+          "nombre": "Actualizar otros servicios",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Actualizar todos los demás servicios que usan NotificationsService",
+          "dependencias": [
+            "src/orders/orders.service.ts",
+            "src/payments/payments.service.ts",
+            "src/parcels/parcels.service.ts",
+            "src/errands/errands.service.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T4.3.1",
+              "nombre": "Actualizar imports y constructores",
+              "descripcion": "Reemplazar NotificationsService por NotificationManager en todos los servicios",
+              "subtareas": [
+                {
+                  "id": "ST4.3.1.1",
+                  "nombre": "OrdersService",
+                  "descripcion": "Actualizar inyección en orders.service.ts"
+                },
+                {
+                  "id": "ST4.3.1.2",
+                  "nombre": "PaymentsService",
+                  "descripcion": "Actualizar inyección en payments.service.ts"
+                },
+                {
+                  "id": "ST4.3.1.3",
+                  "nombre": "ParcelsService",
+                  "descripcion": "Actualizar inyección en parcels.service.ts"
+                },
+                {
+                  "id": "ST4.3.1.4",
+                  "nombre": "ErrandsService",
+                  "descripcion": "Actualizar inyección en errands.service.ts"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "nombre": "Testing y Validación",
+      "modulos": [
+        {
+          "id": "M5.1",
+          "nombre": "Testing del ExpoNotificationsService",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Crear tests unitarios para el nuevo servicio de Expo",
+          "dependencias": [
+            "src/notifications/notifications.service.unit.spec.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T5.1.1",
+              "nombre": "Crear expo-notifications.service.spec.ts",
+              "descripcion": "Tests unitarios para ExpoNotificationsService",
+              "subtareas": [
+                {
+                  "id": "ST5.1.1.1",
+                  "nombre": "Tests de envío básico",
+                  "descripcion": "Probar envío de notificaciones individuales"
+                },
+                {
+                  "id": "ST5.1.1.2",
+                  "nombre": "Tests de envío masivo",
+                  "descripcion": "Probar chunking y envío bulk"
+                },
+                {
+                  "id": "ST5.1.1.3",
+                  "nombre": "Tests de manejo de errores",
+                  "descripcion": "Probar respuestas de error de Expo"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M5.2",
+          "nombre": "Testing de Integración",
+          "progreso": 100,
+          "prioridad": "Alta",
+          "descripcion": "Tests que validen la integración completa del sistema",
+          "dependencias": [
+            "src/test/matching-system.test.ts"
+          ],
+          "tareas": [
+            {
+              "id": "T5.2.1",
+              "nombre": "Tests del NotificationManager",
+              "descripcion": "Validar que el manager elija el provider correcto",
+              "subtareas": [
+                {
+                  "id": "ST5.2.1.1",
+                  "nombre": "Test selección Firebase",
+                  "descripcion": "Verificar que use Firebase cuando esté configurado"
+                },
+                {
+                  "id": "ST5.2.1.2",
+                  "nombre": "Test selección Expo",
+                  "descripcion": "Verificar que use Expo cuando esté configurado"
+                }
+              ]
+            },
+            {
+              "id": "T5.2.2",
+              "nombre": "Tests end-to-end",
+              "descripcion": "Validar flujo completo de notificaciones",
+              "subtareas": [
+                {
+                  "id": "ST5.2.2.1",
+                  "nombre": "Test ride notifications",
+                  "descripcion": "Probar notificaciones en flujo de rides"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "nombre": "Documentación y Deployment",
+      "modulos": [
+        {
+          "id": "M6.1",
+          "nombre": "Actualizar Documentación",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Actualizar toda la documentación para incluir Expo Notifications",
+          "dependencias": [
+            "docs/notification-system-implementation-plan.md",
+            "docs/notifications-config.md"
+          ],
+          "tareas": [
+            {
+              "id": "T6.1.1",
+              "nombre": "Actualizar guía de configuración",
+              "descripcion": "Agregar sección completa sobre Expo vs Firebase",
+              "subtareas": [
+                {
+                  "id": "ST6.1.1.1",
+                  "nombre": "Comparativa detallada",
+                  "descripcion": "Crear tabla comparativa con pros/cons"
+                },
+                {
+                  "id": "ST6.1.1.2",
+                  "nombre": "Guía de migración",
+                  "descripcion": "Pasos para cambiar de Firebase a Expo"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M6.2",
+          "nombre": "Configuración de Producción",
+          "progreso": 100,
+          "prioridad": "Media",
+          "descripcion": "Configurar deployment con soporte dual de notificaciones",
+          "dependencias": [
+            "docker-compose.yml",
+            "Dockerfile"
+          ],
+          "tareas": [
+            {
+              "id": "T6.2.1",
+              "nombre": "Actualizar Docker",
+              "descripcion": "Agregar expo-server-sdk a imagen de producción",
+              "subtareas": [
+                {
+                  "id": "ST6.2.1.1",
+                  "nombre": "Actualizar Dockerfile",
+                  "descripcion": "Incluir nueva dependencia"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

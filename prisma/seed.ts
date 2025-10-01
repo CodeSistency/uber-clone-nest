@@ -1511,10 +1511,15 @@ async function main() {
   console.log('\n✅ Venezuelan Payment System seeded successfully!');
   console.log('📋 Test Payment References:');
   paymentReferences.forEach((ref, index) => {
-    console.log(
-      `   ${index + 1}. ${ref.referenceNumber} - ${ref.serviceType} - ${ref.amount} VES - ${ref.status}`,
-    );
+  console.log(
+    `   ${index + 1}. ${ref.referenceNumber} - ${ref.serviceType} - ${ref.amount} VES - ${ref.status}`,
+  );
   });
+
+  // =========================================
+  // REFERRAL SYSTEM - MODELS NOT YET IMPLEMENTED
+  // =========================================
+  console.log('🎁 Skipping referral system seeding (models not implemented)...');
 
 }
 

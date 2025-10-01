@@ -35,6 +35,13 @@
 - **Logging inteligente:** Solo en desarrollo, mínimo en producción
 - **Health checks:** Validación automática de servicios críticos
 
+### 🔔 **Sistema de Notificaciones Dual**
+- **Expo Notifications:** Soporte nativo para apps Expo (recomendado)
+- **Firebase Cloud Messaging:** Compatibilidad con apps existentes
+- **Twilio SMS:** Fallback automático para notificaciones críticas
+- **WebSocket en tiempo real:** Comunicación bidireccional
+- **Notification Manager:** Selección dinámica de provider
+
 ## 🚀 Inicio Rápido
 
 ### Prerrequisitos
@@ -62,8 +69,21 @@ npm run db:seed
 npm run start:dev
 ```
 
+### Configuración de Notificaciones
+```bash
+# Configuración automática del sistema dual
+./setup-notifications-dual.sh
+
+# O configurar manualmente
+echo "NOTIFICATION_PROVIDER=expo" >> .env
+npm install expo-server-sdk twilio
+```
+
 ### Verificación
 ```bash
+# Verificar estado de notificaciones
+curl http://localhost:3000/api/notifications/provider-status
+
 # Ejecutar tests del sistema de matching
 npm run test:matching
 
