@@ -1005,6 +1005,395 @@ async function main() {
     },
   });
 
+  // =========================================
+  // SECTION 21: GEOGRAPHY SYSTEM (VENEZUELA)
+  // =========================================
+  console.log('🌍 Seeding geography system...');
+
+  // Create Venezuela as the country
+  const venezuela = await prisma.country.create({
+    data: {
+      name: 'Venezuela',
+      isoCode2: 'VE',
+      isoCode3: 'VEN',
+      numericCode: 862,
+      phoneCode: '+58',
+      currencyCode: 'VES',
+      currencyName: 'Venezuelan Bolívar Soberano',
+      currencySymbol: 'Bs.',
+      timezone: 'America/Caracas',
+      continent: 'South America',
+      region: 'Americas',
+      subregion: 'South America',
+      vatRate: 16,
+      corporateTaxRate: 34,
+      incomeTaxRate: 34,
+      isActive: true,
+      requiresVerification: true,
+      supportedLanguages: ['es'],
+      legalRequirements: {
+        requires_id_verification: true,
+        minimum_age: 18,
+      },
+      businessHours: {
+        monday: {
+          open: '08:00',
+          close: '16:00',
+        },
+        tuesday: {
+          open: '08:00',
+          close: '16:00',
+        },
+        wednesday: {
+          open: '08:00',
+          close: '16:00',
+        },
+        thursday: {
+          open: '08:00',
+          close: '16:00',
+        },
+        friday: {
+          open: '08:00',
+          close: '16:00',
+        },
+      },
+      publicHolidays: [
+        '2024-01-01',
+        '2024-04-19',
+        '2024-07-05',
+        '2024-12-24',
+        '2024-12-25',
+        '2024-12-31',
+      ],
+      timeRestrictions: {
+        noServiceHours: ['00:00-06:00'],
+      },
+      regionalSettings: {
+        timezone: 'America/Caracas',
+        language: 'es-VE',
+      },
+      flag: '🇻🇪',
+      capital: 'Caracas',
+      population: BigInt(28440000),
+      areaKm2: 916445,
+    },
+  });
+
+  // Create Venezuelan states
+  const states = await Promise.all([
+    prisma.state.create({
+      data: {
+        name: 'Anzoátegui',
+        code: 'AN',
+        countryId: venezuela.id,
+        latitude: 9.3221,
+        longitude: -64.3583,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.1,
+        serviceFee: 2.0,
+        capital: 'Barcelona',
+        population: BigInt(1647000),
+        areaKm2: 43300,
+      },
+    }),
+    prisma.state.create({
+      data: {
+        name: 'Guárico',
+        code: 'GU',
+        countryId: venezuela.id,
+        latitude: 9.0833,
+        longitude: -66.9167,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.0,
+        serviceFee: 1.8,
+        capital: 'San Juan de los Morros',
+        population: BigInt(930000),
+        areaKm2: 64986,
+      },
+    }),
+    prisma.state.create({
+      data: {
+        name: 'Aragua',
+        code: 'AR',
+        countryId: venezuela.id,
+        latitude: 10.2354,
+        longitude: -67.5916,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.15,
+        serviceFee: 2.2,
+        capital: 'Maracay',
+        population: BigInt(1670000),
+        areaKm2: 7014,
+      },
+    }),
+    prisma.state.create({
+      data: {
+        name: 'Miranda',
+        code: 'MI',
+        countryId: venezuela.id,
+        latitude: 10.3500,
+        longitude: -66.9833,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.3,
+        serviceFee: 2.8,
+        capital: 'Los Teques',
+        population: BigInt(3000000),
+        areaKm2: 7950,
+      },
+    }),
+  ]);
+
+  // Create Venezuelan cities
+  const cities = await Promise.all([
+    // Anzoátegui cities (stateId: 1)
+    prisma.city.create({
+      data: {
+        name: 'Barcelona',
+        stateId: states[0].id,
+        latitude: 10.14028,
+        longitude: -64.68333,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.5,
+        serviceFee: 2,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['airport', 'military_zone', 'prohibited_airspace'],
+        premiumZones: ['downtown', 'tourist_area'],
+        population: BigInt(815141),
+        areaKm2: 76.5,
+        elevation: 13,
+        postalCodes: ['6001'],
+      },
+    }),
+    prisma.city.create({
+      data: {
+        name: 'Puerto La Cruz',
+        stateId: states[0].id,
+        latitude: 10.2,
+        longitude: -64.63333,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.5,
+        serviceFee: 2,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['port_area', 'oil_terminal', 'marine_eez'],
+        premiumZones: ['beach', 'hotel_zone', 'downtown'],
+        population: BigInt(370000),
+        areaKm2: 244,
+        elevation: 10,
+        postalCodes: ['6023'],
+      },
+    }),
+    prisma.city.create({
+      data: {
+        name: 'El Tigre',
+        stateId: states[0].id,
+        latitude: 8.88611,
+        longitude: -64.26111,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.5,
+        serviceFee: 2,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['oil_fields', 'industrial_zone'],
+        premiumZones: ['commercial_district', 'hotel_area'],
+        population: BigInt(222450),
+        areaKm2: 35,
+        elevation: 265,
+        postalCodes: ['6050'],
+      },
+    }),
+    // Guárico cities (stateId: 2)
+    prisma.city.create({
+      data: {
+        name: 'San Juan de los Morros',
+        stateId: states[1].id,
+        latitude: 9.91083,
+        longitude: -67.35806,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1,
+        serviceFee: 1.8,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['airport', 'military_base', 'prohibited_zone'],
+        premiumZones: ['downtown', 'university_area', 'tourist_zone'],
+        population: BigInt(160868),
+        elevation: 428.5,
+        postalCodes: ['2301'],
+      },
+    }),
+    prisma.city.create({
+      data: {
+        name: 'Valle de la Pascua',
+        stateId: states[1].id,
+        latitude: 9.20333,
+        longitude: -66.01028,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1,
+        serviceFee: 1.8,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['restricted_airspace', 'agricultural_restricted'],
+        premiumZones: ['sports_zone', 'commercial_hub'],
+        population: BigInt(153136),
+        elevation: 125,
+        postalCodes: ['2350'],
+      },
+    }),
+    prisma.city.create({
+      data: {
+        name: 'Calabozo',
+        stateId: states[1].id,
+        latitude: 8.933,
+        longitude: -67.433,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1,
+        serviceFee: 1.8,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['airport', 'oil_deposit_area'],
+        premiumZones: ['downtown', 'farming_area'],
+        population: BigInt(168605),
+        areaKm2: 52,
+        elevation: 105,
+        postalCodes: ['2312'],
+      },
+    }),
+    // Aragua cities (stateId: 3)
+    prisma.city.create({
+      data: {
+        name: 'Maracay',
+        stateId: states[2].id,
+        latitude: 10.24694,
+        longitude: -67.59611,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.15,
+        serviceFee: 2.2,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['military_zone', 'airport', 'high_crime_area'],
+        premiumZones: ['downtown', 'beach', 'tourist_attraction'],
+        population: BigInt(464700),
+        areaKm2: 911.57,
+        elevation: 436,
+        postalCodes: ['2101', '2102', '2103', '2104'],
+      },
+    }),
+    prisma.city.create({
+      data: {
+        name: 'Turmero',
+        stateId: states[2].id,
+        latitude: 10.22833,
+        longitude: -67.4725,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.15,
+        serviceFee: 2.2,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['industrial_zone', 'restricted_area'],
+        premiumZones: ['park', 'festival_area'],
+        population: BigInt(344700),
+        areaKm2: 36.28,
+        elevation: 446,
+        postalCodes: ['2115'],
+      },
+    }),
+    prisma.city.create({
+      data: {
+        name: 'La Victoria',
+        stateId: states[2].id,
+        latitude: 10.22778,
+        longitude: -67.33361,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.15,
+        serviceFee: 2.2,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['barrio_sucre', 'military_zone', 'high_crime'],
+        premiumZones: ['downtown', 'rum_farm'],
+        population: BigInt(214492),
+        areaKm2: 55.43,
+        elevation: 550,
+        postalCodes: ['2121'],
+      },
+    }),
+    // Miranda cities (stateId: 4)
+    prisma.city.create({
+      data: {
+        name: 'Los Teques',
+        stateId: states[3].id,
+        latitude: 10.333,
+        longitude: -67.033,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.3,
+        serviceFee: 2.8,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['high_crime', 'restricted_zone'],
+        premiumZones: ['downtown', 'resort', 'shopping_mall'],
+        population: BigInt(140617),
+        areaKm2: 61,
+        elevation: 1169,
+        postalCodes: ['1201'],
+      },
+    }),
+    prisma.city.create({
+      data: {
+        name: 'Santa Teresa del Tuy',
+        stateId: states[3].id,
+        latitude: 10.2333,
+        longitude: -66.6639,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.3,
+        serviceFee: 2.8,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['flood_zone', 'high_crime'],
+        premiumZones: ['downtown', 'agricultural'],
+        population: BigInt(278890),
+        areaKm2: 284,
+        elevation: 160,
+        postalCodes: ['1215'],
+      },
+    }),
+    // Cúa corrected to stateId: 4 (Miranda) instead of 5
+    prisma.city.create({
+      data: {
+        name: 'Cúa',
+        stateId: states[3].id, // Corrected from 5 to 4 (Miranda)
+        latitude: 10.159,
+        longitude: -66.8858,
+        timezone: 'America/Caracas',
+        isActive: true,
+        pricingMultiplier: 1.3,
+        serviceFee: 2.8,
+        serviceRadius: 50,
+        boundaries: undefined,
+        restrictedAreas: ['railway_zone', 'restricted_airspace'],
+        premiumZones: ['historical_site', 'downtown'],
+        population: BigInt(182558),
+        areaKm2: 273,
+        elevation: 235,
+        postalCodes: ['1211'],
+      },
+    }),
+  ]);
+
   console.log('✅ Database seeded successfully!');
   console.log('📊 Summary:');
   console.log(`   👥 ${users.length} users created`);
@@ -1027,6 +1416,9 @@ async function main() {
   console.log(
     `   👑 ${4} admins created (super_admin, admin, moderator, support)`,
   );
+  console.log(`   🌍 ${1} country created (Venezuela)`);
+  console.log(`   🗺️ ${states.length} states created (Anzoátegui, Guárico, Aragua, Miranda)`);
+  console.log(`   🏙️ ${cities.length} cities created`);
 
   // =========================================
   // VENEZUELAN PAYMENT SYSTEM SEEDS
