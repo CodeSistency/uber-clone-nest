@@ -62,41 +62,6 @@ export class RidesController {
     return this.ridesService.createRide(createRideDto);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get ride history for a specific user' })
-  @ApiParam({ name: 'id', description: 'The User ID of the user' })
-  @ApiResponse({
-    status: 200,
-    description: "Returns an array of the user's past rides",
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: { type: 'object' },
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'User ID is missing' })
-  @ApiResponse({ status: 500, description: 'Database error' })
-  async getUserRides(@Param('id') userId: string): Promise<Ride[]> {
-    return this.ridesService.getUserRidesHistory(parseInt(userId));
-  }
-
-  @Post('schedule')
-  @ApiOperation({ summary: 'Schedule a ride for a future date and time' })
-  @ApiBody({ type: ScheduleRideDto })
-  @ApiResponse({ status: 201, description: 'Ride scheduled successfully' })
-  @ApiResponse({
-    status: 400,
-    description: 'Missing fields or invalid tier ID',
-  })
-  @ApiResponse({ status: 500, description: 'Database error' })
-  async scheduleRide(@Body() scheduleRideDto: ScheduleRideDto): Promise<Ride> {
-    return this.ridesService.scheduleRide(scheduleRideDto);
-  }
-
   @Get('estimate')
   @ApiOperation({
     summary: 'Provide fare estimate based on route and ride tier',
@@ -148,6 +113,28 @@ export class RidesController {
       Number(miles),
     );
     return { data: estimate };
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get ride history for a specific user' })
+  @ApiParam({ name: 'id', description: 'The User ID of the user' })
+  @ApiResponse({
+    status: 200,
+    description: "Returns an array of the user's past rides",
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { type: 'object' },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'User ID is missing' })
+  @ApiResponse({ status: 500, description: 'Database error' })
+  async getUserRides(@Param('id') userId: string): Promise<Ride[]> {
+    return this.ridesService.getUserRidesHistory(parseInt(userId));
   }
 
   @Post(':rideId/accept')
