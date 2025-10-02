@@ -5,7 +5,10 @@ import { NotificationsService } from './notifications.service';
 import { ExpoNotificationsService } from './expo-notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TwilioService } from '../services/twilio.service';
-import { NotificationType, NotificationChannel } from './interfaces/notification.interface';
+import {
+  NotificationType,
+  NotificationChannel,
+} from './interfaces/notification.interface';
 
 describe('NotificationManagerService - Integration Tests', () => {
   let notificationManager: NotificationManagerService;
@@ -56,9 +59,13 @@ describe('NotificationManagerService - Integration Tests', () => {
       ],
     }).compile();
 
-    notificationManager = module.get<NotificationManagerService>(NotificationManagerService);
+    notificationManager = module.get<NotificationManagerService>(
+      NotificationManagerService,
+    );
     firebaseService = module.get<NotificationsService>(NotificationsService);
-    expoService = module.get<ExpoNotificationsService>(ExpoNotificationsService);
+    expoService = module.get<ExpoNotificationsService>(
+      ExpoNotificationsService,
+    );
     configService = module.get<ConfigService>(ConfigService);
   });
 
@@ -67,10 +74,18 @@ describe('NotificationManagerService - Integration Tests', () => {
       // Test with Firebase
       jest.spyOn(configService, 'get').mockReturnValue('firebase');
       jest.spyOn(firebaseService, 'sendNotification').mockResolvedValue([
-        { success: true, channel: NotificationChannel.PUSH, timestamp: new Date() }
+        {
+          success: true,
+          channel: NotificationChannel.PUSH,
+          timestamp: new Date(),
+        },
       ]);
 
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       manager.onModuleInit();
 
       const payload = {
@@ -85,7 +100,11 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       // Switch to Expo
       jest.spyOn(expoService, 'sendNotification').mockResolvedValue([
-        { success: true, channel: NotificationChannel.PUSH, timestamp: new Date() }
+        {
+          success: true,
+          channel: NotificationChannel.PUSH,
+          timestamp: new Date(),
+        },
       ]);
 
       manager.switchProvider('expo');
@@ -100,9 +119,15 @@ describe('NotificationManagerService - Integration Tests', () => {
 
     it('should handle provider failures gracefully', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('firebase');
-      jest.spyOn(firebaseService, 'sendNotification').mockRejectedValue(new Error('Firebase down'));
+      jest
+        .spyOn(firebaseService, 'sendNotification')
+        .mockRejectedValue(new Error('Firebase down'));
 
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       manager.onModuleInit();
 
       const payload = {
@@ -113,11 +138,17 @@ describe('NotificationManagerService - Integration Tests', () => {
         data: { rideId: 456 },
       };
 
-      await expect(manager.sendNotification(payload)).rejects.toThrow('Firebase down');
+      await expect(manager.sendNotification(payload)).rejects.toThrow(
+        'Firebase down',
+      );
 
       // Switch to Expo should work
       jest.spyOn(expoService, 'sendNotification').mockResolvedValue([
-        { success: true, channel: NotificationChannel.PUSH, timestamp: new Date() }
+        {
+          success: true,
+          channel: NotificationChannel.PUSH,
+          timestamp: new Date(),
+        },
       ]);
 
       manager.switchProvider('expo');
@@ -130,7 +161,11 @@ describe('NotificationManagerService - Integration Tests', () => {
     it('should handle complete ride notification flow', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('expo');
 
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       manager.onModuleInit();
 
       // Mock successful driver assignment
@@ -147,7 +182,7 @@ describe('NotificationManagerService - Integration Tests', () => {
       // Test ride creation flow
       const assignmentResult = await manager.findAndAssignNearbyDriver(123, {
         lat: 40.7128,
-        lng: -74.006
+        lng: -74.006,
       });
 
       expect(assignmentResult.assigned).toBe(true);
@@ -158,15 +193,24 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       expect(expoService.findAndAssignNearbyDriver).toHaveBeenCalledWith(123, {
         lat: 40.7128,
-        lng: -74.006
+        lng: -74.006,
       });
-      expect(expoService.notifyRideStatusUpdate).toHaveBeenCalledWith(123, '456', 789, 'accepted');
+      expect(expoService.notifyRideStatusUpdate).toHaveBeenCalledWith(
+        123,
+        '456',
+        789,
+        'accepted',
+      );
     });
 
     it('should handle driver notification bulk operations', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('firebase');
 
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       manager.onModuleInit();
 
       jest.spyOn(firebaseService, 'notifyNearbyDrivers').mockResolvedValue();
@@ -175,14 +219,18 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       expect(firebaseService.notifyNearbyDrivers).toHaveBeenCalledWith(123, {
         lat: 40.7128,
-        lng: -74.006
+        lng: -74.006,
       });
     });
   });
 
   describe('Configuration Validation', () => {
     it('should validate provider configuration', () => {
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
 
       // Test default configuration
       jest.spyOn(configService, 'get').mockReturnValue(undefined);
@@ -196,13 +244,21 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       // Test invalid configuration falls back to firebase
       jest.spyOn(configService, 'get').mockReturnValue('invalid');
-      const newManager = new NotificationManagerService(configService, firebaseService, expoService);
+      const newManager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       newManager.onModuleInit();
       expect(newManager.getCurrentProviderType()).toBe('firebase');
     });
 
     it('should provide provider status information', () => {
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       manager.onModuleInit();
 
       const status = manager.getProviderStatus();
@@ -217,13 +273,27 @@ describe('NotificationManagerService - Integration Tests', () => {
     it('should handle partial notification failures', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('expo');
 
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       manager.onModuleInit();
 
       // Mock partial success (push fails, SMS succeeds)
       jest.spyOn(expoService, 'sendNotification').mockResolvedValue([
-        { success: false, channel: NotificationChannel.PUSH, error: 'Push failed', timestamp: new Date() },
-        { success: true, channel: NotificationChannel.SMS, messageId: 'sms123', timestamp: new Date() }
+        {
+          success: false,
+          channel: NotificationChannel.PUSH,
+          error: 'Push failed',
+          timestamp: new Date(),
+        },
+        {
+          success: true,
+          channel: NotificationChannel.SMS,
+          messageId: 'sms123',
+          timestamp: new Date(),
+        },
       ]);
 
       const payload = {
@@ -238,18 +308,30 @@ describe('NotificationManagerService - Integration Tests', () => {
       const result = await manager.sendNotification(payload);
 
       expect(result).toHaveLength(2);
-      expect(result.some(r => r.success && r.channel === NotificationChannel.SMS)).toBe(true);
-      expect(result.some(r => !r.success && r.channel === NotificationChannel.PUSH)).toBe(true);
+      expect(
+        result.some((r) => r.success && r.channel === NotificationChannel.SMS),
+      ).toBe(true);
+      expect(
+        result.some(
+          (r) => !r.success && r.channel === NotificationChannel.PUSH,
+        ),
+      ).toBe(true);
     });
 
     it('should maintain service availability during provider issues', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('firebase');
 
-      const manager = new NotificationManagerService(configService, firebaseService, expoService);
+      const manager = new NotificationManagerService(
+        configService,
+        firebaseService,
+        expoService,
+      );
       manager.onModuleInit();
 
       // Simulate Firebase outage
-      jest.spyOn(firebaseService, 'sendNotification').mockRejectedValue(new Error('Firebase service unavailable'));
+      jest
+        .spyOn(firebaseService, 'sendNotification')
+        .mockRejectedValue(new Error('Firebase service unavailable'));
 
       const payload = {
         userId: '123',
@@ -272,7 +354,3 @@ describe('NotificationManagerService - Integration Tests', () => {
     });
   });
 });
-
-
-
-

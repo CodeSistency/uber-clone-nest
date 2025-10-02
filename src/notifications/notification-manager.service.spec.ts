@@ -3,7 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationManagerService } from './notification-manager.service';
 import { NotificationsService } from './notifications.service';
 import { ExpoNotificationsService } from './expo-notifications.service';
-import { NotificationType, NotificationChannel } from './interfaces/notification.interface';
+import {
+  NotificationType,
+  NotificationChannel,
+} from './interfaces/notification.interface';
 
 describe('NotificationManagerService', () => {
   let service: NotificationManagerService;
@@ -46,9 +49,13 @@ describe('NotificationManagerService', () => {
       ],
     }).compile();
 
-    service = module.get<NotificationManagerService>(NotificationManagerService);
+    service = module.get<NotificationManagerService>(
+      NotificationManagerService,
+    );
     firebaseService = module.get<NotificationsService>(NotificationsService);
-    expoService = module.get<ExpoNotificationsService>(ExpoNotificationsService);
+    expoService = module.get<ExpoNotificationsService>(
+      ExpoNotificationsService,
+    );
     configService = module.get<ConfigService>(ConfigService);
   });
 
@@ -100,7 +107,11 @@ describe('NotificationManagerService', () => {
     it('should delegate to firebase service when firebase is selected', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('firebase');
       jest.spyOn(firebaseService, 'sendNotification').mockResolvedValue([
-        { success: true, channel: NotificationChannel.PUSH, timestamp: new Date() }
+        {
+          success: true,
+          channel: NotificationChannel.PUSH,
+          timestamp: new Date(),
+        },
       ]);
 
       const newService = new NotificationManagerService(
@@ -127,7 +138,11 @@ describe('NotificationManagerService', () => {
     it('should delegate to expo service when expo is selected', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('expo');
       jest.spyOn(expoService, 'sendNotification').mockResolvedValue([
-        { success: true, channel: NotificationChannel.PUSH, timestamp: new Date() }
+        {
+          success: true,
+          channel: NotificationChannel.PUSH,
+          timestamp: new Date(),
+        },
       ]);
 
       const newService = new NotificationManagerService(
@@ -153,7 +168,9 @@ describe('NotificationManagerService', () => {
 
     it('should handle errors gracefully', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('firebase');
-      jest.spyOn(firebaseService, 'sendNotification').mockRejectedValue(new Error('Test error'));
+      jest
+        .spyOn(firebaseService, 'sendNotification')
+        .mockRejectedValue(new Error('Test error'));
 
       const newService = new NotificationManagerService(
         configService,
@@ -170,7 +187,9 @@ describe('NotificationManagerService', () => {
         data: {},
       };
 
-      await expect(newService.sendNotification(payload)).rejects.toThrow('Test error');
+      await expect(newService.sendNotification(payload)).rejects.toThrow(
+        'Test error',
+      );
     });
   });
 
@@ -178,7 +197,13 @@ describe('NotificationManagerService', () => {
     it('should delegate bulk notifications to selected provider', async () => {
       jest.spyOn(configService, 'get').mockReturnValue('expo');
       jest.spyOn(expoService, 'sendBulkNotifications').mockResolvedValue([
-        [{ success: true, channel: NotificationChannel.PUSH, timestamp: new Date() }]
+        [
+          {
+            success: true,
+            channel: NotificationChannel.PUSH,
+            timestamp: new Date(),
+          },
+        ],
       ]);
 
       const newService = new NotificationManagerService(
@@ -219,7 +244,10 @@ describe('NotificationManagerService', () => {
 
       await newService.notifyNearbyDrivers(123, { lat: 40.7128, lng: -74.006 });
 
-      expect(firebaseService.notifyNearbyDrivers).toHaveBeenCalledWith(123, { lat: 40.7128, lng: -74.006 });
+      expect(firebaseService.notifyNearbyDrivers).toHaveBeenCalledWith(123, {
+        lat: 40.7128,
+        lng: -74.006,
+      });
     });
   });
 
@@ -240,9 +268,15 @@ describe('NotificationManagerService', () => {
       );
       newService.onModuleInit();
 
-      const result = await newService.findAndAssignNearbyDriver(123, { lat: 40.7128, lng: -74.006 });
+      const result = await newService.findAndAssignNearbyDriver(123, {
+        lat: 40.7128,
+        lng: -74.006,
+      });
 
-      expect(expoService.findAndAssignNearbyDriver).toHaveBeenCalledWith(123, { lat: 40.7128, lng: -74.006 });
+      expect(expoService.findAndAssignNearbyDriver).toHaveBeenCalledWith(123, {
+        lat: 40.7128,
+        lng: -74.006,
+      });
       expect(result.assigned).toBe(true);
       expect(result.driverId).toBe(456);
     });
@@ -262,7 +296,12 @@ describe('NotificationManagerService', () => {
 
       await newService.notifyRideStatusUpdate(123, '456', 789, 'accepted');
 
-      expect(firebaseService.notifyRideStatusUpdate).toHaveBeenCalledWith(123, '456', 789, 'accepted');
+      expect(firebaseService.notifyRideStatusUpdate).toHaveBeenCalledWith(
+        123,
+        '456',
+        789,
+        'accepted',
+      );
     });
   });
 
@@ -284,7 +323,3 @@ describe('NotificationManagerService', () => {
     });
   });
 });
-
-
-
-

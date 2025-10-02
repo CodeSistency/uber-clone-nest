@@ -33,7 +33,8 @@ export class ReferralCodesController {
   @Get('my-code')
   @ApiOperation({
     summary: 'Get my referral code',
-    description: 'Returns the authenticated user\'s referral code, creating one if it doesn\'t exist',
+    description:
+      "Returns the authenticated user's referral code, creating one if it doesn't exist",
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -44,10 +45,13 @@ export class ReferralCodesController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error',
   })
-  async getMyReferralCode(@GetUser('id') userId: number): Promise<ReferralCodeResponseDto> {
+  async getMyReferralCode(
+    @GetUser('id') userId: number,
+  ): Promise<ReferralCodeResponseDto> {
     try {
       this.logger.log(`Getting referral code for user ${userId}`);
-      const referralCode = await this.referralCodesService.getOrCreateUserReferralCode(userId);
+      const referralCode =
+        await this.referralCodesService.getOrCreateUserReferralCode(userId);
 
       return {
         code: referralCode.code,
@@ -59,7 +63,10 @@ export class ReferralCodesController {
         updatedAt: referralCode.updatedAt,
       };
     } catch (error) {
-      this.logger.error(`Error getting referral code for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting referral code for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -67,7 +74,8 @@ export class ReferralCodesController {
   @Get(':code/stats')
   @ApiOperation({
     summary: 'Get referral code statistics',
-    description: 'Returns public statistics for a referral code (usages, conversions, earnings)',
+    description:
+      'Returns public statistics for a referral code (usages, conversions, earnings)',
   })
   @ApiParam({
     name: 'code',
@@ -83,12 +91,17 @@ export class ReferralCodesController {
     status: HttpStatus.NOT_FOUND,
     description: 'Referral code not found',
   })
-  async getReferralCodeStats(@Param('code') code: string): Promise<ReferralCodeStatsDto> {
+  async getReferralCodeStats(
+    @Param('code') code: string,
+  ): Promise<ReferralCodeStatsDto> {
     try {
       this.logger.log(`Getting stats for referral code ${code}`);
       return await this.referralCodesService.getReferralCodeStats(code);
     } catch (error) {
-      this.logger.error(`Error getting stats for referral code ${code}:`, error);
+      this.logger.error(
+        `Error getting stats for referral code ${code}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -97,7 +110,8 @@ export class ReferralCodesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Regenerate referral code',
-    description: 'Creates a new referral code for the authenticated user, deactivating the previous one',
+    description:
+      'Creates a new referral code for the authenticated user, deactivating the previous one',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -108,10 +122,13 @@ export class ReferralCodesController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error',
   })
-  async regenerateReferralCode(@GetUser('id') userId: number): Promise<ReferralCodeResponseDto> {
+  async regenerateReferralCode(
+    @GetUser('id') userId: number,
+  ): Promise<ReferralCodeResponseDto> {
     try {
       this.logger.log(`Regenerating referral code for user ${userId}`);
-      const referralCode = await this.referralCodesService.regenerateUserReferralCode(userId);
+      const referralCode =
+        await this.referralCodesService.regenerateUserReferralCode(userId);
 
       return {
         code: referralCode.code,
@@ -123,10 +140,11 @@ export class ReferralCodesController {
         updatedAt: referralCode.updatedAt,
       };
     } catch (error) {
-      this.logger.error(`Error regenerating referral code for user ${userId}:`, error);
+      this.logger.error(
+        `Error regenerating referral code for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
 }
-
-

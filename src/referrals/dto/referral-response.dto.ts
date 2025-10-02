@@ -41,7 +41,7 @@ export class ReferralTransactionDto {
 
   @ApiProperty({
     description: 'Amount of the transaction',
-    example: 5.00,
+    example: 5.0,
   })
   @Expose()
   amount: number;
@@ -94,7 +94,7 @@ export class ReferralResponseDto {
 
   @ApiProperty({
     description: 'Amount earned from this referral',
-    example: 5.00,
+    example: 5.0,
   })
   @Expose()
   rewardAmount?: number;
@@ -137,5 +137,3 @@ export class ReferralResponseDto {
   @Type(() => ReferralTransactionDto)
   transactions: ReferralTransactionDto[];
 }
-
-

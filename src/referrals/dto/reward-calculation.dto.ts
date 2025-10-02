@@ -12,7 +12,8 @@ export class RewardCalculationDto {
   referralCount: number;
 
   @ApiProperty({
-    description: 'Specific tier to calculate for (optional - will use current tier if not provided)',
+    description:
+      'Specific tier to calculate for (optional - will use current tier if not provided)',
     example: 'ADVANCED',
     enum: ['BASIC', 'ADVANCED', 'VIP'],
     required: false,
@@ -20,5 +21,3 @@ export class RewardCalculationDto {
   @IsOptional()
   tier?: string;
 }
-
-

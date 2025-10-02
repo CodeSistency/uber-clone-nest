@@ -311,8 +311,7 @@ export class UserManagementService {
             // If deactivating (isActive = false), save reason and deactivation date
             deletedAt: new Date(),
             deletedReason: reason || 'Suspended by admin',
-          }
-      ),
+          }),
     };
 
     const updatedUser = await this.prisma.user.update({

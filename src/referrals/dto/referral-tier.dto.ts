@@ -18,7 +18,8 @@ export class ReferralTierDto {
   minReferrals: number;
 
   @ApiProperty({
-    description: 'Maximum number of referrals for this tier (null for unlimited)',
+    description:
+      'Maximum number of referrals for this tier (null for unlimited)',
     example: 5,
     nullable: true,
   })
@@ -35,14 +36,14 @@ export class ReferralTierDto {
 
   @ApiProperty({
     description: 'Amount or percentage of the reward',
-    example: 5.00,
+    example: 5.0,
   })
   @Expose()
   rewardAmount: number;
 
   @ApiProperty({
     description: 'Flexible conditions for reward activation',
-    example: { firstRideCompleted: true, minRideValue: 15.00 },
+    example: { firstRideCompleted: true, minRideValue: 15.0 },
   })
   @Expose()
   conditions?: any;
@@ -61,5 +62,3 @@ export class ReferralTierDto {
   @Expose()
   isActive: boolean;
 }
-
-

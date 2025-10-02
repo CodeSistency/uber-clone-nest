@@ -3,7 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { INotificationProvider } from './notification-provider.interface';
 import { FirebaseService } from '../services/firebase.service';
 import { ExpoNotificationsService } from './expo-notifications.service';
-import { NotificationPayload, NotificationDeliveryResult, NotificationChannel, NotificationType } from './interfaces/notification.interface';
+import {
+  NotificationPayload,
+  NotificationDeliveryResult,
+  NotificationChannel,
+  NotificationType,
+} from './interfaces/notification.interface';
 
 // Exportando el tipo para que otros servicios puedan usarlo
 export type NotificationProviderType = 'firebase' | 'expo';
@@ -12,16 +17,23 @@ export type NotificationProviderType = 'firebase' | 'expo';
 class FirebaseNotificationAdapter implements INotificationProvider {
   constructor(private firebaseService: FirebaseService) {}
 
-  async sendNotification(payload: NotificationPayload): Promise<NotificationDeliveryResult[]> {
+  async sendNotification(
+    payload: NotificationPayload,
+  ): Promise<NotificationDeliveryResult[]> {
     // FirebaseService handles push notifications, return empty array for now
     return [];
   }
 
-  async sendBulkNotifications(payloads: NotificationPayload[]): Promise<NotificationDeliveryResult[][]> {
+  async sendBulkNotifications(
+    payloads: NotificationPayload[],
+  ): Promise<NotificationDeliveryResult[][]> {
     return payloads.map(() => []);
   }
 
-  async notifyNearbyDrivers(rideId: number, pickupLocation: { lat: number; lng: number }): Promise<void> {
+  async notifyNearbyDrivers(
+    rideId: number,
+    pickupLocation: { lat: number; lng: number },
+  ): Promise<void> {
     // Implement if needed
   }
 
@@ -56,16 +68,23 @@ class FirebaseNotificationAdapter implements INotificationProvider {
 class ExpoNotificationAdapter implements INotificationProvider {
   constructor(private expoService: ExpoNotificationsService) {}
 
-  async sendNotification(payload: NotificationPayload): Promise<NotificationDeliveryResult[]> {
+  async sendNotification(
+    payload: NotificationPayload,
+  ): Promise<NotificationDeliveryResult[]> {
     // ExpoNotificationsService handles push notifications, return empty array for now
     return [];
   }
 
-  async sendBulkNotifications(payloads: NotificationPayload[]): Promise<NotificationDeliveryResult[][]> {
+  async sendBulkNotifications(
+    payloads: NotificationPayload[],
+  ): Promise<NotificationDeliveryResult[][]> {
     return payloads.map(() => []);
   }
 
-  async notifyNearbyDrivers(rideId: number, pickupLocation: { lat: number; lng: number }): Promise<void> {
+  async notifyNearbyDrivers(
+    rideId: number,
+    pickupLocation: { lat: number; lng: number },
+  ): Promise<void> {
     // Implement if needed
   }
 
@@ -97,7 +116,9 @@ class ExpoNotificationAdapter implements INotificationProvider {
 }
 
 @Injectable()
-export class NotificationManagerService implements INotificationProvider, OnModuleInit {
+export class NotificationManagerService
+  implements INotificationProvider, OnModuleInit
+{
   private readonly logger = new Logger(NotificationManagerService.name);
   private currentProvider: INotificationProvider;
   private providerType: NotificationProviderType;
@@ -110,12 +131,17 @@ export class NotificationManagerService implements INotificationProvider, OnModu
 
   onModuleInit() {
     // Determine which provider to use based on configuration
-    this.providerType = (this.configService.get<string>('NOTIFICATION_PROVIDER') as NotificationProviderType) || 'firebase';
+    this.providerType =
+      (this.configService.get<string>(
+        'NOTIFICATION_PROVIDER',
+      ) as NotificationProviderType) || 'firebase';
 
     // Set the current provider
     this.setProvider(this.providerType);
 
-    this.logger.log(`🔔 Notification Manager initialized with provider: ${this.providerType}`);
+    this.logger.log(
+      `🔔 Notification Manager initialized with provider: ${this.providerType}`,
+    );
   }
 
   private setProvider(providerType: NotificationProviderType): void {
@@ -126,26 +152,38 @@ export class NotificationManagerService implements INotificationProvider, OnModu
         break;
       case 'firebase':
       default:
-        this.currentProvider = new FirebaseNotificationAdapter(this.firebaseService);
+        this.currentProvider = new FirebaseNotificationAdapter(
+          this.firebaseService,
+        );
         this.logger.log('🔥 Using Firebase Notifications Service');
         break;
     }
   }
 
-  async sendNotification(payload: NotificationPayload): Promise<NotificationDeliveryResult[]> {
+  async sendNotification(
+    payload: NotificationPayload,
+  ): Promise<NotificationDeliveryResult[]> {
     try {
       return await this.currentProvider.sendNotification(payload);
     } catch (error) {
-      this.logger.error(`Error sending notification via ${this.providerType}:`, error);
+      this.logger.error(
+        `Error sending notification via ${this.providerType}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  async sendBulkNotifications(payloads: NotificationPayload[]): Promise<NotificationDeliveryResult[][]> {
+  async sendBulkNotifications(
+    payloads: NotificationPayload[],
+  ): Promise<NotificationDeliveryResult[][]> {
     try {
       return await this.currentProvider.sendBulkNotifications(payloads);
     } catch (error) {
-      this.logger.error(`Error sending bulk notifications via ${this.providerType}:`, error);
+      this.logger.error(
+        `Error sending bulk notifications via ${this.providerType}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -157,7 +195,10 @@ export class NotificationManagerService implements INotificationProvider, OnModu
     try {
       await this.currentProvider.notifyNearbyDrivers(rideId, pickupLocation);
     } catch (error) {
-      this.logger.error(`Error notifying nearby drivers via ${this.providerType}:`, error);
+      this.logger.error(
+        `Error notifying nearby drivers via ${this.providerType}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -172,9 +213,15 @@ export class NotificationManagerService implements INotificationProvider, OnModu
     notifiedDrivers: number;
   }> {
     try {
-      return await this.currentProvider.findAndAssignNearbyDriver(rideId, pickupLocation);
+      return await this.currentProvider.findAndAssignNearbyDriver(
+        rideId,
+        pickupLocation,
+      );
     } catch (error) {
-      this.logger.error(`Error in findAndAssignNearbyDriver via ${this.providerType}:`, error);
+      this.logger.error(
+        `Error in findAndAssignNearbyDriver via ${this.providerType}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -183,7 +230,10 @@ export class NotificationManagerService implements INotificationProvider, OnModu
     try {
       await this.currentProvider.confirmDriverForRide(rideId, driverId);
     } catch (error) {
-      this.logger.error(`Error confirming driver for ride via ${this.providerType}:`, error);
+      this.logger.error(
+        `Error confirming driver for ride via ${this.providerType}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -196,9 +246,18 @@ export class NotificationManagerService implements INotificationProvider, OnModu
     additionalData?: Record<string, any>,
   ): Promise<void> {
     try {
-      await this.currentProvider.notifyRideStatusUpdate(rideId, userId, driverId, status, additionalData);
+      await this.currentProvider.notifyRideStatusUpdate(
+        rideId,
+        userId,
+        driverId,
+        status,
+        additionalData,
+      );
     } catch (error) {
-      this.logger.error(`Error notifying ride status update via ${this.providerType}:`, error);
+      this.logger.error(
+        `Error notifying ride status update via ${this.providerType}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -210,7 +269,9 @@ export class NotificationManagerService implements INotificationProvider, OnModu
 
   switchProvider(providerType: NotificationProviderType): void {
     if (this.providerType !== providerType) {
-      this.logger.log(`🔄 Switching notification provider from ${this.providerType} to ${providerType}`);
+      this.logger.log(
+        `🔄 Switching notification provider from ${this.providerType} to ${providerType}`,
+      );
       this.providerType = providerType;
       this.setProvider(providerType);
     }
@@ -231,7 +292,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
    */
   async notifyReferralRewardEarned(
     userId: number,
-    data: { refereeName: string; amount: number; tier: string }
+    data: { refereeName: string; amount: number; tier: string },
   ): Promise<NotificationDeliveryResult[]> {
     const payload: NotificationPayload = {
       userId: userId.toString(),
@@ -252,7 +313,10 @@ export class NotificationManagerService implements INotificationProvider, OnModu
       this.logger.log(`Sent referral reward notification to user ${userId}`);
       return results;
     } catch (error) {
-      this.logger.error(`Error sending referral reward notification to user ${userId}:`, error);
+      this.logger.error(
+        `Error sending referral reward notification to user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -262,7 +326,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
    */
   async notifyReferralBonusReceived(
     userId: number,
-    data: { referrerName: string; amount: number }
+    data: { referrerName: string; amount: number },
   ): Promise<NotificationDeliveryResult[]> {
     const payload: NotificationPayload = {
       userId: userId.toString(),
@@ -282,7 +346,10 @@ export class NotificationManagerService implements INotificationProvider, OnModu
       this.logger.log(`Sent referral bonus notification to user ${userId}`);
       return results;
     } catch (error) {
-      this.logger.error(`Error sending referral bonus notification to user ${userId}:`, error);
+      this.logger.error(
+        `Error sending referral bonus notification to user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -292,7 +359,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
    */
   async notifyReferralTierUpgrade(
     userId: number,
-    data: { newTier: string; totalReferrals: number; benefits: string[] }
+    data: { newTier: string; totalReferrals: number; benefits: string[] },
   ): Promise<NotificationDeliveryResult[]> {
     const payload: NotificationPayload = {
       userId: userId.toString(),
@@ -313,10 +380,11 @@ export class NotificationManagerService implements INotificationProvider, OnModu
       this.logger.log(`Sent tier upgrade notification to user ${userId}`);
       return results;
     } catch (error) {
-      this.logger.error(`Error sending tier upgrade notification to user ${userId}:`, error);
+      this.logger.error(
+        `Error sending tier upgrade notification to user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
 }
-
-

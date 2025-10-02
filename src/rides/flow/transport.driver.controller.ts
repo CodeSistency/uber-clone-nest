@@ -671,7 +671,7 @@ export class TransportDriverController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get available rides for driver',
-    description: 'Get ride requests that match the driver\'s vehicle type',
+    description: "Get ride requests that match the driver's vehicle type",
   })
   @ApiResponse({
     status: 200,
@@ -702,9 +702,9 @@ export class TransportDriverController {
         vehicles: {
           where: { status: 'active' },
           select: { vehicleTypeId: true },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
 
     if (!driver?.vehicles?.[0]?.vehicleTypeId) {
@@ -716,7 +716,7 @@ export class TransportDriverController {
       0, // Default lat (will be filtered by vehicle type only)
       0, // Default lng (will be filtered by vehicle type only)
       1000, // Large radius to get all rides (filtered by vehicle type)
-      driver.vehicles[0].vehicleTypeId // Filter by driver's vehicle type
+      driver.vehicles[0].vehicleTypeId, // Filter by driver's vehicle type
     );
     return { data: list };
   }

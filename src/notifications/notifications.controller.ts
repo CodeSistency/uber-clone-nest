@@ -765,7 +765,8 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Switch notification provider dynamically',
-    description: 'Change the active notification provider (firebase/expo) at runtime',
+    description:
+      'Change the active notification provider (firebase/expo) at runtime',
   })
   @ApiBody({
     type: Object,
@@ -814,7 +815,8 @@ export class NotificationsController {
       throw new Error('Invalid provider. Must be "firebase" or "expo"');
     }
 
-    const previousProvider = await this.notificationsService.getCurrentProviderType();
+    const previousProvider =
+      await this.notificationsService.getCurrentProviderType();
     await this.notificationsService.switchProvider(provider);
 
     return {
@@ -827,7 +829,8 @@ export class NotificationsController {
   @Get('provider-status')
   @ApiOperation({
     summary: 'Get notification provider status',
-    description: 'Get information about the current notification provider configuration',
+    description:
+      'Get information about the current notification provider configuration',
   })
   @ApiResponse({
     status: 200,
@@ -885,12 +888,20 @@ export class NotificationsController {
         status: 'configured', // Always configured for Expo
       },
       firebase: {
-        initialized: this.configService.get('FIREBASE_PROJECT_ID') ? true : false,
-        status: this.configService.get('FIREBASE_PROJECT_ID') ? 'configured' : 'not_configured',
+        initialized: this.configService.get('FIREBASE_PROJECT_ID')
+          ? true
+          : false,
+        status: this.configService.get('FIREBASE_PROJECT_ID')
+          ? 'configured'
+          : 'not_configured',
       },
       twilio: {
-        initialized: this.configService.get('TWILIO_ACCOUNT_SID') ? true : false,
-        status: this.configService.get('TWILIO_ACCOUNT_SID') ? 'configured' : 'not_configured',
+        initialized: this.configService.get('TWILIO_ACCOUNT_SID')
+          ? true
+          : false,
+        status: this.configService.get('TWILIO_ACCOUNT_SID')
+          ? 'configured'
+          : 'not_configured',
         phoneNumber: this.configService.get('TWILIO_PHONE_NUMBER') || null,
       },
     };

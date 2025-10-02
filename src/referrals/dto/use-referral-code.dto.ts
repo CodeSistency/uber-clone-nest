@@ -10,8 +10,8 @@ export class UseReferralCodeDto {
   })
   @IsNotEmpty({ message: 'Referral code is required' })
   @IsString({ message: 'Referral code must be a string' })
-  @Length(8, 12, { message: 'Referral code must be between 8 and 12 characters' })
+  @Length(8, 12, {
+    message: 'Referral code must be between 8 and 12 characters',
+  })
   referralCode: string;
 }
-
-

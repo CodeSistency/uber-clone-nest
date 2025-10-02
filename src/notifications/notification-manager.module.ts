@@ -9,17 +9,11 @@ import { ExpoNotificationsModule } from './expo-notifications.module';
 @Module({
   imports: [
     ConfigModule,
-    NotificationsModule,      // Firebase provider
-    ExpoNotificationsModule,  // Expo provider
+    NotificationsModule, // Firebase provider
+    ExpoNotificationsModule, // Expo provider
   ],
   controllers: [],
-  providers: [
-    NotificationManagerService,
-  ],
+  providers: [NotificationManagerService],
   exports: [NotificationManagerService],
 })
 export class NotificationManagerModule {}
-
-
-
-

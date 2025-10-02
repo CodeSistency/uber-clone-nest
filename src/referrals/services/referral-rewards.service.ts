@@ -3,7 +3,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfigService } from '../../config/config.service';
 import { WalletService } from '../../wallet/wallet.service';
 import { NotificationManagerService } from '../../notifications/notification-manager.service';
-import { Referral, ReferralReward as PrismaReferralReward, ReferralTransaction } from '@prisma/client';
+import {
+  Referral,
+  ReferralReward as PrismaReferralReward,
+  ReferralTransaction,
+} from '@prisma/client';
 
 @Injectable()
 export class ReferralRewardsService {
@@ -54,7 +58,10 @@ export class ReferralRewardsService {
         return 'BASIC';
       }
     } catch (error) {
-      this.logger.error(`Error getting current tier for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting current tier for user ${userId}:`,
+        error,
+      );
       return 'BASIC';
     }
   }
@@ -66,10 +73,7 @@ export class ReferralRewardsService {
     try {
       return await this.prisma.referralReward.findMany({
         where: { isActive: true },
-        orderBy: [
-          { tier: 'asc' },
-          { minReferrals: 'asc' },
-        ],
+        orderBy: [{ tier: 'asc' }, { minReferrals: 'asc' }],
       });
     } catch (error) {
       this.logger.error('Error getting active reward configurations:', error);
@@ -104,7 +108,10 @@ export class ReferralRewardsService {
       const baseRefereeReward = this.configService.referral.refereeBaseReward;
 
       // Aplicar multiplicadores de tier
-      const referrerReward = this.calculateRewardAmount(tier, baseReferrerReward);
+      const referrerReward = this.calculateRewardAmount(
+        tier,
+        baseReferrerReward,
+      );
       const refereeReward = baseRefereeReward; // Referees always get base amount
 
       return {
@@ -112,13 +119,15 @@ export class ReferralRewardsService {
         refereeReward,
         tier,
         conditions: {
-          minRideValue: 15.00, // Configurable
+          minRideValue: 15.0, // Configurable
           firstRideCompleted: true,
         },
       };
-
     } catch (error) {
-      this.logger.error(`Error calculating reward for referral ${referralId}:`, error);
+      this.logger.error(
+        `Error calculating reward for referral ${referralId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -141,9 +150,10 @@ export class ReferralRewardsService {
       }
 
       // Verificar si ya se aplicaron recompensas
-      const existingTransactions = await this.prisma.referralTransaction.findMany({
-        where: { referralId },
-      });
+      const existingTransactions =
+        await this.prisma.referralTransaction.findMany({
+          where: { referralId },
+        });
 
       if (existingTransactions.length > 0) {
         this.logger.warn(`Rewards already applied for referral ${referralId}`);
@@ -153,49 +163,68 @@ export class ReferralRewardsService {
       // Calcular recompensas
       const rewards = await this.calculateReferralReward(referralId);
 
-      const result: { referrerTransactionId?: string; refereeTransactionId?: string } = {};
+      const result: {
+        referrerTransactionId?: string;
+        refereeTransactionId?: string;
+      } = {};
 
       // Aplicar recompensa al referente
       if (rewards.referrerReward > 0) {
         try {
-          const referrerTransaction = await this.prisma.referralTransaction.create({
-            data: {
-              referralId,
-              userId: referral.referrerId,
-              amount: rewards.referrerReward,
-              type: 'EARNED',
-              description: `Referral reward - ${rewards.tier} tier`,
-            },
-          });
+          const referrerTransaction =
+            await this.prisma.referralTransaction.create({
+              data: {
+                referralId,
+                userId: referral.referrerId,
+                amount: rewards.referrerReward,
+                type: 'EARNED',
+                description: `Referral reward - ${rewards.tier} tier`,
+              },
+            });
 
           // Agregar fondos al wallet del referente
-          await this.addFundsToWallet(referral.referrerId, rewards.referrerReward, 'referral_earning');
+          await this.addFundsToWallet(
+            referral.referrerId,
+            rewards.referrerReward,
+            'referral_earning',
+          );
 
           result.referrerTransactionId = referrerTransaction.id.toString();
         } catch (error) {
-          this.logger.error(`Error applying referrer reward for referral ${referralId}:`, error);
+          this.logger.error(
+            `Error applying referrer reward for referral ${referralId}:`,
+            error,
+          );
         }
       }
 
       // Aplicar recompensa al referido
       if (rewards.refereeReward > 0) {
         try {
-          const refereeTransaction = await this.prisma.referralTransaction.create({
-            data: {
-              referralId,
-              userId: referral.refereeId,
-              amount: rewards.refereeReward,
-              type: 'EARNED',
-              description: 'Welcome bonus for using referral code',
-            },
-          });
+          const refereeTransaction =
+            await this.prisma.referralTransaction.create({
+              data: {
+                referralId,
+                userId: referral.refereeId,
+                amount: rewards.refereeReward,
+                type: 'EARNED',
+                description: 'Welcome bonus for using referral code',
+              },
+            });
 
           // Agregar fondos al wallet del referido
-          await this.addFundsToWallet(referral.refereeId, rewards.refereeReward, 'referral_bonus');
+          await this.addFundsToWallet(
+            referral.refereeId,
+            rewards.refereeReward,
+            'referral_bonus',
+          );
 
           result.refereeTransactionId = refereeTransaction.id.toString();
         } catch (error) {
-          this.logger.error(`Error applying referee reward for referral ${referralId}:`, error);
+          this.logger.error(
+            `Error applying referee reward for referral ${referralId}:`,
+            error,
+          );
         }
       }
 
@@ -203,15 +232,22 @@ export class ReferralRewardsService {
       try {
         await this.sendReferralRewardNotifications(referral, rewards);
       } catch (error) {
-        this.logger.error(`Failed to send reward notifications for referral ${referralId}:`, error);
+        this.logger.error(
+          `Failed to send reward notifications for referral ${referralId}:`,
+          error,
+        );
         // Don't fail the entire process for notification errors
       }
 
-      this.logger.log(`Applied rewards for referral ${referralId}: referrer $${rewards.referrerReward}, referee $${rewards.refereeReward}`);
+      this.logger.log(
+        `Applied rewards for referral ${referralId}: referrer $${rewards.referrerReward}, referee $${rewards.refereeReward}`,
+      );
       return result;
-
     } catch (error) {
-      this.logger.error(`Error applying rewards for referral ${referralId}:`, error);
+      this.logger.error(
+        `Error applying rewards for referral ${referralId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -221,7 +257,7 @@ export class ReferralRewardsService {
    */
   private async sendReferralRewardNotifications(
     referral: any,
-    rewards: { referrerReward: number; refereeReward: number; tier: string }
+    rewards: { referrerReward: number; refereeReward: number; tier: string },
   ): Promise<void> {
     try {
       // Notify referrer of successful conversion
@@ -232,7 +268,7 @@ export class ReferralRewardsService {
             refereeName: referral.referee.name,
             amount: rewards.referrerReward,
             tier: rewards.tier,
-          }
+          },
         );
       }
 
@@ -243,13 +279,16 @@ export class ReferralRewardsService {
           {
             referrerName: referral.referrer.name,
             amount: rewards.refereeReward,
-          }
+          },
         );
       }
 
       this.logger.log(`Sent reward notifications for referral ${referral.id}`);
     } catch (error) {
-      this.logger.error(`Error sending reward notifications for referral ${referral.id}:`, error);
+      this.logger.error(
+        `Error sending reward notifications for referral ${referral.id}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -257,7 +296,11 @@ export class ReferralRewardsService {
   /**
    * Método helper para agregar fondos al wallet de manera segura
    */
-  private async addFundsToWallet(userId: number, amount: number, description: string): Promise<void> {
+  private async addFundsToWallet(
+    userId: number,
+    amount: number,
+    description: string,
+  ): Promise<void> {
     try {
       // Usar el método addFunds del WalletService con el DTO correcto
       const addFundsDto = {
@@ -267,10 +310,14 @@ export class ReferralRewardsService {
       };
 
       await this.walletService.addFunds(addFundsDto);
-      this.logger.log(`Added $${amount} to wallet for user ${userId}: ${description}`);
-
+      this.logger.log(
+        `Added $${amount} to wallet for user ${userId}: ${description}`,
+      );
     } catch (error) {
-      this.logger.error(`Error adding funds to wallet for user ${userId}:`, error);
+      this.logger.error(
+        `Error adding funds to wallet for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -278,7 +325,10 @@ export class ReferralRewardsService {
   /**
    * Valida si se cumplen las condiciones para aplicar recompensas
    */
-  async validateRewardConditions(referralId: number, conditions: any): Promise<boolean> {
+  async validateRewardConditions(
+    referralId: number,
+    conditions: any,
+  ): Promise<boolean> {
     try {
       const referral = await this.prisma.referral.findUnique({
         where: { id: referralId },
@@ -312,16 +362,21 @@ export class ReferralRewardsService {
             orderBy: { createdAt: 'desc' },
           });
 
-          if (recentRide && Number(recentRide.farePrice) < conditions.minRideValue) {
+          if (
+            recentRide &&
+            Number(recentRide.farePrice) < conditions.minRideValue
+          ) {
             return false;
           }
         }
       }
 
       return true;
-
     } catch (error) {
-      this.logger.error(`Error validating reward conditions for referral ${referralId}:`, error);
+      this.logger.error(
+        `Error validating reward conditions for referral ${referralId}:`,
+        error,
+      );
       return false;
     }
   }
@@ -346,7 +401,7 @@ export class ReferralRewardsService {
       });
 
       const totalEarned = transactions
-        .filter(t => t.type === 'EARNED')
+        .filter((t) => t.type === 'EARNED')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       // Obtener balance actual del wallet
@@ -369,9 +424,9 @@ export class ReferralRewardsService {
         },
       });
 
-      const pendingRewards = pendingReferrals
-        .filter(r => r.transactions.length === 0)
-        .length * this.configService.referral.referrerBaseReward;
+      const pendingRewards =
+        pendingReferrals.filter((r) => r.transactions.length === 0).length *
+        this.configService.referral.referrerBaseReward;
 
       // Obtener tier actual
       const tier = await this.getUserCurrentTier(userId);
@@ -404,9 +459,11 @@ export class ReferralRewardsService {
         tier,
         nextTierRequirements,
       };
-
     } catch (error) {
-      this.logger.error(`Error getting rewards summary for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting rewards summary for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -432,14 +489,16 @@ export class ReferralRewardsService {
             await this.applyReferralRewards(referral.id);
             processedCount++;
           } catch (error) {
-            this.logger.error(`Error processing rewards for referral ${referral.id}:`, error);
+            this.logger.error(
+              `Error processing rewards for referral ${referral.id}:`,
+              error,
+            );
           }
         }
       }
 
       this.logger.log(`Processed ${processedCount} pending referral rewards`);
       return processedCount;
-
     } catch (error) {
       this.logger.error('Error processing pending referral rewards:', error);
       throw error;

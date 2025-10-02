@@ -107,7 +107,8 @@ export class TransportClientController {
   @Get('tiers/:vehicleTypeId')
   @ApiOperation({
     summary: 'Get available tiers for a specific vehicle type',
-    description: 'Retrieve ride tiers that are available for a specific vehicle type (car, motorcycle, etc.)',
+    description:
+      'Retrieve ride tiers that are available for a specific vehicle type (car, motorcycle, etc.)',
   })
   @ApiParam({
     name: 'vehicleTypeId',
@@ -128,7 +129,7 @@ export class TransportClientController {
             properties: {
               id: { type: 'number', example: 1 },
               name: { type: 'string', example: 'Economy' },
-              baseFare: { type: 'number', example: 2.50 },
+              baseFare: { type: 'number', example: 2.5 },
               perMinuteRate: { type: 'number', example: 0.15 },
               perMileRate: { type: 'number', example: 1.25 },
               imageUrl: { type: 'string', example: 'https://...' },
@@ -143,7 +144,9 @@ export class TransportClientController {
   async getTiersForVehicleType(
     @Param('vehicleTypeId') vehicleTypeId: string,
   ): Promise<{ data: any }> {
-    const tiers = await this.flow.getAvailableTiersForVehicleType(Number(vehicleTypeId));
+    const tiers = await this.flow.getAvailableTiersForVehicleType(
+      Number(vehicleTypeId),
+    );
     return { data: tiers };
   }
 
@@ -1052,6 +1055,12 @@ export class TransportClientController {
 
     // Validar que los montos sumen el total correcto
     const rideAmount = Number(ride.farePrice || 0);
+
+    // Validación adicional por seguridad
+    if (!body.payments || !Array.isArray(body.payments)) {
+      throw new Error('La propiedad payments es requerida y debe ser un array');
+    }
+
     const totalPayments = body.payments.reduce(
       (sum, payment) => sum + payment.amount,
       0,
@@ -1087,7 +1096,10 @@ export class TransportClientController {
         try {
           await this.flow.notifyDriversAfterPayment(Number(rideId));
         } catch (error) {
-          console.error(`Failed to notify drivers for cash payment ride ${rideId}:`, error);
+          console.error(
+            `Failed to notify drivers for cash payment ride ${rideId}:`,
+            error,
+          );
           // No fallar el pago por error en notificación
         }
 
@@ -1122,7 +1134,10 @@ export class TransportClientController {
           try {
             await this.flow.notifyDriversAfterPayment(Number(rideId));
           } catch (error) {
-            console.error(`Failed to notify drivers for wallet payment ride ${rideId}:`, error);
+            console.error(
+              `Failed to notify drivers for wallet payment ride ${rideId}:`,
+              error,
+            );
             // No fallar el pago por error en notificación
           }
 

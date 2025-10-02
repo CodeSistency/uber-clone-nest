@@ -10,7 +10,8 @@ export class ReferralStatsDto {
   totalReferrals: number;
 
   @ApiProperty({
-    description: 'Number of referrals that have been converted (first ride completed)',
+    description:
+      'Number of referrals that have been converted (first ride completed)',
     example: 12,
   })
   @Expose()
@@ -25,14 +26,14 @@ export class ReferralStatsDto {
 
   @ApiProperty({
     description: 'Total amount earned from referrals',
-    example: 48.00,
+    example: 48.0,
   })
   @Expose()
   totalEarned: number;
 
   @ApiProperty({
     description: 'Amount of pending rewards not yet processed',
-    example: 10.00,
+    example: 10.0,
   })
   @Expose()
   pendingRewards: number;
@@ -52,5 +53,3 @@ export class ReferralStatsDto {
   @Expose()
   rank: number;
 }
-
-

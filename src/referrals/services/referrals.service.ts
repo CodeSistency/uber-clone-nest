@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfigService } from '../../config/config.service';
 import { ReferralCodesService } from './referral-codes.service';
@@ -18,14 +24,18 @@ export class ReferralsService {
   /**
    * Aplica un código de referido durante el registro de un nuevo usuario
    */
-  async applyReferralCode(referralCode: string, refereeId: number): Promise<{
+  async applyReferralCode(
+    referralCode: string,
+    refereeId: number,
+  ): Promise<{
     success: boolean;
     referral?: Referral;
     error?: string;
   }> {
     try {
       // Validar código
-      const validation = await this.referralCodesService.validateReferralCode(referralCode);
+      const validation =
+        await this.referralCodesService.validateReferralCode(referralCode);
       if (!validation.isValid || !validation.referralCode) {
         return { success: false, error: validation.error };
       }
@@ -48,7 +58,10 @@ export class ReferralsService {
       });
 
       if (existingReferral) {
-        return { success: false, error: 'Referral relationship already exists' };
+        return {
+          success: false,
+          error: 'Referral relationship already exists',
+        };
       }
 
       // Crear la relación de referido
@@ -64,11 +77,15 @@ export class ReferralsService {
       // Incrementar contador de uso del código
       await this.referralCodesService.incrementUsageCount(referralCode);
 
-      this.logger.log(`Applied referral code ${referralCode} for new user ${refereeId}`);
+      this.logger.log(
+        `Applied referral code ${referralCode} for new user ${refereeId}`,
+      );
       return { success: true, referral };
-
     } catch (error) {
-      this.logger.error(`Error applying referral code ${referralCode} for user ${refereeId}:`, error);
+      this.logger.error(
+        `Error applying referral code ${referralCode} for user ${refereeId}:`,
+        error,
+      );
       return { success: false, error: 'Internal error processing referral' };
     }
   }
@@ -109,9 +126,10 @@ export class ReferralsService {
         include: { referrer: true, referee: true },
       });
 
-      this.logger.log(`Converted referral ${referralId} for users ${referral.referrerId} -> ${referral.refereeId}`);
+      this.logger.log(
+        `Converted referral ${referralId} for users ${referral.referrerId} -> ${referral.refereeId}`,
+      );
       return updatedReferral;
-
     } catch (error) {
       this.logger.error(`Error converting referral ${referralId}:`, error);
       throw error;
@@ -141,7 +159,6 @@ export class ReferralsService {
         },
         orderBy: { createdAt: 'desc' },
       });
-
     } catch (error) {
       this.logger.error(`Error getting referrals for user ${userId}:`, error);
       throw error;
@@ -169,11 +186,15 @@ export class ReferralsService {
       });
 
       const totalReferrals = referrals.length;
-      const convertedReferrals = referrals.filter(r => r.status === 'converted').length;
-      const pendingReferrals = referrals.filter(r => r.status === 'pending').length;
+      const convertedReferrals = referrals.filter(
+        (r) => r.status === 'converted',
+      ).length;
+      const pendingReferrals = referrals.filter(
+        (r) => r.status === 'pending',
+      ).length;
 
       const totalEarned = referrals
-        .flatMap(r => r.transactions)
+        .flatMap((r) => r.transactions)
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       // Calcular tier actual basado en referidos convertidos
@@ -191,9 +212,11 @@ export class ReferralsService {
         totalEarned,
         currentTier,
       };
-
     } catch (error) {
-      this.logger.error(`Error getting referral stats for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting referral stats for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -209,7 +232,10 @@ export class ReferralsService {
 
       return !existingReferral;
     } catch (error) {
-      this.logger.error(`Error checking if user ${userId} can be referred:`, error);
+      this.logger.error(
+        `Error checking if user ${userId} can be referred:`,
+        error,
+      );
       return false;
     }
   }
@@ -253,9 +279,10 @@ export class ReferralsService {
         },
       });
 
-      this.logger.log(`Cancelled referral ${referralId} with reason: ${reason}`);
+      this.logger.log(
+        `Cancelled referral ${referralId} with reason: ${reason}`,
+      );
       return updatedReferral;
-
     } catch (error) {
       this.logger.error(`Error cancelling referral ${referralId}:`, error);
       throw error;
@@ -291,14 +318,16 @@ export class ReferralsService {
         }
       }
 
-      this.logger.log(`Processed ${convertedCount} automatic referral conversions`);
+      this.logger.log(
+        `Processed ${convertedCount} automatic referral conversions`,
+      );
       return convertedCount;
-
     } catch (error) {
-      this.logger.error('Error processing pending referral conversions:', error);
+      this.logger.error(
+        'Error processing pending referral conversions:',
+        error,
+      );
       throw error;
     }
   }
 }
-
-

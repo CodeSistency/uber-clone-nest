@@ -7,7 +7,12 @@ import {
   NotificationPayload,
   NotificationDeliveryResult,
 } from './interfaces/notification.interface';
-import { Expo, ExpoPushMessage, ExpoPushToken, ExpoPushTicket } from 'expo-server-sdk';
+import {
+  Expo,
+  ExpoPushMessage,
+  ExpoPushToken,
+  ExpoPushTicket,
+} from 'expo-server-sdk';
 
 @Injectable()
 export class ExpoNotificationsService {
@@ -43,11 +48,17 @@ export class ExpoNotificationsService {
       pushTokens.length > 0
     ) {
       try {
-        const pushResult = await this.sendExpoPushNotifications(pushTokens, payload);
+        const pushResult = await this.sendExpoPushNotifications(
+          pushTokens,
+          payload,
+        );
         deliveryResults.push({
-          success: pushResult.some(ticket => ticket.status === 'ok'),
+          success: pushResult.some((ticket) => ticket.status === 'ok'),
           channel: NotificationChannel.PUSH,
-          messageId: pushResult.filter(ticket => ticket.status === 'ok').map(ticket => ticket.id).join(','),
+          messageId: pushResult
+            .filter((ticket) => ticket.status === 'ok')
+            .map((ticket) => ticket.id)
+            .join(','),
           timestamp: new Date(),
         });
       } catch (error) {
@@ -424,14 +435,14 @@ export class ExpoNotificationsService {
     payload: NotificationPayload,
   ): Promise<ExpoPushTicket[]> {
     // Filter out invalid tokens
-    const validTokens = tokens.filter(token => Expo.isExpoPushToken(token));
+    const validTokens = tokens.filter((token) => Expo.isExpoPushToken(token));
 
     if (validTokens.length === 0) {
       return [];
     }
 
     // Create Expo push messages
-    const messages: ExpoPushMessage[] = validTokens.map(token => ({
+    const messages: ExpoPushMessage[] = validTokens.map((token) => ({
       to: token as ExpoPushToken,
       title: payload.title,
       body: payload.message,
@@ -543,7 +554,7 @@ export class ExpoNotificationsService {
         },
       });
 
-      return tokens.map(t => t.token);
+      return tokens.map((t) => t.token);
     } catch (error) {
       this.logger.error(`Failed to get push tokens for user ${userId}:`, error);
       return [];

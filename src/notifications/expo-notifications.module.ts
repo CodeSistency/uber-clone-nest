@@ -6,15 +6,7 @@ import { TwilioService } from '../services/twilio.service';
 @Module({
   imports: [],
   controllers: [],
-  providers: [
-    ExpoNotificationsService,
-    PrismaService,
-    TwilioService,
-  ],
+  providers: [ExpoNotificationsService, PrismaService, TwilioService],
   exports: [ExpoNotificationsService],
 })
 export class ExpoNotificationsModule {}
-
-
-
-

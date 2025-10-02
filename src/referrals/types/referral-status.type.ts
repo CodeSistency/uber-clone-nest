@@ -13,4 +13,3 @@ export const ReferralStatusValues = {
   EXPIRED: 'expired' as ReferralStatus,
   CANCELLED: 'cancelled' as ReferralStatus,
 } as const;
-

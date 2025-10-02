@@ -815,7 +815,9 @@ export class RidesService {
     try {
       // ride.userId is Int according to the model, so we can use it directly
       await this.processReferralConversion(ride.userId);
-      this.logger.log(`Processed referral conversion for user ${ride.userId} after completing ride ${rideId}`);
+      this.logger.log(
+        `Processed referral conversion for user ${ride.userId} after completing ride ${rideId}`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to process referral conversion for ride ${rideId}:`,
@@ -850,15 +852,19 @@ export class RidesService {
   private async processReferralConversion(userId: number): Promise<void> {
     try {
       // Check if user can be referred (has pending referrals)
-      const canBeReferred = await this.referralsService.canUserBeReferred(userId);
+      const canBeReferred =
+        await this.referralsService.canUserBeReferred(userId);
       if (!canBeReferred) {
-        this.logger.debug(`User ${userId} cannot be referred (no pending referrals or already referred)`);
+        this.logger.debug(
+          `User ${userId} cannot be referred (no pending referrals or already referred)`,
+        );
         return;
       }
 
       // Find pending referrals for this user
-      const pendingReferrals = await this.referralsService.getUserReferrals(userId)
-        .then(referrals => referrals.filter(r => r.status === 'pending'));
+      const pendingReferrals = await this.referralsService
+        .getUserReferrals(userId)
+        .then((referrals) => referrals.filter((r) => r.status === 'pending'));
 
       if (pendingReferrals.length === 0) {
         this.logger.debug(`No pending referrals found for user ${userId}`);
@@ -869,9 +875,14 @@ export class RidesService {
       for (const referral of pendingReferrals) {
         try {
           // Validate conversion conditions
-          const isValid = await this.validateReferralConversionConditions(referral, userId);
+          const isValid = await this.validateReferralConversionConditions(
+            referral,
+            userId,
+          );
           if (!isValid) {
-            this.logger.debug(`Referral ${referral.id} does not meet conversion conditions`);
+            this.logger.debug(
+              `Referral ${referral.id} does not meet conversion conditions`,
+            );
             continue;
           }
 
@@ -881,16 +892,22 @@ export class RidesService {
           // Apply rewards
           await this.referralRewardsService.applyReferralRewards(referral.id);
 
-          this.logger.log(`Successfully converted referral ${referral.id} for user ${userId}`);
-
+          this.logger.log(
+            `Successfully converted referral ${referral.id} for user ${userId}`,
+          );
         } catch (error) {
-          this.logger.error(`Failed to convert referral ${referral.id} for user ${userId}:`, error);
+          this.logger.error(
+            `Failed to convert referral ${referral.id} for user ${userId}:`,
+            error,
+          );
           // Continue processing other referrals even if one fails
         }
       }
-
     } catch (error) {
-      this.logger.error(`Error processing referral conversion for user ${userId}:`, error);
+      this.logger.error(
+        `Error processing referral conversion for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -898,7 +915,10 @@ export class RidesService {
   /**
    * Validate conditions for referral conversion
    */
-  private async validateReferralConversionConditions(referral: any, userIdNum: number): Promise<boolean> {
+  private async validateReferralConversionConditions(
+    referral: any,
+    userIdNum: number,
+  ): Promise<boolean> {
     try {
       // Condition 1: Check if this is the user's first completed ride
       const completedRides = await this.prisma.ride.count({
@@ -923,28 +943,37 @@ export class RidesService {
       });
 
       if (recentRide) {
-        const minRideValue = 15.00; // Configurable minimum ride value
+        const minRideValue = 15.0; // Configurable minimum ride value
         if (Number(recentRide.farePrice) < minRideValue) {
-          this.logger.debug(`Ride value ${recentRide.farePrice} below minimum ${minRideValue} for referral ${referral.id}`);
+          this.logger.debug(
+            `Ride value ${recentRide.farePrice} below minimum ${minRideValue} for referral ${referral.id}`,
+          );
           return false;
         }
       }
 
       // Condition 3: Check referral code validity period
-      const codeValidDays = this.getConfigValue('REFERRAL_CODE_EXPIRY_DAYS', 365);
+      const codeValidDays = this.getConfigValue(
+        'REFERRAL_CODE_EXPIRY_DAYS',
+        365,
+      );
       const codeAgeDays = Math.floor(
-        (Date.now() - referral.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - referral.createdAt.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (codeAgeDays > codeValidDays) {
-        this.logger.debug(`Referral code expired (${codeAgeDays} > ${codeValidDays} days) for referral ${referral.id}`);
+        this.logger.debug(
+          `Referral code expired (${codeAgeDays} > ${codeValidDays} days) for referral ${referral.id}`,
+        );
         return false;
       }
 
       return true;
-
     } catch (error) {
-      this.logger.error(`Error validating conversion conditions for referral ${referral.id}:`, error);
+      this.logger.error(
+        `Error validating conversion conditions for referral ${referral.id}:`,
+        error,
+      );
       return false;
     }
   }

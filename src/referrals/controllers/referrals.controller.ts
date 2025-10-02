@@ -39,7 +39,8 @@ export class ReferralsController {
   @Get('my-referrals')
   @ApiOperation({
     summary: 'Get my referrals',
-    description: 'Returns all referrals made by the authenticated user with detailed information',
+    description:
+      'Returns all referrals made by the authenticated user with detailed information',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -50,16 +51,20 @@ export class ReferralsController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error',
   })
-  async getMyReferrals(@GetUser('id') userId: number): Promise<ReferralResponseDto[]> {
+  async getMyReferrals(
+    @GetUser('id') userId: number,
+  ): Promise<ReferralResponseDto[]> {
     try {
       this.logger.log(`Getting referrals for user ${userId}`);
       const referrals = await this.referralsService.getUserReferrals(userId);
 
-      return referrals.map(referral => ({
+      return referrals.map((referral) => ({
         id: referral.id,
         referralCodeId: referral.referralCodeId,
         status: referral.status,
-        rewardAmount: referral.rewardAmount ? Number(referral.rewardAmount) : undefined,
+        rewardAmount: referral.rewardAmount
+          ? Number(referral.rewardAmount)
+          : undefined,
         rewardType: referral.rewardType ?? undefined,
         createdAt: referral.createdAt,
         convertedAt: referral.convertedAt ?? undefined,
@@ -69,7 +74,7 @@ export class ReferralsController {
           email: referral.referee.email,
           createdAt: referral.referee.createdAt,
         },
-        transactions: referral.transactions.map(transaction => ({
+        transactions: referral.transactions.map((transaction) => ({
           id: transaction.id,
           amount: Number(transaction.amount),
           type: transaction.type,
@@ -87,7 +92,8 @@ export class ReferralsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Use referral code',
-    description: 'Applies a referral code during new user registration or account setup',
+    description:
+      'Applies a referral code during new user registration or account setup',
   })
   @ApiBody({
     type: UseReferralCodeDto,
@@ -100,7 +106,10 @@ export class ReferralsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Referral code applied successfully' },
+        message: {
+          type: 'string',
+          example: 'Referral code applied successfully',
+        },
         referral: {
           type: 'object',
           properties: {
@@ -123,13 +132,21 @@ export class ReferralsController {
   ): Promise<{
     success: boolean;
     message: string;
-    referral?: { id: number; referrerId: number; refereeId: number; status: string };
+    referral?: {
+      id: number;
+      referrerId: number;
+      refereeId: number;
+      status: string;
+    };
   }> {
     try {
-      this.logger.log(`Applying referral code ${dto.referralCode} for user ${userId}`);
+      this.logger.log(
+        `Applying referral code ${dto.referralCode} for user ${userId}`,
+      );
 
       // Verificar que el usuario puede ser referido
-      const canBeReferred = await this.referralsService.canUserBeReferred(userId);
+      const canBeReferred =
+        await this.referralsService.canUserBeReferred(userId);
       if (!canBeReferred) {
         return {
           success: false,
@@ -137,7 +154,10 @@ export class ReferralsController {
         };
       }
 
-      const result = await this.referralsService.applyReferralCode(dto.referralCode, userId);
+      const result = await this.referralsService.applyReferralCode(
+        dto.referralCode,
+        userId,
+      );
 
       if (result.success && result.referral) {
         return {
@@ -157,7 +177,10 @@ export class ReferralsController {
         };
       }
     } catch (error) {
-      this.logger.error(`Error applying referral code for user ${userId}:`, error);
+      this.logger.error(
+        `Error applying referral code for user ${userId}:`,
+        error,
+      );
       return {
         success: false,
         message: 'Internal error processing referral code',
@@ -168,7 +191,8 @@ export class ReferralsController {
   @Get('stats')
   @ApiOperation({
     summary: 'Get referral statistics',
-    description: 'Returns comprehensive statistics about the user\'s referral performance',
+    description:
+      "Returns comprehensive statistics about the user's referral performance",
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -179,15 +203,18 @@ export class ReferralsController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error',
   })
-  async getReferralStats(@GetUser('id') userId: number): Promise<ReferralStatsDto> {
+  async getReferralStats(
+    @GetUser('id') userId: number,
+  ): Promise<ReferralStatsDto> {
     try {
       this.logger.log(`Getting referral stats for user ${userId}`);
       return await this.referralAnalyticsService.getUserReferralStats(userId);
     } catch (error) {
-      this.logger.error(`Error getting referral stats for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting referral stats for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
 }
-
-

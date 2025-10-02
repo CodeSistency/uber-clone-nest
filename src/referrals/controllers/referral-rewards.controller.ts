@@ -38,7 +38,8 @@ export class ReferralRewardsController {
   @Get('tiers')
   @ApiOperation({
     summary: 'Get available reward tiers',
-    description: 'Returns all active reward tiers with their requirements and benefits',
+    description:
+      'Returns all active reward tiers with their requirements and benefits',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -52,9 +53,10 @@ export class ReferralRewardsController {
   async getRewardTiers(): Promise<ReferralTierDto[]> {
     try {
       this.logger.log('Getting available reward tiers');
-      const tiers = await this.referralRewardsService.getActiveRewardConfigurations();
+      const tiers =
+        await this.referralRewardsService.getActiveRewardConfigurations();
 
-      return tiers.map(tier => ({
+      return tiers.map((tier) => ({
         tier: tier.tier,
         minReferrals: tier.minReferrals,
         maxReferrals: tier.maxReferrals ?? undefined,
@@ -73,7 +75,8 @@ export class ReferralRewardsController {
   @Get('my-tier')
   @ApiOperation({
     summary: 'Get my current reward tier',
-    description: 'Returns the current reward tier of the authenticated user based on their referral performance',
+    description:
+      'Returns the current reward tier of the authenticated user based on their referral performance',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -113,7 +116,8 @@ export class ReferralRewardsController {
       this.logger.log(`Getting current tier for user ${userId}`);
 
       const tier = await this.referralRewardsService.getUserCurrentTier(userId);
-      const userStats = await this.referralAnalyticsService.getUserReferralStats(userId);
+      const userStats =
+        await this.referralAnalyticsService.getUserReferralStats(userId);
 
       let nextTierRequirements;
       if (tier === 'BASIC' && userStats.convertedReferrals < 6) {
@@ -134,7 +138,10 @@ export class ReferralRewardsController {
         nextTierRequirements,
       };
     } catch (error) {
-      this.logger.error(`Error getting current tier for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting current tier for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -142,7 +149,8 @@ export class ReferralRewardsController {
   @Post('calculate')
   @ApiOperation({
     summary: 'Calculate potential rewards',
-    description: 'Calculates potential rewards for a given number of referrals and tier',
+    description:
+      'Calculates potential rewards for a given number of referrals and tier',
   })
   @ApiBody({
     type: RewardCalculationDto,
@@ -162,21 +170,27 @@ export class ReferralRewardsController {
     @Body(ValidationPipe) dto: RewardCalculationDto,
   ): Promise<RewardCalculationResponseDto> {
     try {
-      this.logger.log(`Calculating rewards for user ${userId} with ${dto.referralCount} referrals`);
+      this.logger.log(
+        `Calculating rewards for user ${userId} with ${dto.referralCount} referrals`,
+      );
 
       // Usar el tier especificado o determinar el tier actual del usuario
-      const tier = dto.tier || await this.referralRewardsService.getUserCurrentTier(userId);
+      const tier =
+        dto.tier ||
+        (await this.referralRewardsService.getUserCurrentTier(userId));
 
       // Obtener configuración del tier
-      const tierConfig = await this.referralRewardsService.getActiveRewardConfigurations()
-        .then(configs => configs.find(c => c.tier === tier));
+      const tierConfig = await this.referralRewardsService
+        .getActiveRewardConfigurations()
+        .then((configs) => configs.find((c) => c.tier === tier));
 
       if (!tierConfig) {
         throw new Error(`Tier configuration not found for ${tier}`);
       }
 
       // Calcular recompensas basadas en el número de referidos
-      const referrerReward = dto.referralCount * Number(tierConfig.rewardAmount);
+      const referrerReward =
+        dto.referralCount * Number(tierConfig.rewardAmount);
       const refereeReward = dto.referralCount * 10; // Base referee reward
 
       return {
@@ -194,5 +208,3 @@ export class ReferralRewardsController {
     }
   }
 }
-
-

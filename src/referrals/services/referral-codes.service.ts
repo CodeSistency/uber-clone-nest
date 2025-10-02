@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfigService } from '../../config/config.service';
 import { ReferralCode } from '@prisma/client';
@@ -19,7 +24,10 @@ export class ReferralCodesService {
   private generateUniqueCode(userId: number): string {
     const timestamp = Date.now().toString(36);
     const userHash = Math.abs(userId).toString(36).substring(0, 3);
-    const randomChars = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const randomChars = Math.random()
+      .toString(36)
+      .substring(2, 5)
+      .toUpperCase();
 
     return `UBER${timestamp}${userHash}${randomChars}`.substring(0, 12);
   }
@@ -34,10 +42,7 @@ export class ReferralCodesService {
         where: {
           userId,
           isActive: true,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } }
-          ]
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
       });
 
@@ -55,7 +60,9 @@ export class ReferralCodesService {
         attempts++;
 
         if (attempts >= maxAttempts) {
-          throw new BadRequestException('Unable to generate unique referral code');
+          throw new BadRequestException(
+            'Unable to generate unique referral code',
+          );
         }
       } while (
         await this.prisma.referralCode.findUnique({
@@ -69,15 +76,20 @@ export class ReferralCodesService {
           code,
           userId,
           maxUses: this.configService.referral.maxReferralsPerUser,
-          expiresAt: new Date(Date.now() + (this.configService.referral.codeExpiryDays * 24 * 60 * 60 * 1000)),
+          expiresAt: new Date(
+            Date.now() +
+              this.configService.referral.codeExpiryDays * 24 * 60 * 60 * 1000,
+          ),
         },
       });
 
       this.logger.log(`Created new referral code ${code} for user ${userId}`);
       return referralCode;
-
     } catch (error) {
-      this.logger.error(`Error creating referral code for user ${userId}:`, error);
+      this.logger.error(
+        `Error creating referral code for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -109,11 +121,13 @@ export class ReferralCodesService {
       }
 
       if (referralCode.usageCount >= referralCode.maxUses) {
-        return { isValid: false, error: 'Referral code has reached maximum uses' };
+        return {
+          isValid: false,
+          error: 'Referral code has reached maximum uses',
+        };
       }
 
       return { isValid: true, referralCode };
-
     } catch (error) {
       this.logger.error(`Error validating referral code ${code}:`, error);
       return { isValid: false, error: 'Internal error validating code' };
@@ -132,7 +146,10 @@ export class ReferralCodesService {
 
       this.logger.log(`Incremented usage count for referral code ${code}`);
     } catch (error) {
-      this.logger.error(`Error incrementing usage count for code ${code}:`, error);
+      this.logger.error(
+        `Error incrementing usage count for code ${code}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -164,12 +181,12 @@ export class ReferralCodesService {
 
       const totalReferrals = referralCode.referrals.length;
       const convertedReferrals = referralCode.referrals.filter(
-        r => r.status === 'converted'
+        (r) => r.status === 'converted',
       ).length;
 
       const totalEarned = referralCode.referrals
-        .flatMap(r => r.transactions)
-        .filter(t => t.type === 'EARNED')
+        .flatMap((r) => r.transactions)
+        .filter((t) => t.type === 'EARNED')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       return {
@@ -178,9 +195,11 @@ export class ReferralCodesService {
         convertedReferrals,
         totalEarned,
       };
-
     } catch (error) {
-      this.logger.error(`Error getting stats for referral code ${code}:`, error);
+      this.logger.error(
+        `Error getting stats for referral code ${code}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -201,9 +220,11 @@ export class ReferralCodesService {
 
       // Crear nuevo código
       return await this.getOrCreateUserReferralCode(userId);
-
     } catch (error) {
-      this.logger.error(`Error regenerating referral code for user ${userId}:`, error);
+      this.logger.error(
+        `Error regenerating referral code for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -223,12 +244,9 @@ export class ReferralCodesService {
 
       this.logger.log(`Cleaned up ${result.count} expired referral codes`);
       return result.count;
-
     } catch (error) {
       this.logger.error('Error cleaning up expired referral codes:', error);
       throw error;
     }
   }
 }
-
-

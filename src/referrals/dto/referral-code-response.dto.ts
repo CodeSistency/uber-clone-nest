@@ -52,5 +52,3 @@ export class ReferralCodeResponseDto {
   @Expose()
   updatedAt: Date;
 }
-
-

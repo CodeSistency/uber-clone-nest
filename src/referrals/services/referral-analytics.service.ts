@@ -56,18 +56,21 @@ export class ReferralAnalyticsService {
       }
 
       // Calcular métricas desde la base de datos
-      const [totalReferrals, convertedReferrals, rewardsData] = await Promise.all([
-        this.prisma.referral.count(),
-        this.prisma.referral.count({ where: { status: 'converted' } }),
-        this.prisma.referralTransaction.aggregate({
-          where: { type: 'EARNED' },
-          _sum: { amount: true },
-        }),
-      ]);
+      const [totalReferrals, convertedReferrals, rewardsData] =
+        await Promise.all([
+          this.prisma.referral.count(),
+          this.prisma.referral.count({ where: { status: 'converted' } }),
+          this.prisma.referralTransaction.aggregate({
+            where: { type: 'EARNED' },
+            _sum: { amount: true },
+          }),
+        ]);
 
-      const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
+      const conversionRate =
+        totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
       const totalRewardsPaid = Number(rewardsData._sum.amount || 0);
-      const avgRewardPerReferral = convertedReferrals > 0 ? totalRewardsPaid / convertedReferrals : 0;
+      const avgRewardPerReferral =
+        convertedReferrals > 0 ? totalRewardsPaid / convertedReferrals : 0;
 
       // Obtener top referrers
       const topReferrers = await this.getTopReferrers(10);
@@ -83,11 +86,14 @@ export class ReferralAnalyticsService {
 
       // Cachear resultado
       if (this.configService.app.environment !== 'development') {
-        await this.redisService.set(cacheKey, JSON.stringify(metrics), this.CACHE_TTL);
+        await this.redisService.set(
+          cacheKey,
+          JSON.stringify(metrics),
+          this.CACHE_TTL,
+        );
       }
 
       return metrics;
-
     } catch (error) {
       this.logger.error('Error getting global referral metrics:', error);
       throw error;
@@ -131,15 +137,22 @@ export class ReferralAnalyticsService {
       ]);
 
       const totalReferrals = userReferrals.length;
-      const convertedReferrals = userReferrals.filter(r => r.status === 'converted').length;
-      const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
+      const convertedReferrals = userReferrals.filter(
+        (r) => r.status === 'converted',
+      ).length;
+      const conversionRate =
+        totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
 
-      const totalEarned = userTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+      const totalEarned = userTransactions.reduce(
+        (sum, t) => sum + Number(t.amount),
+        0,
+      );
 
       // Calcular recompensas pendientes
-      const pendingRewards = userReferrals
-        .filter(r => r.status === 'converted')
-        .length * this.configService.referral.referrerBaseReward - totalEarned;
+      const pendingRewards =
+        userReferrals.filter((r) => r.status === 'converted').length *
+          this.configService.referral.referrerBaseReward -
+        totalEarned;
 
       // Determinar tier
       let tier = 'BASIC';
@@ -164,13 +177,19 @@ export class ReferralAnalyticsService {
 
       // Cachear resultado
       if (this.configService.app.environment !== 'development') {
-        await this.redisService.set(cacheKey, JSON.stringify(stats), this.CACHE_TTL);
+        await this.redisService.set(
+          cacheKey,
+          JSON.stringify(stats),
+          this.CACHE_TTL,
+        );
       }
 
       return stats;
-
     } catch (error) {
-      this.logger.error(`Error getting referral stats for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting referral stats for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -188,7 +207,9 @@ export class ReferralAnalyticsService {
       });
 
       // Contar cuántos usuarios tienen más referidos convertidos que este usuario
-      const usersWithMoreReferrals = await this.prisma.$queryRaw<Array<{ count: number }>>`
+      const usersWithMoreReferrals = await this.prisma.$queryRaw<
+        Array<{ count: number }>
+      >`
         SELECT COUNT(*) as count
         FROM (
           SELECT referrer_id
@@ -200,7 +221,6 @@ export class ReferralAnalyticsService {
       `;
 
       return (usersWithMoreReferrals[0]?.count || 0) + 1;
-
     } catch (error) {
       this.logger.error(`Error calculating rank for user ${userId}:`, error);
       return 0;
@@ -210,15 +230,19 @@ export class ReferralAnalyticsService {
   /**
    * Obtiene los top referrers del sistema
    */
-  private async getTopReferrers(limit: number = 10): Promise<ReferralMetrics['topReferrers']> {
+  private async getTopReferrers(
+    limit: number = 10,
+  ): Promise<ReferralMetrics['topReferrers']> {
     try {
-      const topReferrers = await this.prisma.$queryRaw<Array<{
-        userId: number;
-        name: string;
-        totalReferrals: number;
-        convertedReferrals: number;
-        totalEarned: number;
-      }>>`
+      const topReferrers = await this.prisma.$queryRaw<
+        Array<{
+          userId: number;
+          name: string;
+          totalReferrals: number;
+          convertedReferrals: number;
+          totalEarned: number;
+        }>
+      >`
         SELECT
           u.id as "userId",
           u.name,
@@ -234,14 +258,13 @@ export class ReferralAnalyticsService {
         LIMIT ${limit}
       `;
 
-      return topReferrers.map(row => ({
+      return topReferrers.map((row) => ({
         userId: Number(row.userId),
         name: row.name,
         totalReferrals: Number(row.totalReferrals),
         convertedReferrals: Number(row.convertedReferrals),
         totalEarned: Number(row.totalEarned),
       }));
-
     } catch (error) {
       this.logger.error('Error getting top referrers:', error);
       return [];
@@ -271,7 +294,9 @@ export class ReferralAnalyticsService {
       }
 
       // Patrón 1: Usuarios con muchos referidos desde la misma IP (alta frecuencia)
-      const ipBasedSuspicious = await this.prisma.$queryRaw<Array<{ userId: number; referralCount: number }>>`
+      const ipBasedSuspicious = await this.prisma.$queryRaw<
+        Array<{ userId: number; referralCount: number }>
+      >`
         SELECT referrer_id as "userId", COUNT(*) as "referralCount"
         FROM referrals r
         WHERE r.created_at >= NOW() - INTERVAL '24 hours'
@@ -283,17 +308,23 @@ export class ReferralAnalyticsService {
         suspiciousUsers.push({
           userId: Number(record.userId),
           reason: `High referral frequency: ${record.referralCount} referrals in 24h`,
-          severity: record.referralCount > this.configService.referral.maxSameIpReferrals * 2 ? 'high' : 'medium',
+          severity:
+            record.referralCount >
+            this.configService.referral.maxSameIpReferrals * 2
+              ? 'high'
+              : 'medium',
         });
       }
 
       // Patrón 2: Usuarios con baja conversión pero muchos referidos
-      const lowConversionSuspicious = await this.prisma.$queryRaw<Array<{
-        userId: number;
-        totalReferrals: number;
-        convertedReferrals: number;
-        conversionRate: number;
-      }>>`
+      const lowConversionSuspicious = await this.prisma.$queryRaw<
+        Array<{
+          userId: number;
+          totalReferrals: number;
+          convertedReferrals: number;
+          conversionRate: number;
+        }>
+      >`
         SELECT
           referrer_id as "userId",
           COUNT(*) as "totalReferrals",
@@ -312,12 +343,13 @@ export class ReferralAnalyticsService {
         });
       }
 
-      this.logger.warn(`Detected ${suspiciousUsers.length} suspicious referral patterns`);
+      this.logger.warn(
+        `Detected ${suspiciousUsers.length} suspicious referral patterns`,
+      );
       return {
         suspiciousUsers,
         totalSuspicious: suspiciousUsers.length,
       };
-
     } catch (error) {
       this.logger.error('Error detecting fraud patterns:', error);
       return { suspiciousUsers: [], totalSuspicious: 0 };
@@ -338,9 +370,10 @@ export class ReferralAnalyticsService {
         for (const key of keys) {
           await this.redisService.del(key);
         }
-        this.logger.log(`Invalidated ${keys.length} referral analytics cache entries`);
+        this.logger.log(
+          `Invalidated ${keys.length} referral analytics cache entries`,
+        );
       }
-
     } catch (error) {
       this.logger.error('Error invalidating referral analytics cache:', error);
     }
@@ -349,7 +382,10 @@ export class ReferralAnalyticsService {
   /**
    * Genera reporte de rendimiento del sistema de referidos
    */
-  async generatePerformanceReport(startDate: Date, endDate: Date): Promise<{
+  async generatePerformanceReport(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{
     period: { start: Date; end: Date };
     metrics: {
       newReferrals: number;
@@ -363,14 +399,17 @@ export class ReferralAnalyticsService {
     };
   }> {
     try {
-      const [periodStats, dailyReferrals, conversionTrends] = await Promise.all([
-        // Estadísticas del período
-        this.prisma.$queryRaw<Array<{
-          newReferrals: number;
-          conversions: number;
-          rewardsPaid: number;
-          avgConversionTime: number;
-        }>>`
+      const [periodStats, dailyReferrals, conversionTrends] = await Promise.all(
+        [
+          // Estadísticas del período
+          this.prisma.$queryRaw<
+            Array<{
+              newReferrals: number;
+              conversions: number;
+              rewardsPaid: number;
+              avgConversionTime: number;
+            }>
+          >`
           SELECT
             COUNT(CASE WHEN r.created_at >= ${startDate} AND r.created_at <= ${endDate} THEN 1 END) as "newReferrals",
             COUNT(CASE WHEN r.converted_at >= ${startDate} AND r.converted_at <= ${endDate} THEN 1 END) as "conversions",
@@ -381,8 +420,8 @@ export class ReferralAnalyticsService {
           WHERE r.created_at <= ${endDate}
         `,
 
-        // Referidos diarios
-        this.prisma.$queryRaw<Array<{ date: string; count: number }>>`
+          // Referidos diarios
+          this.prisma.$queryRaw<Array<{ date: string; count: number }>>`
           SELECT
             DATE(created_at) as date,
             COUNT(*) as count
@@ -392,8 +431,8 @@ export class ReferralAnalyticsService {
           ORDER BY date
         `,
 
-        // Tendencia de conversión
-        this.prisma.$queryRaw<Array<{ date: string; rate: number }>>`
+          // Tendencia de conversión
+          this.prisma.$queryRaw<Array<{ date: string; rate: number }>>`
           SELECT
             DATE(created_at) as date,
             CASE
@@ -405,7 +444,8 @@ export class ReferralAnalyticsService {
           GROUP BY DATE(created_at)
           ORDER BY date
         `,
-      ]);
+        ],
+      );
 
       return {
         period: { start: startDate, end: endDate },
@@ -416,22 +456,19 @@ export class ReferralAnalyticsService {
           avgConversionTime: 0,
         },
         trends: {
-          dailyReferrals: dailyReferrals.map(row => ({
+          dailyReferrals: dailyReferrals.map((row) => ({
             date: row.date,
             count: Number(row.count),
           })),
-          conversionRateTrend: conversionTrends.map(row => ({
+          conversionRateTrend: conversionTrends.map((row) => ({
             date: row.date,
             rate: Number(row.rate),
           })),
         },
       };
-
     } catch (error) {
       this.logger.error('Error generating performance report:', error);
       throw error;
     }
   }
 }
-
-

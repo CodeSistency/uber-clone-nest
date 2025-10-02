@@ -25,18 +25,25 @@ export class ReferralJobsService {
   @Cron(CronExpression.EVERY_5_MINUTES)
   async processPendingReferralConversions() {
     try {
-      this.logger.log('🚀 Starting scheduled job: Process pending referral conversions');
+      this.logger.log(
+        '🚀 Starting scheduled job: Process pending referral conversions',
+      );
 
-      const processedCount = await this.referralsService.processPendingConversions();
+      const processedCount =
+        await this.referralsService.processPendingConversions();
 
       if (processedCount > 0) {
-        this.logger.log(`✅ Processed ${processedCount} pending referral conversions`);
+        this.logger.log(
+          `✅ Processed ${processedCount} pending referral conversions`,
+        );
       } else {
         this.logger.debug('ℹ️ No pending referral conversions to process');
       }
-
     } catch (error) {
-      this.logger.error('❌ Error in processPendingReferralConversions job:', error);
+      this.logger.error(
+        '❌ Error in processPendingReferralConversions job:',
+        error,
+      );
     }
   }
 
@@ -47,16 +54,18 @@ export class ReferralJobsService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanupExpiredReferralCodes() {
     try {
-      this.logger.log('🧹 Starting scheduled job: Cleanup expired referral codes');
+      this.logger.log(
+        '🧹 Starting scheduled job: Cleanup expired referral codes',
+      );
 
-      const cleanedCount = await this.referralCodesService.cleanupExpiredCodes();
+      const cleanedCount =
+        await this.referralCodesService.cleanupExpiredCodes();
 
       if (cleanedCount > 0) {
         this.logger.log(`🗑️ Cleaned up ${cleanedCount} expired referral codes`);
       } else {
         this.logger.debug('ℹ️ No expired referral codes to clean up');
       }
-
     } catch (error) {
       this.logger.error('❌ Error in cleanupExpiredReferralCodes job:', error);
     }
@@ -69,18 +78,25 @@ export class ReferralJobsService {
   @Cron('0 */10 * * * *') // Every 10 minutes
   async processPendingReferralRewards() {
     try {
-      this.logger.log('💰 Starting scheduled job: Process pending referral rewards');
+      this.logger.log(
+        '💰 Starting scheduled job: Process pending referral rewards',
+      );
 
-      const processedCount = await this.referralRewardsService.processPendingRewards();
+      const processedCount =
+        await this.referralRewardsService.processPendingRewards();
 
       if (processedCount > 0) {
-        this.logger.log(`💸 Processed ${processedCount} pending referral rewards`);
+        this.logger.log(
+          `💸 Processed ${processedCount} pending referral rewards`,
+        );
       } else {
         this.logger.debug('ℹ️ No pending referral rewards to process');
       }
-
     } catch (error) {
-      this.logger.error('❌ Error in processPendingReferralRewards job:', error);
+      this.logger.error(
+        '❌ Error in processPendingReferralRewards job:',
+        error,
+      );
     }
   }
 
@@ -91,30 +107,38 @@ export class ReferralJobsService {
   @Cron('0 2 * * 0') // Every Sunday at 2 AM
   async generateWeeklyReferralReport() {
     try {
-      this.logger.log('📊 Starting scheduled job: Generate weekly referral report');
+      this.logger.log(
+        '📊 Starting scheduled job: Generate weekly referral report',
+      );
 
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - 7); // Last 7 days
 
-      const report = await this.referralAnalyticsService.generatePerformanceReport(
-        startDate,
-        endDate
-      );
+      const report =
+        await this.referralAnalyticsService.generatePerformanceReport(
+          startDate,
+          endDate,
+        );
 
       // Log detailed report
       this.logger.log('📈 Weekly Referral Report:');
-      this.logger.log(`   Period: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      this.logger.log(
+        `   Period: ${startDate.toISOString()} to ${endDate.toISOString()}`,
+      );
       this.logger.log(`   New Referrals: ${report.metrics.newReferrals}`);
       this.logger.log(`   Conversions: ${report.metrics.conversions}`);
-      this.logger.log(`   Rewards Paid: $${report.metrics.rewardsPaid.toFixed(2)}`);
-      this.logger.log(`   Avg Conversion Time: ${report.metrics.avgConversionTime.toFixed(1)} days`);
+      this.logger.log(
+        `   Rewards Paid: $${report.metrics.rewardsPaid.toFixed(2)}`,
+      );
+      this.logger.log(
+        `   Avg Conversion Time: ${report.metrics.avgConversionTime.toFixed(1)} days`,
+      );
 
       // TODO: In a production system, this report would be:
       // - Saved to database
       // - Sent via email to administrators
       // - Stored in analytics platform
-
     } catch (error) {
       this.logger.error('❌ Error in generateWeeklyReferralReport job:', error);
     }
@@ -127,15 +151,22 @@ export class ReferralJobsService {
   @Cron(CronExpression.EVERY_HOUR)
   async detectReferralFraudPatterns() {
     try {
-      this.logger.log('🔍 Starting scheduled job: Detect referral fraud patterns');
+      this.logger.log(
+        '🔍 Starting scheduled job: Detect referral fraud patterns',
+      );
 
-      const { suspiciousUsers, totalSuspicious } = await this.referralAnalyticsService.detectFraudPatterns();
+      const { suspiciousUsers, totalSuspicious } =
+        await this.referralAnalyticsService.detectFraudPatterns();
 
       if (totalSuspicious > 0) {
-        this.logger.warn(`⚠️ Detected ${totalSuspicious} suspicious referral patterns:`);
+        this.logger.warn(
+          `⚠️ Detected ${totalSuspicious} suspicious referral patterns:`,
+        );
 
         suspiciousUsers.forEach((user, index) => {
-          this.logger.warn(`   ${index + 1}. User ${user.userId}: ${user.reason} (Severity: ${user.severity})`);
+          this.logger.warn(
+            `   ${index + 1}. User ${user.userId}: ${user.reason} (Severity: ${user.severity})`,
+          );
         });
 
         // TODO: In a production system, suspicious activities would trigger:
@@ -145,7 +176,6 @@ export class ReferralJobsService {
       } else {
         this.logger.debug('✅ No suspicious referral patterns detected');
       }
-
     } catch (error) {
       this.logger.error('❌ Error in detectReferralFraudPatterns job:', error);
     }
@@ -169,7 +199,6 @@ export class ReferralJobsService {
       // - Cleaning up old notification records
 
       this.logger.log('✅ Referral database optimization completed');
-
     } catch (error) {
       this.logger.error('❌ Error in optimizeReferralDatabase job:', error);
     }
@@ -197,5 +226,3 @@ export class ReferralJobsService {
     }
   }
 }
-
-

@@ -2,15 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExpoNotificationsService } from './expo-notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TwilioService } from '../services/twilio.service';
-import { NotificationType, NotificationChannel } from './interfaces/notification.interface';
+import {
+  NotificationType,
+  NotificationChannel,
+} from './interfaces/notification.interface';
 
 // Mock de Expo
 jest.mock('expo-server-sdk', () => ({
   Expo: jest.fn().mockImplementation(() => ({
-    chunkPushNotifications: jest.fn().mockReturnValue([[{ to: 'ExponentPushToken[test]', title: 'Test' }]]),
-    sendPushNotificationsAsync: jest.fn().mockResolvedValue([
-      { status: 'ok', id: 'test-receipt-id' }
-    ]),
+    chunkPushNotifications: jest
+      .fn()
+      .mockReturnValue([[{ to: 'ExponentPushToken[test]', title: 'Test' }]]),
+    sendPushNotificationsAsync: jest
+      .fn()
+      .mockResolvedValue([{ status: 'ok', id: 'test-receipt-id' }]),
   })),
   ExpoPushToken: jest.fn(),
 }));
@@ -68,11 +73,14 @@ describe('ExpoNotificationsService', () => {
 
       const mockTokens = ['ExponentPushToken[test-token]'];
 
-      jest.spyOn(prismaService.notificationPreferences, 'findUnique')
+      jest
+        .spyOn(prismaService.notificationPreferences, 'findUnique')
         .mockResolvedValue(mockPreferences as any);
-      jest.spyOn(prismaService.pushToken, 'findMany')
+      jest
+        .spyOn(prismaService.pushToken, 'findMany')
         .mockResolvedValue([{ token: mockTokens[0] }] as any);
-      jest.spyOn(prismaService.notification, 'create')
+      jest
+        .spyOn(prismaService.notification, 'create')
         .mockResolvedValue({} as any);
 
       const payload = {
@@ -98,13 +106,15 @@ describe('ExpoNotificationsService', () => {
         smsEnabled: true,
       };
 
-      jest.spyOn(prismaService.notificationPreferences, 'findUnique')
+      jest
+        .spyOn(prismaService.notificationPreferences, 'findUnique')
         .mockResolvedValue(mockPreferences as any);
-      jest.spyOn(prismaService.pushToken, 'findMany')
-        .mockResolvedValue([]);
-      jest.spyOn(twilioService, 'sendSMS')
+      jest.spyOn(prismaService.pushToken, 'findMany').mockResolvedValue([]);
+      jest
+        .spyOn(twilioService, 'sendSMS')
         .mockResolvedValue({ sid: 'test-sid' } as any);
-      jest.spyOn(prismaService.notification, 'create')
+      jest
+        .spyOn(prismaService.notification, 'create')
         .mockResolvedValue({} as any);
 
       const payload = {
@@ -132,14 +142,18 @@ describe('ExpoNotificationsService', () => {
 
       // Mock Expo to throw error
       const mockExpo = (await import('expo-server-sdk')).Expo;
-      jest.spyOn(mockExpo.prototype, 'sendPushNotificationsAsync')
+      jest
+        .spyOn(mockExpo.prototype, 'sendPushNotificationsAsync')
         .mockRejectedValue(new Error('Push failed'));
 
-      jest.spyOn(prismaService.notificationPreferences, 'findUnique')
+      jest
+        .spyOn(prismaService.notificationPreferences, 'findUnique')
         .mockResolvedValue(mockPreferences as any);
-      jest.spyOn(prismaService.pushToken, 'findMany')
+      jest
+        .spyOn(prismaService.pushToken, 'findMany')
         .mockResolvedValue([{ token: 'ExponentPushToken[test]' }] as any);
-      jest.spyOn(prismaService.notification, 'create')
+      jest
+        .spyOn(prismaService.notification, 'create')
         .mockResolvedValue({} as any);
 
       const payload = {
@@ -179,11 +193,14 @@ describe('ExpoNotificationsService', () => {
       ];
 
       // Mock all dependencies
-      jest.spyOn(prismaService.notificationPreferences, 'findUnique')
+      jest
+        .spyOn(prismaService.notificationPreferences, 'findUnique')
         .mockResolvedValue({ pushEnabled: true, smsEnabled: false } as any);
-      jest.spyOn(prismaService.pushToken, 'findMany')
+      jest
+        .spyOn(prismaService.pushToken, 'findMany')
         .mockResolvedValue([{ token: 'ExponentPushToken[test]' }] as any);
-      jest.spyOn(prismaService.notification, 'create')
+      jest
+        .spyOn(prismaService.notification, 'create')
         .mockResolvedValue({} as any);
 
       const result = await service.sendBulkNotifications(payloads);
@@ -211,13 +228,17 @@ describe('ExpoNotificationsService', () => {
         },
       ];
 
-      jest.spyOn(prismaService.driver, 'findMany')
+      jest
+        .spyOn(prismaService.driver, 'findMany')
         .mockResolvedValue(mockDrivers as any);
-      jest.spyOn(prismaService.notificationPreferences, 'findUnique')
+      jest
+        .spyOn(prismaService.notificationPreferences, 'findUnique')
         .mockResolvedValue({ pushEnabled: true } as any);
-      jest.spyOn(prismaService.pushToken, 'findMany')
+      jest
+        .spyOn(prismaService.pushToken, 'findMany')
         .mockResolvedValue([{ token: 'ExponentPushToken[test]' }] as any);
-      jest.spyOn(prismaService.notification, 'create')
+      jest
+        .spyOn(prismaService.notification, 'create')
         .mockResolvedValue({} as any);
 
       await service.notifyNearbyDrivers(123, { lat: 40.7128, lng: -74.006 });
@@ -239,26 +260,33 @@ describe('ExpoNotificationsService', () => {
         },
       ];
 
-      jest.spyOn(prismaService.driver, 'findMany')
+      jest
+        .spyOn(prismaService.driver, 'findMany')
         .mockResolvedValue(mockDrivers as any);
-      jest.spyOn(prismaService.ride, 'findUnique')
+      jest
+        .spyOn(prismaService.ride, 'findUnique')
         .mockResolvedValue({ driverId: null } as any);
-      jest.spyOn(prismaService.driver, 'findUnique')
+      jest
+        .spyOn(prismaService.driver, 'findUnique')
         .mockResolvedValue({ status: 'online' } as any);
-      jest.spyOn(prismaService.ride, 'update')
-        .mockResolvedValue({} as any);
+      jest.spyOn(prismaService.ride, 'update').mockResolvedValue({} as any);
 
-      const result = await service.findAndAssignNearbyDriver(123, { lat: 40.7128, lng: -74.006 });
+      const result = await service.findAndAssignNearbyDriver(123, {
+        lat: 40.7128,
+        lng: -74.006,
+      });
 
       expect(result.assigned).toBe(true);
       expect(result.driverId).toBe(1);
     });
 
     it('should return false when no drivers available', async () => {
-      jest.spyOn(prismaService.driver, 'findMany')
-        .mockResolvedValue([]);
+      jest.spyOn(prismaService.driver, 'findMany').mockResolvedValue([]);
 
-      const result = await service.findAndAssignNearbyDriver(123, { lat: 40.7128, lng: -74.006 });
+      const result = await service.findAndAssignNearbyDriver(123, {
+        lat: 40.7128,
+        lng: -74.006,
+      });
 
       expect(result.assigned).toBe(false);
       expect(result.availableDrivers).toBe(0);
@@ -267,11 +295,14 @@ describe('ExpoNotificationsService', () => {
 
   describe('notifyRideStatusUpdate', () => {
     it('should send ride status notification', async () => {
-      jest.spyOn(prismaService.notificationPreferences, 'findUnique')
+      jest
+        .spyOn(prismaService.notificationPreferences, 'findUnique')
         .mockResolvedValue({ pushEnabled: true } as any);
-      jest.spyOn(prismaService.pushToken, 'findMany')
+      jest
+        .spyOn(prismaService.pushToken, 'findMany')
         .mockResolvedValue([{ token: 'ExponentPushToken[test]' }] as any);
-      jest.spyOn(prismaService.notification, 'create')
+      jest
+        .spyOn(prismaService.notification, 'create')
         .mockResolvedValue({} as any);
 
       await service.notifyRideStatusUpdate(123, '456', 789, 'accepted');
@@ -281,7 +312,3 @@ describe('ExpoNotificationsService', () => {
     });
   });
 });
-
-
-
-

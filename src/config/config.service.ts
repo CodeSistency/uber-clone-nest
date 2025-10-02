@@ -249,7 +249,10 @@ export class AppConfigService {
         this.configService.get<string>('REFERRAL_REWARD_REFEREE_BASE', '10.00'),
       ),
       advancedMultiplier: parseFloat(
-        this.configService.get<string>('REFERRAL_REWARD_ADVANCED_MULTIPLIER', '1.5'),
+        this.configService.get<string>(
+          'REFERRAL_REWARD_ADVANCED_MULTIPLIER',
+          '1.5',
+        ),
       ),
       vipMultiplier: parseFloat(
         this.configService.get<string>('REFERRAL_REWARD_VIP_MULTIPLIER', '2.0'),
@@ -265,13 +268,17 @@ export class AppConfigService {
         10,
       ),
       freeRideValidityDays: parseInt(
-        this.configService.get<string>('REFERRAL_FREE_RIDE_VALIDITY_DAYS', '60'),
+        this.configService.get<string>(
+          'REFERRAL_FREE_RIDE_VALIDITY_DAYS',
+          '60',
+        ),
         10,
       ),
 
       // Processing Configuration
       autoProcess:
-        this.configService.get<string>('REFERRAL_AUTO_PROCESS', 'true') === 'true',
+        this.configService.get<string>('REFERRAL_AUTO_PROCESS', 'true') ===
+        'true',
       processDelayMinutes: parseInt(
         this.configService.get<string>('REFERRAL_PROCESS_DELAY_MINUTES', '5'),
         10,
@@ -283,9 +290,13 @@ export class AppConfigService {
 
       // Analytics & Security
       analyticsEnabled:
-        this.configService.get<string>('REFERRAL_ANALYTICS_ENABLED', 'true') === 'true',
+        this.configService.get<string>('REFERRAL_ANALYTICS_ENABLED', 'true') ===
+        'true',
       fraudDetectionEnabled:
-        this.configService.get<string>('REFERRAL_FRAUD_DETECTION_ENABLED', 'true') === 'true',
+        this.configService.get<string>(
+          'REFERRAL_FRAUD_DETECTION_ENABLED',
+          'true',
+        ) === 'true',
       maxSameIpReferrals: parseInt(
         this.configService.get<string>('REFERRAL_MAX_SAME_IP_REFERRALS', '3'),
         10,

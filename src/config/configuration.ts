@@ -151,33 +151,66 @@ export default (): Config => ({
   referral: {
     // Code Configuration
     codeLength: parseInt(process.env.REFERRAL_CODE_LENGTH || '8', 10),
-    maxReferralsPerUser: parseInt(process.env.REFERRAL_MAX_PER_USER || '10', 10),
+    maxReferralsPerUser: parseInt(
+      process.env.REFERRAL_MAX_PER_USER || '10',
+      10,
+    ),
     codeExpiryDays: parseInt(process.env.REFERRAL_CODE_EXPIRY_DAYS || '30', 10),
-    
+
     // Reward Configuration
-    referrerBaseReward: parseFloat(process.env.REFERRAL_REFERRER_REWARD || '5.00'),
-    refereeBaseReward: parseFloat(process.env.REFERRAL_REFEREE_REWARD || '3.00'),
-    advancedMultiplier: parseFloat(process.env.REFERRAL_ADVANCED_MULTIPLIER || '1.5'),
+    referrerBaseReward: parseFloat(
+      process.env.REFERRAL_REFERRER_REWARD || '5.00',
+    ),
+    refereeBaseReward: parseFloat(
+      process.env.REFERRAL_REFEREE_REWARD || '3.00',
+    ),
+    advancedMultiplier: parseFloat(
+      process.env.REFERRAL_ADVANCED_MULTIPLIER || '1.5',
+    ),
     vipMultiplier: parseFloat(process.env.REFERRAL_VIP_MULTIPLIER || '2.0'),
-    
+
     // Limits Configuration
-    maxFreeRidesPerUser: parseInt(process.env.REFERRAL_MAX_FREE_RIDES || '3', 10),
-    creditValidityDays: parseInt(process.env.REFERRAL_CREDIT_VALIDITY_DAYS || '90', 10),
-    freeRideValidityDays: parseInt(process.env.REFERRAL_FREE_RIDE_VALIDITY_DAYS || '60', 10),
+    maxFreeRidesPerUser: parseInt(
+      process.env.REFERRAL_MAX_FREE_RIDES || '3',
+      10,
+    ),
+    creditValidityDays: parseInt(
+      process.env.REFERRAL_CREDIT_VALIDITY_DAYS || '90',
+      10,
+    ),
+    freeRideValidityDays: parseInt(
+      process.env.REFERRAL_FREE_RIDE_VALIDITY_DAYS || '60',
+      10,
+    ),
     minRideAmount: parseFloat(process.env.REFERRAL_MIN_RIDE_AMOUNT || '10.00'),
-    maxRewardPerRide: parseFloat(process.env.REFERRAL_MAX_REWARD_PER_RIDE || '20.00'),
-    tierUpgradeThreshold: parseInt(process.env.REFERRAL_TIER_UPGRADE_THRESHOLD || '5', 10),
+    maxRewardPerRide: parseFloat(
+      process.env.REFERRAL_MAX_REWARD_PER_RIDE || '20.00',
+    ),
+    tierUpgradeThreshold: parseInt(
+      process.env.REFERRAL_TIER_UPGRADE_THRESHOLD || '5',
+      10,
+    ),
     vipThreshold: parseInt(process.env.REFERRAL_VIP_THRESHOLD || '20', 10),
-    
+
     // Processing Configuration
     autoProcess: process.env.REFERRAL_AUTO_PROCESS !== 'false',
-    processDelayMinutes: parseInt(process.env.REFERRAL_PROCESS_DELAY_MINUTES || '5', 10),
-    maxProcessingAttempts: parseInt(process.env.REFERRAL_MAX_PROCESSING_ATTEMPTS || '3', 10),
-    
+    processDelayMinutes: parseInt(
+      process.env.REFERRAL_PROCESS_DELAY_MINUTES || '5',
+      10,
+    ),
+    maxProcessingAttempts: parseInt(
+      process.env.REFERRAL_MAX_PROCESSING_ATTEMPTS || '3',
+      10,
+    ),
+
     // Analytics & Security
     analyticsEnabled: process.env.REFERRAL_ANALYTICS_ENABLED !== 'false',
-    fraudDetectionEnabled: process.env.REFERRAL_FRAUD_DETECTION_ENABLED !== 'false',
-    maxSameIpReferrals: parseInt(process.env.REFERRAL_MAX_SAME_IP_REFERRALS || '3', 10),
+    fraudDetectionEnabled:
+      process.env.REFERRAL_FRAUD_DETECTION_ENABLED !== 'false',
+    maxSameIpReferrals: parseInt(
+      process.env.REFERRAL_MAX_SAME_IP_REFERRALS || '3',
+      10,
+    ),
   },
 });
 

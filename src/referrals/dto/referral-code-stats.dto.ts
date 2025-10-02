@@ -17,7 +17,8 @@ export class ReferralCodeStatsDto {
   totalReferrals: number;
 
   @ApiProperty({
-    description: 'Number of converted referrals (users who completed their first ride)',
+    description:
+      'Number of converted referrals (users who completed their first ride)',
     example: 12,
   })
   @Expose()
@@ -25,10 +26,8 @@ export class ReferralCodeStatsDto {
 
   @ApiProperty({
     description: 'Total amount earned by the referrer using this code',
-    example: 48.00,
+    example: 48.0,
   })
   @Expose()
   totalEarned: number;
 }
-
-

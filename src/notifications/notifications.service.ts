@@ -872,12 +872,16 @@ export class NotificationsService {
    * Provider management methods delegated to NotificationManagerService
    */
   async getCurrentProviderType(): Promise<NotificationProviderType> {
-    const notificationManager = await this.moduleRef.resolve('NotificationManagerService');
+    const notificationManager = await this.moduleRef.resolve(
+      'NotificationManagerService',
+    );
     return notificationManager.getCurrentProviderType();
   }
 
   async switchProvider(providerType: NotificationProviderType): Promise<void> {
-    const notificationManager = await this.moduleRef.resolve('NotificationManagerService');
+    const notificationManager = await this.moduleRef.resolve(
+      'NotificationManagerService',
+    );
     return notificationManager.switchProvider(providerType);
   }
 
@@ -885,7 +889,9 @@ export class NotificationsService {
     currentProvider: NotificationProviderType;
     availableProviders: NotificationProviderType[];
   }> {
-    const notificationManager = await this.moduleRef.resolve('NotificationManagerService');
+    const notificationManager = await this.moduleRef.resolve(
+      'NotificationManagerService',
+    );
     return notificationManager.getProviderStatus();
   }
 }

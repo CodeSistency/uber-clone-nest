@@ -19,21 +19,21 @@ export class RewardCalculationResponseDto {
 
   @ApiProperty({
     description: 'Amount the referrer would earn',
-    example: 15.00,
+    example: 15.0,
   })
   @Expose()
   referrerReward: number;
 
   @ApiProperty({
     description: 'Amount the referee would receive as bonus',
-    example: 10.00,
+    example: 10.0,
   })
   @Expose()
   refereeReward: number;
 
   @ApiProperty({
     description: 'Total potential earnings for the referrer',
-    example: 15.00,
+    example: 15.0,
   })
   @Expose()
   totalEarnings: number;
@@ -42,7 +42,7 @@ export class RewardCalculationResponseDto {
     description: 'Conditions that must be met for rewards',
     example: {
       firstRideCompleted: true,
-      minRideValue: 15.00,
+      minRideValue: 15.0,
     },
   })
   @Expose()
@@ -55,5 +55,3 @@ export class RewardCalculationResponseDto {
   @Expose()
   validityDays: number;
 }
-
-

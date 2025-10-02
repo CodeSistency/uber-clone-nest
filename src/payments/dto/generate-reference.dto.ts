@@ -49,7 +49,13 @@ export class GenerateReferenceDto {
   })
   @IsOptional()
   @IsIn(['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash', 'wallet'])
-  paymentMethod?: 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin' | 'cash' | 'wallet';
+  paymentMethod?:
+    | 'transfer'
+    | 'pago_movil'
+    | 'zelle'
+    | 'bitcoin'
+    | 'cash'
+    | 'wallet';
 
   @ApiPropertyOptional({
     description: 'Código del banco venezolano',

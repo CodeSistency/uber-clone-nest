@@ -9,6 +9,8 @@ import {
   Length,
   ValidateNested,
   IsBoolean,
+  IsArray,
+  ArrayMinSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -726,6 +728,42 @@ export class RefundRideDto {
 
 // === NUEVOS DTOS PARA SISTEMA DE PAGOS COMPLETO ===
 
+// DTO para elementos individuales del array de pagos
+export class PaymentMethodDto {
+  @ApiProperty({
+    description: 'Método de pago venezolano',
+    example: 'transfer',
+    enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin', 'wallet'],
+    enumName: 'VenezuelanPaymentMethod',
+  })
+  @IsIn(['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin', 'wallet'])
+  method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin' | 'wallet';
+
+  @ApiProperty({
+    description: 'Monto a pagar con este método',
+    example: 25.5,
+    minimum: 0.01,
+    type: 'number',
+    format: 'float',
+  })
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  amount: number;
+
+  @ApiPropertyOptional({
+    description: 'Código de banco (requerido para transfer y pago_movil)',
+    example: '0102',
+    minLength: 4,
+    maxLength: 4,
+    enum: ['0102', '0105', '0196', '0108'],
+  })
+  @IsOptional()
+  @IsString()
+  @Length(4, 4)
+  bankCode?: string;
+}
+
 export class PayWithMultipleMethodsDto {
   @ApiProperty({
     description: 'Monto total del viaje a pagar',
@@ -744,35 +782,15 @@ export class PayWithMultipleMethodsDto {
       'Array de métodos de pago. Puede contener un solo método o múltiples.',
     type: 'array',
     items: {
-      type: 'object',
-      properties: {
-        method: {
-          type: 'string',
-          enum: ['cash', 'transfer', 'pago_movil', 'zelle', 'bitcoin'],
-          example: 'transfer',
-          description: 'Método de pago venezolano',
-        },
-        amount: {
-          type: 'number',
-          example: 25.5,
-          description: 'Monto a pagar con este método',
-        },
-        bankCode: {
-          type: 'string',
-          example: '0102',
-          description: 'Código de banco (requerido para transfer y pago_movil)',
-          minLength: 4,
-          maxLength: 4,
-        },
-      },
+      $ref: '#/components/schemas/PaymentMethodDto',
     },
     minItems: 1,
   })
-  payments: Array<{
-    method: 'cash' | 'transfer' | 'pago_movil' | 'zelle' | 'bitcoin' | 'wallet';
-    amount: number;
-    bankCode?: string;
-  }>;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => PaymentMethodDto)
+  payments: PaymentMethodDto[];
 }
 
 export class GeneratePaymentReferenceDto {

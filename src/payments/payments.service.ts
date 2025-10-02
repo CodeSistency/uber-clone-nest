@@ -313,8 +313,14 @@ Para completar el pago:
     amount: number,
     serviceType: string,
     serviceId: number,
-  ): Promise<{ success: boolean; walletBalance: number; transactionId?: string }> {
-    this.logger.log(`💰 Procesando pago con wallet: ${amount} VES para ${serviceType} ${serviceId}`);
+  ): Promise<{
+    success: boolean;
+    walletBalance: number;
+    transactionId?: string;
+  }> {
+    this.logger.log(
+      `💰 Procesando pago con wallet: ${amount} VES para ${serviceType} ${serviceId}`,
+    );
 
     try {
       // Verificar saldo de wallet
@@ -325,7 +331,9 @@ Para completar el pago:
 
       const currentBalance = Number(walletData.wallet.balance);
       if (currentBalance < amount) {
-        throw new Error(`Saldo insuficiente. Disponible: ${currentBalance} VES, requerido: ${amount} VES`);
+        throw new Error(
+          `Saldo insuficiente. Disponible: ${currentBalance} VES, requerido: ${amount} VES`,
+        );
       }
 
       // Descontar el monto de la wallet
@@ -335,7 +343,9 @@ Para completar el pago:
         `Pago de ${serviceType} #${serviceId}`,
       );
 
-      this.logger.log(`✅ Pago con wallet exitoso: ${amount} VES descontados. Saldo restante: ${updatedWallet.balance}`);
+      this.logger.log(
+        `✅ Pago con wallet exitoso: ${amount} VES descontados. Saldo restante: ${updatedWallet.balance}`,
+      );
 
       return {
         success: true,
@@ -359,7 +369,9 @@ Para completar el pago:
       case 'ride':
         // Si el pago es con wallet, procesarlo inmediatamente
         if (reference.paymentMethod === 'wallet') {
-          this.logger.log(`💰 Procesando pago con wallet para ride ${reference.serviceId}`);
+          this.logger.log(
+            `💰 Procesando pago con wallet para ride ${reference.serviceId}`,
+          );
           await this.processWalletPayment(
             reference.userId,
             Number(reference.amount),
@@ -376,10 +388,15 @@ Para completar el pago:
 
         // 🆕 NUEVO: Notificar conductores después del pago confirmado
         try {
-          const ridesFlowService = this.moduleRef.get(RidesFlowService, { strict: false });
+          const ridesFlowService = this.moduleRef.get(RidesFlowService, {
+            strict: false,
+          });
           await ridesFlowService.notifyDriversAfterPayment(reference.serviceId);
         } catch (error) {
-          this.logger.error(`Failed to notify drivers for ride ${reference.serviceId}:`, error);
+          this.logger.error(
+            `Failed to notify drivers for ride ${reference.serviceId}:`,
+            error,
+          );
           // No fallar el pago por error en notificación, solo loggear
         }
 

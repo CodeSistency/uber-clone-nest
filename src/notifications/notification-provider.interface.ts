@@ -1,9 +1,19 @@
-import { NotificationPayload, NotificationDeliveryResult } from './interfaces/notification.interface';
+import {
+  NotificationPayload,
+  NotificationDeliveryResult,
+} from './interfaces/notification.interface';
 
 export interface INotificationProvider {
-  sendNotification(payload: NotificationPayload): Promise<NotificationDeliveryResult[]>;
-  sendBulkNotifications(payloads: NotificationPayload[]): Promise<NotificationDeliveryResult[][]>;
-  notifyNearbyDrivers(rideId: number, pickupLocation: { lat: number; lng: number }): Promise<void>;
+  sendNotification(
+    payload: NotificationPayload,
+  ): Promise<NotificationDeliveryResult[]>;
+  sendBulkNotifications(
+    payloads: NotificationPayload[],
+  ): Promise<NotificationDeliveryResult[][]>;
+  notifyNearbyDrivers(
+    rideId: number,
+    pickupLocation: { lat: number; lng: number },
+  ): Promise<void>;
   findAndAssignNearbyDriver(
     rideId: number,
     pickupLocation: { lat: number; lng: number },
@@ -22,7 +32,3 @@ export interface INotificationProvider {
     additionalData?: Record<string, any>,
   ): Promise<void>;
 }
-
-
-
-

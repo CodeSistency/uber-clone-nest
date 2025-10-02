@@ -136,9 +136,11 @@ export class RidesFlowService {
     return groupedByVehicleType;
   }
 
-
   // Método para validar si una combinación tier + vehicleType es válida
-  async isValidTierVehicleCombination(tierId: number, vehicleTypeId: number): Promise<boolean> {
+  async isValidTierVehicleCombination(
+    tierId: number,
+    vehicleTypeId: number,
+  ): Promise<boolean> {
     const combination = await this.prisma.tierVehicleType.findFirst({
       where: {
         tierId,
@@ -199,11 +201,13 @@ export class RidesFlowService {
    * Se ejecuta automáticamente cuando paymentStatus cambia a 'paid'
    */
   async notifyDriversAfterPayment(rideId: number): Promise<void> {
-    this.logger.log(`🚗 [POST-PAYMENT] Starting driver notification for ride ${rideId}`);
+    this.logger.log(
+      `🚗 [POST-PAYMENT] Starting driver notification for ride ${rideId}`,
+    );
 
     const ride = await this.prisma.ride.findUnique({
       where: { rideId },
-      include: { user: true, tier: true }
+      include: { user: true, tier: true },
     });
 
     if (!ride) {
@@ -211,7 +215,9 @@ export class RidesFlowService {
     }
 
     if (ride.paymentStatus !== 'paid') {
-      throw new Error(`Ride ${rideId} payment not confirmed (status: ${ride.paymentStatus})`);
+      throw new Error(
+        `Ride ${rideId} payment not confirmed (status: ${ride.paymentStatus})`,
+      );
     }
 
     // Notificar conductores cercanos via WebSocket
@@ -234,7 +240,9 @@ export class RidesFlowService {
       farePrice: ride.farePrice,
     });
 
-    this.logger.log(`✅ [POST-PAYMENT] Successfully notified drivers for paid ride ${rideId}`);
+    this.logger.log(
+      `✅ [POST-PAYMENT] Successfully notified drivers for paid ride ${rideId}`,
+    );
   }
 
   async selectTransportVehicle(
@@ -260,7 +268,10 @@ export class RidesFlowService {
 
       // Determinar los valores finales (usar existentes si no se proporcionan)
       const finalTierId = tierId !== undefined ? tierId : existingRide.tierId;
-      const finalVehicleTypeId = vehicleTypeId !== undefined ? vehicleTypeId : existingRide.requestedVehicleTypeId;
+      const finalVehicleTypeId =
+        vehicleTypeId !== undefined
+          ? vehicleTypeId
+          : existingRide.requestedVehicleTypeId;
 
       // Validar combinación si ambos valores están definidos
       if (finalTierId && finalVehicleTypeId) {
