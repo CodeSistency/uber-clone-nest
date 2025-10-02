@@ -114,7 +114,7 @@ export class StatesController {
   @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
   @ApiOperation({
     summary: 'Estadísticas de estados por país',
-    description: 'Obtiene el conteo de estados activos agrupados por país',
+    description: 'Obtiene estadísticas completas de estados agrupados por país basándose en todos los registros existentes',
   })
   @ApiResponse({
     status: 200,

@@ -60,6 +60,15 @@ export class GetUsersQueryDto {
   hasWallet?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Include soft deleted users in the results',
+    example: true,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  includeSoftDeleted?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Filter users registered from this date (ISO string)',
     example: '2024-01-01T00:00:00Z',
   })
