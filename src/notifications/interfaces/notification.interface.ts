@@ -30,6 +30,9 @@ export enum NotificationType {
   RIDE_REFUND_PROCESSED = 'ride_refund_processed',
   DRIVER_REQUEST_EXPIRED = 'driver_request_expired',
   PASSENGER_RATED_BY_DRIVER = 'passenger_rated_by_driver',
+  REFERRAL_REWARD_EARNED = 'referral_reward_earned',
+  REFERRAL_BONUS_RECEIVED = 'referral_bonus_received',
+  REFERRAL_TIER_UPGRADE = 'referral_tier_upgrade',
 }
 
 export enum NotificationChannel {

@@ -59,7 +59,7 @@ export class TemporalPricingService {
         country: { select: { id: true, name: true, isoCode2: true } },
         state: { select: { id: true, name: true, code: true } },
         city: { select: { id: true, name: true } },
-        zone: { select: { id: true, name: true } },
+        serviceZone: { select: { id: true, name: true } },
       },
     });
 
@@ -136,7 +136,7 @@ export class TemporalPricingService {
         country: { select: { id: true, name: true, isoCode2: true } },
         state: { select: { id: true, name: true, code: true } },
         city: { select: { id: true, name: true } },
-        zone: { select: { id: true, name: true } },
+        serviceZone: { select: { id: true, name: true } },
       },
       orderBy: { [sortBy]: sortOrder },
       skip,
@@ -161,7 +161,7 @@ export class TemporalPricingService {
         country: { select: { id: true, name: true, isoCode2: true } },
         state: { select: { id: true, name: true, code: true } },
         city: { select: { id: true, name: true } },
-        zone: { select: { id: true, name: true } },
+        serviceZone: { select: { id: true, name: true } },
       },
     });
 
@@ -225,7 +225,7 @@ export class TemporalPricingService {
         country: { select: { id: true, name: true, isoCode2: true } },
         state: { select: { id: true, name: true, code: true } },
         city: { select: { id: true, name: true } },
-        zone: { select: { id: true, name: true } },
+        serviceZone: { select: { id: true, name: true } },
       },
     });
 

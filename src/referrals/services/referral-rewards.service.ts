@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfigService } from '../../config/config.service';
 import { WalletService } from '../../wallet/wallet.service';
 import { NotificationManagerService } from '../../notifications/notification-manager.service';
-import { Referral, ReferralReward as PrismaReferralReward } from '@prisma/client';
+import { Referral, ReferralReward as PrismaReferralReward, ReferralTransaction } from '@prisma/client';
 
 @Injectable()
 export class ReferralRewardsService {
@@ -351,7 +351,7 @@ export class ReferralRewardsService {
 
       // Obtener balance actual del wallet
       const wallet = await this.prisma.wallet.findUnique({
-        where: { userClerkId: userId.toString() }, // Nota: esto necesita ajuste según el modelo actual
+        where: { userId: userId },
       });
 
       const availableBalance = wallet ? Number(wallet.balance) : 0;

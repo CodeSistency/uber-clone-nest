@@ -84,6 +84,10 @@ export interface ReferralConfig {
   maxFreeRidesPerUser: number;
   creditValidityDays: number;
   freeRideValidityDays: number;
+  minRideAmount: number;
+  maxRewardPerRide: number;
+  tierUpgradeThreshold: number;
+  vipThreshold: number;
 
   // Processing Configuration
   autoProcess: boolean;

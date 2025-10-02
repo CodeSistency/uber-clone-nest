@@ -666,6 +666,61 @@ export class TransportDriverController {
     }
   }
 
+  @Get('available')
+  @UseGuards(JwtAuthGuard, DriverGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get available rides for driver',
+    description: 'Get ride requests that match the driver\'s vehicle type',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns available rides for the driver',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              rideId: { type: 'number' },
+              originAddress: { type: 'string' },
+              destinationAddress: { type: 'string' },
+              farePrice: { type: 'number' },
+            },
+          },
+        },
+      },
+    },
+  })
+  async available(@Req() req: any) {
+    // Get driver's vehicle type through the vehicle relationship
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: req.user.id },
+      include: {
+        vehicles: {
+          where: { status: 'active' },
+          select: { vehicleTypeId: true },
+          take: 1
+        }
+      }
+    });
+
+    if (!driver?.vehicles?.[0]?.vehicleTypeId) {
+      throw new Error('Driver vehicle type not configured');
+    }
+
+    // Leverage RidesService through flow service with vehicle type filtering
+    const list = await (this.flow as any)['ridesService'].getRideRequests(
+      0, // Default lat (will be filtered by vehicle type only)
+      0, // Default lng (will be filtered by vehicle type only)
+      1000, // Large radius to get all rides (filtered by vehicle type)
+      driver.vehicles[0].vehicleTypeId // Filter by driver's vehicle type
+    );
+    return { data: list };
+  }
+
   @Post(':rideId/start')
   @UseGuards(JwtAuthGuard, DriverGuard)
   @ApiBearerAuth('JWT-auth')

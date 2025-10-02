@@ -15,6 +15,7 @@ import {
   ApiOperation,
   ApiTags,
   ApiResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LocationTrackingService } from '../../redis/location-tracking.service';
@@ -101,6 +102,49 @@ export class TransportClientController {
     const tiersByVehicleType =
       await this.flow.getAvailableRideTiersByVehicleType();
     return { data: tiersByVehicleType };
+  }
+
+  @Get('tiers/:vehicleTypeId')
+  @ApiOperation({
+    summary: 'Get available tiers for a specific vehicle type',
+    description: 'Retrieve ride tiers that are available for a specific vehicle type (car, motorcycle, etc.)',
+  })
+  @ApiParam({
+    name: 'vehicleTypeId',
+    description: 'ID of the vehicle type',
+    example: 1,
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns available tiers for the vehicle type',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Economy' },
+              baseFare: { type: 'number', example: 2.50 },
+              perMinuteRate: { type: 'number', example: 0.15 },
+              perMileRate: { type: 'number', example: 1.25 },
+              imageUrl: { type: 'string', example: 'https://...' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid vehicle type ID' })
+  @ApiResponse({ status: 500, description: 'Database error' })
+  async getTiersForVehicleType(
+    @Param('vehicleTypeId') vehicleTypeId: string,
+  ): Promise<{ data: any }> {
+    const tiers = await this.flow.getAvailableTiersForVehicleType(Number(vehicleTypeId));
+    return { data: tiers };
   }
 
   @Post('define-ride')

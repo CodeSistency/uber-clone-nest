@@ -86,11 +86,59 @@ export class RidesFlowService {
     return groupedByVehicleType;
   }
 
+  // Método para obtener tiers de viaje disponibles
+  async getAvailableRideTiers() {
+    return this.prisma.rideTier.findMany({
+      orderBy: { baseFare: 'asc' }, // Ordenar por precio base (del más barato al más caro)
+    });
+  }
+
+  // Método para obtener tiers disponibles para un tipo de vehículo específico
+  async getAvailableTiersForVehicleType(vehicleTypeId: number) {
+    const combinations = await this.prisma.tierVehicleType.findMany({
+      where: {
+        vehicleTypeId,
+        isActive: true,
+      },
+      include: {
+        tier: true,
+        vehicleType: true,
+      },
+      orderBy: [
+        { vehicleType: { displayName: 'asc' } },
+        { tier: { baseFare: 'asc' } },
+      ],
+    });
+
+    // Agrupar por tipo de vehículo
+    const groupedByVehicleType = combinations.reduce((acc, combo) => {
+      const vehicleName = combo.vehicleType.name; // "car", "motorcycle", "bicycle"
+
+      if (!acc[vehicleName]) {
+        acc[vehicleName] = [];
+      }
+
+      acc[vehicleName].push({
+        id: combo.tier.id,
+        name: combo.tier.name,
+        baseFare: combo.tier.baseFare,
+        perMinuteRate: combo.tier.perMinuteRate,
+        perMileRate: combo.tier.perMileRate,
+        imageUrl: combo.tier.imageUrl,
+        vehicleTypeId: combo.vehicleTypeId,
+        vehicleTypeName: combo.vehicleType.displayName,
+        vehicleTypeIcon: combo.vehicleType.icon,
+      });
+
+      return acc;
+    }, {});
+
+    return groupedByVehicleType;
+  }
+
+
   // Método para validar si una combinación tier + vehicleType es válida
-  async isValidTierVehicleCombination(
-    tierId: number,
-    vehicleTypeId: number,
-  ): Promise<boolean> {
+  async isValidTierVehicleCombination(tierId: number, vehicleTypeId: number): Promise<boolean> {
     const combination = await this.prisma.tierVehicleType.findFirst({
       where: {
         tierId,
@@ -212,10 +260,7 @@ export class RidesFlowService {
 
       // Determinar los valores finales (usar existentes si no se proporcionan)
       const finalTierId = tierId !== undefined ? tierId : existingRide.tierId;
-      const finalVehicleTypeId =
-        vehicleTypeId !== undefined
-          ? vehicleTypeId
-          : existingRide.requestedVehicleTypeId;
+      const finalVehicleTypeId = vehicleTypeId !== undefined ? vehicleTypeId : existingRide.requestedVehicleTypeId;
 
       // Validar combinación si ambos valores están definidos
       if (finalTierId && finalVehicleTypeId) {

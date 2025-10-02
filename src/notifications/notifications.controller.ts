@@ -814,8 +814,8 @@ export class NotificationsController {
       throw new Error('Invalid provider. Must be "firebase" or "expo"');
     }
 
-    const previousProvider = this.notificationsService.getCurrentProviderType();
-    this.notificationsService.switchProvider(provider);
+    const previousProvider = await this.notificationsService.getCurrentProviderType();
+    await this.notificationsService.switchProvider(provider);
 
     return {
       message: `Notification provider switched to ${provider}`,
@@ -874,7 +874,7 @@ export class NotificationsController {
     },
   })
   async getProviderStatus() {
-    const providerStatus = this.notificationsService.getProviderStatus();
+    const providerStatus = await this.notificationsService.getProviderStatus();
 
     return {
       currentProvider: providerStatus.currentProvider,

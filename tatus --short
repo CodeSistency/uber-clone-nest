@@ -1,0 +1,20 @@
+warning: in the working copy of 'prisma/schema.prisma', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/config/configuration.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/notifications/interfaces/notification.interface.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/notifications/notifications.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/notifications/notifications.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/payments/entities/payment-reference.entity.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/referrals/controllers/referral-codes.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/referrals/controllers/referral-rewards.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/referrals/controllers/referrals.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/referrals/services/referral-analytics.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/referrals/services/referral-codes.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/referrals/services/referrals.service.ts', LF will be replaced by CRLF the next time Git touches it
+prisma/schema.prisma
+prisma/seed.ts
+src/app.module.ts
+src/rides/flow/rides-flow.module.ts
+src/rides/flow/rides-flow.service.ts
+src/rides/flow/transport.client.controller.ts
+src/rides/flow/transport.driver.controller.ts
+src/rides/rides.service.ts

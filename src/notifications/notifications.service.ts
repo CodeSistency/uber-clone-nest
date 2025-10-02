@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ModuleRef } from '@nestjs/core';
 import {
   FirebaseService,
   PushNotificationPayload,
@@ -12,6 +13,9 @@ import {
   NotificationDeliveryResult,
 } from './interfaces/notification.interface';
 
+// Import the type directly to avoid circular dependency
+export type NotificationProviderType = 'firebase' | 'expo';
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -20,6 +24,7 @@ export class NotificationsService {
     private prisma: PrismaService,
     private firebaseService: FirebaseService,
     private twilioService: TwilioService,
+    private moduleRef: ModuleRef,
   ) {}
 
   async sendNotification(
@@ -861,5 +866,26 @@ export class NotificationsService {
       this.logger.error('Failed to save notification history:', error);
       throw error;
     }
+  }
+
+  /**
+   * Provider management methods delegated to NotificationManagerService
+   */
+  async getCurrentProviderType(): Promise<NotificationProviderType> {
+    const notificationManager = await this.moduleRef.resolve('NotificationManagerService');
+    return notificationManager.getCurrentProviderType();
+  }
+
+  async switchProvider(providerType: NotificationProviderType): Promise<void> {
+    const notificationManager = await this.moduleRef.resolve('NotificationManagerService');
+    return notificationManager.switchProvider(providerType);
+  }
+
+  async getProviderStatus(): Promise<{
+    currentProvider: NotificationProviderType;
+    availableProviders: NotificationProviderType[];
+  }> {
+    const notificationManager = await this.moduleRef.resolve('NotificationManagerService');
+    return notificationManager.getProviderStatus();
   }
 }

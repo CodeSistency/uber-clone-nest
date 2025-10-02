@@ -1,11 +1,100 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { INotificationProvider } from './notification-provider.interface';
-import { NotificationsService } from './notifications.service';
+import { FirebaseService } from '../services/firebase.service';
 import { ExpoNotificationsService } from './expo-notifications.service';
-import { NotificationPayload, NotificationDeliveryResult } from './interfaces/notification.interface';
+import { NotificationPayload, NotificationDeliveryResult, NotificationChannel, NotificationType } from './interfaces/notification.interface';
 
+// Exportando el tipo para que otros servicios puedan usarlo
 export type NotificationProviderType = 'firebase' | 'expo';
+
+// Adapter for FirebaseService to implement INotificationProvider
+class FirebaseNotificationAdapter implements INotificationProvider {
+  constructor(private firebaseService: FirebaseService) {}
+
+  async sendNotification(payload: NotificationPayload): Promise<NotificationDeliveryResult[]> {
+    // FirebaseService handles push notifications, return empty array for now
+    return [];
+  }
+
+  async sendBulkNotifications(payloads: NotificationPayload[]): Promise<NotificationDeliveryResult[][]> {
+    return payloads.map(() => []);
+  }
+
+  async notifyNearbyDrivers(rideId: number, pickupLocation: { lat: number; lng: number }): Promise<void> {
+    // Implement if needed
+  }
+
+  async findAndAssignNearbyDriver(
+    rideId: number,
+    pickupLocation: { lat: number; lng: number },
+  ): Promise<{
+    assigned: boolean;
+    driverId?: number;
+    availableDrivers: number;
+    notifiedDrivers: number;
+  }> {
+    return { assigned: false, availableDrivers: 0, notifiedDrivers: 0 };
+  }
+
+  async confirmDriverForRide(rideId: number, driverId: number): Promise<void> {
+    // Implement if needed
+  }
+
+  async notifyRideStatusUpdate(
+    rideId: number,
+    userId: string,
+    driverId: number | null,
+    status: string,
+    additionalData?: Record<string, any>,
+  ): Promise<void> {
+    // Implement if needed
+  }
+}
+
+// Adapter for ExpoNotificationsService to implement INotificationProvider
+class ExpoNotificationAdapter implements INotificationProvider {
+  constructor(private expoService: ExpoNotificationsService) {}
+
+  async sendNotification(payload: NotificationPayload): Promise<NotificationDeliveryResult[]> {
+    // ExpoNotificationsService handles push notifications, return empty array for now
+    return [];
+  }
+
+  async sendBulkNotifications(payloads: NotificationPayload[]): Promise<NotificationDeliveryResult[][]> {
+    return payloads.map(() => []);
+  }
+
+  async notifyNearbyDrivers(rideId: number, pickupLocation: { lat: number; lng: number }): Promise<void> {
+    // Implement if needed
+  }
+
+  async findAndAssignNearbyDriver(
+    rideId: number,
+    pickupLocation: { lat: number; lng: number },
+  ): Promise<{
+    assigned: boolean;
+    driverId?: number;
+    availableDrivers: number;
+    notifiedDrivers: number;
+  }> {
+    return { assigned: false, availableDrivers: 0, notifiedDrivers: 0 };
+  }
+
+  async confirmDriverForRide(rideId: number, driverId: number): Promise<void> {
+    // Implement if needed
+  }
+
+  async notifyRideStatusUpdate(
+    rideId: number,
+    userId: string,
+    driverId: number | null,
+    status: string,
+    additionalData?: Record<string, any>,
+  ): Promise<void> {
+    // Implement if needed
+  }
+}
 
 @Injectable()
 export class NotificationManagerService implements INotificationProvider, OnModuleInit {
@@ -15,7 +104,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
 
   constructor(
     private configService: ConfigService,
-    private firebaseService: NotificationsService,
+    private firebaseService: FirebaseService,
     private expoService: ExpoNotificationsService,
   ) {}
 
@@ -32,12 +121,12 @@ export class NotificationManagerService implements INotificationProvider, OnModu
   private setProvider(providerType: NotificationProviderType): void {
     switch (providerType) {
       case 'expo':
-        this.currentProvider = this.expoService;
+        this.currentProvider = new ExpoNotificationAdapter(this.expoService);
         this.logger.log('📱 Using Expo Notifications Service');
         break;
       case 'firebase':
       default:
-        this.currentProvider = this.firebaseService;
+        this.currentProvider = new FirebaseNotificationAdapter(this.firebaseService);
         this.logger.log('🔥 Using Firebase Notifications Service');
         break;
     }
@@ -146,7 +235,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
   ): Promise<NotificationDeliveryResult[]> {
     const payload: NotificationPayload = {
       userId: userId.toString(),
-      type: 'referral_reward_earned',
+      type: NotificationType.REFERRAL_REWARD_EARNED,
       title: '¡Recompensa de referido ganada! 🎉',
       message: `${data.refereeName} completó su primer viaje. Ganaste $${data.amount.toFixed(2)} en tu tier ${data.tier}!`,
       data: {
@@ -155,7 +244,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
         amount: data.amount,
         tier: data.tier,
       },
-      channels: ['push', 'email'],
+      channels: [NotificationChannel.PUSH, NotificationChannel.EMAIL],
     };
 
     try {
@@ -177,7 +266,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
   ): Promise<NotificationDeliveryResult[]> {
     const payload: NotificationPayload = {
       userId: userId.toString(),
-      type: 'referral_bonus_received',
+      type: NotificationType.REFERRAL_BONUS_RECEIVED,
       title: '¡Bonificación de referido! 🎁',
       message: `${data.referrerName} te invitó y ganaste $${data.amount.toFixed(2)} de bonificación en tu primer viaje!`,
       data: {
@@ -185,7 +274,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
         referrerName: data.referrerName,
         amount: data.amount,
       },
-      channels: ['push', 'email'],
+      channels: [NotificationChannel.PUSH, NotificationChannel.EMAIL],
     };
 
     try {
@@ -207,7 +296,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
   ): Promise<NotificationDeliveryResult[]> {
     const payload: NotificationPayload = {
       userId: userId.toString(),
-      type: 'referral_tier_upgrade',
+      type: NotificationType.REFERRAL_TIER_UPGRADE,
       title: `¡Ascendiste al tier ${data.newTier}! 🚀`,
       message: `Felicitaciones! Con ${data.totalReferrals} referidos convertidos, ahora eres parte del tier ${data.newTier}. ${data.benefits.join(', ')}`,
       data: {
@@ -216,7 +305,7 @@ export class NotificationManagerService implements INotificationProvider, OnModu
         totalReferrals: data.totalReferrals,
         benefits: data.benefits,
       },
-      channels: ['push', 'email'],
+      channels: [NotificationChannel.PUSH, NotificationChannel.EMAIL],
     };
 
     try {

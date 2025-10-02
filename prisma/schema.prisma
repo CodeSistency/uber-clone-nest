@@ -26,6 +26,7 @@ model VehicleType {
 
   // Relations
   vehicles Vehicle[]
+  drivers     Driver[]
   rides   Ride[]   @relation("RequestedVehicleType")
   tiers       TierVehicleType[]
 
@@ -183,6 +184,7 @@ model User {
   parcels          Parcel[]
   cart             Cart?
 
+
   // Venezuelan payment system relations
   paymentReferences PaymentReference[]
   paymentGroups     PaymentGroup[]
@@ -190,9 +192,14 @@ model User {
   // Admin-specific relations
   adminAuditLogs AdminAuditLog[]
 
+  // Referral system relations
+  referralCodes   ReferralCode[]   @relation("UserReferralCodes")
+  referralsGiven  Referral[]       @relation("UserReferralsGiven")
+  referralsReceived Referral[]     @relation("UserReferralsReceived")
+  referralTransactions ReferralTransaction[]
+
   @@map("users")
 }
-
 
 // Stores driver/courier information, their vehicle, and status
 model Driver {
@@ -245,6 +252,9 @@ model Driver {
   lastStatusChange   DateTime? @map("last_status_change")
   statusChangedBy    Int?     @map("status_changed_by") // Admin who changed status
 
+  // Vehicle type reference
+  vehicleTypeId      Int?     @map("vehicle_type_id")
+
   // Audit fields
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
@@ -252,6 +262,7 @@ model Driver {
   lastActive         DateTime? @map("last_active")
 
   // Relations
+  vehicleType         VehicleType?    @relation(fields: [vehicleTypeId], references: [id])
   vehicles            Vehicle[]
   documents           DriverDocument[]
   rides               Ride[]
@@ -265,7 +276,6 @@ model Driver {
   driverPaymentMethods DriverPaymentMethod[]
   driverVerificationHistory DriverVerificationHistory[]
   workZoneAssignments DriverWorkZone[]
-
 
   // Performance indexes for matching algorithm
   @@index([status, verificationStatus])
@@ -348,6 +358,22 @@ model RideTier {
   @@map("ride_tiers")
 }
 
+// Defines valid combinations between tiers and vehicle types
+model TierVehicleType {
+  id            Int         @id @default(autoincrement())
+  tierId        Int         @map("tier_id")
+  vehicleTypeId Int         @map("vehicle_type_id")
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  tier          RideTier    @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([tierId, vehicleTypeId])
+  @@map("tier_vehicle_types")
+}
+
 // Temporal pricing rules for dynamic pricing based on time
 model TemporalPricingRule {
   id            Int      @id @default(autoincrement())
@@ -387,7 +413,7 @@ model TemporalPricingRule {
   country       Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
   state         State?   @relation(fields: [stateId], references: [id], onDelete: Cascade)
   city          City?    @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  zone          ServiceZone? @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  serviceZone   ServiceZone? @relation(fields: [zoneId], references: [id], onDelete: Cascade)
 
   @@index([ruleType, isActive])
   @@index([countryId, stateId, cityId, zoneId])
@@ -585,24 +611,6 @@ model IntegrationStatus {
 }
 
 // Relations
-
-// Defines valid combinations between tiers and vehicle types
-model TierVehicleType {
-  id            Int         @id @default(autoincrement())
-  tierId        Int         @map("tier_id")
-  vehicleTypeId Int         @map("vehicle_type_id")
-  isActive      Boolean     @default(true) @map("is_active")
-  createdAt     DateTime    @default(now()) @map("created_at")
-
-  // Relations
-  tier          RideTier    @relation(fields: [tierId], references: [id], onDelete: Cascade)
-  vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
-
-  @@unique([tierId, vehicleTypeId])
-  @@index([tierId, isActive])
-  @@index([vehicleTypeId, isActive])
-  @@map("tier_vehicle_types")
-}
 
 // Stores information about each ride
 model Ride {
@@ -824,14 +832,14 @@ model EmergencyContact {
 
 // Stores chat messages for rides, deliveries, errands, and parcels
 model ChatMessage {
-  id          Int      @id @default(autoincrement())
-  rideId      Int?     @map("ride_id")
-  orderId     Int?     @map("order_id")
+  id            Int      @id @default(autoincrement())
+  rideId        Int?     @map("ride_id")
+  orderId       Int?     @map("order_id")
   errandId      Int?     @map("errand_id")
   parcelId      Int?     @map("parcel_id")
-  senderId    Int      @map("sender_id")
-  messageText String   @map("message_text")
-  createdAt   DateTime @default(now()) @map("created_at")
+  senderId      Int      @map("sender_id")
+  messageText   String   @map("message_text")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   // Relations
   ride    Ride?          @relation(fields: [rideId], references: [rideId])
@@ -1461,6 +1469,109 @@ model ServiceZone {
   @@index([zoneType])
   @@map("service_zones")
 }
+
+// =========================================
+// SECTION 10: REFERRAL SYSTEM TABLES
+// =========================================
+
+// Referral codes that users can share
+model ReferralCode {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique @db.VarChar(12)
+  userId      Int       @map("user_id")
+  isActive    Boolean   @default(true) @map("is_active")
+  expiresAt   DateTime? @map("expires_at")
+  usageCount  Int       @default(0) @map("usage_count")
+  maxUses     Int       @default(100) @map("max_uses")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user      User       @relation("UserReferralCodes", fields: [userId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+
+  @@index([code])
+  @@index([userId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("referral_codes")
+}
+
+// Referral relationships between users
+model Referral {
+  id              Int       @id @default(autoincrement())
+  referrerId      Int       @map("referrer_id")
+  refereeId       Int       @map("referee_id")
+  referralCodeId  Int       @map("referral_code_id")
+  status          String    @default("pending") @db.VarChar(20) // pending, converted, expired, cancelled
+  convertedAt     DateTime? @map("converted_at")
+  rewardAmount    Decimal?  @map("reward_amount") @db.Decimal(10, 2)
+  rewardType      String?   @map("reward_type") @db.VarChar(20)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+  processedAt     DateTime? @map("processed_at")
+
+  // Relations
+  referrer        User                   @relation("UserReferralsGiven", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee         User                   @relation("UserReferralsReceived", fields: [refereeId], references: [id], onDelete: Cascade)
+  referralCode    ReferralCode           @relation(fields: [referralCodeId], references: [id], onDelete: Cascade)
+  transactions    ReferralTransaction[]
+
+  @@unique([referrerId, refereeId])
+  @@index([referrerId])
+  @@index([refereeId])
+  @@index([referralCodeId])
+  @@index([status])
+  @@index([convertedAt])
+  @@map("referrals")
+}
+
+// Reward tiers for referrals
+model ReferralReward {
+  id            Int      @id @default(autoincrement())
+  tier          String   @db.VarChar(20) // basic, advanced, vip
+  minReferrals  Int      @default(0) @map("min_referrals")
+  maxReferrals  Int?     @map("max_referrals")
+  rewardType    String   @map("rewardType") @db.VarChar(30) // free_ride, wallet_credit, discount
+  rewardAmount  Decimal  @map("reward_amount") @db.Decimal(10, 2)
+  conditions    Json?
+  validityDays  Int      @default(30) @map("validity_days")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([tier])
+  @@index([isActive])
+  @@index([minReferrals, maxReferrals])
+  @@map("referral_rewards")
+}
+
+// Transactions for referral rewards
+model ReferralTransaction {
+  id            Int       @id @default(autoincrement())
+  referralId    Int       @map("referral_id")
+  userId        Int       @map("user_id")
+  amount        Decimal   @db.Decimal(10, 2)
+  type          String    @db.VarChar(20) // referrer_reward, referee_reward, bonus
+  description   String?   @db.VarChar(255)
+  transactionId String?   @map("transaction_id") @db.VarChar(100)
+  status        String    @default("completed") @db.VarChar(20)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  processedAt   DateTime? @map("processed_at")
+
+  // Relations
+  referral Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([referralId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("referral_transactions")
+}
+
+// Note: ReferralStatus is stored as a string in the Referral model
+// No enum needed as we're using VARCHAR(20) for flexibility
 
 // =========================================
 // END OF SCHEMA

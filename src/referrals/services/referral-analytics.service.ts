@@ -334,7 +334,10 @@ export class ReferralAnalyticsService {
         : await this.redisService.keys(`${this.CACHE_PREFIX}*`);
 
       if (keys.length > 0) {
-        await this.redisService.del(keys);
+        // Delete keys one by one or use Redis pipeline for batch deletion
+        for (const key of keys) {
+          await this.redisService.del(key);
+        }
         this.logger.log(`Invalidated ${keys.length} referral analytics cache entries`);
       }
 

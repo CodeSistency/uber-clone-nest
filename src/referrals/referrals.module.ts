@@ -16,10 +16,11 @@ import { ReferralRewardsController } from './controllers/referral-rewards.contro
 
 // External Modules
 import { PrismaModule } from '../prisma/prisma.module';
-import { ConfigModule } from '../config/config.module';
+import { AppConfigModule } from '../config/config.module';
 import { AuthModule } from '../auth/auth.module';
 import { RedisModule } from '../redis/redis.module';
 import { WalletModule } from '../wallet/wallet.module';
+import { NotificationManagerModule } from '../notifications/notification-manager.module';
 
 @Module({
   imports: [
@@ -32,10 +33,11 @@ import { WalletModule } from '../wallet/wallet.module';
 
     // Internal Modules
     PrismaModule,
-    ConfigModule,
+    AppConfigModule,
     forwardRef(() => AuthModule), // Avoid circular dependency
     RedisModule,
     forwardRef(() => WalletModule), // Avoid circular dependency
+    NotificationManagerModule,
   ],
   controllers: [
     ReferralCodesController,

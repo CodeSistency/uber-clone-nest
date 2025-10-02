@@ -16,7 +16,7 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { GetUser } from '../../auth/decorators/get-user.decorator';
 import { ReferralsService } from '../services/referrals.service';
 import { ReferralAnalyticsService } from '../services/referral-analytics.service';
@@ -59,10 +59,10 @@ export class ReferralsController {
         id: referral.id,
         referralCodeId: referral.referralCodeId,
         status: referral.status,
-        rewardAmount: referral.rewardAmount,
-        rewardType: referral.rewardType,
+        rewardAmount: referral.rewardAmount ? Number(referral.rewardAmount) : undefined,
+        rewardType: referral.rewardType ?? undefined,
         createdAt: referral.createdAt,
-        convertedAt: referral.convertedAt,
+        convertedAt: referral.convertedAt ?? undefined,
         referee: {
           id: referral.referee.id,
           name: referral.referee.name,
@@ -71,9 +71,9 @@ export class ReferralsController {
         },
         transactions: referral.transactions.map(transaction => ({
           id: transaction.id,
-          amount: transaction.amount,
+          amount: Number(transaction.amount),
           type: transaction.type,
-          description: transaction.description,
+          description: transaction.description ?? undefined,
           createdAt: transaction.createdAt,
         })),
       }));

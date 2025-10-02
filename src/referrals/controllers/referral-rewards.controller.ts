@@ -15,7 +15,7 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { GetUser } from '../../auth/decorators/get-user.decorator';
 import { ReferralRewardsService } from '../services/referral-rewards.service';
 import { ReferralAnalyticsService } from '../services/referral-analytics.service';
@@ -57,9 +57,9 @@ export class ReferralRewardsController {
       return tiers.map(tier => ({
         tier: tier.tier,
         minReferrals: tier.minReferrals,
-        maxReferrals: tier.maxReferrals,
+        maxReferrals: tier.maxReferrals ?? undefined,
         rewardType: tier.rewardType,
-        rewardAmount: tier.rewardAmount,
+        rewardAmount: Number(tier.rewardAmount),
         conditions: tier.conditions,
         validityDays: tier.validityDays,
         isActive: tier.isActive,
@@ -176,7 +176,7 @@ export class ReferralRewardsController {
       }
 
       // Calcular recompensas basadas en el número de referidos
-      const referrerReward = dto.referralCount * tierConfig.rewardAmount;
+      const referrerReward = dto.referralCount * Number(tierConfig.rewardAmount);
       const refereeReward = dto.referralCount * 10; // Base referee reward
 
       return {

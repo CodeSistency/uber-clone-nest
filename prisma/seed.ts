@@ -385,7 +385,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 8: TIER-VEHICLE TYPE COMBINATIONS
+  // SECTION 4: TIER-VEHICLE TYPE COMBINATIONS
   // =========================================
   console.log('🔗 Seeding tier-vehicle type combinations...');
   const tierVehicleCombinations = await Promise.all([
@@ -441,7 +441,7 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 9: RIDES
+  // SECTION 5: RIDES
   // =========================================
   console.log('🚕 Seeding rides...');
   const rides = await Promise.all([

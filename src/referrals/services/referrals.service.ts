@@ -2,7 +2,8 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException, 
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfigService } from '../../config/config.service';
 import { ReferralCodesService } from './referral-codes.service';
-import { Referral, ReferralStatus } from '@prisma/client';
+import { Referral } from '@prisma/client';
+import { ReferralStatus } from '../types/referral-status.type';
 
 @Injectable()
 export class ReferralsService {
@@ -120,7 +121,7 @@ export class ReferralsService {
   /**
    * Obtiene todos los referidos de un usuario
    */
-  async getUserReferrals(userId: number): Promise<Referral[]> {
+  async getUserReferrals(userId: number) {
     try {
       return await this.prisma.referral.findMany({
         where: { referrerId: userId },

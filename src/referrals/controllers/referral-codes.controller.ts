@@ -15,7 +15,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { GetUser } from '../../auth/decorators/get-user.decorator';
 import { ReferralCodesService } from '../services/referral-codes.service';
 import { ReferralCodeResponseDto } from '../dto/referral-code-response.dto';
@@ -54,7 +54,7 @@ export class ReferralCodesController {
         isActive: referralCode.isActive,
         usageCount: referralCode.usageCount,
         maxUses: referralCode.maxUses,
-        expiresAt: referralCode.expiresAt,
+        expiresAt: referralCode.expiresAt ?? undefined,
         createdAt: referralCode.createdAt,
         updatedAt: referralCode.updatedAt,
       };
@@ -118,7 +118,7 @@ export class ReferralCodesController {
         isActive: referralCode.isActive,
         usageCount: referralCode.usageCount,
         maxUses: referralCode.maxUses,
-        expiresAt: referralCode.expiresAt,
+        expiresAt: referralCode.expiresAt ?? undefined,
         createdAt: referralCode.createdAt,
         updatedAt: referralCode.updatedAt,
       };

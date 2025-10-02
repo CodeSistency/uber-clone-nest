@@ -38,6 +38,13 @@ export class PaymentReference {
   userId: number;
 
   @ApiProperty({
+    description: 'Método de pago',
+    example: 'transfer',
+    enum: ['transfer', 'pago_movil', 'zelle', 'bitcoin', 'cash'],
+  })
+  paymentMethod: string;
+
+  @ApiProperty({
     description: 'Tipo de servicio',
     example: 'ride',
     enum: ['ride', 'delivery', 'errand', 'parcel'],
@@ -49,6 +56,19 @@ export class PaymentReference {
     example: 123,
   })
   serviceId: number;
+
+  @ApiProperty({
+    description: 'Indica si es un pago parcial',
+    example: false,
+  })
+  isPartial: boolean;
+
+  @ApiProperty({
+    description: 'ID del grupo de pagos (para pagos múltiples)',
+    example: 'group-123',
+    required: false,
+  })
+  groupId?: string;
 
   @ApiProperty({
     description: 'Estado de la referencia',
