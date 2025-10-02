@@ -322,6 +322,8 @@ export class StatesService {
       where.isActive = true;
     }
 
+    const total = await this.prisma.state.count({ where });
+
     const states = await this.prisma.state.findMany({
       where,
       select: {
@@ -329,13 +331,29 @@ export class StatesService {
         name: true,
         code: true,
         isActive: true,
+        country: {
+          select: {
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            cities: true,
+          },
+        },
       },
       orderBy: {
         name: 'asc',
       },
     });
 
-    return states;
+    return {
+      states: states.map((state) => this.transformStateListItem(state)),
+      total,
+      page: 1,
+      limit: total,
+      totalPages: 1,
+    };
   }
 
   async toggleActiveStatus(id: number) {

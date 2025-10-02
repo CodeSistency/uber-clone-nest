@@ -104,7 +104,7 @@ export class StatesController {
   async findByCountry(
     @Param('countryId', ParseIntPipe) countryId: number,
     @Query('activeOnly') activeOnly?: string,
-  ) {
+  ): Promise<StateListResponseDto> {
     const activeOnlyBool =
       activeOnly === undefined ? true : activeOnly === 'true';
     return this.statesService.findByCountry(countryId, activeOnlyBool);
