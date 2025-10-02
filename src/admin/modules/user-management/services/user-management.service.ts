@@ -12,6 +12,7 @@ export interface UserFilters {
   minRides?: number;
   maxRides?: number;
   search?: string; // nombre, email, teléfono
+  includeSoftDeleted?: boolean;
 }
 
 export interface UserListResponse {
@@ -83,9 +84,12 @@ export class UserManagementService {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = {
-      deletedAt: null, // Exclude soft deleted users
-    };
+    const where: any = {};
+
+    // Only exclude soft deleted users if includeSoftDeleted is not explicitly set to true
+    if (!filters.includeSoftDeleted) {
+      where.deletedAt = null; // Exclude soft deleted users
+    }
 
     if (filters.status) {
       if (filters.status.includes('active')) {
@@ -293,12 +297,27 @@ export class UserManagementService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
+    // Prepare update data based on activation/deactivation
+    const updateData = {
+      isActive,
+      updatedAt: new Date(),
+      ...(isActive
+        ? {
+            // If activating (isActive = true), clear deactivation fields
+            deletedAt: null,
+            deletedReason: null,
+          }
+        : {
+            // If deactivating (isActive = false), save reason and deactivation date
+            deletedAt: new Date(),
+            deletedReason: reason || 'Suspended by admin',
+          }
+      ),
+    };
+
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        isActive,
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
 
     // Log the action
