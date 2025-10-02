@@ -106,7 +106,7 @@ export class CountriesController {
   @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
   @ApiOperation({
     summary: 'Estadísticas por continente',
-    description: 'Obtiene el conteo de países activos por continente',
+    description: 'Obtiene estadísticas completas de países agrupados por continente basándose en todos los registros existentes',
   })
   @ApiResponse({
     status: 200,

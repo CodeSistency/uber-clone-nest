@@ -114,7 +114,7 @@ export class CitiesController {
   @ApiOperation({
     summary: 'Estadísticas de ciudades por estado',
     description:
-      'Obtiene el conteo de ciudades activas agrupadas por estado y país',
+      'Obtiene estadísticas completas de ciudades agrupadas por estado y país basándose en todos los registros existentes',
   })
   @ApiResponse({
     status: 200,
