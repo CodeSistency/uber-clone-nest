@@ -9,7 +9,7 @@ import { GeographicPricingService } from './services/geographic-pricing.service'
 import { PromotionService } from './services/promotion.service';
 import { PricingCacheService } from './services/pricing-cache.service';
 import { AsyncMatchingService } from './services/async-matching.service';
-import { WebsocketModule } from '../websocket/websocket.module';
+import { WebSocketModule } from '../websocket/websocket.module';
 import { CommonModule } from '../common/common.module';
 
 @Module({
@@ -17,7 +17,7 @@ import { CommonModule } from '../common/common.module';
     PrismaModule,
     NotificationManagerModule,
     RedisModule,
-    WebsocketModule,
+    WebSocketModule,
     CommonModule,
     forwardRef(() => ReferralsModule), // Avoid circular dependency
   ],
