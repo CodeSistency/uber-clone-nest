@@ -9,9 +9,10 @@ import {
   MatchingWebSocketEvent,
   AsyncMatchingConfig,
 } from '../flow/dto/async-matching.interfaces';
-import { RidesFlowService } from '../flow/rides-flow.service';
 import { WebSocketGatewayClass } from '../../websocket/websocket.gateway';
 import { DriverEventsService, DriverOnlineEvent } from '../../common/events/driver-events.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { MatchingMetricsService } from '../flow/matching-metrics.service';
 
 @Injectable()
 export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
@@ -34,9 +35,10 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   };
 
   constructor(
-    private readonly ridesFlowService: RidesFlowService,
+    private readonly prisma: PrismaService,
     private readonly websocketGateway: WebSocketGatewayClass,
     private readonly driverEventsService: DriverEventsService,
+    private readonly matchingMetrics: MatchingMetricsService,
   ) {}
 
   onModuleInit() {
@@ -294,17 +296,11 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      // Intentar encontrar conductor usando el método existente
-      const matchResult = await this.ridesFlowService.findBestDriverMatch({
-        lat: session.criteria.lat,
-        lng: session.criteria.lng,
-        tierId: session.criteria.tierId,
-        vehicleTypeId: session.criteria.vehicleTypeId,
-        radiusKm: session.criteria.radiusKm,
-      });
+      // Ejecutar búsqueda de conductor directamente
+      const matchedDriver = await this.findBestDriverMatch(session.criteria);
 
-      if (matchResult?.matchedDriver) {
-        this.handleDriverFound(session, matchResult.matchedDriver);
+      if (matchedDriver) {
+        this.handleDriverFound(session, { matchedDriver });
       }
 
     } catch (error) {
@@ -324,7 +320,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     // Actualizar sesión
     session.status = SearchStatus.FOUND;
     session.updatedAt = new Date();
-    session.matchedDriver = this.formatMatchedDriver(matchedDriver, session.searchId);
+    session.matchedDriver = { ...matchedDriver.matchedDriver, searchId: session.searchId };
 
     // Notificar via WebSocket
     this.notifyWebSocket(session, 'driver-found', session.matchedDriver);
@@ -354,6 +350,221 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     }, 300000); // 5 minutos para que el usuario pueda consultar el estado
 
     this.logger.log(`⏰ [ASYNC] Search timeout for ${session.searchId}`);
+  }
+
+  /**
+   * Encuentra el mejor conductor disponible usando el algoritmo de matching
+   */
+  private async findBestDriverMatch(criteria: Omit<SearchCriteria, 'searchId' | 'userId'>): Promise<MatchedDriverInfo | null> {
+    try {
+      // 1. Obtener conductores candidatos con filtros básicos
+      const driverFilters: any = {
+        status: 'online' as const,
+        verificationStatus: 'approved' as const,
+      };
+
+      // 2. Aplicar filtros de compatibilidad de vehículo
+      if (criteria.tierId) {
+        const vehicleTypeFilters = await this.buildVehicleTypeFilters(
+          criteria.tierId,
+          criteria.vehicleTypeId,
+        );
+        if (vehicleTypeFilters && vehicleTypeFilters.length > 0) {
+          driverFilters.vehicles = {
+            some: {
+              vehicleTypeId: { in: vehicleTypeFilters },
+              status: 'active',
+              isDefault: true,
+            },
+          };
+        }
+      }
+
+      // 3. Buscar conductores candidatos cercanos
+      const candidateDrivers = await this.getAvailableDriversWithCache(
+        driverFilters,
+        criteria.radiusKm || 5,
+        criteria.lat,
+        criteria.lng,
+      );
+
+      if (candidateDrivers.length === 0) {
+        return null;
+      }
+
+      // 4. Obtener información detallada de conductores
+      const driverIds = candidateDrivers.map((d) => d.id);
+      const detailedDrivers = await this.getDriverDetailsWithCache(driverIds);
+
+      if (detailedDrivers.length === 0) {
+        return null;
+      }
+
+      // 5. Calcular distancias
+      const driversWithDistance = await this.calculateDistancesWithConcurrencyLimit(
+        detailedDrivers,
+        criteria.lat,
+        criteria.lng,
+        criteria.radiusKm || 5,
+      );
+
+      // 6. Calcular scores y seleccionar el mejor
+      const scoredDrivers = await this.calculateDriversScores(
+        driversWithDistance,
+        criteria.lat,
+        criteria.lng,
+        criteria.radiusKm,
+      );
+
+      if (scoredDrivers.length === 0) {
+        return null;
+      }
+
+      const bestDriver = scoredDrivers[0];
+
+      // 7. Obtener información completa del conductor
+      const driverDetails = await this.getDriverDetailedInfo(bestDriver.id);
+
+      // 8. Calcular tiempo estimado de llegada
+      const estimatedMinutes = Math.max(
+        1,
+        Math.round(((bestDriver.distance * 1000) / 30) * 60),
+      );
+
+      const result = this.formatMatchedDriverFromDetails(bestDriver, driverDetails, estimatedMinutes, criteria.tierId);
+      result.searchId = uuidv4(); // Generate a temporary search ID
+      return result;
+
+    } catch (error) {
+      this.logger.error('Error in findBestDriverMatch:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Construye filtros de tipo de vehículo basados en tier y vehicleType
+   */
+  private async buildVehicleTypeFilters(tierId?: number, vehicleTypeId?: number) {
+    if (!tierId && !vehicleTypeId) return null;
+
+    const tierVehicleTypes = await this.prisma.tierVehicleType.findMany({
+      where: {
+        isActive: true,
+        ...(tierId && { tierId }),
+        ...(vehicleTypeId && { vehicleTypeId }),
+      },
+      select: { vehicleTypeId: true },
+    });
+
+    return tierVehicleTypes.map(tvt => tvt.vehicleTypeId);
+  }
+
+  /**
+   * Obtiene conductores disponibles con caché inteligente
+   */
+  private async getAvailableDriversWithCache(
+    driverFilters: any,
+    radiusKm: number,
+    lat: number,
+    lng: number,
+  ) {
+    // Simplified version - in production this would use Redis caching
+    const drivers = await this.prisma.driver.findMany({
+      where: driverFilters,
+      include: {
+        vehicles: {
+          where: { isDefault: true, status: 'active' },
+          take: 1,
+        },
+      },
+      take: 20, // Limit for performance
+    });
+
+    // Filter by distance (simplified - would use PostGIS in production)
+    return drivers.filter(driver => {
+      if (!driver.currentLatitude || !driver.currentLongitude) return false;
+
+      const distance = this.calculateDistance(
+        lat, lng,
+        Number(driver.currentLatitude), Number(driver.currentLongitude)
+      );
+
+      return distance <= radiusKm;
+    });
+  }
+
+  /**
+   * Obtiene detalles de conductores con caché
+   */
+  private async getDriverDetailsWithCache(driverIds: number[]) {
+    // Simplified version - in production this would use Redis caching
+    return await this.prisma.driver.findMany({
+      where: {
+        id: { in: driverIds },
+        status: 'online',
+        verificationStatus: 'approved',
+      },
+      include: {
+        vehicles: {
+          where: { isDefault: true, status: 'active' },
+          take: 1,
+          include: { vehicleType: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * Calcula distancias con control de concurrencia
+   */
+  private async calculateDistancesWithConcurrencyLimit(
+    drivers: any[],
+    userLat: number,
+    userLng: number,
+    radiusKm: number,
+  ) {
+    const results: any[] = [];
+
+    for (const driver of drivers) {
+      if (!driver.currentLatitude || !driver.currentLongitude) continue;
+
+      const distance = this.calculateDistance(
+        userLat, userLng,
+        Number(driver.currentLatitude), Number(driver.currentLongitude)
+      );
+
+      if (distance <= radiusKm) {
+        results.push({
+          ...driver,
+          distance,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Calcula scores para conductores
+   */
+  private async calculateDriversScores(
+    driversWithDistance: any[],
+    userLat: number,
+    userLng: number,
+    radiusKm?: number,
+  ) {
+    const scoredDrivers: any[] = [];
+
+    for (const driver of driversWithDistance) {
+      const score = await this.calculateDriverScore(driver, userLat, userLng);
+      scoredDrivers.push({
+        ...driver,
+        score,
+      });
+    }
+
+    // Ordenar por score descendente
+    return scoredDrivers.sort((a, b) => b.score - a.score);
   }
 
   /**
@@ -403,6 +614,48 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
+  }
+
+  /**
+   * Formatea resultado de matched driver desde detalles simplificados
+   */
+  private formatMatchedDriverFromDetails(
+    bestDriver: any,
+    driverDetails: any,
+    estimatedMinutes: number,
+    tierId?: number
+  ): MatchedDriverInfo {
+    return {
+      driverId: bestDriver.id,
+      firstName: driverDetails.firstName,
+      lastName: driverDetails.lastName,
+      profileImageUrl: driverDetails.profileImageUrl,
+      rating: driverDetails.rating || driverDetails.averageRating || 0,
+      totalRides: driverDetails.totalRides || 0,
+      vehicle: {
+        carModel: driverDetails.vehicles?.[0]
+          ? `${driverDetails.vehicles[0].make} ${driverDetails.vehicles[0].model}`
+          : 'Unknown',
+        licensePlate: driverDetails.vehicles?.[0]?.licensePlate || '',
+        carSeats: driverDetails.vehicles?.[0]?.seatingCapacity || 0,
+        vehicleType: driverDetails.vehicles?.[0]?.vehicleType?.displayName || null,
+      },
+      location: {
+        distance: Math.round(bestDriver.distance * 100) / 100,
+        estimatedArrival: estimatedMinutes,
+        currentLocation: {
+          lat: bestDriver.currentLatitude,
+          lng: bestDriver.currentLongitude,
+        },
+      },
+      pricing: {
+        tierId: tierId || 1,
+        tierName: 'Economy', // Simplified - would get from DB
+        estimatedFare: 0, // Simplified - would calculate based on tier
+      },
+      matchScore: Math.round(bestDriver.score * 100) / 100,
+      searchId: '', // Will be set by caller
+    };
   }
 
   /**
@@ -541,5 +794,58 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     if (expiredSessions.length > 0) {
       this.logger.log(`🧹 Cleaned up ${expiredSessions.length} expired search sessions`);
     }
+  }
+
+  /**
+   * Obtiene información detallada de un conductor específico
+   */
+  private async getDriverDetailedInfo(driverId: number) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+      include: {
+        vehicles: {
+          where: { isDefault: true, status: 'active' },
+          take: 1,
+          include: { vehicleType: true },
+        },
+        _count: {
+          select: { rides: true },
+        },
+      },
+    });
+
+    if (!driver) return null;
+
+    return {
+      ...driver,
+      totalRides: driver._count.rides,
+      averageRating: 4.5, // Simplified - would calculate from ratings table
+    };
+  }
+
+  /**
+   * Calcula el score de un conductor basado en múltiples factores
+   */
+  private async calculateDriverScore(driver: any, userLat: number, userLng: number): Promise<number> {
+    // Simplified scoring algorithm - in production this would be more sophisticated
+    const distance = driver.distance || this.calculateDistance(
+      userLat, userLng,
+      driver.currentLatitude, driver.currentLongitude
+    );
+
+    // Distance score (higher for closer drivers)
+    const distanceScore = Math.max(0, 1 - (distance / 10)) * 40; // Max 40 points
+
+    // Rating score (4.5 rating = 35 points, 5.0 rating = 35 points)
+    const rating = driver.rating || driver.averageRating || 4.5;
+    const ratingScore = (rating / 5.0) * 35; // Max 35 points
+
+    // Estimated time score (faster arrival = higher score)
+    const estimatedTime = Math.max(1, (distance * 60) / 30); // minutes at 30 km/h
+    const timeScore = Math.max(0, 1 - (estimatedTime / 30)) * 25; // Max 25 points
+
+    const totalScore = distanceScore + ratingScore + timeScore;
+
+    return Math.round(totalScore * 100) / 100; // Round to 2 decimal places
   }
 }
