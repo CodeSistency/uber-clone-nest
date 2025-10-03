@@ -38,13 +38,13 @@ export class TestDatabaseManager {
           name: 'Economy',
           baseFare: 2.5,
           perMinuteRate: 0.25,
-          perMileRate: 1.25,
+          perKmRate: 80,
         },
         {
           name: 'Premium',
           baseFare: 5.0,
           perMinuteRate: 0.5,
-          perMileRate: 2.5,
+          perKmRate: 200,
         },
       ],
     });

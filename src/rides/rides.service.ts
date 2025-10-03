@@ -221,25 +221,7 @@ export class RidesService {
       throw new BadRequestException('Ride tier not found');
     }
 
-    // 2. Check geographic restrictions (if coordinates provided)
-    let geographicInfo: any = null;
-    let restrictions: { isAllowed: boolean; reason?: string } = { isAllowed: true };
-
-    if (userLat !== undefined && userLng !== undefined) {
-      const geoZone = await this.geographicPricing.findGeographicZone(userLat, userLng);
-      restrictions = geoZone.restrictions;
-
-      // If service not allowed in this area, throw error
-      if (!restrictions.isAllowed) {
-        throw new BadRequestException(restrictions.reason || 'Service not available in this area');
-      }
-
-      geographicInfo = {
-        city: geoZone.city?.name,
-        zone: geoZone.zone?.name,
-        appliedMultipliers: geoZone.multipliers,
-      };
-    }
+    // Note: Geographic restrictions are handled at ride creation time, not during fare estimation
 
     // 3. Calculate base price
     const baseFare = Number(tier.baseFare);
