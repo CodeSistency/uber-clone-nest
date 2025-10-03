@@ -155,20 +155,29 @@ export class TransportClientController {
     summary: 'Define transport ride (origin/destination) and create ride',
     description: `
     Creates a new transport ride request with origin and destination details.
+    **Automatically calculates fare price** using advanced pricing engine including:
+    - Tier multipliers (surge, demand, luxury, comfort)
+    - Geographic pricing (city/state/country multipliers)
+    - Temporal pricing (time-based rules)
+    - Zone restrictions validation
 
     **Flow:**
     1. Validates ride parameters and user authentication
-    2. Creates ride in database with 'pending' status
-    3. Returns ride ID for payment processing
-    4. After payment confirmation, drivers will be notified automatically
+    2. **Calculates accurate fare price** using geographic and temporal factors
+    3. Validates service availability in the requested area
+    4. Creates ride in database with calculated price and 'pending' status
+    5. Returns ride with farePrice for payment processing
+    6. After payment confirmation, drivers will be notified automatically
 
     **Real-time Events (after payment):**
     - \`ride:requested\` - Broadcast to nearby drivers (only after payment confirmed)
     - \`ride:accepted\` - When driver accepts the ride
     - \`ride:location\` - Live driver location updates
 
-    **Important:** Drivers are only notified after payment is confirmed to ensure
-    users pay before drivers are engaged.
+    **Important:**
+    - Drivers are only notified after payment is confirmed
+    - Price calculation ensures consistency between estimate and actual ride cost
+    - Geographic restrictions are validated before ride creation
     `,
   })
   @ApiBody({

@@ -174,6 +174,35 @@ export class RidesFlowService {
       }
     }
 
+    // Calcular precio usando el servicio de pricing avanzado
+    // Usamos las coordenadas de origen para pricing geográfico
+    const pricingResult = await this.ridesService.getFareEstimate(
+      payload.tierId || 1, // Default tier si no se especifica
+      payload.minutes,
+      this.calculateDistance(
+        payload.origin.lat,
+        payload.origin.lng,
+        payload.destination.lat,
+        payload.destination.lng,
+      ), // Calcular millas basado en coordenadas
+      payload.origin.lat,
+      payload.origin.lng,
+    );
+
+    // Verificar si el área está permitida
+    if (!pricingResult.restrictions.isAllowed) {
+      throw new Error(pricingResult.restrictions.reason || 'Service not available in this area');
+    }
+
+    // Calcular distancia en millas (1 km ≈ 0.621371 millas)
+    const distanceKm = this.calculateDistance(
+      payload.origin.lat,
+      payload.origin.lng,
+      payload.destination.lat,
+      payload.destination.lng,
+    );
+    const distanceMiles = distanceKm * 0.621371;
+
     const ride = await this.ridesService.createRide({
       origin_address: payload.origin.address,
       destination_address: payload.destination.address,
@@ -182,13 +211,17 @@ export class RidesFlowService {
       destination_latitude: payload.destination.lat,
       destination_longitude: payload.destination.lng,
       ride_time: payload.minutes,
-      fare_price: 0,
+      fare_price: pricingResult.totalFare, // ✅ Usar precio calculado correctamente
       payment_status: 'pending',
       user_id: payload.userId,
       tier_id: payload.tierId,
       vehicle_type_id: payload.vehicleTypeId,
       driver_id: undefined,
     } as any);
+
+    // Log del cálculo de precio para debugging
+    this.logger.log(`💰 Ride ${ride.rideId} created with calculated price: ${pricingResult.totalFare}`);
+    this.logger.log(`📍 Geographic pricing applied: City=${pricingResult.geographic?.city}, Total multiplier=${pricingResult.breakdown.geographicMultiplier}`);
 
     // Note: Driver notifications moved to after payment confirmation
     // This ensures users pay before drivers are notified

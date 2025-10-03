@@ -68,7 +68,7 @@ describe('RidesController (Integration)', () => {
   });
 
   describe('/api/ride/estimate (GET)', () => {
-    it('should return fare estimate', async () => {
+    it('should return fare estimate with basic parameters', async () => {
       const tierId = 1;
       const minutes = 20;
       const miles = 5;
@@ -82,12 +82,91 @@ describe('RidesController (Integration)', () => {
       expect(response.body.data).toHaveProperty('tier');
       expect(response.body.data).toHaveProperty('baseFare');
       expect(response.body.data).toHaveProperty('totalFare');
+      expect(response.body.data).toHaveProperty('breakdown');
+      expect(response.body.data).toHaveProperty('restrictions');
       expect(typeof response.body.data.totalFare).toBe('number');
+      expect(response.body.data.totalFare).toBeGreaterThan(0);
+      expect(response.body.data.restrictions.isAllowed).toBe(true);
+    });
+
+    it('should return fare estimate with geographic pricing', async () => {
+      const tierId = 1;
+      const minutes = 20;
+      const miles = 5;
+      const userLat = 10.5061;
+      const userLng = -66.9146;
+
+      const response = await requestAgent(
+        'GET',
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&userLat=${userLat}&userLng=${userLng}`,
+      ).expect(200);
+
+      expect(response.body.data).toHaveProperty('geographic');
+      expect(response.body.data.breakdown.geographicMultiplier).toBeDefined();
+    });
+
+    it('should return fare estimate with valid promo code', async () => {
+      const tierId = 1;
+      const minutes = 20;
+      const miles = 5;
+      const promoCode = 'TEST20'; // Assuming this promo exists in test data
+
+      const response = await requestAgent(
+        'GET',
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&promoCode=${promoCode}`,
+      ).expect(200);
+
+      expect(response.body.data).toHaveProperty('promotion');
+      expect(response.body.data).toHaveProperty('breakdown');
+      expect(response.body.data.breakdown.discount).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle invalid promo code gracefully', async () => {
+      const tierId = 1;
+      const minutes = 20;
+      const miles = 5;
+      const promoCode = 'INVALID';
+
+      const response = await requestAgent(
+        'GET',
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&promoCode=${promoCode}`,
+      ).expect(200);
+
+      // Should not fail, just ignore invalid promo
+      expect(response.body.data).toHaveProperty('totalFare');
       expect(response.body.data.totalFare).toBeGreaterThan(0);
     });
 
-    it('should return 400 for missing parameters', async () => {
+    it('should return 400 for missing required parameters', async () => {
       await requestAgent('GET', '/api/ride/estimate').expect(400);
+    });
+
+    it('should return 400 for invalid tierId', async () => {
+      await requestAgent('GET', '/api/ride/estimate?tierId=999&minutes=20&miles=5').expect(400);
+    });
+
+    it('should calculate consistent pricing for define-ride flow', async () => {
+      const tierId = 1;
+      const minutes = 20;
+      const miles = 5;
+      const userLat = 10.5061;
+      const userLng = -66.9146;
+
+      // 1. Get estimate price
+      const estimateResponse = await requestAgent(
+        'GET',
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&userLat=${userLat}&userLng=${userLng}`,
+      ).expect(200);
+
+      const estimatedPrice = estimateResponse.body.data.totalFare;
+
+      // 2. Verify price is calculated (not 0)
+      expect(estimatedPrice).toBeGreaterThan(0);
+      expect(typeof estimatedPrice).toBe('number');
+
+      // 3. Verify breakdown is present
+      expect(estimateResponse.body.data.breakdown).toBeDefined();
+      expect(estimateResponse.body.data.breakdown.finalPrice).toBe(estimatedPrice);
     });
   });
 

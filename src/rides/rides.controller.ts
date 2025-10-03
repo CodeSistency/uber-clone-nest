@@ -64,14 +64,18 @@ export class RidesController {
 
   @Get('estimate')
   @ApiOperation({
-    summary: 'Provide fare estimate based on route and ride tier',
+    summary: 'Provide fare estimate based on route and ride tier with geographic pricing',
+    description: 'Calculates fare estimate including tier multipliers, geographic pricing, temporal rules, and promotional discounts. Validates service availability in the area.',
   })
-  @ApiQuery({ name: 'tierId', description: 'The ID of the ride_tier' })
-  @ApiQuery({ name: 'minutes', description: 'Estimated duration of the ride' })
-  @ApiQuery({ name: 'miles', description: 'Estimated distance of the ride' })
+  @ApiQuery({ name: 'tierId', description: 'The ID of the ride_tier', required: true })
+  @ApiQuery({ name: 'minutes', description: 'Estimated duration of the ride in minutes', required: true })
+  @ApiQuery({ name: 'miles', description: 'Estimated distance of the ride in miles', required: true })
+  @ApiQuery({ name: 'userLat', description: 'User latitude for geographic pricing (optional)', required: false })
+  @ApiQuery({ name: 'userLng', description: 'User longitude for geographic pricing (optional)', required: false })
+  @ApiQuery({ name: 'promoCode', description: 'Promotional code for discount (optional)', required: false })
   @ApiResponse({
     status: 200,
-    description: 'Returns the fare calculation',
+    description: 'Returns comprehensive fare calculation with breakdown',
     schema: {
       type: 'object',
       properties: {
@@ -84,18 +88,64 @@ export class RidesController {
             perMileRate: { type: 'number' },
             estimatedMinutes: { type: 'number' },
             estimatedMiles: { type: 'number' },
-            totalFare: { type: 'number' },
+            geographic: {
+              type: 'object',
+              properties: {
+                city: { type: 'string' },
+                zone: { type: 'string' },
+                appliedMultipliers: {
+                  type: 'object',
+                  properties: {
+                    city: { type: 'number' },
+                    zone: { type: 'number' },
+                    total: { type: 'number' }
+                  }
+                }
+              }
+            },
+            promotion: {
+              type: 'object',
+              properties: {
+                code: { type: 'string' },
+                discount: { type: 'number' },
+                type: { type: 'string', enum: ['percentage', 'fixed'] }
+              }
+            },
+            restrictions: {
+              type: 'object',
+              properties: {
+                isAllowed: { type: 'boolean' },
+                reason: { type: 'string' }
+              }
+            },
+            breakdown: {
+              type: 'object',
+              properties: {
+                basePrice: { type: 'number' },
+                tierMultipliers: { type: 'number' },
+                geographicMultiplier: { type: 'number' },
+                temporalMultiplier: { type: 'number' },
+                priceBeforeDiscount: { type: 'number' },
+                discount: { type: 'number' },
+                finalPrice: { type: 'number' }
+              }
+            },
+            totalFare: { type: 'number', description: 'Final calculated price' },
           },
         },
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Missing required parameters' })
+  @ApiResponse({ status: 400, description: 'Missing required parameters or invalid promo code' })
+  @ApiResponse({ status: 403, description: 'Service not available in this area' })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getFareEstimate(
     @Query('tierId') tierId: string,
     @Query('minutes') minutes: string,
     @Query('miles') miles: string,
+    @Query('userLat') userLat?: string,
+    @Query('userLng') userLng?: string,
+    @Query('promoCode') promoCode?: string,
   ): Promise<{
     data: {
       tier: string;
@@ -104,6 +154,33 @@ export class RidesController {
       perMileRate: number;
       estimatedMinutes: number;
       estimatedMiles: number;
+      geographic?: {
+        city?: string;
+        zone?: string;
+        appliedMultipliers: {
+          city: number;
+          zone: number;
+          total: number;
+        };
+      };
+      promotion?: {
+        code: string;
+        discount: number;
+        type: 'percentage' | 'fixed';
+      };
+      restrictions: {
+        isAllowed: boolean;
+        reason?: string;
+      };
+      breakdown: {
+        basePrice: number;
+        tierMultipliers: number;
+        geographicMultiplier: number;
+        temporalMultiplier: number;
+        priceBeforeDiscount: number;
+        discount: number;
+        finalPrice: number;
+      };
       totalFare: number;
     };
   }> {
@@ -111,6 +188,9 @@ export class RidesController {
       Number(tierId),
       Number(minutes),
       Number(miles),
+      userLat ? Number(userLat) : undefined,
+      userLng ? Number(userLng) : undefined,
+      promoCode,
     );
     return { data: estimate };
   }
