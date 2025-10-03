@@ -30,6 +30,8 @@ import { LocationsModule } from './locations/locations.module';
 import { TestingModule } from './testing/testing.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { CommonModule } from './common/common.module';
+import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
+
 
 @Module({
   imports: [
@@ -67,6 +69,7 @@ import { CommonModule } from './common/common.module';
     LocationsModule,
     TestingModule,
     ReferralsModule,
+    ExchangeRatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

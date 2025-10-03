@@ -1574,5 +1574,31 @@ model ReferralTransaction {
 // No enum needed as we're using VARCHAR(20) for flexibility
 
 // =========================================
+// SECTION: EXCHANGE RATES
+// =========================================
+
+// Exchange rate information from external APIs (like dollar price)
+model ExchangeRate {
+  id                 String    @id @default(cuid())
+  currency           String    @db.VarChar(10)  // "USD", "EUR", etc.
+  rate               Float     // Exchange rate value
+  compra             Float?    // Purchase price (if available)
+  venta              Float?    // Sale price (if available)
+  source             String    @db.VarChar(100) // API source (e.g., "ve.dolarapi.com")
+  casa               String?   @db.VarChar(50)  // Exchange house name (e.g., "oficial")
+  fechaActualizacion DateTime? @map("fecha_actualizacion") // Last update from API
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Indexes for performance
+  @@index([currency, createdAt])
+  @@index([source, createdAt])
+  @@index([casa, createdAt])
+  @@index([fechaActualizacion])
+
+  @@map("exchange_rates")
+}
+
+// =========================================
 // END OF SCHEMA
 // =========================================
