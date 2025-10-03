@@ -202,44 +202,14 @@ export class RidesService {
   async getFareEstimate(
     tierId: number,
     minutes: number,
-    miles: number,
-    userLat?: number,
-    userLng?: number,
-    promoCode?: string,
+    kilometers: number,
   ): Promise<{
     tier: string;
     baseFare: number;
     perMinuteRate: number;
-    perMileRate: number;
+    perKmRate: number;
     estimatedMinutes: number;
-    estimatedMiles: number;
-    geographic?: {
-      city?: string;
-      zone?: string;
-      appliedMultipliers: {
-        city: number;
-        zone: number;
-        total: number;
-      };
-    };
-    promotion?: {
-      code: string;
-      discount: number;
-      type: 'percentage' | 'fixed';
-    };
-    restrictions: {
-      isAllowed: boolean;
-      reason?: string;
-    };
-    breakdown: {
-      basePrice: number;
-      tierMultipliers: number;
-      geographicMultiplier: number;
-      temporalMultiplier: number;
-      priceBeforeDiscount: number;
-      discount: number;
-      finalPrice: number;
-    };
+    estimatedKilometers: number;
     totalFare: number;
   }> {
     // 1. Validate tier exists
@@ -274,100 +244,19 @@ export class RidesService {
     // 3. Calculate base price
     const baseFare = Number(tier.baseFare);
     const perMinuteRate = Number(tier.perMinuteRate);
-    const perMileRate = Number(tier.perMileRate);
+    const perKmRate = Number(tier.perKmRate);
 
-    const basePrice = baseFare + minutes * perMinuteRate + miles * perMileRate;
-
-    // 4. Apply tier multipliers
-    const tierMultiplier = this.calculateTierMultiplier(tier);
-    const priceAfterTier = basePrice * tierMultiplier;
-
-    // 5. Apply geographic multipliers
-    const geographicMultiplier = geographicInfo?.appliedMultipliers?.total || 1.0;
-    const priceAfterGeography = priceAfterTier * geographicMultiplier;
-
-    // 6. Apply temporal multipliers (simplified - could be expanded)
-    const temporalMultiplier = await this.calculateTemporalMultiplier();
-    const priceAfterTemporal = priceAfterGeography * temporalMultiplier;
-
-    // 7. Apply promotion (if provided)
-    let promotionInfo: any = null;
-    let discount = 0;
-    const priceBeforeDiscount = priceAfterTemporal;
-
-    if (promoCode) {
-      const promoValidation = await this.promotionService.validateAndCalculateDiscount(
-        promoCode,
-        priceBeforeDiscount,
-      );
-
-      if (promoValidation.isValid) {
-        discount = promoValidation.discount;
-        promotionInfo = {
-          code: promoValidation.promotion!.code,
-          discount: promoValidation.discount,
-          type: promoValidation.discountType,
-        };
-      } else {
-        this.logger.warn(`Invalid promo code ${promoCode}: ${promoValidation.error}`);
-        // Continue without promotion instead of throwing error
-      }
-    }
-
-    // 8. Calculate final price
-    const finalPrice = Math.max(0, priceBeforeDiscount - discount);
-    const totalFare = Math.round(finalPrice * 100) / 100;
-
-    this.logger.log(`Fare estimate calculated: ${totalFare} for tier ${tier.name}`);
+    const totalFare = baseFare + minutes * perMinuteRate + kilometers * perKmRate;
 
     return {
       tier: tier.name,
       baseFare,
       perMinuteRate,
-      perMileRate,
+      perKmRate,
       estimatedMinutes: minutes,
-      estimatedMiles: miles,
-      geographic: geographicInfo,
-      promotion: promotionInfo,
-      restrictions,
-      breakdown: {
-        basePrice: Math.round(basePrice * 100) / 100,
-        tierMultipliers: Math.round(tierMultiplier * 100) / 100,
-        geographicMultiplier: Math.round(geographicMultiplier * 100) / 100,
-        temporalMultiplier: Math.round(temporalMultiplier * 100) / 100,
-        priceBeforeDiscount: Math.round(priceBeforeDiscount * 100) / 100,
-        discount: Math.round(discount * 100) / 100,
-        finalPrice: totalFare,
-      },
-      totalFare,
+      estimatedKilometers: kilometers,
+      totalFare: Math.round(totalFare * 100) / 100,
     };
-  }
-
-  /**
-   * Calculate combined tier multiplier
-   */
-  private calculateTierMultiplier(tier: any): number {
-    const tierMultiplier = Number(tier.tierMultiplier || 1.0);
-    const surgeMultiplier = Number(tier.surgeMultiplier || 1.0);
-    const demandMultiplier = Number(tier.demandMultiplier || 1.0);
-    const luxuryMultiplier = Number(tier.luxuryMultiplier || 1.0);
-    const comfortMultiplier = Number(tier.comfortMultiplier || 1.0);
-
-    // Combine all multipliers
-    const combined = tierMultiplier * surgeMultiplier * demandMultiplier *
-                    luxuryMultiplier * comfortMultiplier;
-
-    return Math.round(combined * 100) / 100;
-  }
-
-  /**
-   * Calculate temporal multiplier (simplified version)
-   * In production, this would check TemporalPricingRule based on current time
-   */
-  private async calculateTemporalMultiplier(): Promise<number> {
-    // Simplified: always return 1.0
-    // Future: Check current time against TemporalPricingRule
-    return 1.0;
   }
 
   async acceptRide(
@@ -740,7 +629,7 @@ export class RidesService {
                   name: ride.tier.name,
                   baseFare: Number(ride.tier.baseFare),
                   perMinuteRate: Number(ride.tier.perMinuteRate),
-                  perMileRate: Number(ride.tier.perMileRate),
+                  perKmRate: Number(ride.tier.perKmRate),
                 }
               : null,
             user: ride.user
@@ -910,7 +799,7 @@ export class RidesService {
       finalFare =
         Number(tier.baseFare) +
         finalTime * Number(tier.perMinuteRate) +
-        finalDistance * Number(tier.perMileRate);
+        finalDistance * Number(tier.perKmRate);
     }
 
     const updatedRide = await this.prisma.ride.update({

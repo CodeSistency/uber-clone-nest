@@ -38,7 +38,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: 250,
         perMinuteRate: 15,
-        perMileRate: 120,
+        perKmRate: 120,
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,
@@ -55,7 +55,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: 250,
         perMinuteRate: 15,
-        perMileRate: 120,
+        perKmRate: 120,
         imageUrl: null,
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
@@ -82,7 +82,7 @@ describe('RideTiersService', () => {
           name: createDto.name,
           baseFare: createDto.baseFare,
           perMinuteRate: createDto.perMinuteRate,
-          perMileRate: createDto.perMileRate,
+          perKmRate: createDto.perKmRate,
           tierMultiplier: createDto.tierMultiplier,
           surgeMultiplier: createDto.surgeMultiplier,
           demandMultiplier: createDto.demandMultiplier,
@@ -114,7 +114,7 @@ describe('RideTiersService', () => {
         name: 'UberXL',
         baseFare: 400,
         perMinuteRate: 20,
-        perMileRate: 150,
+        perKmRate: 150,
       };
 
       const expectedResult = {
@@ -122,7 +122,7 @@ describe('RideTiersService', () => {
         name: 'UberXL',
         baseFare: 400,
         perMinuteRate: 20,
-        perMileRate: 150,
+        perKmRate: 150,
         imageUrl: null,
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
@@ -157,7 +157,7 @@ describe('RideTiersService', () => {
           name: 'UberX',
           baseFare: 250,
           perMinuteRate: 15,
-          perMileRate: 120,
+          perKmRate: 120,
           imageUrl: null,
           tierMultiplier: 1.0,
           surgeMultiplier: 1.0,
@@ -179,7 +179,7 @@ describe('RideTiersService', () => {
           name: 'UberXL',
           baseFare: 400,
           perMinuteRate: 20,
-          perMileRate: 150,
+          perKmRate: 150,
           imageUrl: null,
           tierMultiplier: 1.0,
           surgeMultiplier: 1.0,
@@ -216,7 +216,7 @@ describe('RideTiersService', () => {
           name: 'UberX',
           baseFare: 250,
           perMinuteRate: 15,
-          perMileRate: 120,
+          perKmRate: 120,
           imageUrl: null,
           tierMultiplier: 1.0,
           surgeMultiplier: 1.0,
@@ -267,7 +267,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: 250,
         perMinuteRate: 15,
-        perMileRate: 120,
+        perKmRate: 120,
         imageUrl: null,
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
@@ -320,7 +320,7 @@ describe('RideTiersService', () => {
         name: 'UberX Premium',
         baseFare: 300,
         perMinuteRate: 20,
-        perMileRate: 130,
+        perKmRate: 130,
       };
 
       const existingTier = {
@@ -328,7 +328,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: 250,
         perMinuteRate: 15,
-        perMileRate: 120,
+        perKmRate: 120,
         imageUrl: null,
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
@@ -348,7 +348,7 @@ describe('RideTiersService', () => {
         name: 'UberX Premium',
         baseFare: 300,
         perMinuteRate: 20,
-        perMileRate: 130,
+        perKmRate: 130,
         imageUrl: null,
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
@@ -382,7 +382,7 @@ describe('RideTiersService', () => {
           name: 'Test',
           baseFare: 100,
           perMinuteRate: 10,
-          perMileRate: 50,
+          perKmRate: 50,
         }),
       ).rejects.toThrow(NotFoundException);
     });
@@ -406,7 +406,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: new Decimal(250),
         perMinuteRate: new Decimal(15),
-        perMileRate: new Decimal(120),
+        perKmRate: new Decimal(120),
         imageUrl: null,
         tierMultiplier: new Decimal(1.0),
         surgeMultiplier: new Decimal(1.0),
@@ -454,7 +454,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: new Decimal(200),
         perMinuteRate: new Decimal(10),
-        perMileRate: new Decimal(100),
+        perKmRate: new Decimal(100),
         imageUrl: null,
         tierMultiplier: new Decimal(1.0),
         surgeMultiplier: new Decimal(1.0),
@@ -556,7 +556,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: new Decimal(250),
         perMinuteRate: new Decimal(15),
-        perMileRate: new Decimal(120),
+        perKmRate: new Decimal(120),
         imageUrl: null,
         tierMultiplier: new Decimal(1.0),
         surgeMultiplier: new Decimal(1.0),
@@ -573,7 +573,7 @@ describe('RideTiersService', () => {
 
       const result = await service.createStandardTiers();
 
-      expect(result.message).toContain('Standard tiers creation completed');
+      expect(result.message).toContain('Standard tiers and combinations creation completed');
       expect(result.created).toBeGreaterThan(0);
       expect(mockPrismaService.rideTier.create).toHaveBeenCalled();
     });
@@ -585,7 +585,7 @@ describe('RideTiersService', () => {
         name: 'UberX',
         baseFare: 250,
         perMinuteRate: 15,
-        perMileRate: 120,
+        perKmRate: 120,
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,
@@ -608,7 +608,7 @@ describe('RideTiersService', () => {
         name: 'Invalid Tier',
         baseFare: 0, // Invalid: zero base fare
         perMinuteRate: 0, // Invalid: zero per minute
-        perMileRate: 0, // Invalid: zero per mile
+        perKmRate: 0, // Invalid: zero per mile
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,

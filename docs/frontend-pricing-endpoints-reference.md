@@ -40,7 +40,7 @@ interface RideTier {
   description?: string;
   baseFare: number;           // Base fare in cents
   perMinuteRate: number;      // Rate per minute in cents
-  perMileRate: number;        // Rate per mile in cents
+  perKmRate: number;          // Rate per kilometer in cents
   minimumFare?: number;       // Minimum fare in cents
   maximumFare?: number;       // Maximum fare in cents
   bookingFee?: number;        // Booking fee in cents
@@ -79,7 +79,7 @@ interface CreateRideTierDto {
   description?: string;            // Optional: max 500 chars
   baseFare: number;                // Required: 0-10000 cents
   perMinuteRate: number;           // Required: 0-500 cents
-  perMileRate: number;             // Required: 0-1000 cents
+  perKmRate: number;               // Required: 0-1000 cents (rate per kilometer)
   minimumFare?: number;            // Optional: 0-5000 cents
   maximumFare?: number;            // Optional: 1000-100000 cents
   bookingFee?: number;             // Optional: 0-2000 cents
@@ -92,6 +92,7 @@ interface CreateRideTierDto {
   maxPassengers?: number;          // Optional: 1-8, default: 4
   isActive?: boolean;              // Optional: default true
   priority?: number;               // Optional: 1-100, default: 1
+  vehicleTypeIds?: number[];       // Optional: Vehicle type IDs to associate
   countryId?: number;              // Optional: geographic scope
   stateId?: number;                // Optional: geographic scope
   cityId?: number;                 // Optional: geographic scope
@@ -152,7 +153,7 @@ interface UpdateRideTierDto {
   description?: string;            // Optional: max 500 chars
   baseFare?: number;               // Optional: 0-10000 cents
   perMinuteRate?: number;          // Optional: 0-500 cents
-  perMileRate?: number;            // Optional: 0-1000 cents
+  perKmRate?: number;             // Optional: 0-1000 cents
   minimumFare?: number;            // Optional: 0-5000 cents
   maximumFare?: number;            // Optional: 1000-100000 cents
   bookingFee?: number;             // Optional: 0-2000 cents
@@ -235,7 +236,7 @@ interface PricingCalculationResultDto {
     name: string;
     baseFare: number;           // Base fare in cents
     perMinuteRate: number;      // Per minute rate in cents
-    perMileRate: number;        // Per mile rate in cents
+    perKmRate: number;          // Per kilometer rate in cents
   };
   distance: number;             // Distance used in calculation
   duration: number;             // Duration used in calculation
@@ -281,7 +282,7 @@ interface PricingValidationDto {
     name?: string;
     baseFare?: number;
     perMinuteRate?: number;
-    perMileRate?: number;
+    perKmRate?: number;
     minimumFare?: number;
     maximumFare?: number;
     bookingFee?: number;
@@ -315,7 +316,7 @@ interface PricingValidationResultDto {
       name: string;
       baseFare: number;
       perMinuteRate: number;
-      perMileRate: number;
+      perKmRate: number;
     };
     differences: Array<{
       field: string;
@@ -329,6 +330,58 @@ interface PricingValidationResultDto {
 ```
 
 **Status Codes:** `200 OK`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`
+
+---
+
+### `GET /admin/pricing/ride-tiers/vehicle-types`
+
+**Purpose:** Get available vehicle types for tier association
+
+**Response:**
+```typescript
+interface VehicleTypesResponse {
+  vehicleTypes: VehicleType[];
+}
+
+interface VehicleType {
+  id: number;
+  name: string;            // Internal name (e.g., "car", "motorcycle")
+  displayName: string;     // Human readable name (e.g., "Carro", "Moto")
+  icon: string;           // Emoji icon (e.g., "🚗", "🏍️")
+  isActive: boolean;
+}
+```
+
+**Example Response:**
+```json
+{
+  "vehicleTypes": [
+    {
+      "id": 1,
+      "name": "car",
+      "displayName": "Carro",
+      "icon": "🚗",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "motorcycle",
+      "displayName": "Moto",
+      "icon": "🏍️",
+      "isActive": true
+    },
+    {
+      "id": 3,
+      "name": "bicycle",
+      "displayName": "Bicicleta",
+      "icon": "🚲",
+      "isActive": true
+    }
+  ]
+}
+```
+
+**Status Codes:** `200 OK`, `401 Unauthorized`, `403 Forbidden`
 
 ---
 
@@ -362,7 +415,7 @@ interface BulkRideTierUpdateDto {
   tierIds: number[];      // Array of ride tier IDs to update
   adjustmentType: 'percentage' | 'absolute' | 'multiplier';
   adjustmentValue: number; // Adjustment value (percentage, amount in cents, or multiplier)
-  field: 'baseFare' | 'perMinuteRate' | 'perMileRate' | 'bookingFee' | 'tierMultiplier' | 'surgeMultiplier' | 'demandMultiplier';
+  field: 'baseFare' | 'perMinuteRate' | 'perKmRate' | 'bookingFee' | 'tierMultiplier' | 'surgeMultiplier' | 'demandMultiplier';
   condition?: {           // Optional condition for selective updates
     countryId?: number;
     stateId?: number;

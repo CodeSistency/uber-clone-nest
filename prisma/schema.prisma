@@ -335,7 +335,7 @@ model RideTier {
   name          String  @db.VarChar(50)
   baseFare      Decimal @map("base_fare") @db.Decimal(10, 2)
   perMinuteRate Decimal @map("per_minute_rate") @db.Decimal(10, 2)
-  perMileRate   Decimal @map("per_mile_rate") @db.Decimal(10, 2)
+  perKmRate     Decimal @map("per_km_rate") @db.Decimal(10, 2)
   imageUrl      String? @map("image_url")
 
   // Tier-specific multipliers

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsUrl,
   IsBoolean,
+  IsArray,
   Min,
   Max,
 } from 'class-validator';
@@ -40,14 +41,14 @@ export class CreateRideTierDto {
   perMinuteRate: number;
 
   @ApiProperty({
-    description: 'Rate per mile/kilometer in cents',
-    example: 120,
+    description: 'Rate per kilometer in cents',
+    example: 80,
   })
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   @Max(1000)
-  perMileRate: number;
+  perKmRate: number;
 
   @ApiPropertyOptional({
     description: 'Image URL for the tier',
@@ -162,6 +163,17 @@ export class CreateRideTierDto {
   @Min(1)
   @Max(100)
   priority?: number = 1;
+
+  @ApiPropertyOptional({
+    description: 'Vehicle type IDs to associate with this tier',
+    example: [1, 2],
+    type: [Number],
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsArray()
+  @IsNumber({}, { each: true })
+  vehicleTypeIds?: number[];
 }
 
 export class UpdateRideTierDto extends CreateRideTierDto {
@@ -201,10 +213,10 @@ export class RideTierResponseDto {
   perMinuteRate: number;
 
   @ApiProperty({
-    description: 'Rate per mile/kilometer in cents',
-    example: 120,
+    description: 'Rate per kilometer in cents',
+    example: 80,
   })
-  perMileRate: number;
+  perKmRate: number;
 
   @ApiPropertyOptional({
     description: 'Image URL',
@@ -467,7 +479,7 @@ export class PricingCalculationResultDto {
     name: string;
     baseFare: number;
     perMinuteRate: number;
-    perMileRate: number;
+    perKmRate: number;
     tierMultiplier: number;
     surgeMultiplier: number;
     demandMultiplier: number;
@@ -573,12 +585,12 @@ export class PricingValidationResultDto {
       name: string;
       baseFare: number;
       perMinuteRate: number;
-      perMileRate: number;
+      perKmRate: number;
     };
     differences: {
       baseFare: number;
       perMinuteRate: number;
-      perMileRate: number;
+      perKmRate: number;
     };
     competitiveness: 'more_expensive' | 'similar' | 'more_competitive';
   };

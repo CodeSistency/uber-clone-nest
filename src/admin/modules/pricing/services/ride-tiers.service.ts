@@ -49,7 +49,7 @@ export class RideTiersService {
         name: createRideTierDto.name,
         baseFare: createRideTierDto.baseFare,
         perMinuteRate: createRideTierDto.perMinuteRate,
-        perMileRate: createRideTierDto.perMileRate,
+        perKmRate: createRideTierDto.perKmRate,
         imageUrl: createRideTierDto.imageUrl,
         tierMultiplier: createRideTierDto.tierMultiplier || 1.0,
         surgeMultiplier: createRideTierDto.surgeMultiplier || 1.0,
@@ -74,6 +74,21 @@ export class RideTiersService {
         },
       },
     });
+
+    // Create vehicle type associations if provided
+    if (createRideTierDto.vehicleTypeIds && createRideTierDto.vehicleTypeIds.length > 0) {
+      await this.prisma.tierVehicleType.createMany({
+        data: createRideTierDto.vehicleTypeIds.map(vehicleTypeId => ({
+          tierId: tier.id,
+          vehicleTypeId,
+          isActive: true,
+        })),
+      });
+
+      this.logger.log(
+        `Created ${createRideTierDto.vehicleTypeIds.length} vehicle type associations for tier: ${tier.name}`,
+      );
+    }
 
     this.logger.log(
       `Ride tier created: ${tier.name} (${tier.baseFare}¢ base fare)`,
@@ -211,7 +226,7 @@ export class RideTiersService {
         name: updateRideTierDto.name,
         baseFare: updateRideTierDto.baseFare,
         perMinuteRate: updateRideTierDto.perMinuteRate,
-        perMileRate: updateRideTierDto.perMileRate,
+        perKmRate: updateRideTierDto.perKmRate,
         imageUrl: updateRideTierDto.imageUrl,
         tierMultiplier: updateRideTierDto.tierMultiplier,
         surgeMultiplier: updateRideTierDto.surgeMultiplier,
@@ -298,7 +313,7 @@ export class RideTiersService {
 
     // Calculate base pricing
     const baseFare = Number(tier.baseFare);
-    const distanceCost = distance * Number(tier.perMileRate);
+    const distanceCost = distance * Number(tier.perKmRate);
     const timeCost = duration * Number(tier.perMinuteRate);
     const subtotal = baseFare + distanceCost + timeCost;
 
@@ -342,7 +357,7 @@ export class RideTiersService {
         name: tier.name,
         baseFare: Number(tier.baseFare),
         perMinuteRate: Number(tier.perMinuteRate),
-        perMileRate: Number(tier.perMileRate),
+        perKmRate: Number(tier.perKmRate),
         tierMultiplier: Number(tier.tierMultiplier),
         surgeMultiplier: Number(tier.surgeMultiplier),
         demandMultiplier: Number(tier.demandMultiplier),
@@ -396,7 +411,7 @@ export class RideTiersService {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    const { baseFare, perMinuteRate, perMileRate } = pricingDto;
+    const { baseFare, perMinuteRate, perKmRate } = pricingDto;
 
     // Basic validation rules
     if (baseFare < 50) {
@@ -415,16 +430,16 @@ export class RideTiersService {
       errors.push('Per minute rate cannot exceed 200 cents');
     }
 
-    if (perMileRate < 20) {
-      errors.push('Per mile rate must be at least 20 cents');
+    if (perKmRate < 20) {
+      errors.push('Per km rate must be at least 20 cents');
     }
 
-    if (perMileRate > 500) {
-      errors.push('Per mile rate cannot exceed 500 cents');
+    if (perKmRate > 500) {
+      errors.push('Per km rate cannot exceed 500 cents ($5 per km)');
     }
 
-    // Business logic validations
-    const totalForTypicalRide = baseFare + 15 * perMinuteRate + 5 * perMileRate; // 15 min, 5 miles
+    // Business logic validations - assuming 5km typical ride
+    const totalForTypicalRide = baseFare + 15 * perMinuteRate + 5 * perKmRate; // 15 min, 5km
 
     if (totalForTypicalRide < 500) {
       warnings.push(
@@ -447,9 +462,9 @@ export class RideTiersService {
         const existingTotal =
           Number(existingTier.baseFare) +
           15 * Number(existingTier.perMinuteRate) +
-          5 * Number(existingTier.perMileRate);
+          5 * Number(existingTier.perKmRate);
 
-        const newTotal = baseFare + 15 * perMinuteRate + 5 * perMileRate;
+        const newTotal = baseFare + 15 * perMinuteRate + 5 * perKmRate;
         const difference = newTotal - existingTotal;
 
         comparison = {
@@ -458,12 +473,12 @@ export class RideTiersService {
             name: existingTier.name,
             baseFare: Number(existingTier.baseFare),
             perMinuteRate: Number(existingTier.perMinuteRate),
-            perMileRate: Number(existingTier.perMileRate),
+            perKmRate: Number(existingTier.perKmRate),
           },
           differences: {
             baseFare: baseFare - Number(existingTier.baseFare),
             perMinuteRate: perMinuteRate - Number(existingTier.perMinuteRate),
-            perMileRate: perMileRate - Number(existingTier.perMileRate),
+            perKmRate: perKmRate - Number(existingTier.perKmRate),
           },
           competitiveness:
             Math.abs(difference) < 100
@@ -489,7 +504,7 @@ export class RideTiersService {
         name: 'UberX',
         baseFare: 250, // $2.50
         perMinuteRate: 15, // $0.15/min
-        perMileRate: 120, // $1.20/mile
+        perKmRate: 80, // $0.80/km
         tierMultiplier: 1.0, // Economy
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,
@@ -498,12 +513,14 @@ export class RideTiersService {
         minPassengers: 1,
         maxPassengers: 4,
         priority: 10,
+        // Asociar con: Car, Motorcycle
+        vehicleTypeNames: ['car', 'motorcycle'],
       },
       {
         name: 'UberXL',
         baseFare: 350, // $3.50
         perMinuteRate: 20, // $0.20/min
-        perMileRate: 150, // $1.50/mile
+        perKmRate: 100, // $1.00/km
         tierMultiplier: 1.3, // Comfort
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,
@@ -512,12 +529,14 @@ export class RideTiersService {
         minPassengers: 1,
         maxPassengers: 6,
         priority: 9,
+        // Asociar con: Car, Motorcycle, Bicycle
+        vehicleTypeNames: ['car', 'motorcycle', 'bicycle'],
       },
       {
         name: 'Comfort',
         baseFare: 400, // $4.00
         perMinuteRate: 25, // $0.25/min
-        perMileRate: 180, // $1.80/mile
+        perKmRate: 120, // $1.20/km
         tierMultiplier: 1.8, // Premium
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,
@@ -526,12 +545,14 @@ export class RideTiersService {
         minPassengers: 1,
         maxPassengers: 4,
         priority: 8,
+        // Asociar con: Car
+        vehicleTypeNames: ['car'],
       },
       {
         name: 'Uber Black',
         baseFare: 800, // $8.00
         perMinuteRate: 40, // $0.40/min
-        perMileRate: 350, // $3.50/mile
+        perKmRate: 250, // $2.50/km
         tierMultiplier: 2.5, // Luxury
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,
@@ -540,10 +561,13 @@ export class RideTiersService {
         minPassengers: 1,
         maxPassengers: 4,
         priority: 7,
+        // Asociar con: Car
+        vehicleTypeNames: ['car'],
       },
     ];
 
     const createdTiers: any[] = [];
+    const createdCombinations: any[] = [];
     const errors: string[] = [];
 
     for (const tierData of standardTiers) {
@@ -553,16 +577,69 @@ export class RideTiersService {
           where: { name: tierData.name },
         });
 
+        let tier: any;
         if (!existing) {
-          const tier = await this.create({
-            ...tierData,
-            baseFare: tierData.baseFare,
-            perMinuteRate: tierData.perMinuteRate,
-            perMileRate: tierData.perMileRate,
+          const { vehicleTypeNames, ...createData } = tierData;
+          tier = await this.create({
+            ...createData,
+            baseFare: createData.baseFare,
+            perMinuteRate: createData.perMinuteRate,
+            perKmRate: createData.perKmRate,
           } as CreateRideTierDto);
           createdTiers.push(tier);
         } else {
+          tier = existing;
           errors.push(`Tier "${tierData.name}" already exists`);
+        }
+
+        // Create vehicle type associations
+        if (tier && tierData.vehicleTypeNames) {
+          for (const vehicleTypeName of tierData.vehicleTypeNames) {
+            try {
+              // Find vehicle type by name
+              const vehicleType = await this.prisma.vehicleType.findFirst({
+                where: { name: vehicleTypeName },
+              });
+
+              if (vehicleType) {
+                // Check if combination already exists
+                const existingCombination = await this.prisma.tierVehicleType.findFirst({
+                  where: {
+                    tierId: tier.id,
+                    vehicleTypeId: vehicleType.id,
+                  },
+                });
+
+                if (!existingCombination) {
+                  const combination = await this.prisma.tierVehicleType.create({
+                    data: {
+                      tierId: tier.id,
+                      vehicleTypeId: vehicleType.id,
+                      isActive: true,
+                    },
+                    include: {
+                      tier: true,
+                      vehicleType: true,
+                    },
+                  });
+                  createdCombinations.push(combination);
+                  this.logger.log(
+                    `Created tier-vehicle combination: ${tier.name} + ${vehicleType.displayName}`,
+                  );
+                } else {
+                  this.logger.log(
+                    `Tier-vehicle combination already exists: ${tier.name} + ${vehicleType.displayName}`,
+                  );
+                }
+              } else {
+                errors.push(`Vehicle type "${vehicleTypeName}" not found`);
+              }
+            } catch (error) {
+              errors.push(
+                `Failed to create combination "${tierData.name}" + "${vehicleTypeName}": ${(error as Error).message}`,
+              );
+            }
+          }
         }
       } catch (error) {
         errors.push(
@@ -572,10 +649,12 @@ export class RideTiersService {
     }
 
     return {
-      message: 'Standard tiers creation completed',
+      message: 'Standard tiers and combinations creation completed',
       created: createdTiers.length,
+      combinations: createdCombinations.length,
       errors: errors.length,
       tiers: createdTiers,
+      createdCombinations: createdCombinations,
       errorMessages: errors,
     };
   }
@@ -633,6 +712,25 @@ export class RideTiersService {
     };
 
     return summary;
+  }
+
+  async getVehicleTypes() {
+    const vehicleTypes = await this.prisma.vehicleType.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: [
+        { displayName: 'asc' },
+      ],
+    });
+
+    return vehicleTypes.map(vehicleType => ({
+      id: vehicleType.id,
+      name: vehicleType.name,
+      displayName: vehicleType.displayName,
+      icon: vehicleType.icon,
+      isActive: vehicleType.isActive,
+    }));
   }
 
   private async getRegionalMultipliers(
@@ -736,7 +834,7 @@ export class RideTiersService {
       ...tier,
       baseFare: Number(tier.baseFare),
       perMinuteRate: Number(tier.perMinuteRate),
-      perMileRate: Number(tier.perMileRate),
+      perKmRate: Number(tier.perKmRate),
       tierMultiplier: Number(tier.tierMultiplier),
       surgeMultiplier: Number(tier.surgeMultiplier),
       demandMultiplier: Number(tier.demandMultiplier),

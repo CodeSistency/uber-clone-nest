@@ -67,12 +67,9 @@ export class RidesController {
     summary: 'Provide fare estimate based on route and ride tier with geographic pricing',
     description: 'Calculates fare estimate including tier multipliers, geographic pricing, temporal rules, and promotional discounts. Validates service availability in the area.',
   })
-  @ApiQuery({ name: 'tierId', description: 'The ID of the ride_tier', required: true })
-  @ApiQuery({ name: 'minutes', description: 'Estimated duration of the ride in minutes', required: true })
-  @ApiQuery({ name: 'miles', description: 'Estimated distance of the ride in miles', required: true })
-  @ApiQuery({ name: 'userLat', description: 'User latitude for geographic pricing (optional)', required: false })
-  @ApiQuery({ name: 'userLng', description: 'User longitude for geographic pricing (optional)', required: false })
-  @ApiQuery({ name: 'promoCode', description: 'Promotional code for discount (optional)', required: false })
+  @ApiQuery({ name: 'tierId', description: 'The ID of the ride_tier' })
+  @ApiQuery({ name: 'minutes', description: 'Estimated duration of the ride' })
+  @ApiQuery({ name: 'kilometers', description: 'Estimated distance of the ride in kilometers' })
   @ApiResponse({
     status: 200,
     description: 'Returns comprehensive fare calculation with breakdown',
@@ -142,55 +139,22 @@ export class RidesController {
   async getFareEstimate(
     @Query('tierId') tierId: string,
     @Query('minutes') minutes: string,
-    @Query('miles') miles: string,
-    @Query('userLat') userLat?: string,
-    @Query('userLng') userLng?: string,
-    @Query('promoCode') promoCode?: string,
+    @Query('kilometers') kilometers: string,
   ): Promise<{
     data: {
       tier: string;
       baseFare: number;
       perMinuteRate: number;
-      perMileRate: number;
+      perKmRate: number;
       estimatedMinutes: number;
-      estimatedMiles: number;
-      geographic?: {
-        city?: string;
-        zone?: string;
-        appliedMultipliers: {
-          city: number;
-          zone: number;
-          total: number;
-        };
-      };
-      promotion?: {
-        code: string;
-        discount: number;
-        type: 'percentage' | 'fixed';
-      };
-      restrictions: {
-        isAllowed: boolean;
-        reason?: string;
-      };
-      breakdown: {
-        basePrice: number;
-        tierMultipliers: number;
-        geographicMultiplier: number;
-        temporalMultiplier: number;
-        priceBeforeDiscount: number;
-        discount: number;
-        finalPrice: number;
-      };
+      estimatedKilometers: number;
       totalFare: number;
     };
   }> {
     const estimate = await this.ridesService.getFareEstimate(
       Number(tierId),
       Number(minutes),
-      Number(miles),
-      userLat ? Number(userLat) : undefined,
-      userLng ? Number(userLng) : undefined,
-      promoCode,
+      Number(kilometers),
     );
     return { data: estimate };
   }

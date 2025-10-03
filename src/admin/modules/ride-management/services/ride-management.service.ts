@@ -185,21 +185,9 @@ export class RideManagementService {
       where: { rideId },
       include: {
         driver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profileImageUrl: true,
-            averageRating: true,
-            phone: true,
-            email: true,
+          include: {
             vehicles: {
               where: { isDefault: true },
-              select: {
-                make: true,
-                model: true,
-                licensePlate: true,
-              },
               take: 1,
             },
           },
@@ -218,7 +206,7 @@ export class RideManagementService {
             name: true,
             baseFare: true,
             perMinuteRate: true,
-            perMileRate: true,
+            perKmRate: true,
           },
         },
         ratings: {

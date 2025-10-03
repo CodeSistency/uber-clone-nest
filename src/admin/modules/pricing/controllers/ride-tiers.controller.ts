@@ -242,6 +242,21 @@ export class RideTiersController {
     return { summary };
   }
 
+  @Get('vehicle-types')
+  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @ApiOperation({
+    summary: 'Obtener tipos de vehículo',
+    description: 'Obtiene la lista de tipos de vehículo disponibles para asociar con tiers',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tipos de vehículo obtenidos exitosamente',
+  })
+  async getVehicleTypes() {
+    const vehicleTypes = await this.rideTiersService.getVehicleTypes();
+    return { vehicleTypes };
+  }
+
   @Post('bulk-update')
   @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
   @ApiOperation({

@@ -357,7 +357,7 @@ async function main() {
         name: 'Economy',
         baseFare: 2.5,
         perMinuteRate: 0.15,
-        perMileRate: 1.25,
+        perKmRate: 80,
         imageUrl:
           'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=100',
       },
@@ -367,7 +367,7 @@ async function main() {
         name: 'Comfort',
         baseFare: 4.0,
         perMinuteRate: 0.25,
-        perMileRate: 2.0,
+        perKmRate: 120,
         imageUrl:
           'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=100',
       },
@@ -377,7 +377,7 @@ async function main() {
         name: 'Premium',
         baseFare: 6.0,
         perMinuteRate: 0.35,
-        perMileRate: 3.0,
+        perKmRate: 200,
         imageUrl:
           'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=100',
       },

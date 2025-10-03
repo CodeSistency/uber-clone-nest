@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "public"."rides" ADD COLUMN     "status" VARCHAR(20) NOT NULL DEFAULT 'pending',
-ADD COLUMN     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

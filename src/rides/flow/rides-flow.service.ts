@@ -73,7 +73,7 @@ export class RidesFlowService {
         name: combo.tier.name,
         baseFare: combo.tier.baseFare,
         perMinuteRate: combo.tier.perMinuteRate,
-        perMileRate: combo.tier.perMileRate,
+        perKmRate: combo.tier.perKmRate,
         imageUrl: combo.tier.imageUrl,
         vehicleTypeId: combo.vehicleTypeId,
         vehicleTypeName: combo.vehicleType.displayName,
@@ -123,7 +123,7 @@ export class RidesFlowService {
         name: combo.tier.name,
         baseFare: combo.tier.baseFare,
         perMinuteRate: combo.tier.perMinuteRate,
-        perMileRate: combo.tier.perMileRate,
+        perKmRate: combo.tier.perKmRate,
         imageUrl: combo.tier.imageUrl,
         vehicleTypeId: combo.vehicleTypeId,
         vehicleTypeName: combo.vehicleType.displayName,
@@ -1813,9 +1813,9 @@ export class RidesFlowService {
 
     const baseFare = Number(tier.baseFare);
     const perMinuteRate = Number(tier.perMinuteRate);
-    const perMileRate = Number(tier.perMileRate);
+    const perKmRate = Number(tier.perKmRate);
 
-    const fare = baseFare + minutes * perMinuteRate + distanceKm * perMileRate;
+    const fare = baseFare + minutes * perMinuteRate + distanceKm * perKmRate;
     return Math.round(fare * 100) / 100; // Redondear a 2 decimales
   }
 
