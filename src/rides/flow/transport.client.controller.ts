@@ -33,6 +33,13 @@ import {
   ConfirmPaymentWithReferenceDto,
 } from './dto/transport-flow.dtos';
 import { PaymentsService } from '../../payments/payments.service';
+import { AsyncMatchingService } from '../../rides/services/async-matching.service';
+import {
+  StartAsyncDriverSearchDto,
+  CancelAsyncSearchDto,
+  GetAsyncSearchStatusDto,
+  ConfirmAsyncDriverDto,
+} from './dto/transport-flow.dtos';
 
 @ApiTags('rides-flow-client')
 @ApiBearerAuth('JWT-auth')
@@ -44,6 +51,7 @@ export class TransportClientController {
     private readonly paymentsService: PaymentsService,
     private readonly prisma: PrismaService,
     private readonly locationTrackingService: LocationTrackingService,
+    private readonly asyncMatchingService: AsyncMatchingService,
   ) {}
 
   @Get('tiers')
@@ -2041,6 +2049,428 @@ export class TransportClientController {
       return { data: simulatedDrivers };
     } catch (error) {
       console.error('Error simulating driver locations:', error);
+      throw error;
+    }
+  }
+
+  // =========================================
+  // ASYNC DRIVER MATCHING ENDPOINTS
+  // =========================================
+
+  @Post('async-search/start')
+  @ApiOperation({
+    summary: '🚀 Iniciar búsqueda asíncrona de conductor',
+    description: `
+    **BÚSQUEDA CONTINUA DE CONDUCTORES - NUEVA EXPERIENCIA**
+
+    Este endpoint inicia una búsqueda inteligente que continúa ejecutándose en segundo plano,
+    notificando al usuario cuando encuentra un conductor óptimo. Soluciona el problema
+    del endpoint síncrono que solo busca en el momento exacto de la petición.
+
+    **🚀 Características principales:**
+
+    ✅ **Búsqueda continua:** Sigue buscando incluso si no hay conductores inicialmente
+    ✅ **Notificaciones en tiempo real:** WebSocket events cuando encuentra conductor
+    ✅ **Detección de nuevos conductores:** Reacciona cuando conductores se conectan
+    ✅ **Sistema de prioridades:** Búsquedas high/normal/low con diferentes frecuencias
+    ✅ **Timeouts inteligentes:** Cancela automáticamente después del tiempo límite
+    ✅ **Límite de concurrencia:** Máximo 100 búsquedas simultáneas por servidor
+
+    **🎯 Flujo típico:**
+    1. Usuario inicia búsqueda → Obtiene searchId inmediatamente
+    2. Sistema busca periódicamente (cada 3-30 segundos según prioridad)
+    3. Cuando encuentra conductor → Notifica via WebSocket
+    4. Usuario confirma conductor → Completa el matching
+    5. Si expira tiempo → Notifica timeout
+
+    **⚡ Ventajas sobre el endpoint síncrono:**
+    - ✅ **Mejor UX:** No hay esperas frustrantes
+    - ✅ **Mayor éxito:** Detecta conductores que se conectan después
+    - ✅ **Escalabilidad:** Maneja mejor picos de demanda
+    - ✅ **Concurrencia:** Sin race conditions
+    - ✅ **Transparencia:** Usuario ve progreso en tiempo real
+    `,
+  })
+  @ApiBody({
+    type: StartAsyncDriverSearchDto,
+    examples: {
+      basic_search: {
+        summary: '🔍 Búsqueda básica',
+        description: 'Búsqueda normal por 5 minutos en radio de 5km',
+        value: {
+          lat: 4.6097,
+          lng: -74.0817,
+        },
+      },
+      priority_search: {
+        summary: '🚀 Búsqueda prioritaria',
+        description: 'Búsqueda rápida (alta prioridad) por 10 minutos',
+        value: {
+          lat: 4.6097,
+          lng: -74.0817,
+          priority: 'high',
+          maxWaitTime: 600,
+          radiusKm: 8,
+        },
+      },
+      specific_requirements: {
+        summary: '🎯 Requisitos específicos',
+        description: 'Busca conductor con moto (tier Economy) en zona específica',
+        value: {
+          lat: 10.4998,
+          lng: -66.8517,
+          tierId: 1,
+          vehicleTypeId: 2,
+          radiusKm: 3,
+          priority: 'normal',
+          maxWaitTime: 300,
+          websocketRoom: 'user-123',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Búsqueda iniciada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            searchId: {
+              type: 'string',
+              example: 'search-123e4567-e89b-12d3-a456-426614174000',
+            },
+            status: { type: 'string', example: 'searching' },
+            message: {
+              type: 'string',
+              example: 'Buscando el mejor conductor disponible...',
+            },
+            searchCriteria: {
+              type: 'object',
+              properties: {
+                lat: { type: 'number', example: 4.6097 },
+                lng: { type: 'number', example: -74.0817 },
+                tierId: { type: 'number', example: 1, nullable: true },
+                vehicleTypeId: { type: 'number', example: 1, nullable: true },
+                radiusKm: { type: 'number', example: 5 },
+                maxWaitTime: { type: 'number', example: 300 },
+                priority: { type: 'string', example: 'normal' },
+              },
+            },
+            timeRemaining: { type: 'number', example: 300 },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Usuario ya tiene una búsqueda activa',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'USER_ALREADY_HAS_ACTIVE_SEARCH' },
+        message: {
+          type: 'string',
+          example: 'Ya tienes una búsqueda activa. Cancélala antes de iniciar una nueva.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Límite de búsquedas concurrentes alcanzado',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'MAX_CONCURRENT_SEARCHES' },
+        message: {
+          type: 'string',
+          example: 'Demasiadas búsquedas activas. Intenta nuevamente en unos minutos.',
+        },
+      },
+    },
+  })
+  async startAsyncDriverSearch(
+    @Body() body: StartAsyncDriverSearchDto,
+    @Req() req: any,
+  ) {
+    try {
+      const result = await this.asyncMatchingService.startAsyncDriverSearch(
+        Number(req.user.id),
+        {
+          lat: body.lat,
+          lng: body.lng,
+          tierId: body.tierId,
+          vehicleTypeId: body.vehicleTypeId,
+          radiusKm: body.radiusKm,
+          maxWaitTime: body.maxWaitTime,
+          priority: body.priority,
+          websocketRoom: body.websocketRoom,
+        },
+      );
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'User already has an active search') {
+        throw new ConflictException({
+          error: 'USER_ALREADY_HAS_ACTIVE_SEARCH',
+          message: 'Ya tienes una búsqueda activa. Cancélala antes de iniciar una nueva.',
+        });
+      }
+      if (error.message === 'Maximum concurrent searches reached') {
+        throw new ConflictException({
+          error: 'MAX_CONCURRENT_SEARCHES',
+          message: 'Demasiadas búsquedas activas. Intenta nuevamente en unos minutos.',
+        });
+      }
+      throw error;
+    }
+  }
+
+  @Post('async-search/cancel')
+  @ApiOperation({
+    summary: '❌ Cancelar búsqueda asíncrona',
+    description: `
+    **CANCELACIÓN DE BÚSQUEDA ACTIVA**
+
+    Detiene una búsqueda asíncrona que está ejecutándose en segundo plano.
+    Útil cuando el usuario cambia de opinión o encuentra otra alternativa.
+
+    **🛡️ Características:**
+    ✅ **Validación de propiedad:** Solo el usuario que inició puede cancelar
+    ✅ **Limpieza automática:** Libera recursos del servidor
+    ✅ **Notificación WebSocket:** Informa al cliente sobre la cancelación
+    ✅ **Estado final:** La búsqueda queda marcada como 'cancelled'
+    `,
+  })
+  @ApiBody({ type: CancelAsyncSearchDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Búsqueda cancelada exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            searchId: {
+              type: 'string',
+              example: 'search-123e4567-e89b-12d3-a456-426614174000',
+            },
+            status: { type: 'string', example: 'cancelled' },
+            message: {
+              type: 'string',
+              example: 'Búsqueda cancelada por el usuario.',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Búsqueda no encontrada',
+    schema: {
+      type: 'object',
+      properties: {
+        error: { type: 'string', example: 'SEARCH_NOT_FOUND' },
+        message: { type: 'string', example: 'La búsqueda especificada no existe.' },
+      },
+    },
+  })
+  async cancelAsyncSearch(@Body() body: CancelAsyncSearchDto, @Req() req: any) {
+    try {
+      const result = await this.asyncMatchingService.cancelAsyncSearch(
+        body.searchId,
+        Number(req.user.id),
+      );
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'Search session not found') {
+        throw new NotFoundException({
+          error: 'SEARCH_NOT_FOUND',
+          message: 'La búsqueda especificada no existe.',
+        });
+      }
+      if (error.message === 'Unauthorized to cancel this search') {
+        throw new ConflictException({
+          error: 'UNAUTHORIZED_CANCEL',
+          message: 'No tienes permisos para cancelar esta búsqueda.',
+        });
+      }
+      throw error;
+    }
+  }
+
+  @Get('async-search/:searchId/status')
+  @ApiOperation({
+    summary: '📊 Consultar estado de búsqueda asíncrona',
+    description: `
+    **MONITOREO DE BÚSQUEDA ACTIVA**
+
+    Permite al cliente consultar el estado actual de una búsqueda asíncrona,
+    incluyendo tiempo restante, intentos realizados y conductor encontrado (si aplica).
+
+    **📈 Información disponible:**
+    ✅ **Estado actual:** searching/found/timeout/cancelled/completed
+    ✅ **Tiempo restante:** Segundos hasta expiración (solo si searching)
+    ✅ **Intentos realizados:** Número de búsquedas ejecutadas
+    ✅ **Conductor encontrado:** Detalles completos si fue encontrado
+    ✅ **Mensaje descriptivo:** Texto amigable para mostrar al usuario
+    `,
+  })
+  @ApiParam({
+    name: 'searchId',
+    description: 'ID único de la búsqueda',
+    example: 'search-123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estado de búsqueda obtenido exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            searchId: {
+              type: 'string',
+              example: 'search-123e4567-e89b-12d3-a456-426614174000',
+            },
+            status: { type: 'string', example: 'searching' },
+            message: {
+              type: 'string',
+              example: 'Buscando el mejor conductor disponible...',
+            },
+            matchedDriver: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                driverId: { type: 'number', example: 42 },
+                firstName: { type: 'string', example: 'Carlos' },
+                matchScore: { type: 'number', example: 85.5 },
+              },
+            },
+            timeRemaining: { type: 'number', example: 180, nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  async getAsyncSearchStatus(@Param('searchId') searchId: string, @Req() req: any) {
+    try {
+      const result = await this.asyncMatchingService.getAsyncSearchStatus(
+        searchId,
+        Number(req.user.id),
+      );
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'Search session not found') {
+        throw new NotFoundException({
+          error: 'SEARCH_NOT_FOUND',
+          message: 'La búsqueda especificada no existe o ha expirado.',
+        });
+      }
+      if (error.message === 'Unauthorized to view this search') {
+        throw new ConflictException({
+          error: 'UNAUTHORIZED_VIEW',
+          message: 'No tienes permisos para ver esta búsqueda.',
+        });
+      }
+      throw error;
+    }
+  }
+
+  @Post('async-search/confirm-driver')
+  @ApiOperation({
+    summary: '✅ Confirmar conductor encontrado en búsqueda asíncrona',
+    description: `
+    **CONFIRMACIÓN FINAL DEL MATCHING ASÍNCRONO**
+
+    Después de que el sistema encuentra un conductor via WebSocket,
+    el usuario confirma que quiere proceder con ese conductor específico.
+
+    **🎯 Importante:**
+    ✅ **Validación completa:** Verifica que el conductor sigue disponible
+    ✅ **Integración con flujo existente:** Conecta con el sistema de confirmación actual
+    ✅ **Transición de estados:** Completa la búsqueda asíncrona
+    ✅ **Limpieza automática:** Libera recursos del servidor
+
+    **🔄 Próximos pasos después de confirmar:**
+    1. Sistema confirma conductor (similar al endpoint existente)
+    2. Conductor recibe notificación
+    3. Usuario puede proceder con el pago
+    4. Viaje se crea normalmente
+    `,
+  })
+  @ApiBody({ type: ConfirmAsyncDriverDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Conductor confirmado exitosamente',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            searchId: {
+              type: 'string',
+              example: 'search-123e4567-e89b-12d3-a456-426614174000',
+            },
+            driverId: { type: 'number', example: 42 },
+            confirmedAt: { type: 'string', format: 'date-time' },
+            message: {
+              type: 'string',
+              example: 'Conductor confirmado. Procede con el pago.',
+            },
+            driverInfo: {
+              type: 'object',
+              properties: {
+                firstName: { type: 'string', example: 'Carlos' },
+                matchScore: { type: 'number', example: 85.5 },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async confirmAsyncDriver(@Body() body: ConfirmAsyncDriverDto, @Req() req: any) {
+    try {
+      const result = await this.asyncMatchingService.confirmAsyncDriver(
+        body.searchId,
+        body.driverId,
+        Number(req.user.id),
+        body.notes,
+      );
+
+      return { data: result };
+    } catch (error) {
+      if (error.message === 'Search session not found') {
+        throw new NotFoundException({
+          error: 'SEARCH_NOT_FOUND',
+          message: 'La búsqueda especificada no existe.',
+        });
+      }
+      if (error.message === 'Unauthorized to confirm this driver') {
+        throw new ConflictException({
+          error: 'UNAUTHORIZED_CONFIRM',
+          message: 'No tienes permisos para confirmar este conductor.',
+        });
+      }
+      if (error.message === 'No driver available to confirm') {
+        throw new ConflictException({
+          error: 'NO_DRIVER_AVAILABLE',
+          message: 'El conductor ya no está disponible.',
+        });
+      }
       throw error;
     }
   }

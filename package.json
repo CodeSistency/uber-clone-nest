@@ -71,6 +71,7 @@
     "class-validator": "^0.14.2",
     "csv-parser": "^3.2.0",
     "date-fns": "^4.1.0",
+    "eventemitter2": "^6.4.9",
     "exceljs": "^4.4.0",
     "expo-server-sdk": "^4.0.0",
     "firebase-admin": "^13.5.0",
@@ -86,7 +87,8 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
     "stripe": "^18.5.0",
-    "twilio": "^5.8.2"
+    "twilio": "^5.8.2",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -104,6 +106,7 @@
     "@types/node-fetch": "^2.6.13",
     "@types/stripe": "^8.0.416",
     "@types/supertest": "^6.0.2",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

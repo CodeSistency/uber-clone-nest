@@ -424,6 +424,34 @@ export class WebSocketGatewayClass
     return { status: 'success', message: 'Ride completed' };
   }
 
+  /**
+   * Send matching event notifications for async driver search
+   * Used by AsyncMatchingService to notify users about matching events
+   */
+  public sendMatchingEvent(
+    eventType: 'driver-found' | 'search-timeout' | 'search-cancelled' | 'search-expired',
+    searchId: string,
+    userId: number,
+    data?: any
+  ) {
+    try {
+      const event = {
+        type: eventType,
+        searchId,
+        userId,
+        data,
+        timestamp: new Date(),
+      };
+
+      // Send to user-specific room (used by mobile apps)
+      this.server.to(`user-${userId}`).emit('matching-event', event);
+
+      this.logger.log(`📡 [WS] Sent ${eventType} for search ${searchId} to user ${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to send matching event: ${error.message}`, error);
+    }
+  }
+
   private getSocketIOVersion(): string {
     try {
       // Try to get version from package.json

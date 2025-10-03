@@ -922,3 +922,109 @@ export class UpdateDriverLocationDto {
   @Type(() => Number)
   rideId?: number;
 }
+
+// =========================================
+// ASYNC DRIVER MATCHING DTOs
+// =========================================
+
+/**
+ * DTO para iniciar una búsqueda asíncrona de conductor
+ */
+export class StartAsyncDriverSearchDto extends MatchBestDriverDto {
+  @ApiPropertyOptional({
+    description: 'Tiempo máximo de espera en segundos',
+    example: 300,
+    minimum: 30,
+    maximum: 1800,
+    default: 300,
+    type: 'number',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(30)
+  @Max(1800)
+  @Type(() => Number)
+  maxWaitTime?: number = 300; // 5 minutos por defecto
+
+  @ApiPropertyOptional({
+    description: 'Prioridad de la búsqueda',
+    example: 'normal',
+    enum: ['low', 'normal', 'high'],
+    default: 'normal',
+    type: 'string',
+  })
+  @IsOptional()
+  @IsIn(['low', 'normal', 'high'])
+  priority?: 'low' | 'normal' | 'high' = 'normal';
+
+  @ApiPropertyOptional({
+    description: 'Unirse a una sala WebSocket específica para notificaciones',
+    example: 'user-123',
+    type: 'string',
+  })
+  @IsOptional()
+  @IsString()
+  websocketRoom?: string;
+}
+
+/**
+ * DTO para cancelar una búsqueda asíncrona
+ */
+export class CancelAsyncSearchDto {
+  @ApiProperty({
+    description: 'ID único de la búsqueda a cancelar',
+    example: 'search-123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+  })
+  @IsNotEmpty()
+  @IsString()
+  searchId: string;
+}
+
+/**
+ * DTO para consultar estado de búsqueda asíncrona
+ */
+export class GetAsyncSearchStatusDto {
+  @ApiProperty({
+    description: 'ID único de la búsqueda',
+    example: 'search-123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+  })
+  @IsNotEmpty()
+  @IsString()
+  searchId: string;
+}
+
+/**
+ * DTO para confirmar conductor encontrado en búsqueda asíncrona
+ */
+export class ConfirmAsyncDriverDto {
+  @ApiProperty({
+    description: 'ID único de la búsqueda',
+    example: 'search-123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+  })
+  @IsNotEmpty()
+  @IsString()
+  searchId: string;
+
+  @ApiProperty({
+    description: 'ID del conductor a confirmar',
+    example: 42,
+    type: 'number',
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  driverId: number;
+
+  @ApiPropertyOptional({
+    description: 'Notas adicionales para el conductor',
+    example: 'Por favor llegue rápido, tengo prisa',
+    type: 'string',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  notes?: string;
+}

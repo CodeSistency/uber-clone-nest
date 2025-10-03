@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { RedisPubSubService } from './redis-pubsub.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { DriverEventsService } from '../common/events/driver-events.service';
 
 interface DriverLocation {
   driverId: number;
@@ -25,12 +26,14 @@ export class LocationTrackingService extends RedisPubSubService {
   constructor(
     private prisma: PrismaService,
     configService: ConfigService,
+    private driverEventsService: DriverEventsService,
   ) {
     super(configService);
   }
 
   private driverLocations: Map<number, DriverLocation> = new Map();
   private rideSubscribers: Map<number, Set<string>> = new Map();
+  private driverOnlineStatus: Map<number, boolean> = new Map(); // Track online status
 
   async onModuleInit() {
     await super.onModuleInit();
@@ -76,6 +79,10 @@ export class LocationTrackingService extends RedisPubSubService {
       source?: string;
     },
   ) {
+    // Check if this is a driver coming online
+    const wasOnline = this.driverOnlineStatus.get(driverId) || false;
+    const isComingOnline = !wasOnline && additionalData?.source !== 'simulated';
+
     const now = new Date();
     const locationData: DriverLocation = {
       driverId,
@@ -144,11 +151,27 @@ export class LocationTrackingService extends RedisPubSubService {
       console.debug(
         `Driver ${driverId} location updated: ${location.lat}, ${location.lng}`,
       );
+
+      // Mark driver as online
+      this.driverOnlineStatus.set(driverId, true);
+
+      // If driver is coming online, emit event
+      if (isComingOnline) {
+        console.log(`🟢 [LOCATION-TRACKING] Driver ${driverId} came online at ${location.lat}, ${location.lng}`);
+        this.driverEventsService.emitDriverOnline({
+          driverId,
+          lat: location.lat,
+          lng: location.lng,
+          timestamp: now,
+        });
+      }
+
     } catch (error) {
       console.error(`Failed to update driver location:`, error);
       throw error;
     }
   }
+
 
   getDriverLocation(driverId: number): DriverLocation | null {
     return this.driverLocations.get(driverId) || null;

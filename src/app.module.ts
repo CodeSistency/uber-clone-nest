@@ -29,11 +29,13 @@ import { CartModule } from './cart/cart.module';
 import { LocationsModule } from './locations/locations.module';
 import { TestingModule } from './testing/testing.module';
 import { ReferralsModule } from './referrals/referrals.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
     // Configuración tipada y validada
     AppConfigModule,
+    CommonModule,
     PrismaModule,
     AuthModule,
     UsersModule,
