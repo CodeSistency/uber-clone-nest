@@ -81,6 +81,7 @@ export class UserManagementController {
       minRides: query.minRides,
       maxRides: query.maxRides,
       search: query.search,
+      includeSoftDeleted: query.includeSoftDeleted,
     };
 
     return this.userManagementService.getUsersWithFilters(
