@@ -12,7 +12,6 @@ import {
 import { WebSocketGatewayClass } from '../../websocket/websocket.gateway';
 import { DriverEventsService, DriverOnlineEvent } from '../../common/events/driver-events.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MatchingMetricsService } from '../flow/matching-metrics.service';
 
 @Injectable()
 export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
@@ -38,7 +37,6 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly websocketGateway: WebSocketGatewayClass,
     private readonly driverEventsService: DriverEventsService,
-    private readonly matchingMetrics: MatchingMetricsService,
   ) {}
 
   onModuleInit() {

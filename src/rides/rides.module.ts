@@ -29,6 +29,6 @@ import { CommonModule } from '../common/common.module';
     PricingCacheService,
     AsyncMatchingService,
   ],
-  exports: [RidesService],
+  exports: [RidesService, AsyncMatchingService],
 })
 export class RidesModule {}
