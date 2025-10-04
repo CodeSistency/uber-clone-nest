@@ -1,0 +1,634 @@
+[33mcommit 0c983ed23b74946bb26aa14e7774b4e1869eea44[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Orion <orion@srv991487.hstgr.cloud>
+Date:   Sun Sep 28 22:21:47 2025 +0000
+
+    [ADD] perrmisions seed
+
+[33mcommit fd5eb0d65e7d9ebd0d1ed53526c8dbdcacf314eb[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Sun Sep 28 15:45:55 2025 -0400
+
+    [ADD] add de dto de refresh token y documento de api admins
+
+[33mcommit c65de186cf853b2924fea504481dc19c127f2ac5[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sun Sep 28 12:04:01 2025 -0400
+
+    ADD nuevos cambios
+
+[33mcommit c0b941137797a34c6076c13e546f72600995cc47[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sun Sep 28 00:20:24 2025 -0400
+
+    FIX
+
+[33mcommit aef28bdd0e5761b1dcdeda39615810a0ce54cc90[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sun Sep 28 00:01:52 2025 -0400
+
+    FIX
+
+[33mcommit 6cc926e9578f475e5646e004ceea59da5400414e[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 23:03:26 2025 -0400
+
+    FIX
+
+[33mcommit 33102a4a68e25f6058f588d5e8ae23e5d66e4054[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 23:00:09 2025 -0400
+
+    FIX
+
+[33mcommit ba4da69047e05a9da17097168f0989fadd04caf5[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 22:48:53 2025 -0400
+
+    FIX
+
+[33mcommit 543ad943fdeb22e1d73e43b65f11b503b61e9f16[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 22:29:05 2025 -0400
+
+    FIX
+
+[33mcommit 92ffa80eab2a283e95b48cbc5b1c2493122e1464[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 22:22:22 2025 -0400
+
+    FIX
+
+[33mcommit 586d33464e84cf1c79931cbcb6c2784b04ea0042[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 22:04:24 2025 -0400
+
+    FIX
+
+[33mcommit 8b17efd6edb1bc0b31e5840174b1fac0f0ef2835[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:53:45 2025 -0400
+
+    FIX
+
+[33mcommit 0d8cf35f456ba30c676c365f36cf533f1a35a8e9[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:37:57 2025 -0400
+
+    FIX
+
+[33mcommit 593ca522abb5e17e5d9b3f5d184d3dde387ebf5f[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:34:19 2025 -0400
+
+    FIX
+
+[33mcommit 64d3624f74a36e4305ec1d98885c778ab71d1b07[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:32:31 2025 -0400
+
+    FIX
+
+[33mcommit 6a4c5299e188427ddb8e3fd0bf18000597255f65[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:27:54 2025 -0400
+
+    FIX
+
+[33mcommit 6a0ac61a3849aadcf498c4d0678f4ea4d57b5e96[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:24:19 2025 -0400
+
+    FIX
+
+[33mcommit 6ea307da3171d776efe4c6af779ce08d5534d074[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:13:33 2025 -0400
+
+    FIX
+
+[33mcommit d51da1d88155f7c9c895cef048e2a88b2d8c2d05[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 21:03:31 2025 -0400
+
+    FIX
+
+[33mcommit 9d7fb10bc946ec2d74bab955d06842c965ea3326[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 20:59:45 2025 -0400
+
+    FIX
+
+[33mcommit 1f738fb86e76a279ab16a6ee2882ced6c5e58587[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 20:51:57 2025 -0400
+
+    FIX
+
+[33mcommit b8f74d91db30d2f6ac59909446917c85ea3d9825[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 20:48:50 2025 -0400
+
+    FIX
+
+[33mcommit 7d14d145e0adca5e36318366e03fcd7698ef5405[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 20:04:50 2025 -0400
+
+    FIX
+
+[33mcommit 801baf940f2f4650a49ce485aec193fe7ac27e90[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 20:01:39 2025 -0400
+
+    [ADD] Test of match
+
+[33mcommit 4a14b9a55ffd6b3f6908b8d114868fefd53ee5e3[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Sat Sep 27 19:17:07 2025 -0400
+
+    [ADD] Matching algo
+
+[33mcommit 682d7188af3071a21ffd33fa52ebdea94d381938[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 26 16:28:19 2025 -0400
+
+    [ADD] expansion de lista swagger
+
+[33mcommit 91456696fff8901434203bde9c69e000fabac91d[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 26 16:22:03 2025 -0400
+
+    [ADD] Errores de swagger
+
+[33mcommit 38b11e76acc84ac98dac0518581ec6d647498f32[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 26 16:00:39 2025 -0400
+
+    [ADD] MI MEJOR COMMIT
+
+[33mcommit 72426520001d4efd5ea3e35f7a3072ea9e00eb0e[m[33m ([m[1;31morigin/feature/drivers-vehicules-julio[m[33m)[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Thu Sep 25 23:52:23 2025 -0400
+
+    [FIX] rectificacion en consulta de vehiculos en flows y realtime
+
+[33mcommit 56e290bf486e98b12dec995e209317b3e80a0f2b[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Thu Sep 25 23:45:05 2025 -0400
+
+    [FIX] error de importacion de DTO de drivers para update
+
+[33mcommit e7c0f9333290ea62b71172d88edf6e59f9bb8e23[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Thu Sep 25 23:25:41 2025 -0400
+
+    [ADD] avances de modulos para drivers y vehiculos
+
+[33mcommit 4fdb8c6e9a18b3ec394c5516f2c129fff9accdcc[m
+Author: izZzZzaac <montillaisaac9@gmail.com>
+Date:   Thu Sep 25 12:16:12 2025 -0400
+
+    [FIX] admin-search-drivers
+
+[33mcommit fccb1dbe62b6c74d599e266b01bb95129185ca5f[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 25 11:54:18 2025 -0400
+
+    [ADD] RANKING CLIENTE
+
+[33mcommit 283f93a06d5043c40d305a6a81c531c8cd5040e8[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 25 01:25:19 2025 -0400
+
+    Fixing notificatiosn
+
+[33mcommit 84a9e5e47197deff6de7552f612f02f25f7030c3[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 25 00:19:42 2025 -0400
+
+    test
+
+[33mcommit a6c92b2e39f0054b4228142265fbcfe2f1b82beb[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 25 00:14:25 2025 -0400
+
+    docs: add Firebase setup instructions and fix WebSocket package.json access
+
+[33mcommit 03646bc8a202824b26940b74d46e23e201c70b08[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 23:33:23 2025 -0400
+
+    FIX FIREBASE
+
+[33mcommit f538f8de3284ec7abd7f0354f11ae2c8547cf8ec[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 23:26:43 2025 -0400
+
+    FIX FIREBASE
+
+[33mcommit 8f24280eb64e11394439da937d402ff8d8d2c7e7[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 23:10:55 2025 -0400
+
+    [ADD] NEW
+
+[33mcommit 41d684e60b97135f872dd68f85d60bc8fc397075[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 22:37:32 2025 -0400
+
+    fix: corregir algoritmo de matching - radio de búsqueda y ubicación de conductores
+    
+    - Matching: Corregir conversión de unidades del radio (km vs metros)
+    - Matching: El radio ahora se pasa correctamente en kilómetros
+    - Location: Mejorar obtención de ubicación en pending-requests
+    - Location: Fallback a base de datos cuando no está en memoria
+    - Debug: Agregar logs detallados para troubleshooting de distancias
+    - Build: Verificar que todas las correcciones compilen correctamente
+
+[33mcommit 4214d5c2a15567e18f90abfd439cf220f576bed9[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 22:31:32 2025 -0400
+
+    feat: mejorar inicialización de Firebase y agregar RedisAdapter para WebSocket
+    
+    - Firebase: Mejorar manejo de claves privadas PEM mal formateadas
+    - Firebase: Agregar validación y corrección automática de formato PEM
+    - Firebase: Mejorar logging de errores con guías específicas
+    - WebSocket: Implementar RedisAdapter para escalabilidad horizontal
+    - WebSocket: Configuración automática cuando Redis está disponible
+    - WebSocket: Manejo robusto de errores de conexión Redis
+    - Build: Corregir errores de TypeScript en todos los módulos
+
+[33mcommit 4e2f0c9caa82895577b1739bf1805f9dd550c2cb[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 22:05:44 2025 -0400
+
+    fix: resolver errores de TypeScript en location-tracking.service y actualizar seed con conductores corregidos
+
+[33mcommit c689f4bbede727dea554c811abe469c963124de9[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 22:01:17 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 819988de06690908f75c2c4036dd742da0d3ba2c[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 21:43:14 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 220e8bc997471590e278c30ad33567b07e035397[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 21:16:06 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit e6c51f945459070e66733ce776ca588956be28bc[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 20:59:52 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 2bc31d3cf456683d3dbc6ad20610003c918c4ea0[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 20:57:20 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit d7ea49b95ec84d5cfa1292c6f46e065ce7e1ad27[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 20:33:59 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 6038c0e39fa2a6ebd6ecc56897fd39b463cfef2e[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 20:31:00 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 940607062caf8b0771a7ee3b67f294ab77d8051c[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 20:02:29 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit c46ddaeec45a8c633e9be69f81687d4ac28cc27e[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 19:59:04 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 67f1027cbfd617cd48dd073a60aa5b5657ba6505[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 19:45:00 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 7c05d719a277675ff49046ea3a4f8b93fcb6c490[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 18:45:47 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit 1d85473a800b536dd8c1fc4f90e9ec62a838021d[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 18:36:33 2025 -0400
+
+    LOGS PARA DEBUGEAR UBICACIONES
+
+[33mcommit e6501f7a12accc137f921522eab4b078036e9ec6[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 16:47:59 2025 -0400
+
+    [ADD] Asignacion automatica de driver
+
+[33mcommit 29f61cf07e11281eead89f067b38a09e03a16e82[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 16:36:21 2025 -0400
+
+    [ADD] Validacion en notificaciones y proteccion de conductores
+
+[33mcommit 6a0327ede6bbe02371b8fbdff630e7b4dc4d0986[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 24 15:13:29 2025 -0400
+
+    [ADD] Simular requests viajes y encontrar solicitudes
+
+[33mcommit f8a262fd58282e2355d2d16a16ee51f46cfe0c52[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 23 16:06:45 2025 -0400
+
+    ADD NUEVOS CAMBIOS
+
+[33mcommit 752984d42c2af1dde0439dc014eef2ed0debf402[m
+Author: izZzZzaac <montillaisaac9@gmail.com>
+Date:   Tue Sep 23 15:01:33 2025 -0400
+
+    [FIX] authenticacion admin
+
+[33mcommit d04339c81f0d3f938eac4793153bc431251a80a7[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 22:02:25 2025 -0400
+
+    Fix errores
+
+[33mcommit ca6adf7cebfae0d5d995badaeb1ea75489e2e426[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 21:52:12 2025 -0400
+
+    [ADD] Busqueda de conductores cercannso avanxada
+
+[33mcommit e3fecf879d56448c7717d5d3f5a02de804daca6a[m
+Merge: f729150 3116667
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 21:27:34 2025 -0400
+
+    [ADD] Find nearby driver
+
+[33mcommit f729150f4145a362fac309e3c4d78f70aa446a72[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 21:26:59 2025 -0400
+
+    [ADD] Find nearby drivers
+
+[33mcommit 3116667c0396f56f74aa8e54a399342024dbfb15[m
+Author: izZzZzaac <montillaisaac9@gmail.com>
+Date:   Mon Sep 22 16:02:57 2025 -0400
+
+    [ADD] refactorizacion admin
+
+[33mcommit 0dfeda4719a9fc133131bf500dd59ff90f9a8369[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 15:31:46 2025 -0400
+
+    ALL TIERS
+
+[33mcommit 074ed1221a867dd99570ce7e1a198aa2de44122b[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 15:27:16 2025 -0400
+
+    ALL TIERS
+
+[33mcommit ef1d2c25afe45279016268540cb361cc06fd2143[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 15:20:04 2025 -0400
+
+    Error en Errand
+
+[33mcommit 7d63352363b3e863303a5890b54e50a128fce218[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 15:13:25 2025 -0400
+
+    Error en Errand
+
+[33mcommit d0a162b09d9ea247460bbfe2d0cd2ca77aba5a0f[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 22 15:07:30 2025 -0400
+
+    [ADD] Ride tiers
+
+[33mcommit 6605c9081088edc4c290c2332e8177d686d7981a[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Sun Sep 21 19:02:07 2025 -0400
+
+    [FIX] errores de importaciones y tipado
+
+[33mcommit 263b311e6607d13dee9500afb7be483ec25cb473[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Sun Sep 21 18:47:21 2025 -0400
+
+    [FIX] delete de groups module
+
+[33mcommit 35e74178de1ec14553b593510f482ce32059b83d[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 10 16:37:40 2025 -0400
+
+    [ADD] nu
+
+[33mcommit 13715a5b6541016309c5f185af95fc9159e214a2[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 10 16:31:11 2025 -0400
+
+    [ADD] nu
+
+[33mcommit 770aa72ab9d57491c05e6c83f2b184fae4f10ce9[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 10 16:25:24 2025 -0400
+
+    [FIX]admin auth
+
+[33mcommit 232dcb38e3800f2ca3bc3df57bb336414dbba4d8[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 10 16:08:56 2025 -0400
+
+    [ADD] Arreglando el secret del admin
+
+[33mcommit c9d139f81dfa606f3a643af6c2906bee41a3b5ce[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 10 15:50:22 2025 -0400
+
+    [ADD] Swagger para admin
+
+[33mcommit 5cd735dfc76c80c5e669b5f2d70841eba9d0f1a5[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 10 13:48:17 2025 -0400
+
+    [ADD] Docs updated
+
+[33mcommit 3a6fef4ce33905ae5390304ba48c3ac709bcb279[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Wed Sep 10 12:25:02 2025 -0400
+
+    [ADD] cagada de jose
+
+[33mcommit d279bdc26718910eedb1370da1200bab4017824a[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 10 11:51:31 2025 -0400
+
+    [ADD] Agregando metodos de pagos en el backend
+
+[33mcommit 4a7b9a49434edf20a2bd22d2f3213d70ba61ba5f[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 9 19:34:29 2025 -0400
+
+    [ADD] arreglar swagger v2
+
+[33mcommit ef2e2ed23f38a99926f312f01c35af9aff72c310[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 9 19:22:46 2025 -0400
+
+    [ADD] swagger config
+
+[33mcommit 425a1b49b02811c8dcb2195d4f581e844e08a004[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 9 16:18:19 2025 -0400
+
+    [ADD] swagger al modulo de flows
+
+[33mcommit 24f088ac14371979d83496db42e85ad8637415fb[m[33m ([m[1;31morigin/feature/grupos_users[m[33m)[m
+Merge: f9cc92a 8c5b78b
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Tue Sep 9 11:57:58 2025 -0400
+
+    Merge branch 'main' of https://github.com/CodeSistency/uber-clone-nest into feature/grupos_users
+
+[33mcommit f9cc92a6c8bdda38e6ddd7f71f8e065171af3b0b[m
+Author: juliocnc19 <juliocnietoc19@gmail.com>
+Date:   Tue Sep 9 11:57:41 2025 -0400
+
+    [ADD] grupos y nuevos endpoints
+
+[33mcommit 8c5b78be63496ba2ad122a79dafe800e694bea7e[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 9 11:23:53 2025 -0400
+
+    [ADD] arreglando errores
+
+[33mcommit d9d6d2c5d83b048e52608e1420b671bbb7f64e9d[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 9 10:23:02 2025 -0400
+
+    test flow
+
+[33mcommit f09a351bc66a40d3bfd891b8ddf20316f236aa8f[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 8 20:58:49 2025 -0400
+
+    [ADD] flujos de transporte, envios, mandados y deliverys.
+
+[33mcommit 419251851e5e422be3b2c1c7d3a4b160e82a4447[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 5 22:23:06 2025 -0400
+
+    [FIX] Firebase token
+
+[33mcommit 0e213f30482647cc0b90207cb779399b5f51ce63[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 5 19:18:55 2025 -0400
+
+    [ADD] fcm token en los servicos de auth
+
+[33mcommit d30daaa83cf98d7e5180b097113fd520719fb851[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 5 14:43:48 2025 -0400
+
+    [FIX] codigo dupliado
+
+[33mcommit cc32013f6d73b2f8e39ef68a7cd62d8139f5b042[m[33m ([m[1;31morigin/fetuare/rides-driver[m[33m)[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 5 11:52:25 2025 -0400
+
+    [ADD] remove clerk y config inicial
+
+[33mcommit a182fd494b2f932a68e7316ff362f8d4c3469d0f[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 5 00:37:00 2025 -0400
+
+    Fixing id in rides
+
+[33mcommit 4b549aee57a78d3125359f6ec049c25584c8f1b2[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Fri Sep 5 00:25:51 2025 -0400
+
+    Fix creating ride
+
+[33mcommit 3cccf373028ed91711553c5c800e8a35bdd0c67a[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 4 16:23:36 2025 -0400
+
+    Documentacion de optimizacion de base de datos
+
+[33mcommit acd471c439ae7454307c92908e457bb02fd772b9[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 4 15:58:39 2025 -0400
+
+    [ADD] Admin plan v1
+
+[33mcommit 8026c4609d7e54313df60ba2b9893bd32ebf7c26[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 4 15:14:24 2025 -0400
+
+    [ADD] Endpoints deliverys marketplace
+
+[33mcommit 7ffde861b19642a1e7a66d9263e9fd171b5ae47e[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Thu Sep 4 11:43:50 2025 -0400
+
+    [ADD] cursor rules
+
+[33mcommit d281e5bb884ea1a151129385be18ad132a7d9afc[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 3 23:30:35 2025 -0400
+
+    [ADD] fix errores en el jwt
+
+[33mcommit a948e272991e92fd1799c9d48bfdc0d374454f89[m[33m ([m[1;31morigin/featuere/auth[m[33m)[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 3 22:56:18 2025 -0400
+
+    [ADD] MODULO AUTH
+
+[33mcommit 24d01b88a05e57208dde1684b93336e2fc868a35[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Wed Sep 3 16:01:56 2025 -0400
+
+    Auth
+
+[33mcommit 15b19c201746b1300aeb6fbe36b13a57d817e23e[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 2 21:02:09 2025 -0400
+
+    subiendo a render
+
+[33mcommit 6ba0e0897ccc53b9287e8c03972d5d1ae160a054[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Tue Sep 2 16:39:32 2025 -0400
+
+    [ADD] configurando firebase
+
+[33mcommit 394d08a60056e92c8657ab390e24ce7a936e6904[m
+Author: CodeSistency <valero.jozee@gmail.com>
+Date:   Mon Sep 1 08:58:47 2025 -0400
+
+    first commit
