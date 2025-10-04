@@ -309,7 +309,7 @@ export class ReferralRewardsService {
         description,
       };
 
-      await this.walletService.addFunds(addFundsDto);
+      await this.walletService.addFunds(addFundsDto, userId);
       this.logger.log(
         `Added $${amount} to wallet for user ${userId}: ${description}`,
       );

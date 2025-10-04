@@ -397,7 +397,7 @@ export class RidesFlowService {
 
     const updated = await this.prisma.ride.update({
       where: { rideId },
-      data: { paymentStatus: 'pending' },
+      data: { paymentStatus: 'paid' },
     });
 
     this.gateway.server?.to(`ride-${rideId}`).emit('ride:payment:initiated', {

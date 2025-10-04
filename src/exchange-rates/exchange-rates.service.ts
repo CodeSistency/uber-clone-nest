@@ -30,7 +30,7 @@ export class ExchangeRatesService {
         })
       );
 
-      const data = response.data as DollarApiResponse;
+      const data = (response as any).data as DollarApiResponse;
 
       this.logger.log(`🔍 Raw API response:`, JSON.stringify(data, null, 2));
 

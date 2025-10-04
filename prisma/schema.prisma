@@ -26,78 +26,76 @@ model VehicleType {
 
   // Relations
   vehicles Vehicle[]
-  drivers     Driver[]
-  rides   Ride[]   @relation("RequestedVehicleType")
-  tiers       TierVehicleType[]
+  drivers  Driver[]
+  rides    Ride[]            @relation("RequestedVehicleType")
+  tiers    TierVehicleType[]
 
   // Performance indexes
   @@index([isActive])
-
   @@map("vehicle_types")
 }
 
 // Detailed vehicle information for drivers - allows multiple vehicles per driver
 model Vehicle {
-  id              Int      @id @default(autoincrement())
-  driverId        Int      @map("driver_id")
-  vehicleTypeId   Int      @map("vehicle_type_id")
-  make            String   @db.VarChar(50) // Toyota, Honda, etc.
-  model           String   @db.VarChar(100) // Corolla, Civic, etc.
+  id              Int     @id @default(autoincrement())
+  driverId        Int     @map("driver_id")
+  vehicleTypeId   Int     @map("vehicle_type_id")
+  make            String  @db.VarChar(50) // Toyota, Honda, etc.
+  model           String  @db.VarChar(100) // Corolla, Civic, etc.
   year            Int // Manufacturing year
-  color           String?  @db.VarChar(30) // Red, Blue, etc.
-  licensePlate    String   @unique @db.VarChar(20)
-  vin             String?  @unique @db.VarChar(17) // Vehicle Identification Number
-  seatingCapacity Int      @default(4) // Number of passenger seats
-  hasAC           Boolean  @default(true) @map("has_ac")
-  hasGPS          Boolean  @default(true) @map("has_gps")
-  fuelType        String   @default("gasoline") @db.VarChar(20) // gasoline, diesel, electric, hybrid
+  color           String? @db.VarChar(30) // Red, Blue, etc.
+  licensePlate    String  @unique @db.VarChar(20)
+  vin             String? @unique @db.VarChar(17) // Vehicle Identification Number
+  seatingCapacity Int     @default(4) // Number of passenger seats
+  hasAC           Boolean @default(true) @map("has_ac")
+  hasGPS          Boolean @default(true) @map("has_gps")
+  fuelType        String  @default("gasoline") @db.VarChar(20) // gasoline, diesel, electric, hybrid
 
   // Insurance information
-  insuranceProvider   String? @map("insurance_provider") @db.VarChar(100)
-  insurancePolicyNumber String? @map("insurance_policy_number") @db.VarChar(50)
-  insuranceExpiryDate DateTime? @map("insurance_expiry_date")
+  insuranceProvider     String?   @map("insurance_provider") @db.VarChar(100)
+  insurancePolicyNumber String?   @map("insurance_policy_number") @db.VarChar(50)
+  insuranceExpiryDate   DateTime? @map("insurance_expiry_date")
 
   // Vehicle images
-  frontImageUrl       String? @map("front_image_url")
-  sideImageUrl        String? @map("side_image_url")
-  backImageUrl        String? @map("back_image_url")
-  interiorImageUrl    String? @map("interior_image_url")
+  frontImageUrl    String? @map("front_image_url")
+  sideImageUrl     String? @map("side_image_url")
+  backImageUrl     String? @map("back_image_url")
+  interiorImageUrl String? @map("interior_image_url")
 
   // Status and verification
-  status              String   @default("active") @db.VarChar(20) // active, inactive, suspended, maintenance
-  verificationStatus  String   @default("pending") @map("verification_status") @db.VarChar(20) // pending, verified, rejected
-  isDefault           Boolean  @default(false) @map("is_default") // Is this the driver's primary vehicle
+  status             String  @default("active") @db.VarChar(20) // active, inactive, suspended, maintenance
+  verificationStatus String  @default("pending") @map("verification_status") @db.VarChar(20) // pending, verified, rejected
+  isDefault          Boolean @default(false) @map("is_default") // Is this the driver's primary vehicle
 
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  driver          Driver                     @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  vehicleType     VehicleType                @relation(fields: [vehicleTypeId], references: [id])
+  driver           Driver                 @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicleType      VehicleType            @relation(fields: [vehicleTypeId], references: [id])
   vehicleDocuments VehicleDocument[]
-  rides           Ride[]                     @relation("VehicleRides")
-  vehicleHistory  VehicleChangeHistory[]
-  driverReports   DriverReport[]
+  rides            Ride[]                 @relation("VehicleRides")
+  vehicleHistory   VehicleChangeHistory[]
+  driverReports    DriverReport[]
 
   // Performance indexes for matching
   @@index([driverId, isDefault])
   @@index([vehicleTypeId, status])
   @@index([status, verificationStatus])
-
   @@map("vehicles")
 }
 
 // Documents specifically for vehicle verification
 model VehicleDocument {
-  id                 Int      @id @default(autoincrement())
-  vehicleId          Int      @map("vehicle_id")
-  documentType       String   @map("document_type") @db.VarChar(50) // registration, insurance, inspection, permit
-  documentUrl        String   @map("document_url")
-  uploadedAt         DateTime @default(now()) @map("uploaded_at")
-  verificationStatus String   @default("pending") @map("verification_status") @db.VarChar(20)
+  id                 Int       @id @default(autoincrement())
+  vehicleId          Int       @map("vehicle_id")
+  documentType       String    @map("document_type") @db.VarChar(50) // registration, insurance, inspection, permit
+  documentUrl        String    @map("document_url")
+  uploadedAt         DateTime  @default(now()) @map("uploaded_at")
+  verificationStatus String    @default("pending") @map("verification_status") @db.VarChar(20)
   verifiedAt         DateTime? @map("verified_at")
-  verifiedBy         Int?     @map("verified_by") // Admin user ID
-  rejectionReason    String?  @map("rejection_reason")
+  verifiedBy         Int?      @map("verified_by") // Admin user ID
+  rejectionReason    String?   @map("rejection_reason")
 
   // Relations
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
@@ -107,15 +105,15 @@ model VehicleDocument {
 
 // History of vehicle changes for audit trail
 model VehicleChangeHistory {
-  id           Int      @id @default(autoincrement())
-  vehicleId    Int      @map("vehicle_id")
-  driverId     Int      @map("driver_id")
-  changeType   String   @map("change_type") @db.VarChar(50) // update, status_change, verification_change
-  oldValue     Json?    @map("old_value")
-  newValue     Json?    @map("new_value")
-  reason       String?  @map("reason")
-  changedBy    Int?     @map("changed_by") // Admin user ID who made the change
-  changedAt    DateTime @default(now()) @map("changed_at")
+  id         Int      @id @default(autoincrement())
+  vehicleId  Int      @map("vehicle_id")
+  driverId   Int      @map("driver_id")
+  changeType String   @map("change_type") @db.VarChar(50) // update, status_change, verification_change
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  reason     String?  @map("reason")
+  changedBy  Int?     @map("changed_by") // Admin user ID who made the change
+  changedAt  DateTime @default(now()) @map("changed_at")
 
   // Relations
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
@@ -125,17 +123,17 @@ model VehicleChangeHistory {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String    @db.VarChar(100)
-  email     String    @unique @db.VarChar(100)
-  password  String?   @db.VarChar(255) // Hashed password for authentication
-  refreshToken String? @db.VarChar(255) // Hashed refresh token
-  isActive  Boolean   @default(true) @map("is_active")
-  deletedAt DateTime? @map("deleted_at") // Soft delete timestamp
-  deletedReason String? @map("deleted_reason") // Reason for soft delete
-  lastLogin DateTime? @map("last_login")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(100)
+  email         String    @unique @db.VarChar(100)
+  password      String?   @db.VarChar(255) // Hashed password for authentication
+  refreshToken  String?   @db.VarChar(255) // Hashed refresh token
+  isActive      Boolean   @default(true) @map("is_active")
+  deletedAt     DateTime? @map("deleted_at") // Soft delete timestamp
+  deletedReason String?   @map("deleted_reason") // Reason for soft delete
+  lastLogin     DateTime? @map("last_login")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Profile information
   phone        String?   @db.VarChar(20)
@@ -157,6 +155,10 @@ model User {
   emailVerified    Boolean @default(false) @map("email_verified")
   phoneVerified    Boolean @default(false) @map("phone_verified")
   identityVerified Boolean @default(false) @map("identity_verified")
+  
+  // Identity verification fields
+  dniNumber       String? @map("dni_number") @db.VarChar(20)
+  identityVerifiedAt DateTime? @map("identity_verified_at")
 
   // Admin-specific fields
   userType         String?   @default("user") @map("user_type")
@@ -178,12 +180,13 @@ model User {
   pushTokens              PushToken[]
   notifications           Notification[]
   ownedStores             Store[]
+  walletAuditLogs         WalletAuditLog[]
+  walletRateLimits        WalletRateLimit[]
 
   // New services relations
-  errands          Errand[]
-  parcels          Parcel[]
-  cart             Cart?
-
+  errands Errand[]
+  parcels Parcel[]
+  cart    Cart?
 
   // Venezuelan payment system relations
   paymentReferences PaymentReference[]
@@ -193,89 +196,93 @@ model User {
   adminAuditLogs AdminAuditLog[]
 
   // Referral system relations
-  referralCodes   ReferralCode[]   @relation("UserReferralCodes")
-  referralsGiven  Referral[]       @relation("UserReferralsGiven")
-  referralsReceived Referral[]     @relation("UserReferralsReceived")
+  referralCodes        ReferralCode[]        @relation("UserReferralCodes")
+  referralsGiven       Referral[]            @relation("UserReferralsGiven")
+  referralsReceived    Referral[]            @relation("UserReferralsReceived")
   referralTransactions ReferralTransaction[]
+
+  // Security verification relations
+  verificationCodes    VerificationCode[]
+  identityVerification IdentityVerification?
 
   @@map("users")
 }
 
 // Stores driver/courier information, their vehicle, and status
 model Driver {
-  id                 Int      @id @default(autoincrement())
-  firstName          String   @map("first_name") @db.VarChar(50)
-  lastName           String   @map("last_name") @db.VarChar(50)
-  email              String?  @unique @db.VarChar(100) // Driver's email
-  phone              String?  @db.VarChar(20) // Driver's phone number
+  id        Int     @id @default(autoincrement())
+  firstName String  @map("first_name") @db.VarChar(50)
+  lastName  String  @map("last_name") @db.VarChar(50)
+  email     String? @unique @db.VarChar(100) // Driver's email
+  phone     String? @db.VarChar(20) // Driver's phone number
 
   // Address information
-  address            String?  @db.VarChar(255)
-  city               String?  @db.VarChar(100)
-  state              String?  @db.VarChar(100)
-  postalCode         String?  @map("postal_code") @db.VarChar(20)
+  address    String? @db.VarChar(255)
+  city       String? @db.VarChar(100)
+  state      String? @db.VarChar(100)
+  postalCode String? @map("postal_code") @db.VarChar(20)
 
   // Profile information
-  profileImageUrl    String?  @map("profile_image_url")
+  profileImageUrl    String?   @map("profile_image_url")
   dateOfBirth        DateTime? @map("date_of_birth")
-  gender             String?  @db.VarChar(20)
-  status             String   @default("offline") @db.VarChar(20) // online, offline, busy, suspended
-  verificationStatus String   @default("pending") @map("verification_status") @db.VarChar(20)
-  canDoDeliveries    Boolean  @default(false) @map("can_do_deliveries")
-  carSeats           Int      @default(4) @map("car_seats") // Number of passenger seats in vehicle
+  gender             String?   @db.VarChar(20)
+  status             String    @default("offline") @db.VarChar(20) // online, offline, busy, suspended
+  verificationStatus String    @default("pending") @map("verification_status") @db.VarChar(20)
+  canDoDeliveries    Boolean   @default(false) @map("can_do_deliveries")
+  carSeats           Int       @default(4) @map("car_seats") // Number of passenger seats in vehicle
 
   // Location tracking fields
-  currentLatitude    Decimal? @map("current_latitude") @db.Decimal(9, 6)
-  currentLongitude   Decimal? @map("current_longitude") @db.Decimal(9, 6)
+  currentLatitude    Decimal?  @map("current_latitude") @db.Decimal(9, 6)
+  currentLongitude   Decimal?  @map("current_longitude") @db.Decimal(9, 6)
   lastLocationUpdate DateTime? @map("last_location_update")
-  locationAccuracy   Decimal? @map("location_accuracy") @db.Decimal(5, 2) // GPS accuracy in meters
-  isLocationActive   Boolean  @default(false) @map("is_location_active") // Whether driver is actively sharing location
+  locationAccuracy   Decimal?  @map("location_accuracy") @db.Decimal(5, 2) // GPS accuracy in meters
+  isLocationActive   Boolean   @default(false) @map("is_location_active") // Whether driver is actively sharing location
 
   // Work preferences
   preferredWorkZones String[] @default([]) @map("preferred_work_zones") // Array of zone IDs
   workSchedule       Json?    @map("work_schedule") // Preferred working hours/days
 
   // Financial information
-  bankAccountNumber  String?  @map("bank_account_number") @db.VarChar(50)
-  bankName           String?  @map("bank_name") @db.VarChar(100)
-  taxId              String?  @map("tax_id") @db.VarChar(20)
+  bankAccountNumber String? @map("bank_account_number") @db.VarChar(50)
+  bankName          String? @map("bank_name") @db.VarChar(100)
+  taxId             String? @map("tax_id") @db.VarChar(20)
 
   // Ratings and performance
-  averageRating      Decimal? @default(0.00) @map("average_rating") @db.Decimal(3, 2)
-  totalRides         Int      @default(0) @map("total_rides")
-  totalEarnings      Decimal  @default(0.00) @map("total_earnings") @db.Decimal(10, 2)
-  completionRate     Decimal  @default(0.00) @map("completion_rate") @db.Decimal(5, 2) // Percentage of completed rides
+  averageRating  Decimal? @default(0.00) @map("average_rating") @db.Decimal(3, 2)
+  totalRides     Int      @default(0) @map("total_rides")
+  totalEarnings  Decimal  @default(0.00) @map("total_earnings") @db.Decimal(10, 2)
+  completionRate Decimal  @default(0.00) @map("completion_rate") @db.Decimal(5, 2) // Percentage of completed rides
 
   // Status management
-  suspensionReason   String?  @map("suspension_reason")
-  suspensionEndDate  DateTime? @map("suspension_end_date")
-  lastStatusChange   DateTime? @map("last_status_change")
-  statusChangedBy    Int?     @map("status_changed_by") // Admin who changed status
+  suspensionReason  String?   @map("suspension_reason")
+  suspensionEndDate DateTime? @map("suspension_end_date")
+  lastStatusChange  DateTime? @map("last_status_change")
+  statusChangedBy   Int?      @map("status_changed_by") // Admin who changed status
 
   // Vehicle type reference
-  vehicleTypeId      Int?     @map("vehicle_type_id")
+  vehicleTypeId Int? @map("vehicle_type_id")
 
   // Audit fields
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
-  lastLogin          DateTime? @map("last_login")
-  lastActive         DateTime? @map("last_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
+  lastLogin  DateTime? @map("last_login")
+  lastActive DateTime? @map("last_active")
 
   // Relations
-  vehicleType         VehicleType?    @relation(fields: [vehicleTypeId], references: [id])
-  vehicles            Vehicle[]
-  documents           DriverDocument[]
-  rides               Ride[]
-  deliveryOrders      DeliveryOrder[]
-  errands             Errand[]
-  parcels             Parcel[]
-  locationHistory     DriverLocationHistory[]
-  driverReports       DriverReport[]
-  vehicleHistory      VehicleChangeHistory[]
-  driverPayments      DriverPayment[]
-  driverPaymentMethods DriverPaymentMethod[]
+  vehicleType               VehicleType?                @relation(fields: [vehicleTypeId], references: [id])
+  vehicles                  Vehicle[]
+  documents                 DriverDocument[]
+  rides                     Ride[]
+  deliveryOrders            DeliveryOrder[]
+  errands                   Errand[]
+  parcels                   Parcel[]
+  locationHistory           DriverLocationHistory[]
+  driverReports             DriverReport[]
+  vehicleHistory            VehicleChangeHistory[]
+  driverPayments            DriverPayment[]
+  driverPaymentMethods      DriverPaymentMethod[]
   driverVerificationHistory DriverVerificationHistory[]
-  workZoneAssignments DriverWorkZone[]
+  workZoneAssignments       DriverWorkZone[]
 
   // Performance indexes for matching algorithm
   @@index([status, verificationStatus])
@@ -283,7 +290,6 @@ model Driver {
   @@index([status, lastLocationUpdate])
   @@index([isLocationActive, lastLocationUpdate])
   @@index([averageRating, totalRides])
-
   @@map("drivers")
 }
 
@@ -304,17 +310,17 @@ model DriverDocument {
 
 // Stores historical location data for drivers
 model DriverLocationHistory {
-  id               Int      @id @default(autoincrement())
-  driverId         Int      @map("driver_id")
-  latitude         Decimal  @db.Decimal(9, 6)
-  longitude        Decimal  @db.Decimal(9, 6)
-  accuracy         Decimal? @db.Decimal(5, 2) // GPS accuracy in meters
-  speed            Decimal? @db.Decimal(5, 2) // Speed in m/s
-  heading          Decimal? @db.Decimal(5, 2) // Direction in degrees (0-360)
-  altitude         Decimal? @db.Decimal(7, 2) // Altitude in meters
-  rideId           Int?     @map("ride_id") // Associated ride if tracking during ride
-  timestamp        DateTime @default(now())
-  source           String   @default("gps") @db.VarChar(20) // 'gps', 'wifi', 'manual', etc.
+  id        Int      @id @default(autoincrement())
+  driverId  Int      @map("driver_id")
+  latitude  Decimal  @db.Decimal(9, 6)
+  longitude Decimal  @db.Decimal(9, 6)
+  accuracy  Decimal? @db.Decimal(5, 2) // GPS accuracy in meters
+  speed     Decimal? @db.Decimal(5, 2) // Speed in m/s
+  heading   Decimal? @db.Decimal(5, 2) // Direction in degrees (0-360)
+  altitude  Decimal? @db.Decimal(7, 2) // Altitude in meters
+  rideId    Int?     @map("ride_id") // Associated ride if tracking during ride
+  timestamp DateTime @default(now())
+  source    String   @default("gps") @db.VarChar(20) // 'gps', 'wifi', 'manual', etc.
 
   // Relations
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
@@ -339,36 +345,36 @@ model RideTier {
   imageUrl      String? @map("image_url")
 
   // Tier-specific multipliers
-  tierMultiplier     Decimal @default(1.0) @db.Decimal(3, 2) // Base multiplier for this tier
-  surgeMultiplier    Decimal @default(1.0) @db.Decimal(3, 2) // Surge pricing multiplier
-  demandMultiplier   Decimal @default(1.0) @db.Decimal(3, 2) // Demand-based multiplier
-  luxuryMultiplier   Decimal @default(1.0) @db.Decimal(3, 2) // Luxury service multiplier
-  comfortMultiplier  Decimal @default(1.0) @db.Decimal(3, 2) // Comfort features multiplier
+  tierMultiplier    Decimal @default(1.0) @db.Decimal(3, 2) // Base multiplier for this tier
+  surgeMultiplier   Decimal @default(1.0) @db.Decimal(3, 2) // Surge pricing multiplier
+  demandMultiplier  Decimal @default(1.0) @db.Decimal(3, 2) // Demand-based multiplier
+  luxuryMultiplier  Decimal @default(1.0) @db.Decimal(3, 2) // Luxury service multiplier
+  comfortMultiplier Decimal @default(1.0) @db.Decimal(3, 2) // Comfort features multiplier
 
   // Operational settings
-  minPassengers      Int @default(1)     // Minimum passengers
-  maxPassengers      Int @default(4)     // Maximum passengers
-  isActive          Boolean @default(true) @map("is_active")
-  priority          Int @default(1)      // Display priority (higher = more prominent)
+  minPassengers Int     @default(1) // Minimum passengers
+  maxPassengers Int     @default(4) // Maximum passengers
+  isActive      Boolean @default(true) @map("is_active")
+  priority      Int     @default(1) // Display priority (higher = more prominent)
 
   // Relations
-  rides         Ride[]
-  vehicleTypes  TierVehicleType[]
+  rides        Ride[]
+  vehicleTypes TierVehicleType[]
 
   @@map("ride_tiers")
 }
 
 // Defines valid combinations between tiers and vehicle types
 model TierVehicleType {
-  id            Int         @id @default(autoincrement())
-  tierId        Int         @map("tier_id")
-  vehicleTypeId Int         @map("vehicle_type_id")
-  isActive      Boolean     @default(true) @map("is_active")
-  createdAt     DateTime    @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement())
+  tierId        Int      @map("tier_id")
+  vehicleTypeId Int      @map("vehicle_type_id")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   // Relations
-  tier          RideTier    @relation(fields: [tierId], references: [id], onDelete: Cascade)
-  vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
+  tier        RideTier    @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  vehicleType VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
 
   @@unique([tierId, vehicleTypeId])
   @@map("tier_vehicle_types")
@@ -376,44 +382,44 @@ model TierVehicleType {
 
 // Temporal pricing rules for dynamic pricing based on time
 model TemporalPricingRule {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(100) // Rule name (e.g., "Morning Peak", "Weekend Surcharge")
-  description   String?  @db.VarChar(255) // Rule description
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(100) // Rule name (e.g., "Morning Peak", "Weekend Surcharge")
+  description String? @db.VarChar(255) // Rule description
 
   // Rule type and configuration
-  ruleType      String   @default("time_range") @map("rule_type") @db.VarChar(20)
+  ruleType String @default("time_range") @map("rule_type") @db.VarChar(20)
   // time_range, day_of_week, date_specific, seasonal
 
   // Time-based conditions
-  startTime     String?  @map("start_time") @db.VarChar(5) // HH:MM format (e.g., "07:00")
-  endTime       String?  @map("end_time") @db.VarChar(5)   // HH:MM format (e.g., "09:00")
-  daysOfWeek    Json?    @map("days_of_week") // Array of day numbers (0=Sunday, 6=Saturday)
-  specificDates Json?    @map("specific_dates") // Array of YYYY-MM-DD dates
-  dateRanges    Json?    @map("date_ranges") // Array of {start: YYYY-MM-DD, end: YYYY-MM-DD}
+  startTime     String? @map("start_time") @db.VarChar(5) // HH:MM format (e.g., "07:00")
+  endTime       String? @map("end_time") @db.VarChar(5) // HH:MM format (e.g., "09:00")
+  daysOfWeek    Json?   @map("days_of_week") // Array of day numbers (0=Sunday, 6=Saturday)
+  specificDates Json?   @map("specific_dates") // Array of YYYY-MM-DD dates
+  dateRanges    Json?   @map("date_ranges") // Array of {start: YYYY-MM-DD, end: YYYY-MM-DD}
 
   // Pricing multiplier
-  multiplier    Decimal  @default(1.0) @db.Decimal(3, 2) // Pricing multiplier (e.g., 1.4 = 40% surcharge)
-  priority      Int      @default(1) // Rule priority (higher = applied first)
+  multiplier Decimal @default(1.0) @db.Decimal(3, 2) // Pricing multiplier (e.g., 1.4 = 40% surcharge)
+  priority   Int     @default(1) // Rule priority (higher = applied first)
 
   // Geographic scope (optional)
-  countryId     Int?     @map("country_id")
-  stateId       Int?     @map("state_id")
-  cityId        Int?     @map("city_id")
-  zoneId        Int?     @map("zone_id")
+  countryId Int? @map("country_id")
+  stateId   Int? @map("state_id")
+  cityId    Int? @map("city_id")
+  zoneId    Int? @map("zone_id")
 
   // Operational settings
-  isActive      Boolean  @default(true) @map("is_active")
-  autoApply     Boolean  @default(true) @map("auto_apply") // Auto-apply or manual override
+  isActive  Boolean @default(true) @map("is_active")
+  autoApply Boolean @default(true) @map("auto_apply") // Auto-apply or manual override
 
   // Metadata
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  country       Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  state         State?   @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  city          City?    @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  serviceZone   ServiceZone? @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  country     Country?     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  state       State?       @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  city        City?        @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  serviceZone ServiceZone? @relation(fields: [zoneId], references: [id], onDelete: Cascade)
 
   @@index([ruleType, isActive])
   @@index([countryId, stateId, cityId, zoneId])
@@ -423,31 +429,31 @@ model TemporalPricingRule {
 
 // Feature flags for dynamic feature toggling
 model FeatureFlag {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(100) // Feature name (e.g., "new_payment_flow")
-  key           String   @unique @db.VarChar(100) // Unique key for feature
-  description   String?  @db.VarChar(255) // Feature description
-  category      String   @db.VarChar(50) // Category (e.g., "payments", "rides", "admin")
-  isEnabled     Boolean  @default(false) @map("is_enabled") // Feature enabled/disabled
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(100) // Feature name (e.g., "new_payment_flow")
+  key         String  @unique @db.VarChar(100) // Unique key for feature
+  description String? @db.VarChar(255) // Feature description
+  category    String  @db.VarChar(50) // Category (e.g., "payments", "rides", "admin")
+  isEnabled   Boolean @default(false) @map("is_enabled") // Feature enabled/disabled
 
   // Configuration
-  config        Json?    // Additional configuration data
+  config            Json? // Additional configuration data
   rolloutPercentage Int?  @default(100) @map("rollout_percentage") // Percentage rollout (0-100)
 
   // Targeting (optional)
-  userRoles     Json?    @map("user_roles") // Array of user roles this applies to
-  userIds       Json?    @map("user_ids")   // Array of specific user IDs
-  environments  Json?    @map("environments") // Array of environments ("dev", "staging", "prod")
+  userRoles    Json? @map("user_roles") // Array of user roles this applies to
+  userIds      Json? @map("user_ids") // Array of specific user IDs
+  environments Json? @map("environments") // Array of environments ("dev", "staging", "prod")
 
   // Operational settings
-  isActive      Boolean  @default(true) @map("is_active") // Flag is active
-  autoEnable    Boolean  @default(false) @map("auto_enable") // Auto-enable after creation
+  isActive   Boolean @default(true) @map("is_active") // Flag is active
+  autoEnable Boolean @default(false) @map("auto_enable") // Auto-enable after creation
 
   // Metadata
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
-  createdBy     String?  @map("created_by") @db.VarChar(100) // Admin user who created
-  updatedBy     String?  @map("updated_by") @db.VarChar(100) // Admin user who updated
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by") @db.VarChar(100) // Admin user who created
+  updatedBy String?  @map("updated_by") @db.VarChar(100) // Admin user who updated
 
   @@index([key, isActive])
   @@index([category, isEnabled])
@@ -457,27 +463,27 @@ model FeatureFlag {
 
 // System configuration parameters
 model SystemConfig {
-  id            Int      @id @default(autoincrement())
-  key           String   @unique @db.VarChar(100) // Config key
-  value         String   @db.Text // Config value (JSON string)
-  type          String   @db.VarChar(20) // Value type: "string", "number", "boolean", "json"
-  category      String   @db.VarChar(50) // Category (e.g., "payments", "rides", "notifications")
-  description   String?  @db.VarChar(255) // Description of the config
-  isEncrypted   Boolean  @default(false) @map("is_encrypted") // Whether value is encrypted
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(100) // Config key
+  value       String  @db.Text // Config value (JSON string)
+  type        String  @db.VarChar(20) // Value type: "string", "number", "boolean", "json"
+  category    String  @db.VarChar(50) // Category (e.g., "payments", "rides", "notifications")
+  description String? @db.VarChar(255) // Description of the config
+  isEncrypted Boolean @default(false) @map("is_encrypted") // Whether value is encrypted
 
   // Validation
-  validation    Json?    // Validation rules (min, max, pattern, etc.)
-  defaultValue  String?  @map("default_value") // Default value
+  validation   Json? // Validation rules (min, max, pattern, etc.)
+  defaultValue String? @map("default_value") // Default value
 
   // Operational
-  isActive      Boolean  @default(true) @map("is_active")
+  isActive        Boolean @default(true) @map("is_active")
   requiresRestart Boolean @default(false) @map("requires_restart") // Requires app restart
 
   // Metadata
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
-  createdBy     String?  @map("created_by") @db.VarChar(100)
-  updatedBy     String?  @map("updated_by") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by") @db.VarChar(100)
+  updatedBy String?  @map("updated_by") @db.VarChar(100)
 
   @@index([category, isActive])
   @@index([key, isActive])
@@ -486,26 +492,26 @@ model SystemConfig {
 
 // Notification templates and settings
 model NotificationTemplate {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(100) // Template name
-  key           String   @unique @db.VarChar(100) // Unique key
-  type          String   @db.VarChar(30) // Type: "email", "push", "sms", "in_app"
-  category      String   @db.VarChar(50) // Category: "rides", "payments", "admin", etc.
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(100) // Template name
+  key      String @unique @db.VarChar(100) // Unique key
+  type     String @db.VarChar(30) // Type: "email", "push", "sms", "in_app"
+  category String @db.VarChar(50) // Category: "rides", "payments", "admin", etc.
 
   // Content
-  subject       String?  @db.VarChar(255) // Subject for email/push
-  body          String   @db.Text // Template body with placeholders
-  variables     Json?    // Available variables for template
+  subject   String? @db.VarChar(255) // Subject for email/push
+  body      String  @db.Text // Template body with placeholders
+  variables Json? // Available variables for template
 
   // Configuration
-  priority      String   @default("normal") @db.VarChar(20) // "low", "normal", "high", "urgent"
-  isActive      Boolean  @default(true) @map("is_active")
+  priority String  @default("normal") @db.VarChar(20) // "low", "normal", "high", "urgent"
+  isActive Boolean @default(true) @map("is_active")
 
   // Metadata
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
-  createdBy     String?  @map("created_by") @db.VarChar(100)
-  updatedBy     String?  @map("updated_by") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by") @db.VarChar(100)
+  updatedBy String?  @map("updated_by") @db.VarChar(100)
 
   @@index([type, category, isActive])
   @@index([key, isActive])
@@ -514,44 +520,44 @@ model NotificationTemplate {
 
 // API keys for external service integrations
 model APIKey {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(100) // Human readable name (e.g., "Stripe Production")
-  service       String   @db.VarChar(50) // Service name (e.g., "stripe", "twilio", "firebase")
-  environment   String   @db.VarChar(20) // Environment ("development", "staging", "production")
-  keyType       String   @db.VarChar(30) // Type ("secret", "public", "private_key", "access_token")
+  id          Int    @id @default(autoincrement())
+  name        String @db.VarChar(100) // Human readable name (e.g., "Stripe Production")
+  service     String @db.VarChar(50) // Service name (e.g., "stripe", "twilio", "firebase")
+  environment String @db.VarChar(20) // Environment ("development", "staging", "production")
+  keyType     String @db.VarChar(30) // Type ("secret", "public", "private_key", "access_token")
 
   // Encrypted key data
-  encryptedKey  String   @db.Text // Encrypted API key
-  keyHash       String?  @db.VarChar(128) // Hash for integrity verification
+  encryptedKey String  @db.Text // Encrypted API key
+  keyHash      String? @db.VarChar(128) // Hash for integrity verification
 
   // Key metadata
-  description   String?  @db.VarChar(255)
-  expiresAt     DateTime? // Expiration date
-  lastRotated   DateTime? // Last rotation timestamp
-  rotationPolicy String? @db.VarChar(50) // "manual", "auto_30d", "auto_90d", "auto_1y"
+  description    String?   @db.VarChar(255)
+  expiresAt      DateTime? // Expiration date
+  lastRotated    DateTime? // Last rotation timestamp
+  rotationPolicy String?   @db.VarChar(50) // "manual", "auto_30d", "auto_90d", "auto_1y"
 
   // Security settings
-  isActive      Boolean  @default(true) // Key is active
-  isPrimary     Boolean  @default(false) // Primary key for service/environment
-  accessLevel   String   @db.VarChar(20) // "read", "write", "admin", "full"
+  isActive    Boolean @default(true) // Key is active
+  isPrimary   Boolean @default(false) // Primary key for service/environment
+  accessLevel String  @db.VarChar(20) // "read", "write", "admin", "full"
 
   // Usage tracking
-  lastUsed      DateTime?
-  usageCount    Int      @default(0)
-  errorCount    Int      @default(0)
-  rateLimit     Int?     // Requests per minute limit
+  lastUsed   DateTime?
+  usageCount Int       @default(0)
+  errorCount Int       @default(0)
+  rateLimit  Int? // Requests per minute limit
 
   // Metadata
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
-  createdBy     String?  @db.VarChar(100)
-  updatedBy     String?  @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  createdBy String?  @db.VarChar(100)
+  updatedBy String?  @db.VarChar(100)
 
   // Tags for organization
-  tags          Json?    // Array of tags for filtering
+  tags Json? // Array of tags for filtering
 
   // Relations
-  audits        APIKeyAudit[] // Audit log entries for this key
+  audits APIKeyAudit[] // Audit log entries for this key
 
   @@unique([service, environment, keyType, isPrimary], name: "unique_primary_key")
   @@index([service, environment, isActive])
@@ -563,20 +569,20 @@ model APIKey {
 
 // Audit log for API key operations
 model APIKeyAudit {
-  id            Int      @id @default(autoincrement())
-  apiKeyId      Int      @map("api_key_id")
-  action        String   @db.VarChar(50) // "created", "updated", "rotated", "accessed", "deactivated"
-  oldValue      String?  @db.Text // Previous encrypted value
-  newValue      String?  @db.Text // New encrypted value
-  metadata      Json?    // Additional context
+  id       Int     @id @default(autoincrement())
+  apiKeyId Int     @map("api_key_id")
+  action   String  @db.VarChar(50) // "created", "updated", "rotated", "accessed", "deactivated"
+  oldValue String? @db.Text // Previous encrypted value
+  newValue String? @db.Text // New encrypted value
+  metadata Json? // Additional context
 
-  performedBy   String?  @db.VarChar(100) // User who performed action
-  performedAt   DateTime @default(now())
-  ipAddress     String?  @db.VarChar(45) // IPv4/IPv6 address
-  userAgent     String?  @db.VarChar(500)
+  performedBy String?  @db.VarChar(100) // User who performed action
+  performedAt DateTime @default(now())
+  ipAddress   String?  @db.VarChar(45) // IPv4/IPv6 address
+  userAgent   String?  @db.VarChar(500)
 
   // Relations
-  apiKey        APIKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  apiKey APIKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
 
   @@index([apiKeyId, performedAt])
   @@index([action, performedAt])
@@ -585,24 +591,24 @@ model APIKeyAudit {
 
 // Integration status monitoring
 model IntegrationStatus {
-  id            Int      @id @default(autoincrement())
-  service       String   @db.VarChar(50) // Service name
-  environment   String   @db.VarChar(20) // Environment
-  status        String   @db.VarChar(20) // "healthy", "degraded", "down", "maintenance"
+  id          Int    @id @default(autoincrement())
+  service     String @db.VarChar(50) // Service name
+  environment String @db.VarChar(20) // Environment
+  status      String @db.VarChar(20) // "healthy", "degraded", "down", "maintenance"
 
   // Status details
-  lastChecked   DateTime @default(now())
-  responseTime  Int?     // Response time in ms
-  errorMessage  String?  @db.Text
-  version       String?  @db.VarChar(50) // API version
+  lastChecked  DateTime @default(now())
+  responseTime Int? // Response time in ms
+  errorMessage String?  @db.Text
+  version      String?  @db.VarChar(50) // API version
 
   // Health metrics
   uptimePercentage Decimal? @default(100.0) @db.Decimal(5, 2) // Last 30 days
-  errorRate      Decimal? @default(0.0) @db.Decimal(5, 2) // Last 24 hours
+  errorRate        Decimal? @default(0.0) @db.Decimal(5, 2) // Last 24 hours
 
   // Alert settings
-  alertEnabled   Boolean  @default(true)
-  alertThreshold Int      @default(5) // Minutes without successful check
+  alertEnabled   Boolean @default(true)
+  alertThreshold Int     @default(5) // Minutes without successful check
 
   @@unique([service, environment])
   @@index([status, lastChecked])
@@ -640,13 +646,13 @@ model Ride {
   updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  driver               Driver?                @relation(fields: [driverId], references: [id])
-  tier                 RideTier?              @relation(fields: [tierId], references: [id])
-  user                 User?                  @relation(fields: [userId], references: [id])
-  vehicle              Vehicle?               @relation("VehicleRides", fields: [vehicleId], references: [id])
+  driver               Driver?                 @relation(fields: [driverId], references: [id])
+  tier                 RideTier?               @relation(fields: [tierId], references: [id])
+  user                 User?                   @relation(fields: [userId], references: [id])
+  vehicle              Vehicle?                @relation("VehicleRides", fields: [vehicleId], references: [id])
   driverReports        DriverReport[]
   cancellations        RideCancellation[]
-  requestedVehicleType VehicleType?           @relation("RequestedVehicleType", fields: [requestedVehicleTypeId], references: [id])
+  requestedVehicleType VehicleType?            @relation("RequestedVehicleType", fields: [requestedVehicleTypeId], references: [id])
   ratings              Rating[]
   messages             ChatMessage[]
   locationHistory      DriverLocationHistory[]
@@ -765,33 +771,71 @@ model Promotion {
 
 // Manages user wallet balances
 model Wallet {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique @map("user_id")
-  balance   Decimal  @default(0.00) @db.Decimal(10, 2)
+  id      Int     @id @default(autoincrement())
+  userId  Int     @unique @map("user_id")
+  balance Decimal @default(0.00) @db.Decimal(10, 2)
+
+  // Audit and security fields
+  isBlocked     Boolean   @default(false) @map("is_blocked")
+  blockedAt     DateTime? @map("blocked_at")
+  blockedBy     Int?      @map("blocked_by") // Admin user ID
+  blockReason   String?   @map("block_reason") @db.Text
+  unblockedAt   DateTime? @map("unblocked_at")
+  unblockedBy   Int?      @map("unblocked_by") // Admin user ID
+  unblockReason String?   @map("unblock_reason") @db.Text
+
+  // Daily limits tracking
+  dailyLimitUsed    Decimal  @default(0.00) @map("daily_limit_used") @db.Decimal(10, 2)
+  dailyLimitResetAt DateTime @default(now()) @map("daily_limit_reset_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   walletTransactions WalletTransaction[]
+  auditLogs          WalletAuditLog[]
 
+  // Indexes for performance
+  @@index([isBlocked])
+  @@index([dailyLimitResetAt])
+  @@index([userId, isBlocked])
   @@map("wallets")
 }
 
 // Tracks all wallet transactions (credits and debits)
 model WalletTransaction {
-  id              Int      @id @default(autoincrement())
-  walletId        Int      @map("wallet_id")
-  amount          Decimal  @db.Decimal(10, 2)
-  transactionType String   @map("transaction_type") @db.VarChar(20)
-  description     String?
-  referenceType   String?  @map("reference_type") // 'ride_cancellation', 'order_cancellation', 'payment_refund', etc.
-  referenceId     String?  @map("reference_id") // ID del objeto relacionado
-  createdAt       DateTime @default(now()) @map("created_at")
+  id              Int     @id @default(autoincrement())
+  walletId        Int     @map("wallet_id")
+  amount          Decimal @db.Decimal(10, 2)
+  transactionType String  @map("transaction_type") @db.VarChar(20) // 'credit', 'debit'
+  description     String? @db.Text
+  referenceType   String? @map("reference_type") @db.VarChar(50) // 'ride_cancellation', 'order_cancellation', 'payment_refund', 'user_transfer', etc.
+  referenceId     String? @map("reference_id") @db.VarChar(100) // ID del objeto relacionado
+
+  // Audit fields
+  ipAddress  String? @map("ip_address") @db.VarChar(45) // IPv4 or IPv6
+  userAgent  String? @map("user_agent") @db.Text
+  externalId String? @map("external_id") @db.VarChar(100) // External transaction ID
+  source     String? @db.VarChar(50) // 'credit_card', 'bank_transfer', 'cash', etc.
+
+  // Status tracking
+  status       String    @default("completed") @db.VarChar(20) // 'pending', 'completed', 'failed', 'cancelled'
+  processedAt  DateTime? @map("processed_at")
+  failedReason String?   @map("failed_reason") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
+  // Indexes for performance
+  @@index([walletId, createdAt])
+  @@index([transactionType, status])
+  @@index([referenceType, referenceId])
+  @@index([createdAt])
+  @@index([status])
   @@map("wallet_transactions")
 }
 
@@ -832,21 +876,21 @@ model EmergencyContact {
 
 // Stores chat messages for rides, deliveries, errands, and parcels
 model ChatMessage {
-  id            Int      @id @default(autoincrement())
-  rideId        Int?     @map("ride_id")
-  orderId       Int?     @map("order_id")
-  errandId      Int?     @map("errand_id")
-  parcelId      Int?     @map("parcel_id")
-  senderId      Int      @map("sender_id")
-  messageText   String   @map("message_text")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id          Int      @id @default(autoincrement())
+  rideId      Int?     @map("ride_id")
+  orderId     Int?     @map("order_id")
+  errandId    Int?     @map("errand_id")
+  parcelId    Int?     @map("parcel_id")
+  senderId    Int      @map("sender_id")
+  messageText String   @map("message_text")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
-  ride    Ride?          @relation(fields: [rideId], references: [rideId])
-  order   DeliveryOrder? @relation(fields: [orderId], references: [orderId])
-  errand  Errand?        @relation(fields: [errandId], references: [id])
-  parcel  Parcel?        @relation(fields: [parcelId], references: [id])
-  sender  User           @relation("MessageSender", fields: [senderId], references: [id])
+  ride   Ride?          @relation(fields: [rideId], references: [rideId])
+  order  DeliveryOrder? @relation(fields: [orderId], references: [orderId])
+  errand Errand?        @relation(fields: [errandId], references: [id])
+  parcel Parcel?        @relation(fields: [parcelId], references: [id])
+  sender User           @relation("MessageSender", fields: [senderId], references: [id])
 
   @@map("chat_messages")
 }
@@ -1031,28 +1075,28 @@ model BankTransaction {
 
 // Stores errand requests where drivers perform personal tasks
 model Errand {
-  id                 Int      @id @default(autoincrement())
-  userId             Int      @map("user_id")
-  driverId           Int?     @map("driver_id")
-  description        String   @db.VarChar(300)
-  itemsList          String?  @db.Text
-  pickupAddress      String   @db.VarChar(255)
-  pickupLat          Decimal  @db.Decimal(9, 6)
-  pickupLng          Decimal  @db.Decimal(9, 6)
-  dropoffAddress     String   @db.VarChar(255)
-  dropoffLat         Decimal  @db.Decimal(9, 6)
-  dropoffLng         Decimal  @db.Decimal(9, 6)
-  status             String   @default("requested") @db.VarChar(20)
-  itemsCost          Decimal? @db.Decimal(10, 2)
-  serviceFee         Decimal? @db.Decimal(10, 2)
-  totalAmount        Decimal? @db.Decimal(10, 2)
-  shoppingNotes      String?  @db.Text
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  driverId       Int?     @map("driver_id")
+  description    String   @db.VarChar(300)
+  itemsList      String?  @db.Text
+  pickupAddress  String   @db.VarChar(255)
+  pickupLat      Decimal  @db.Decimal(9, 6)
+  pickupLng      Decimal  @db.Decimal(9, 6)
+  dropoffAddress String   @db.VarChar(255)
+  dropoffLat     Decimal  @db.Decimal(9, 6)
+  dropoffLng     Decimal  @db.Decimal(9, 6)
+  status         String   @default("requested") @db.VarChar(20)
+  itemsCost      Decimal? @db.Decimal(10, 2)
+  serviceFee     Decimal? @db.Decimal(10, 2)
+  totalAmount    Decimal? @db.Decimal(10, 2)
+  shoppingNotes  String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  user     User         @relation(fields: [userId], references: [id])
-  driver   Driver?      @relation(fields: [driverId], references: [id])
+  user     User          @relation(fields: [userId], references: [id])
+  driver   Driver?       @relation(fields: [driverId], references: [id])
   messages ChatMessage[]
 
   @@map("errands")
@@ -1064,32 +1108,32 @@ model Errand {
 
 // Stores parcel delivery requests
 model Parcel {
-  id                Int      @id @default(autoincrement())
-  userId            Int      @map("user_id")
-  driverId          Int?     @map("driver_id")
-  pickupAddress     String   @db.VarChar(255)
-  pickupLat         Decimal  @db.Decimal(9, 6)
-  pickupLng         Decimal  @db.Decimal(9, 6)
-  dropoffAddress    String   @db.VarChar(255)
-  dropoffLat        Decimal  @db.Decimal(9, 6)
-  dropoffLng        Decimal  @db.Decimal(9, 6)
-  type              String   @db.VarChar(50) // 'documents', 'small_package', 'large_package'
-  description       String?  @db.Text
-  weight            Decimal? @db.Decimal(5, 2)
-  dimensions        String?  @db.VarChar(50) // '20x15x10'
-  status            String   @default("requested") @db.VarChar(20)
-  serviceFee        Decimal? @db.Decimal(10, 2)
-  totalAmount       Decimal? @db.Decimal(10, 2)
-  proofOfPickup     String?  @map("proof_of_pickup") // Photo URL
-  proofOfDelivery   String?  @map("proof_of_delivery") // Photo/Signature URL
-  recipientName     String?  @map("recipient_name")
-  recipientPhone    String?  @map("recipient_phone")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  driverId        Int?     @map("driver_id")
+  pickupAddress   String   @db.VarChar(255)
+  pickupLat       Decimal  @db.Decimal(9, 6)
+  pickupLng       Decimal  @db.Decimal(9, 6)
+  dropoffAddress  String   @db.VarChar(255)
+  dropoffLat      Decimal  @db.Decimal(9, 6)
+  dropoffLng      Decimal  @db.Decimal(9, 6)
+  type            String   @db.VarChar(50) // 'documents', 'small_package', 'large_package'
+  description     String?  @db.Text
+  weight          Decimal? @db.Decimal(5, 2)
+  dimensions      String?  @db.VarChar(50) // '20x15x10'
+  status          String   @default("requested") @db.VarChar(20)
+  serviceFee      Decimal? @db.Decimal(10, 2)
+  totalAmount     Decimal? @db.Decimal(10, 2)
+  proofOfPickup   String?  @map("proof_of_pickup") // Photo URL
+  proofOfDelivery String?  @map("proof_of_delivery") // Photo/Signature URL
+  recipientName   String?  @map("recipient_name")
+  recipientPhone  String?  @map("recipient_phone")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  user     User         @relation(fields: [userId], references: [id])
-  driver   Driver?      @relation(fields: [driverId], references: [id])
+  user     User          @relation(fields: [userId], references: [id])
+  driver   Driver?       @relation(fields: [driverId], references: [id])
   messages ChatMessage[]
 
   @@map("parcels")
@@ -1101,29 +1145,29 @@ model Parcel {
 
 // Stores user shopping carts
 model Cart {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @unique @map("user_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  user     User       @relation(fields: [userId], references: [id])
-  items    CartItem[]
+  user  User       @relation(fields: [userId], references: [id])
+  items CartItem[]
 
   @@map("carts")
 }
 
 // Stores items in shopping carts
 model CartItem {
-  id         Int     @id @default(autoincrement())
-  cartId     Int     @map("cart_id")
-  productId  Int     @map("product_id")
-  quantity   Int     @default(1)
-  notes      String? @db.VarChar(255)
+  id        Int     @id @default(autoincrement())
+  cartId    Int     @map("cart_id")
+  productId Int     @map("product_id")
+  quantity  Int     @default(1)
+  notes     String? @db.VarChar(255)
 
   // Relations
-  cart     Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, productId])
   @@map("cart_items")
@@ -1135,25 +1179,25 @@ model CartItem {
 
 // Stores driver reports for issues during rides
 model DriverReport {
-  id                 Int       @id @default(autoincrement())
-  rideId             Int       @map("ride_id")
-  driverId           Int       @map("driver_id")
-  vehicleId          Int?      @map("vehicle_id")
-  reportType         String    @map("report_type") // 'traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other'
-  description        String    @map("description")
-  severity           String    @map("severity") // 'low', 'medium', 'high'
-  locationLat        Decimal?  @map("location_lat") @db.Decimal(9, 6)
-  locationLng        Decimal?  @map("location_lng") @db.Decimal(9, 6)
-  estimatedDelay     Int?      @map("estimated_delay") // minutos
-  requiresCancellation Boolean @default(false) @map("requires_cancellation")
-  status             String    @default("reported") @map("status") // 'reported', 'acknowledged', 'resolved'
-  adminNotes         String?   @map("admin_notes")
-  reportedAt         DateTime  @default(now()) @map("reported_at")
-  resolvedAt         DateTime? @map("resolved_at")
+  id                   Int       @id @default(autoincrement())
+  rideId               Int       @map("ride_id")
+  driverId             Int       @map("driver_id")
+  vehicleId            Int?      @map("vehicle_id")
+  reportType           String    @map("report_type") // 'traffic_jam', 'breakdown', 'accident', 'passenger_issue', 'other'
+  description          String    @map("description")
+  severity             String    @map("severity") // 'low', 'medium', 'high'
+  locationLat          Decimal?  @map("location_lat") @db.Decimal(9, 6)
+  locationLng          Decimal?  @map("location_lng") @db.Decimal(9, 6)
+  estimatedDelay       Int?      @map("estimated_delay") // minutos
+  requiresCancellation Boolean   @default(false) @map("requires_cancellation")
+  status               String    @default("reported") @map("status") // 'reported', 'acknowledged', 'resolved'
+  adminNotes           String?   @map("admin_notes")
+  reportedAt           DateTime  @default(now()) @map("reported_at")
+  resolvedAt           DateTime? @map("resolved_at")
 
   // Relations
-  ride    Ride    @relation(fields: [rideId], references: [rideId], onDelete: Cascade)
-  driver  Driver  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  ride    Ride     @relation(fields: [rideId], references: [rideId], onDelete: Cascade)
+  driver  Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
 
   @@map("driver_reports")
@@ -1161,16 +1205,16 @@ model DriverReport {
 
 // Ride cancellations with refund tracking
 model RideCancellation {
-  id                 Int       @id @default(autoincrement())
-  rideId             Int       @map("ride_id")
-  cancelledBy        String    @map("cancelled_by") // 'driver', 'passenger', 'system'
-  reason             String    @map("reason")
-  notes              String?   @map("notes")
-  refundAmount       Decimal   @map("refund_amount") @db.Decimal(10, 2)
-  refundProcessed    Boolean   @default(false) @map("refund_processed")
-  locationLat        Decimal?  @map("location_lat") @db.Decimal(9, 6)
-  locationLng        Decimal?  @map("location_lng") @db.Decimal(9, 6)
-  cancelledAt        DateTime  @default(now()) @map("cancelled_at")
+  id              Int      @id @default(autoincrement())
+  rideId          Int      @map("ride_id")
+  cancelledBy     String   @map("cancelled_by") // 'driver', 'passenger', 'system'
+  reason          String   @map("reason")
+  notes           String?  @map("notes")
+  refundAmount    Decimal  @map("refund_amount") @db.Decimal(10, 2)
+  refundProcessed Boolean  @default(false) @map("refund_processed")
+  locationLat     Decimal? @map("location_lat") @db.Decimal(9, 6)
+  locationLng     Decimal? @map("location_lng") @db.Decimal(9, 6)
+  cancelledAt     DateTime @default(now()) @map("cancelled_at")
 
   // Relations
   ride Ride @relation(fields: [rideId], references: [rideId], onDelete: Cascade)
@@ -1199,7 +1243,7 @@ model DriverPaymentMethod {
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver   Driver          @relation(fields: [driverId], references: [id], onDelete: Cascade)
   payments DriverPayment[]
 
   @@map("driver_payment_methods")
@@ -1207,27 +1251,27 @@ model DriverPaymentMethod {
 
 // Payment records for drivers (earnings)
 model DriverPayment {
-  id                Int      @id @default(autoincrement())
-  driverId          Int      @map("driver_id")
-  paymentMethodId   Int?     @map("payment_method_id")
-  amount            Decimal  @db.Decimal(10, 2)
-  currency          String   @default("USD") @db.VarChar(3)
-  paymentType       String   @db.VarChar(20) // 'ride_earning', 'bonus', 'adjustment', 'deduction'
-  referenceType     String   @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
-  referenceId       Int      @map("reference_id") // ID of the related service
-  description       String?
-  periodStart       DateTime? @map("period_start") // For weekly/monthly payments
-  periodEnd         DateTime? @map("period_end")
-  status            String   @default("pending") @db.VarChar(20) // 'pending', 'processed', 'failed', 'cancelled'
-  processedAt       DateTime? @map("processed_at")
-  transactionId     String?  @map("transaction_id") @db.VarChar(100) // Bank transaction ID
-  notes             String?
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  id              Int       @id @default(autoincrement())
+  driverId        Int       @map("driver_id")
+  paymentMethodId Int?      @map("payment_method_id")
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String    @default("USD") @db.VarChar(3)
+  paymentType     String    @db.VarChar(20) // 'ride_earning', 'bonus', 'adjustment', 'deduction'
+  referenceType   String    @db.VarChar(20) // 'ride', 'delivery', 'errand', 'parcel'
+  referenceId     Int       @map("reference_id") // ID of the related service
+  description     String?
+  periodStart     DateTime? @map("period_start") // For weekly/monthly payments
+  periodEnd       DateTime? @map("period_end")
+  status          String    @default("pending") @db.VarChar(20) // 'pending', 'processed', 'failed', 'cancelled'
+  processedAt     DateTime? @map("processed_at")
+  transactionId   String?   @map("transaction_id") @db.VarChar(100) // Bank transaction ID
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  driver        Driver                @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  paymentMethod DriverPaymentMethod?  @relation(fields: [paymentMethodId], references: [id])
+  driver        Driver               @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  paymentMethod DriverPaymentMethod? @relation(fields: [paymentMethodId], references: [id])
 
   @@index([driverId, createdAt])
   @@index([status, createdAt])
@@ -1242,7 +1286,7 @@ model WorkZone {
   description String?
   city        String   @db.VarChar(100)
   state       String   @db.VarChar(100)
-  coordinates Json     // GeoJSON polygon defining the zone
+  coordinates Json // GeoJSON polygon defining the zone
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -1264,7 +1308,7 @@ model DriverWorkZone {
   status     String   @default("active") @db.VarChar(20) // 'active', 'inactive', 'suspended'
 
   // Relations
-  driver Driver  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
   zone   WorkZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
 
   @@unique([driverId, zoneId])
@@ -1273,14 +1317,14 @@ model DriverWorkZone {
 
 // History of driver verification changes
 model DriverVerificationHistory {
-  id                Int      @id @default(autoincrement())
-  driverId          Int      @map("driver_id")
-  previousStatus    String?  @map("previous_status") @db.VarChar(20)
-  newStatus         String   @map("new_status") @db.VarChar(20)
-  changeReason      String   @map("change_reason")
-  additionalNotes   String?  @map("additional_notes")
-  changedBy         Int      @map("changed_by") // Admin user ID
-  changedAt         DateTime @default(now()) @map("changed_at")
+  id              Int      @id @default(autoincrement())
+  driverId        Int      @map("driver_id")
+  previousStatus  String?  @map("previous_status") @db.VarChar(20)
+  newStatus       String   @map("new_status") @db.VarChar(20)
+  changeReason    String   @map("change_reason")
+  additionalNotes String?  @map("additional_notes")
+  changedBy       Int      @map("changed_by") // Admin user ID
+  changedAt       DateTime @default(now()) @map("changed_at")
 
   // Relations
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
@@ -1295,30 +1339,30 @@ model DriverVerificationHistory {
 
 // Country model for geographic management
 model Country {
-  id              Int      @id @default(autoincrement())
-  name            String   @unique @db.VarChar(100) // Full country name
-  isoCode2        String   @unique @map("iso_code_2") @db.VarChar(2) // ISO 3166-1 alpha-2
-  isoCode3        String?  @unique @map("iso_code_3") @db.VarChar(3) // ISO 3166-1 alpha-3
-  numericCode     Int?     @unique @map("numeric_code") // ISO 3166-1 numeric
-  phoneCode       String?  @map("phone_code") @db.VarChar(10) // International dialing code
-  currencyCode    String   @map("currency_code") @db.VarChar(3) // ISO 4217 currency code
-  currencyName    String?  @map("currency_name") @db.VarChar(50) // Currency full name
-  currencySymbol  String?  @map("currency_symbol") @db.VarChar(5) // Currency symbol
-  timezone        String   @map("timezone") @db.VarChar(50) // Primary timezone (IANA format)
-  continent       String   @map("continent") @db.VarChar(20) // Continent name
-  region          String?  @map("region") @db.VarChar(50) // UN region
-  subregion       String?  @map("subregion") @db.VarChar(50) // UN subregion
+  id             Int     @id @default(autoincrement())
+  name           String  @unique @db.VarChar(100) // Full country name
+  isoCode2       String  @unique @map("iso_code_2") @db.VarChar(2) // ISO 3166-1 alpha-2
+  isoCode3       String? @unique @map("iso_code_3") @db.VarChar(3) // ISO 3166-1 alpha-3
+  numericCode    Int?    @unique @map("numeric_code") // ISO 3166-1 numeric
+  phoneCode      String? @map("phone_code") @db.VarChar(10) // International dialing code
+  currencyCode   String  @map("currency_code") @db.VarChar(3) // ISO 4217 currency code
+  currencyName   String? @map("currency_name") @db.VarChar(50) // Currency full name
+  currencySymbol String? @map("currency_symbol") @db.VarChar(5) // Currency symbol
+  timezone       String  @map("timezone") @db.VarChar(50) // Primary timezone (IANA format)
+  continent      String  @map("continent") @db.VarChar(20) // Continent name
+  region         String? @map("region") @db.VarChar(50) // UN region
+  subregion      String? @map("subregion") @db.VarChar(50) // UN subregion
 
   // Tax and regulatory settings
-  vatRate         Decimal? @map("vat_rate") @db.Decimal(5, 2) // Value Added Tax rate (%)
+  vatRate          Decimal? @map("vat_rate") @db.Decimal(5, 2) // Value Added Tax rate (%)
   corporateTaxRate Decimal? @map("corporate_tax_rate") @db.Decimal(5, 2) // Corporate tax rate (%)
-  incomeTaxRate   Decimal? @map("income_tax_rate") @db.Decimal(5, 2) // Income tax rate (%)
+  incomeTaxRate    Decimal? @map("income_tax_rate") @db.Decimal(5, 2) // Income tax rate (%)
 
   // Platform-specific settings
-  isActive        Boolean  @default(true) @map("is_active") // Active for platform operations
+  isActive             Boolean @default(true) @map("is_active") // Active for platform operations
   requiresVerification Boolean @default(false) @map("requires_verification") // Extra verification needed
-  supportedLanguages Json? @map("supported_languages") // Array of language codes
-  legalRequirements Json? @map("legal_requirements") // Specific legal requirements
+  supportedLanguages   Json?   @map("supported_languages") // Array of language codes
+  legalRequirements    Json?   @map("legal_requirements") // Specific legal requirements
 
   // Regional service configurations
   businessHours    Json? @map("business_hours") // Operating hours by day/week
@@ -1330,16 +1374,16 @@ model Country {
   pricingMultiplier Decimal @default(1.0) @map("pricing_multiplier") @db.Decimal(3, 2) // Regional pricing multiplier
 
   // Metadata
-  flag            String?  @db.Text // Flag emoji or URL
-  capital         String?  @db.VarChar(100) // Capital city name
-  population      BigInt?  // Population count
-  areaKm2         Decimal? @map("area_km2") @db.Decimal(12, 2) // Area in square kilometers
+  flag       String?  @db.Text // Flag emoji or URL
+  capital    String?  @db.VarChar(100) // Capital city name
+  population BigInt? // Population count
+  areaKm2    Decimal? @map("area_km2") @db.Decimal(12, 2) // Area in square kilometers
 
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  states          State[]
+  states               State[]
   temporalPricingRules TemporalPricingRule[]
 
   @@map("countries")
@@ -1347,38 +1391,38 @@ model Country {
 
 // State/Province model for geographic management
 model State {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100) // Full state/province name
-  code        String   @db.VarChar(10) // State/province code (e.g., "CA", "TX")
-  countryId   Int      @map("country_id")
+  id        Int    @id @default(autoincrement())
+  name      String @db.VarChar(100) // Full state/province name
+  code      String @db.VarChar(10) // State/province code (e.g., "CA", "TX")
+  countryId Int    @map("country_id")
 
   // Geographic data
-  latitude    Decimal? @db.Decimal(9, 6) // State center latitude
-  longitude   Decimal? @db.Decimal(9, 6) // State center longitude
-  timezone    String?  @db.VarChar(50) // State-specific timezone if different
+  latitude  Decimal? @db.Decimal(9, 6) // State center latitude
+  longitude Decimal? @db.Decimal(9, 6) // State center longitude
+  timezone  String?  @db.VarChar(50) // State-specific timezone if different
 
   // Platform settings
-  isActive    Boolean  @default(true) @map("is_active")
-  pricingMultiplier Decimal @default(1.0) @map("pricing_multiplier") @db.Decimal(3, 2)
-  serviceFee  Decimal? @map("service_fee") @db.Decimal(5, 2) // Additional service fee (%)
+  isActive          Boolean  @default(true) @map("is_active")
+  pricingMultiplier Decimal  @default(1.0) @map("pricing_multiplier") @db.Decimal(3, 2)
+  serviceFee        Decimal? @map("service_fee") @db.Decimal(5, 2) // Additional service fee (%)
 
   // Regional configurations
   stateBusinessHours Json? @map("state_business_hours") // State-specific operating hours
-  stateHolidays     Json? @map("state_holidays") // State-specific holidays
-  localRestrictions Json? @map("local_restrictions") // State-specific restrictions
-  stateSettings     Json? @map("state_settings") // Custom state settings
+  stateHolidays      Json? @map("state_holidays") // State-specific holidays
+  localRestrictions  Json? @map("local_restrictions") // State-specific restrictions
+  stateSettings      Json? @map("state_settings") // Custom state settings
 
   // Metadata
-  capital     String?  @db.VarChar(100) // Capital city name
-  population  BigInt?
-  areaKm2     Decimal? @map("area_km2") @db.Decimal(10, 2)
+  capital    String?  @db.VarChar(100) // Capital city name
+  population BigInt?
+  areaKm2    Decimal? @map("area_km2") @db.Decimal(10, 2)
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  country     Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  cities      City[]
+  country              Country               @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  cities               City[]
   temporalPricingRules TemporalPricingRule[]
 
   @@unique([countryId, code])
@@ -1388,46 +1432,46 @@ model State {
 
 // City model for geographic management
 model City {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100) // Full city name
-  stateId     Int      @map("state_id")
+  id      Int    @id @default(autoincrement())
+  name    String @db.VarChar(100) // Full city name
+  stateId Int    @map("state_id")
 
   // Geographic data
-  latitude    Decimal  @db.Decimal(9, 6)
-  longitude   Decimal  @db.Decimal(9, 6)
-  timezone    String?  @db.VarChar(50)
+  latitude  Decimal @db.Decimal(9, 6)
+  longitude Decimal @db.Decimal(9, 6)
+  timezone  String? @db.VarChar(50)
 
   // Boundaries (GeoJSON or simplified polygon)
-  boundaries  Json?    // Geographic boundaries for the city
+  boundaries Json? // Geographic boundaries for the city
 
   // Platform settings
-  isActive    Boolean  @default(true) @map("is_active")
-  pricingMultiplier Decimal @default(1.0) @map("pricing_multiplier") @db.Decimal(3, 2)
-  serviceFee  Decimal? @map("service_fee") @db.Decimal(5, 2)
+  isActive          Boolean  @default(true) @map("is_active")
+  pricingMultiplier Decimal  @default(1.0) @map("pricing_multiplier") @db.Decimal(3, 2)
+  serviceFee        Decimal? @map("service_fee") @db.Decimal(5, 2)
 
   // Service zones and restrictions
-  serviceRadius Int @default(50) @map("service_radius") // Service radius in km
+  serviceRadius   Int   @default(50) @map("service_radius") // Service radius in km
   restrictedAreas Json? @map("restricted_areas") // Areas where service is restricted
-  premiumZones Json? @map("premium_zones") // High-demand or premium areas
+  premiumZones    Json? @map("premium_zones") // High-demand or premium areas
 
   // Local configurations
   cityBusinessHours Json? @map("city_business_hours") // City-specific operating hours
-  cityHolidays     Json? @map("city_holidays") // City-specific holidays
-  municipalLaws    Json? @map("municipal_laws") // Local regulations and restrictions
-  citySettings     Json? @map("city_settings") // Custom city settings
+  cityHolidays      Json? @map("city_holidays") // City-specific holidays
+  municipalLaws     Json? @map("municipal_laws") // Local regulations and restrictions
+  citySettings      Json? @map("city_settings") // Custom city settings
 
   // Metadata
   population  BigInt?
   areaKm2     Decimal? @map("area_km2") @db.Decimal(10, 2)
-  elevation   Int?     // Elevation in meters
+  elevation   Int? // Elevation in meters
   postalCodes Json?    @map("postal_codes") // Array of postal codes
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  state       State    @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  serviceZones ServiceZone[]
+  state                State                 @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  serviceZones         ServiceZone[]
   temporalPricingRules TemporalPricingRule[]
 
   @@unique([stateId, name])
@@ -1438,31 +1482,31 @@ model City {
 
 // Service zones for operational management (advanced zoning system)
 model ServiceZone {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  cityId      Int      @map("city_id")
-  zoneType    String   @default("regular") @map("zone_type") @db.VarChar(20) // regular, premium, restricted
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(100)
+  cityId   Int    @map("city_id")
+  zoneType String @default("regular") @map("zone_type") @db.VarChar(20) // regular, premium, restricted
 
   // Geographic boundaries
-  boundaries  Json     // GeoJSON polygon defining the zone
-  centerLat   Decimal  @map("center_lat") @db.Decimal(9, 6)
-  centerLng   Decimal  @map("center_lng") @db.Decimal(9, 6)
+  boundaries Json // GeoJSON polygon defining the zone
+  centerLat  Decimal @map("center_lat") @db.Decimal(9, 6)
+  centerLng  Decimal @map("center_lng") @db.Decimal(9, 6)
 
   // Zone settings
-  isActive    Boolean  @default(true) @map("is_active")
+  isActive          Boolean @default(true) @map("is_active")
   pricingMultiplier Decimal @default(1.0) @map("pricing_multiplier") @db.Decimal(3, 2)
-  maxDrivers  Int?     @map("max_drivers") // Maximum drivers allowed in zone
-  minDrivers  Int?     @map("min_drivers") // Minimum drivers required in zone
+  maxDrivers        Int?    @map("max_drivers") // Maximum drivers allowed in zone
+  minDrivers        Int?    @map("min_drivers") // Minimum drivers required in zone
 
   // Operational settings
-  peakHours   Json?    @map("peak_hours") // Peak hours configuration
+  peakHours        Json?   @map("peak_hours") // Peak hours configuration
   demandMultiplier Decimal @default(1.0) @map("demand_multiplier") @db.Decimal(3, 2) // Dynamic pricing
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  city                 City                  @relation(fields: [cityId], references: [id], onDelete: Cascade)
   temporalPricingRules TemporalPricingRule[]
 
   @@index([cityId, isActive])
@@ -1476,15 +1520,15 @@ model ServiceZone {
 
 // Referral codes that users can share
 model ReferralCode {
-  id          Int       @id @default(autoincrement())
-  code        String    @unique @db.VarChar(12)
-  userId      Int       @map("user_id")
-  isActive    Boolean   @default(true) @map("is_active")
-  expiresAt   DateTime? @map("expires_at")
-  usageCount  Int       @default(0) @map("usage_count")
-  maxUses     Int       @default(100) @map("max_uses")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  id         Int       @id @default(autoincrement())
+  code       String    @unique @db.VarChar(12)
+  userId     Int       @map("user_id")
+  isActive   Boolean   @default(true) @map("is_active")
+  expiresAt  DateTime? @map("expires_at")
+  usageCount Int       @default(0) @map("usage_count")
+  maxUses    Int       @default(100) @map("max_uses")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   user      User       @relation("UserReferralCodes", fields: [userId], references: [id], onDelete: Cascade)
@@ -1499,23 +1543,23 @@ model ReferralCode {
 
 // Referral relationships between users
 model Referral {
-  id              Int       @id @default(autoincrement())
-  referrerId      Int       @map("referrer_id")
-  refereeId       Int       @map("referee_id")
-  referralCodeId  Int       @map("referral_code_id")
-  status          String    @default("pending") @db.VarChar(20) // pending, converted, expired, cancelled
-  convertedAt     DateTime? @map("converted_at")
-  rewardAmount    Decimal?  @map("reward_amount") @db.Decimal(10, 2)
-  rewardType      String?   @map("reward_type") @db.VarChar(20)
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
-  processedAt     DateTime? @map("processed_at")
+  id             Int       @id @default(autoincrement())
+  referrerId     Int       @map("referrer_id")
+  refereeId      Int       @map("referee_id")
+  referralCodeId Int       @map("referral_code_id")
+  status         String    @default("pending") @db.VarChar(20) // pending, converted, expired, cancelled
+  convertedAt    DateTime? @map("converted_at")
+  rewardAmount   Decimal?  @map("reward_amount") @db.Decimal(10, 2)
+  rewardType     String?   @map("reward_type") @db.VarChar(20)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+  processedAt    DateTime? @map("processed_at")
 
   // Relations
-  referrer        User                   @relation("UserReferralsGiven", fields: [referrerId], references: [id], onDelete: Cascade)
-  referee         User                   @relation("UserReferralsReceived", fields: [refereeId], references: [id], onDelete: Cascade)
-  referralCode    ReferralCode           @relation(fields: [referralCodeId], references: [id], onDelete: Cascade)
-  transactions    ReferralTransaction[]
+  referrer     User                  @relation("UserReferralsGiven", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee      User                  @relation("UserReferralsReceived", fields: [refereeId], references: [id], onDelete: Cascade)
+  referralCode ReferralCode          @relation(fields: [referralCodeId], references: [id], onDelete: Cascade)
+  transactions ReferralTransaction[]
 
   @@unique([referrerId, refereeId])
   @@index([referrerId])
@@ -1528,17 +1572,17 @@ model Referral {
 
 // Reward tiers for referrals
 model ReferralReward {
-  id            Int      @id @default(autoincrement())
-  tier          String   @db.VarChar(20) // basic, advanced, vip
-  minReferrals  Int      @default(0) @map("min_referrals")
-  maxReferrals  Int?     @map("max_referrals")
-  rewardType    String   @map("rewardType") @db.VarChar(30) // free_ride, wallet_credit, discount
-  rewardAmount  Decimal  @map("reward_amount") @db.Decimal(10, 2)
-  conditions    Json?
-  validityDays  Int      @default(30) @map("validity_days")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  tier         String   @db.VarChar(20) // basic, advanced, vip
+  minReferrals Int      @default(0) @map("min_referrals")
+  maxReferrals Int?     @map("max_referrals")
+  rewardType   String   @map("rewardType") @db.VarChar(30) // free_ride, wallet_credit, discount
+  rewardAmount Decimal  @map("reward_amount") @db.Decimal(10, 2)
+  conditions   Json?
+  validityDays Int      @default(30) @map("validity_days")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@index([tier])
   @@index([isActive])
@@ -1574,18 +1618,18 @@ model ReferralTransaction {
 // No enum needed as we're using VARCHAR(20) for flexibility
 
 // =========================================
-// SECTION: EXCHANGE RATES
+// SECTION: EXCHANGE RATES & WALLET AUDIT
 // =========================================
 
 // Exchange rate information from external APIs (like dollar price)
 model ExchangeRate {
   id                 String    @id @default(cuid())
-  currency           String    @db.VarChar(10)  // "USD", "EUR", etc.
-  rate               Float     // Exchange rate value
-  compra             Float?    // Purchase price (if available)
-  venta              Float?    // Sale price (if available)
+  currency           String    @db.VarChar(10) // "USD", "EUR", etc.
+  rate               Float // Exchange rate value
+  compra             Float? // Purchase price (if available)
+  venta              Float? // Sale price (if available)
   source             String    @db.VarChar(100) // API source (e.g., "ve.dolarapi.com")
-  casa               String?   @db.VarChar(50)  // Exchange house name (e.g., "oficial")
+  casa               String?   @db.VarChar(50) // Exchange house name (e.g., "oficial")
   fechaActualizacion DateTime? @map("fecha_actualizacion") // Last update from API
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -1595,8 +1639,114 @@ model ExchangeRate {
   @@index([source, createdAt])
   @@index([casa, createdAt])
   @@index([fechaActualizacion])
-
   @@map("exchange_rates")
+}
+
+// Comprehensive audit log for all wallet operations
+model WalletAuditLog {
+  id         Int    @id @default(autoincrement())
+  adminId    Int    @map("admin_id") // User who performed the action
+  action     String @db.VarChar(50) // 'transaction_created', 'wallet_blocked', 'balance_adjusted', etc.
+  resource   String @db.VarChar(50) // 'wallet', 'wallet_transaction', 'wallet_limits'
+  resourceId String @map("resource_id") @db.VarChar(100) // ID of the affected resource
+
+  // Change tracking
+  oldValue Json? @map("old_value") // Previous state
+  newValue Json? @map("new_value") // New state
+
+  // Request context
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.Text
+  requestId String? @map("request_id") @db.VarChar(100) // For tracing requests
+
+  // Additional context
+  reason   String? @db.Text // Reason for the action
+  metadata Json? // Additional context data
+
+  timestamp DateTime @default(now())
+
+  // Relations
+  admin    User    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  Wallet   Wallet? @relation(fields: [walletId], references: [id])
+  walletId Int?
+
+  // Indexes for performance
+  @@index([adminId, timestamp])
+  @@index([action, resource])
+  @@index([resourceId])
+  @@index([timestamp])
+  @@index([ipAddress])
+  @@map("wallet_audit_logs")
+}
+
+// Rate limiting for wallet operations
+model WalletRateLimit {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @map("user_id")
+  operation    String    @db.VarChar(50) // 'addFunds', 'transfer', 'validate', etc.
+  ipAddress    String?   @map("ip_address") @db.VarChar(45)
+  isBlocked    Boolean   @default(false) @map("is_blocked")
+  blockedUntil DateTime? @map("blocked_until")
+  attemptedAt  DateTime  @default(now()) @map("attempted_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes for performance
+  @@index([userId, operation, attemptedAt])
+  @@index([operation, attemptedAt])
+  @@index([isBlocked, blockedUntil])
+  @@index([ipAddress, attemptedAt])
+  @@map("wallet_rate_limits")
+}
+
+// =========================================
+// SECTION 12: SECURITY VERIFICATION TABLES
+// =========================================
+
+// Stores verification codes for security operations
+model VerificationCode {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  type        String   @db.VarChar(20) // 'email_change', 'password_change', 'phone_change', 'identity_verification'
+  code        String   @db.VarChar(10) // Código de 6 dígitos
+  target      String   @db.VarChar(255) // Email o teléfono destino
+  expiresAt   DateTime @map("expires_at")
+  attempts    Int      @default(0) // Intentos de verificación
+  isUsed      Boolean  @default(false) @map("is_used")
+  createdAt   DateTime @default(now()) @map("created_at")
+  verifiedAt  DateTime? @map("verified_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, type])
+  @@index([code, type])
+  @@index([expiresAt])
+  @@map("verification_codes")
+}
+
+// Stores identity verification requests
+model IdentityVerification {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  dniNumber       String   @db.VarChar(20) // Número de DNI
+  frontPhotoUrl   String   @map("front_photo_url") @db.Text
+  backPhotoUrl    String   @map("back_photo_url") @db.Text
+  status          String   @default("pending") @db.VarChar(20) // pending, verified, rejected
+  verifiedAt      DateTime? @map("verified_at")
+  verifiedBy      Int?     @map("verified_by") // Admin ID
+  rejectionReason String?  @map("rejection_reason")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId]) // Un usuario solo puede tener una verificación
+  @@index([dniNumber])
+  @@index([status])
+  @@map("identity_verifications")
 }
 
 // =========================================

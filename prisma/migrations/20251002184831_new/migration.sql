@@ -1,11 +1,11 @@
 -- DropIndex
-DROP INDEX "public"."referral_transactions_type_idx";
+DROP INDEX IF EXISTS "public"."referral_transactions_type_idx";
 
 -- DropIndex
-DROP INDEX "public"."tier_vehicle_types_tier_id_is_active_idx";
+DROP INDEX IF EXISTS "public"."tier_vehicle_types_tier_id_is_active_idx";
 
 -- DropIndex
-DROP INDEX "public"."tier_vehicle_types_vehicle_type_id_is_active_idx";
+DROP INDEX IF EXISTS "public"."tier_vehicle_types_vehicle_type_id_is_active_idx";
 
 -- AlterTable
 ALTER TABLE "public"."drivers" ADD COLUMN     "vehicle_type_id" INTEGER;

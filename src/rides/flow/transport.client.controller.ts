@@ -1176,7 +1176,7 @@ export class TransportClientController {
           });
         }
       } else {
-        // Pago electrónico único - generar referencia
+        // 🆕 NUEVO: Pago electrónico único - simular confirmación automática
         const reference = await this.paymentsService.generateBankReference({
           serviceType: 'ride',
           serviceId: Number(rideId),
@@ -1186,36 +1186,81 @@ export class TransportClientController {
           userId: req.user.id,
         });
 
-        return {
-          data: {
-            rideId: Number(rideId),
-            totalAmount: body.totalAmount,
-            paymentMethods: [payment.method],
-            references: [
-              {
-                referenceNumber: reference.referenceNumber,
-                method: payment.method,
-                amount: payment.amount,
-                bankCode: payment.bankCode,
-                expiresAt: reference.expiresAt,
-              },
-            ],
-            cashAmount: 0,
-            status: 'incomplete',
-            instructions: this.paymentsService.getPaymentInstructions(
-              payment.method,
-              reference.referenceNumber,
-            ),
-          },
-        };
+        // 🆕 SIMULACIÓN AUTOMÁTICA: Confirmar pago inmediatamente
+        try {
+          await this.paymentsService.confirmBankReference(
+            {
+              referenceNumber: reference.referenceNumber,
+              bankCode: payment.bankCode,
+            },
+            req.user.id,
+          );
+
+          // Confirmar el pago en el ride
+          await this.flow.confirmTransportPayment(
+            Number(rideId),
+            payment.method as any,
+          );
+
+          // 🆕 NUEVO: Notificar conductores inmediatamente para pagos electrónicos
+          try {
+            await this.flow.notifyDriversAfterPayment(Number(rideId));
+          } catch (error) {
+            console.error(
+              `Failed to notify drivers for electronic payment ride ${rideId}:`,
+              error,
+            );
+            // No fallar el pago por error en notificación
+          }
+
+          return {
+            data: {
+              rideId: Number(rideId),
+              totalAmount: body.totalAmount,
+              paymentMethods: [payment.method],
+              status: 'complete',
+              message: `Pago ${payment.method} confirmado automáticamente`,
+              referenceNumber: reference.referenceNumber,
+              confirmedAt: new Date().toISOString(),
+            },
+          };
+        } catch (error) {
+          console.error(`Error simulating payment confirmation:`, error);
+          // Si falla la simulación, devolver referencia normal
+          return {
+            data: {
+              rideId: Number(rideId),
+              totalAmount: body.totalAmount,
+              paymentMethods: [payment.method],
+              references: [
+                {
+                  referenceNumber: reference.referenceNumber,
+                  method: payment.method,
+                  amount: payment.amount,
+                  bankCode: payment.bankCode,
+                  expiresAt: reference.expiresAt,
+                },
+              ],
+              cashAmount: 0,
+              status: 'incomplete',
+              instructions: this.paymentsService.getPaymentInstructions(
+                payment.method,
+                reference.referenceNumber,
+              ),
+            },
+          };
+        }
       }
     } else {
-      // PAGOS MÚLTIPLES
+      // 🆕 NUEVO: PAGOS MÚLTIPLES - simular confirmación automática
       const electronicPayments = body.payments.filter(
-        (p) => p.method !== 'cash',
+        (p) => p.method !== 'cash' && p.method !== 'wallet',
       );
       const cashAmount = body.payments
         .filter((p) => p.method === 'cash')
+        .reduce((sum, p) => sum + p.amount, 0);
+      const walletAmount = body.payments
+        .filter((p) => p.method === 'wallet')
         .reduce((sum, p) => sum + p.amount, 0);
 
       // Crear grupo de pagos múltiples
@@ -1231,18 +1276,131 @@ export class TransportClientController {
         })),
       });
 
-      return {
-        data: {
-          groupId: groupResult.groupId,
-          rideId: Number(rideId),
-          totalAmount: body.totalAmount,
-          paymentMethods: body.payments.map((p) => p.method),
-          references: groupResult.references,
-          cashAmount: groupResult.cashAmount,
-          status: 'incomplete',
-          instructions: groupResult.instructions,
-        },
-      };
+      // 🆕 SIMULACIÓN AUTOMÁTICA: Confirmar todos los pagos electrónicos inmediatamente
+      const confirmedReferences: any[] = [];
+      let allConfirmed = true;
+
+      try {
+        // Procesar pagos con wallet primero (inmediatos)
+        for (const payment of body.payments) {
+          if (payment.method === 'wallet') {
+            try {
+              await this.paymentsService.processWalletPayment(
+                req.user.id,
+                payment.amount,
+                'ride',
+                Number(rideId),
+              );
+              confirmedReferences.push({
+                method: payment.method,
+                amount: payment.amount,
+                status: 'confirmed',
+                confirmedAt: new Date().toISOString(),
+              });
+            } catch (error) {
+              console.error(`Error processing wallet payment:`, error);
+              allConfirmed = false;
+            }
+          }
+        }
+
+        // Procesar pagos electrónicos (simular confirmación)
+        for (const payment of electronicPayments) {
+          try {
+            // Buscar la referencia generada para este pago
+            const reference = groupResult.references.find(
+              (ref) => ref.method === payment.method && ref.amount === payment.amount,
+            );
+
+            if (reference) {
+              await this.paymentsService.confirmBankReference(
+                {
+                  referenceNumber: reference.referenceNumber,
+                  bankCode: payment.bankCode,
+                },
+                req.user.id,
+              );
+
+              confirmedReferences.push({
+                method: payment.method,
+                amount: payment.amount,
+                referenceNumber: reference.referenceNumber,
+                status: 'confirmed',
+                confirmedAt: new Date().toISOString(),
+              });
+            }
+          } catch (error) {
+            console.error(`Error confirming electronic payment:`, error);
+            allConfirmed = false;
+          }
+        }
+
+        // Si todos los pagos se confirmaron exitosamente
+        if (allConfirmed && confirmedReferences.length === body.payments.length) {
+          // Confirmar el pago en el ride
+          await this.flow.confirmTransportPayment(
+            Number(rideId),
+            'wallet', // Usar wallet como método principal para la confirmación
+          );
+
+          // 🆕 NUEVO: Notificar conductores inmediatamente para pagos múltiples
+          try {
+            await this.flow.notifyDriversAfterPayment(Number(rideId));
+          } catch (error) {
+            console.error(
+              `Failed to notify drivers for multiple payment ride ${rideId}:`,
+              error,
+            );
+            // No fallar el pago por error en notificación
+          }
+
+          return {
+            data: {
+              groupId: groupResult.groupId,
+              rideId: Number(rideId),
+              totalAmount: body.totalAmount,
+              paymentMethods: body.payments.map((p) => p.method),
+              status: 'complete',
+              message: 'Todos los pagos confirmados automáticamente',
+              confirmedPayments: confirmedReferences,
+              cashAmount: cashAmount,
+              walletAmount: walletAmount,
+              confirmedAt: new Date().toISOString(),
+            },
+          };
+        } else {
+          // Algunos pagos fallaron, devolver estado parcial
+          return {
+            data: {
+              groupId: groupResult.groupId,
+              rideId: Number(rideId),
+              totalAmount: body.totalAmount,
+              paymentMethods: body.payments.map((p) => p.method),
+              references: groupResult.references,
+              cashAmount: groupResult.cashAmount,
+              status: 'partial',
+              confirmedPayments: confirmedReferences,
+              message: 'Algunos pagos confirmados, otros pendientes',
+              instructions: groupResult.instructions,
+            },
+          };
+        }
+      } catch (error) {
+        console.error(`Error in multiple payment simulation:`, error);
+        // Si falla la simulación, devolver estado normal
+        return {
+          data: {
+            groupId: groupResult.groupId,
+            rideId: Number(rideId),
+            totalAmount: body.totalAmount,
+            paymentMethods: body.payments.map((p) => p.method),
+            references: groupResult.references,
+            cashAmount: groupResult.cashAmount,
+            status: 'incomplete',
+            instructions: groupResult.instructions,
+          },
+        };
+      }
     }
   }
 

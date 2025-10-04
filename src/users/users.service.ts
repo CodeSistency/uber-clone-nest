@@ -87,6 +87,15 @@ export class UsersService {
     });
   }
 
+  /**
+   * Buscar usuario por teléfono
+   */
+  async findUserByPhone(phone: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { phone } as any,
+    });
+  }
+
   async updateUser(id: number, data: Prisma.UserUpdateInput): Promise<User> {
     return this.prisma.user.update({
       where: { id },
@@ -152,6 +161,104 @@ export class UsersService {
       where: { id: userId },
       data: updateData,
     });
+  }
+
+  /**
+   * Actualizar perfil de usuario con validaciones específicas para PATCH
+   */
+  async updateUserProfile(userId: number, data: any): Promise<User> {
+    // Verificar que el usuario existe
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new Error('User not found');
+    }
+
+    // Preparar datos para actualización
+    const updateData: Prisma.UserUpdateInput = {};
+
+    // Validar y procesar cada campo si está presente
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+
+    if (data.email !== undefined) {
+      // Verificar que el email no esté en uso por otro usuario
+      const emailExists = await this.prisma.user.findFirst({
+        where: {
+          email: data.email,
+          id: { not: userId },
+        },
+      });
+
+      if (emailExists) {
+        throw new Error('Email already exists');
+      }
+
+      updateData.email = data.email;
+    }
+
+    if (data.phone !== undefined) {
+      updateData.phone = data.phone;
+    }
+
+    if (data.dateOfBirth !== undefined) {
+      updateData.dateOfBirth = new Date(data.dateOfBirth);
+    }
+
+    if (data.gender !== undefined) {
+      updateData.gender = data.gender;
+    }
+
+    if (data.profileImage !== undefined) {
+      updateData.profileImage = data.profileImage;
+    }
+
+    if (data.address !== undefined) {
+      updateData.address = data.address;
+    }
+
+    if (data.city !== undefined) {
+      updateData.city = data.city;
+    }
+
+    if (data.state !== undefined) {
+      updateData.state = data.state;
+    }
+
+    if (data.country !== undefined) {
+      updateData.country = data.country;
+    }
+
+    if (data.postalCode !== undefined) {
+      updateData.postalCode = data.postalCode;
+    }
+
+    if (data.preferredLanguage !== undefined) {
+      updateData.preferredLanguage = data.preferredLanguage;
+    }
+
+    if (data.timezone !== undefined) {
+      updateData.timezone = data.timezone;
+    }
+
+    if (data.currency !== undefined) {
+      updateData.currency = data.currency;
+    }
+
+    // Actualizar el usuario con los datos proporcionados
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      include: {
+        wallet: true,
+        emergencyContacts: true,
+      },
+    });
+
+    return updatedUser;
   }
 
   /**

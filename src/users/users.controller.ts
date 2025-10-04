@@ -3,11 +3,14 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
   Query,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +24,7 @@ import { UsersService } from './users.service';
 import { User } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { SearchUsersDto } from './dto/search-users.dto';
 import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -374,6 +378,210 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<User> {
     return this.usersService.updateCurrentUser(user.id, updateUserDto);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Update current user profile (PATCH)',
+    description: `
+    Updates the current authenticated user's profile information using PATCH method.
+    Only provided fields will be updated. This endpoint is specifically designed for
+    profile updates with comprehensive validation and sanitization.
+    
+    **Features:**
+    - Partial updates (only send fields you want to change)
+    - Comprehensive validation with detailed error messages
+    - Data sanitization (trimming, case normalization)
+    - Email uniqueness validation
+    - Phone number format validation
+    - URL validation for profile images
+    - Length constraints for all text fields
+    
+    **Validation Rules:**
+    - Name: 2-100 characters
+    - Email: Valid email format, will be converted to lowercase
+    - Phone: International format (+countrycode + number)
+    - Date of Birth: Valid date in YYYY-MM-DD format
+    - Gender: Must be one of: male, female, other, prefer_not_to_say
+    - Profile Image: Valid URL format
+    - Address: Max 255 characters
+    - City/State/Country: Max 100 characters each
+    - Postal Code: Max 20 characters
+    - Preferred Language: es, en, pt, fr
+    - Timezone: Max 50 characters
+    - Currency: USD, EUR, VES, COP, BRL
+    `,
+  })
+  @ApiBody({
+    type: UpdateUserProfileDto,
+    description: 'User profile fields to update (partial update)',
+    examples: {
+      basic: {
+        summary: 'Basic profile update',
+        value: {
+          name: 'Juan Carlos Pérez',
+          phone: '+584141234567',
+          city: 'Caracas',
+          country: 'Venezuela',
+        },
+      },
+      complete: {
+        summary: 'Complete profile update',
+        value: {
+          name: 'María González',
+          email: 'maria.gonzalez@example.com',
+          phone: '+584141234567',
+          dateOfBirth: '1985-03-15',
+          gender: 'female',
+          profileImage: 'https://example.com/profile.jpg',
+          address: 'Calle 123, Edificio ABC, Apartamento 4B',
+          city: 'Caracas',
+          state: 'Miranda',
+          country: 'Venezuela',
+          postalCode: '1010',
+          preferredLanguage: 'es',
+          timezone: 'America/Caracas',
+          currency: 'USD',
+        },
+      },
+      minimal: {
+        summary: 'Minimal update',
+        value: {
+          city: 'Valencia',
+          state: 'Carabobo',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', example: 1 },
+        name: { type: 'string', example: 'Juan Carlos Pérez' },
+        email: { type: 'string', example: 'juan.perez@example.com' },
+        phone: { type: 'string', example: '+584141234567' },
+        dateOfBirth: { type: 'string', format: 'date', example: '1990-05-15' },
+        gender: { type: 'string', example: 'male' },
+        profileImage: { type: 'string', example: 'https://example.com/profile.jpg' },
+        address: { type: 'string', example: 'Calle 123, Centro' },
+        city: { type: 'string', example: 'Caracas' },
+        state: { type: 'string', example: 'Miranda' },
+        country: { type: 'string', example: 'Venezuela' },
+        postalCode: { type: 'string', example: '1010' },
+        preferredLanguage: { type: 'string', example: 'es' },
+        timezone: { type: 'string', example: 'America/Caracas' },
+        currency: { type: 'string', example: 'USD' },
+        updatedAt: { type: 'string', format: 'date-time' },
+        wallet: {
+          type: 'object',
+          properties: {
+            balance: { type: 'number', example: 150.50 },
+          },
+        },
+        emergencyContacts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              contactName: { type: 'string' },
+              contactPhone: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
+          type: 'array',
+          items: { type: 'string' },
+          example: [
+            'Name must be at least 2 characters long',
+            'Please provide a valid email address',
+            'Phone number must be in international format (e.g., +584141234567)',
+          ],
+        },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Token de autorización requerido' },
+        error: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'User not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email already exists',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 409 },
+        message: { type: 'string', example: 'Email already exists' },
+        error: { type: 'string', example: 'Conflict' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async updateUserProfile(
+    @GetUser() user: any,
+    @Body() updateProfileDto: UpdateUserProfileDto,
+  ): Promise<User> {
+    try {
+      return await this.usersService.updateUserProfile(user.id, updateProfileDto);
+    } catch (error) {
+      if (error.message === 'User not found') {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      if (error.message === 'Email already exists') {
+        throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+      }
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('me/rides')
