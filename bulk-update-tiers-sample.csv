@@ -1,0 +1,5 @@
+tierIds,adjustmentType,adjustmentValue,field,description
+4,percentage,10,baseFare,Aumentar baseFare de UberX en 10%
+5,percentage,15,perMinuteRate,Aumentar perMinuteRate de UberXL en 15%
+6,fixed,50,perKmRate,Aumentar perKmRate de Uber Black en $0.50 fijo
+4;5;6,percentage,-5,baseFare,Reducir baseFare de todos los tiers en 5%

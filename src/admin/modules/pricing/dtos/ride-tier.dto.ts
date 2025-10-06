@@ -544,7 +544,9 @@ export class PricingCalculationResultDto {
 export class PricingValidationDto {
   @ApiProperty({
     description: 'Tier configuration to validate',
+    type: CreateRideTierDto,
   })
+  @Type(() => CreateRideTierDto)
   tier: CreateRideTierDto;
 
   @ApiPropertyOptional({
@@ -594,4 +596,44 @@ export class PricingValidationResultDto {
     };
     competitiveness: 'more_expensive' | 'similar' | 'more_competitive';
   };
+}
+
+export class VehicleTypeResponseDto {
+  @ApiProperty({
+    description: 'Vehicle type ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Vehicle type name',
+    example: 'car',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Display name',
+    example: 'Carro',
+  })
+  displayName: string;
+
+  @ApiPropertyOptional({
+    description: 'Icon URL',
+    example: '🚗',
+  })
+  icon?: string;
+
+  @ApiProperty({
+    description: 'Whether the vehicle type is active',
+    example: true,
+  })
+  isActive: boolean;
+}
+
+export class VehicleTypesResponseDto {
+  @ApiProperty({
+    description: 'Array of vehicle types',
+    type: [VehicleTypeResponseDto],
+  })
+  vehicleTypes: VehicleTypeResponseDto[];
 }

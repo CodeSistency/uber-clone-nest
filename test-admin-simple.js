@@ -16,15 +16,15 @@ async function testAdminLogin() {
     const response = await axios.post(`${BASE_URL}/admin/auth/login`, ADMIN_CREDENTIALS);
 
     console.log('✅ Login exitoso!');
-    console.log('📋 Token recibido:', response.data.accessToken);
-    console.log('👤 Admin info:', response.data.admin);
+    console.log('📋 Token recibido:', response.data.data.access_token);
+    console.log('👤 Admin info:', response.data.data.user);
 
     // Probar endpoint protegido con el token
     console.log('\n🔐 Probando endpoint protegido...');
 
     const dashboardResponse = await axios.get(`${BASE_URL}/admin/dashboard/metrics`, {
       headers: {
-        'Authorization': `Bearer ${response.data.accessToken}`
+        'Authorization': `Bearer ${response.data.data.access_token}`
       }
     });
 

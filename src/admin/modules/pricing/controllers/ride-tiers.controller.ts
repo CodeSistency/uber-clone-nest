@@ -48,7 +48,7 @@ export class RideTiersController {
   constructor(private readonly rideTiersService: RideTiersService) {}
 
   @Post()
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE) // Using geography write for now, could create pricing permission
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Crear una nueva tarifa base',
     description: 'Crea un nuevo nivel de servicio con tarifas base para rides',
@@ -67,7 +67,7 @@ export class RideTiersController {
   }
 
   @Get()
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Listar tarifas base',
     description:
@@ -85,7 +85,7 @@ export class RideTiersController {
   }
 
   @Get(':id')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Obtener detalles de tarifa',
     description: 'Obtiene información completa de una tarifa base específica',
@@ -108,7 +108,7 @@ export class RideTiersController {
   }
 
   @Patch(':id')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Actualizar tarifa base',
     description: 'Actualiza la configuración de una tarifa base existente',
@@ -135,7 +135,7 @@ export class RideTiersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Eliminar tarifa base',
     description: 'Elimina una tarifa base (solo si no tiene rides asociados)',
@@ -159,7 +159,7 @@ export class RideTiersController {
   }
 
   @Post('calculate-pricing')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Calcular precio de ride',
     description:
@@ -179,7 +179,7 @@ export class RideTiersController {
   }
 
   @Post('validate-pricing')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Validar configuración de pricing',
     description:
@@ -194,24 +194,12 @@ export class RideTiersController {
     @Body() validationDto: PricingValidationDto,
   ): Promise<PricingValidationResultDto> {
     return this.rideTiersService.validatePricingConfiguration(
-      validationDto.tier,
-      validationDto.compareWithTierId,
+      validationDto,
     );
   }
 
-  @Get('summary/overview')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
-  @ApiOperation({
-    summary: 'Resumen de pricing',
-    description:
-      'Obtiene estadísticas generales de todas las tarifas disponibles',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Resumen obtenido exitosamente',
-  })
   @Post('create-standard-tiers')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Crear tiers estándar',
     description:
@@ -227,7 +215,7 @@ export class RideTiersController {
   }
 
   @Get('summary/overview')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Resumen de pricing',
     description:
@@ -242,23 +230,22 @@ export class RideTiersController {
     return { summary };
   }
 
-  @Get('vehicle-types')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @Post('vehicle-types')
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Obtener tipos de vehículo',
     description: 'Obtiene la lista de tipos de vehículo disponibles para asociar con tiers',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Tipos de vehículo obtenidos exitosamente',
   })
   async getVehicleTypes() {
-    const vehicleTypes = await this.rideTiersService.getVehicleTypes();
-    return { vehicleTypes };
+    return this.rideTiersService.getVehicleTypes();
   }
 
   @Post('bulk-update')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Actualización masiva de tarifas',
     description: 'Actualiza múltiples tarifas con ajustes porcentuales',
@@ -273,7 +260,7 @@ export class RideTiersController {
       tierIds: number[];
       adjustmentType: 'percentage' | 'fixed';
       adjustmentValue: number;
-      field: 'baseFare' | 'perMinuteRate' | 'perMileRate';
+      field: 'baseFare' | 'perMinuteRate' | 'perKmRate';
     },
   ) {
     const { tierIds, adjustmentType, adjustmentValue, field } = data;

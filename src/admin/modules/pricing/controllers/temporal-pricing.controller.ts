@@ -49,7 +49,7 @@ export class TemporalPricingController {
   ) {}
 
   @Post()
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Crear regla temporal de pricing',
     description:
@@ -69,7 +69,7 @@ export class TemporalPricingController {
   }
 
   @Get()
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Listar reglas temporales',
     description:
@@ -87,7 +87,7 @@ export class TemporalPricingController {
   }
 
   @Get(':id')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Obtener detalles de regla temporal',
     description:
@@ -111,7 +111,7 @@ export class TemporalPricingController {
   }
 
   @Patch(':id')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Actualizar regla temporal',
     description:
@@ -139,7 +139,7 @@ export class TemporalPricingController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Eliminar regla temporal',
     description: 'Elimina una regla de pricing temporal',
@@ -159,7 +159,7 @@ export class TemporalPricingController {
   }
 
   @Post('evaluate')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Evaluar pricing temporal',
     description:
@@ -177,7 +177,7 @@ export class TemporalPricingController {
   }
 
   @Post('create-standard-rules')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Crear reglas temporales estándar',
     description:
@@ -196,7 +196,7 @@ export class TemporalPricingController {
   }
 
   @Post('bulk-update')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_WRITE)
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
   @ApiOperation({
     summary: 'Actualización masiva de reglas temporales',
     description:
@@ -211,7 +211,7 @@ export class TemporalPricingController {
   }
 
   @Get('summary/overview')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Resumen de reglas temporales',
     description:
@@ -264,7 +264,7 @@ export class TemporalPricingController {
   }
 
   @Post('simulate-pricing')
-  @RequirePermissions(AdminPermission.GEOGRAPHY_READ)
+  @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Simular cálculo de precio completo',
     description:

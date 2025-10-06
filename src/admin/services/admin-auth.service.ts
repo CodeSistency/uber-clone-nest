@@ -168,6 +168,33 @@ export class AdminAuthService {
           this.configService.get('JWT_SECRET'),
       });
 
+      // Validate refresh token against stored token in database
+      const storedUser = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          refreshToken: true,
+          isActive: true,
+          admin: {
+            select: {
+              role: true,
+              permissions: true,
+            },
+          },
+        },
+      });
+
+      if (!storedUser || !storedUser.isActive || !storedUser.admin) {
+        this.logger.warn(`Refresh token validation failed: user not found or inactive`);
+        throw new UnauthorizedException('Token inválido');
+      }
+
+      // Compare provided refresh token with stored one
+      if (!storedUser.refreshToken || storedUser.refreshToken !== refreshToken) {
+        this.logger.warn(`Refresh token mismatch for user: ${payload.sub}`);
+        throw new UnauthorizedException('Token de refresco inválido o expirado');
+      }
+
       const user = await this.validateAdmin(payload);
       if (!user) {
         throw new UnauthorizedException('Token inválido');
@@ -180,9 +207,28 @@ export class AdminAuthService {
         permissions: user.permissions,
       };
 
+      const newAccessToken = this.generateAccessToken(newPayload);
+      const newRefreshToken = this.generateRefreshToken(newPayload);
+
+      // Update user with new refresh token
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          refreshToken: newRefreshToken,
+          admin: {
+            update: {
+              lastLogin: new Date(),
+            },
+          },
+        },
+      });
+
+      // Log successful token refresh
+      this.logger.log(`Admin token refresh successful: ${user.email} (${user.role})`);
+
       return {
-        access_token: this.generateAccessToken(newPayload),
-        refresh_token: this.generateRefreshToken(newPayload),
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
         user: {
           id: user.id,
           email: user.email,

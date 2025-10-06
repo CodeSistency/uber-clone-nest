@@ -405,13 +405,45 @@ export class RideTiersService {
   }
 
   async validatePricingConfiguration(
-    pricingDto: CreateRideTierDto | UpdateRideTierDto,
+    input: CreateRideTierDto | UpdateRideTierDto | PricingValidationDto,
     compareWithTierId?: number,
   ): Promise<PricingValidationResultDto> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    const { baseFare, perMinuteRate, perKmRate } = pricingDto;
+    // Handle different input types
+    let tier: CreateRideTierDto | UpdateRideTierDto;
+    let comparisonId = compareWithTierId;
+
+    if ('tier' in input) {
+      // Input is PricingValidationDto
+      tier = input.tier;
+      comparisonId = input.compareWithTierId;
+    } else {
+      // Input is CreateRideTierDto or UpdateRideTierDto
+      tier = input;
+    }
+
+    if (!tier) {
+      throw new Error('Invalid validation data: tier is required');
+    }
+
+    // Convert string values to numbers if needed, with defaults
+    const baseFare = tier.baseFare !== undefined
+      ? (typeof tier.baseFare === 'string' ? parseFloat(tier.baseFare) : Number(tier.baseFare))
+      : 250; // default value
+
+    const perMinuteRate = tier.perMinuteRate !== undefined
+      ? (typeof tier.perMinuteRate === 'string' ? parseFloat(tier.perMinuteRate) : Number(tier.perMinuteRate))
+      : 15; // default value
+
+    const perKmRate = tier.perKmRate !== undefined
+      ? (typeof tier.perKmRate === 'string' ? parseFloat(tier.perKmRate) : Number(tier.perKmRate))
+      : 80; // default value
+
+    if (isNaN(baseFare) || isNaN(perMinuteRate) || isNaN(perKmRate)) {
+      throw new Error('Invalid tier data: baseFare, perMinuteRate, and perKmRate must be valid numbers');
+    }
 
     // Basic validation rules
     if (baseFare < 50) {
@@ -453,9 +485,9 @@ export class RideTiersService {
 
     // Competitiveness analysis
     let comparison: any = undefined;
-    if (compareWithTierId) {
+    if (comparisonId) {
       const existingTier = await this.prisma.rideTier.findUnique({
-        where: { id: compareWithTierId },
+        where: { id: comparisonId },
       });
 
       if (existingTier) {
@@ -724,13 +756,24 @@ export class RideTiersService {
       ],
     });
 
-    return vehicleTypes.map(vehicleType => ({
-      id: vehicleType.id,
-      name: vehicleType.name,
-      displayName: vehicleType.displayName,
-      icon: vehicleType.icon,
-      isActive: vehicleType.isActive,
-    }));
+    // Create a completely new object structure to avoid any Prisma-related validation issues
+    const data = vehicleTypes.map(vehicleType => {
+      return {
+        id: parseInt(vehicleType.id.toString()), // Convert to plain number
+        name: vehicleType.name.toString(), // Convert to plain string
+        displayName: vehicleType.displayName.toString(), // Convert to plain string
+        icon: vehicleType.icon ? vehicleType.icon.toString() : null, // Convert to plain string or null
+        isActive: vehicleType.isActive === true, // Convert to plain boolean
+      };
+    });
+
+    // Return complete response object from service
+    return {
+      success: true,
+      data: data,
+      count: data.length,
+      message: 'Vehicle types retrieved successfully',
+    };
   }
 
   private async getRegionalMultipliers(
