@@ -54,7 +54,7 @@ export class AdminAuthService {
       this.logger.warn(`Login attempt for inactive user: ${email}`);
       throw new UnauthorizedException('Cuenta inactiva');
     }
-
+    console.log(user);
     if (!user.admin) {
       this.logger.warn(`Login attempt for non-admin user: ${email}`);
       throw new UnauthorizedException('Acceso no autorizado');
