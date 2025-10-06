@@ -947,6 +947,12 @@ async function main() {
       email: 'superadmin@uberclone.com',
       password: superAdminPassword,
       isActive: true,
+      admin:{
+        create:{
+          role: AdminRole.SUPER_ADMIN,
+          permissions: ROLE_PERMISSIONS[AdminRole.SUPER_ADMIN],
+        }
+      }
     },
   });
 
@@ -960,6 +966,12 @@ async function main() {
       password: adminPassword,
       refreshToken: '',
       isActive: true,
+      admin:{
+        create:{
+          role: AdminRole.ADMIN,
+          permissions: ROLE_PERMISSIONS[AdminRole.ADMIN],
+        }
+      }
     },
   });
 
@@ -973,6 +985,12 @@ async function main() {
       password: moderatorPassword,
       refreshToken: '',
       isActive: true,
+      admin:{
+        create:{
+          role: AdminRole.MODERATOR,
+          permissions: ROLE_PERMISSIONS[AdminRole.MODERATOR],
+        }
+      }
     },
   });
 
@@ -986,6 +1004,12 @@ async function main() {
       password: supportPassword,
       refreshToken: '',
       isActive: true,
+      admin:{
+        create:{
+          role: AdminRole.SUPPORT,
+          permissions: ROLE_PERMISSIONS[AdminRole.SUPPORT],
+        }
+      }
     },
   });
 
