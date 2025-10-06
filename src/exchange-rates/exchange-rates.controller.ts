@@ -24,17 +24,24 @@ export class ExchangeRatesController {
     try {
       const latestRate = await this.exchangeRatesService.getLatestExchangeRate();
       return {
-        success: true,
         data: latestRate,
+        message: 'Exchange rate retrieved successfully',
+        statusCode: 200,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/latest',
       };
     } catch (error) {
       this.logger.error('Error getting latest exchange rate:', error);
       throw new HttpException(
         {
-          success: false,
           message: 'Error retrieving latest exchange rate',
-          error: error.message,
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          timestamp: new Date().toISOString(),
+          path: '/exchange-rates/latest',
+          error: {
+            code: 'EXCHANGE_RATE_ERROR',
+            details: error.message,
+          },
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -52,17 +59,33 @@ export class ExchangeRatesController {
 
       if (limitNum < 1 || limitNum > 1000) {
         throw new HttpException(
-          'Limit must be between 1 and 1000',
+          {
+            message: 'Limit must be between 1 and 1000',
+            statusCode: HttpStatus.BAD_REQUEST,
+            timestamp: new Date().toISOString(),
+            path: '/exchange-rates/history',
+            error: {
+              code: 'VALIDATION_ERROR',
+              details: `Limit ${limitNum} is out of range (1-1000)`,
+            },
+          },
           HttpStatus.BAD_REQUEST,
         );
       }
 
       const history = await this.exchangeRatesService.getExchangeRateHistory(limitNum);
       return {
-        success: true,
         data: history,
-        count: history.length,
+        message: 'Exchange rate history retrieved successfully',
+        statusCode: 200,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/history',
+        pagination: {
+          page: 1,
+          limit: limitNum,
+          total: history.length,
+          pages: 1,
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -72,9 +95,14 @@ export class ExchangeRatesController {
       this.logger.error('Error getting exchange rate history:', error);
       throw new HttpException(
         {
-          success: false,
           message: 'Error retrieving exchange rate history',
-          error: error.message,
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          timestamp: new Date().toISOString(),
+          path: '/exchange-rates/history',
+          error: {
+            code: 'EXCHANGE_RATE_ERROR',
+            details: error.message,
+          },
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -92,16 +120,27 @@ export class ExchangeRatesController {
 
       if (daysNum < 1 || daysNum > 365) {
         throw new HttpException(
-          'Days must be between 1 and 365',
+          {
+            message: 'Days must be between 1 and 365',
+            statusCode: HttpStatus.BAD_REQUEST,
+            timestamp: new Date().toISOString(),
+            path: '/exchange-rates/stats',
+            error: {
+              code: 'VALIDATION_ERROR',
+              details: `Days ${daysNum} is out of range (1-365)`,
+            },
+          },
           HttpStatus.BAD_REQUEST,
         );
       }
 
       const stats = await this.exchangeRatesService.getExchangeRateStats(daysNum);
       return {
-        success: true,
         data: stats,
+        message: 'Exchange rate statistics retrieved successfully',
+        statusCode: 200,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/stats',
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -111,9 +150,14 @@ export class ExchangeRatesController {
       this.logger.error('Error getting exchange rate stats:', error);
       throw new HttpException(
         {
-          success: false,
           message: 'Error retrieving exchange rate statistics',
-          error: error.message,
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          timestamp: new Date().toISOString(),
+          path: '/exchange-rates/stats',
+          error: {
+            code: 'EXCHANGE_RATE_ERROR',
+            details: error.message,
+          },
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -128,14 +172,25 @@ export class ExchangeRatesController {
   async updateExchangeRateManually() {
     try {
       const result = await this.exchangeRatesService.updateExchangeRateManually();
-      return result;
+      return {
+        data: result,
+        message: 'Exchange rate updated successfully',
+        statusCode: 200,
+        timestamp: new Date().toISOString(),
+        path: '/exchange-rates/update',
+      };
     } catch (error) {
       this.logger.error('Error in manual exchange rate update:', error);
       throw new HttpException(
         {
-          success: false,
           message: 'Error updating exchange rate manually',
-          error: error.message,
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          timestamp: new Date().toISOString(),
+          path: '/exchange-rates/update',
+          error: {
+            code: 'EXCHANGE_RATE_UPDATE_ERROR',
+            details: error.message,
+          },
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -153,20 +208,27 @@ export class ExchangeRatesController {
       const latestRate = await this.exchangeRatesService.getLatestExchangeRate();
 
       return {
-        success: true,
-        status: 'healthy',
-        lastUpdate: latestRate.createdAt,
-        apiUrl: 'https://ve.dolarapi.com/v1/dolares/oficial',
+        data: {
+          status: 'healthy',
+          lastUpdate: latestRate.createdAt,
+          apiUrl: 'https://ve.dolarapi.com/v1/dolares/oficial',
+        },
+        message: 'Exchange rates API is healthy',
+        statusCode: 200,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/health',
       };
     } catch (error) {
       this.logger.error('API health check failed:', error);
       return {
-        success: false,
-        status: 'unhealthy',
-        error: error.message,
-        apiUrl: 'https://ve.dolarapi.com/v1/dolares/oficial',
+        message: 'Exchange rates API is unhealthy',
+        statusCode: 503,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/health',
+        error: {
+          code: 'HEALTH_CHECK_FAILED',
+          details: error.message,
+        },
       };
     }
   }
@@ -180,18 +242,23 @@ export class ExchangeRatesController {
     try {
       const data = await this.exchangeRatesService.fetchDollarRate();
       return {
-        success: true,
-        message: 'API fetch successful',
         data: data,
+        message: 'API fetch successful',
+        statusCode: 200,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/test-fetch',
       };
     } catch (error) {
       this.logger.error('Test fetch failed:', error);
       return {
-        success: false,
         message: 'API fetch failed',
-        error: error.message,
+        statusCode: 503,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/test-fetch',
+        error: {
+          code: 'TEST_FETCH_FAILED',
+          details: error.message,
+        },
       };
     }
   }
@@ -211,19 +278,26 @@ export class ExchangeRatesController {
       const savedRate = await this.exchangeRatesService.saveExchangeRate(freshData);
 
       return {
-        success: true,
+        data: {
+          deletedRecords: deletedCount,
+          newData: savedRate,
+        },
         message: 'Exchange rates reset and updated successfully',
-        deletedRecords: deletedCount,
-        newData: savedRate,
+        statusCode: 200,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/reset',
       };
     } catch (error) {
       this.logger.error('Reset failed:', error);
       return {
-        success: false,
         message: 'Failed to reset exchange rates',
-        error: error.message,
+        statusCode: 500,
         timestamp: new Date().toISOString(),
+        path: '/exchange-rates/reset',
+        error: {
+          code: 'RESET_FAILED',
+          details: error.message,
+        },
       };
     }
   }
