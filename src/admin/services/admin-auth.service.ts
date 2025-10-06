@@ -72,18 +72,7 @@ export class AdminAuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // Update last login
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastLogin: new Date(),
-        admin: {
-          update: {
-            lastLogin: new Date(),
-          },
-        },
-      },
-    });
+    
 
     // Generate tokens
     const permissions =
@@ -100,6 +89,19 @@ export class AdminAuthService {
 
     const accessToken = this.generateAccessToken(payload);
     const refreshToken = this.generateRefreshToken(payload);
+    // Update last login
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLogin: new Date(),
+        refreshToken: refreshToken,
+        admin: {
+          update: { 
+            lastLogin: new Date(),
+          },
+        },
+      },
+    });
 
     // Log successful login
     this.logger.log(`Admin login successful: ${email} (${user.admin.role})`);
