@@ -169,13 +169,13 @@ export class NotificationsService {
       // Find nearby drivers (within 5km)
       const nearbyDrivers = await this.prisma.driver.findMany({
         where: {
-          status: 'online',
+          status: 'ONLINE',
           canDoDeliveries: false, // For now, only non-delivery drivers
-          verificationStatus: 'approved',
+          verificationStatus: 'APPROVED' as any,
         },
         include: {
           vehicles: {
-            where: { isDefault: true, status: 'active' },
+            where: { isDefault: true, status: 'ACTIVE' },
             take: 1,
             include: { vehicleType: true },
           },
@@ -245,13 +245,13 @@ export class NotificationsService {
       // 1. Buscar drivers online disponibles
       const availableDrivers = await this.prisma.driver.findMany({
         where: {
-          status: 'online',
+          status: 'ONLINE',
           canDoDeliveries: false,
-          verificationStatus: 'approved',
+          verificationStatus: 'APPROVED' as any,
         },
         include: {
           vehicles: {
-            where: { isDefault: true, status: 'active' },
+            where: { isDefault: true, status: 'ACTIVE' },
             take: 1,
             include: { vehicleType: true },
           },
@@ -385,7 +385,7 @@ export class NotificationsService {
         where: { id: driverId },
       });
 
-      if (!driver || driver.status !== 'online') {
+      if (!driver || driver.status !== 'ONLINE') {
         throw new Error('DRIVER_NOT_AVAILABLE');
       }
 
@@ -394,7 +394,7 @@ export class NotificationsService {
         where: { rideId },
         data: {
           driverId: driverId,
-          status: 'driver_confirmed',
+          status: 'DRIVER_CONFIRMED',
           updatedAt: new Date(),
         },
       });

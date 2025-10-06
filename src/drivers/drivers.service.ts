@@ -56,16 +56,16 @@ export class DriversService {
 
     // Apply status filter
     if (filters?.status) {
-      whereClause.status = filters.status;
+      whereClause.status = filters.status as any;
     }
 
     // Apply verification filter
     if (filters?.verified !== undefined) {
       if (filters.verified) {
-        whereClause.verificationStatus = 'approved';
+        whereClause.verificationStatus = 'APPROVED' as any;
       } else {
         whereClause.verificationStatus = {
-          not: 'approved',
+          not: 'APPROVED' as any,
         };
       }
     }
@@ -122,7 +122,7 @@ export class DriversService {
       where: { id },
       include: {
         vehicles: {
-          where: { status: 'active' },
+          where: { status: 'ACTIVE' },
           include: { vehicleType: true },
         },
         documents: true,
@@ -133,12 +133,12 @@ export class DriversService {
   async findAvailableDrivers(): Promise<Driver[]> {
     return this.prisma.driver.findMany({
       where: {
-        status: 'online',
+        status: 'ONLINE',
         canDoDeliveries: true,
       },
       include: {
         vehicles: {
-          where: { status: 'active', isDefault: true },
+          where: { status: 'ACTIVE', isDefault: true },
           include: { vehicleType: true },
         },
         documents: true,
@@ -166,7 +166,7 @@ export class DriversService {
     const rides = await this.prisma.ride.findMany({
       where: {
         driverId: null, // Rides without assigned driver
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED',
       },
       include: {
         tier: true,
@@ -229,7 +229,7 @@ export class DriversService {
 
     // Apply status filter
     if (filters?.status) {
-      whereClause.paymentStatus = filters.status;
+      whereClause.paymentStatus = filters.status as any;
     }
 
     // Apply date filters
@@ -275,10 +275,10 @@ export class DriversService {
 
     // Calculate statistics
     const completedRides = rides.filter(
-      (ride) => ride.paymentStatus === 'completed',
+      (ride) => ride.paymentStatus === 'COMPLETED',
     );
     const cancelledRides = rides.filter(
-      (ride) => ride.paymentStatus === 'cancelled',
+      (ride) => ride.paymentStatus === 'CANCELLED',
     );
     const totalEarnings = completedRides.reduce(
       (sum, ride) => sum + Number(ride.farePrice),
@@ -299,9 +299,9 @@ export class DriversService {
       originAddress: ride.originAddress,
       destinationAddress: ride.destinationAddress,
       farePrice: Number(ride.farePrice),
-      status: ride.paymentStatus || 'pending',
+      status: ride.paymentStatus || 'PENDING',
       createdAt: ride.createdAt,
-      completedAt: ride.paymentStatus === 'completed' ? ride.createdAt : null, // You might want to add a completedAt field
+      completedAt: ride.paymentStatus === 'COMPLETED' ? ride.createdAt : null, // You might want to add a completedAt field
       distance: null, // You might want to calculate or store actual distance
       duration: ride.rideTime,
       user: ride.user
@@ -412,11 +412,11 @@ export class DriversService {
 
     // Filtros exactos
     if (status !== undefined) {
-      where.status = status;
+      where.status = status as any;
     }
 
     if (verificationStatus !== undefined) {
-      where.verificationStatus = verificationStatus;
+      where.verificationStatus = verificationStatus as any;
     }
 
     if (canDoDeliveries !== undefined) {
@@ -471,7 +471,7 @@ export class DriversService {
         take: limit,
         include: {
           vehicles: {
-            where: { status: 'active' },
+            where: { status: 'ACTIVE' },
             include: { vehicleType: true },
           },
           documents: {
@@ -639,7 +639,7 @@ export class DriversService {
     const activeRides = await this.prisma.ride.count({
       where: {
         vehicleId,
-        status: { in: ['pending', 'accepted', 'arrived', 'in_progress'] },
+        status: { in: ['PENDING', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS'] },
       },
     });
 
@@ -742,7 +742,7 @@ export class DriversService {
     const pendingPayments = await this.prisma.driverPayment.count({
       where: {
         paymentMethodId: methodId,
-        status: 'pending',
+        status: 'PENDING',
       },
     });
 
@@ -770,7 +770,7 @@ export class DriversService {
       data: updateDto,
       include: {
         vehicles: {
-          where: { status: 'active' },
+          where: { status: 'ACTIVE' },
           include: { vehicleType: true },
         },
         documents: true,
@@ -787,7 +787,7 @@ export class DriversService {
       where: { id: driverId },
       include: {
         vehicles: {
-          where: { status: 'active' },
+          where: { status: 'ACTIVE' },
           include: { vehicleType: true },
         },
         documents: true,
@@ -821,7 +821,7 @@ export class DriversService {
 
     // Calculate statistics
     const completedRides = driver.rides.filter(
-      (ride) => ride.status === 'completed',
+      (ride) => ride.status === 'COMPLETED',
     );
     const totalEarnings = completedRides.reduce(
       (sum, ride) => sum + Number(ride.farePrice),
@@ -1002,7 +1002,7 @@ export class DriversService {
     return this.prisma.driver.update({
       where: { id: driverId },
       data: {
-        verificationStatus,
+        verificationStatus: verificationStatus as any,
       },
     });
   }
@@ -1146,7 +1146,7 @@ export class DriversService {
     return this.prisma.driverPayment.update({
       where: { id: paymentId },
       data: {
-        status: 'processed',
+        status: 'COMPLETED' as any,
         processedAt: new Date(),
         transactionId,
         notes,
@@ -1179,14 +1179,14 @@ export class DriversService {
     }
 
     const completedRides = driver.rides.filter(
-      (ride) => ride.status === 'completed',
+      (ride) => ride.status === 'COMPLETED',
     );
     const totalEarnings = completedRides.reduce(
       (sum, ride) => sum + Number(ride.farePrice),
       0,
     );
     const cancelledRides = driver.rides.filter(
-      (ride) => ride.status === 'cancelled',
+      (ride) => ride.status === 'CANCELLED',
     );
 
     const ratings = driver.rides
@@ -1244,10 +1244,10 @@ export class DriversService {
       pendingVerification,
       averageRating,
     ] = await Promise.all([
-      this.prisma.driver.count({ where: { status: 'active' } }),
+      this.prisma.driver.count({ where: { status: 'ONLINE' } }),
       this.prisma.ride.count({
         where: {
-          status: 'completed',
+          status: 'COMPLETED',
           createdAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },
@@ -1255,15 +1255,15 @@ export class DriversService {
       }),
       this.prisma.ride.aggregate({
         where: {
-          status: 'completed',
+          status: 'COMPLETED',
           createdAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },
         },
         _sum: { farePrice: true },
       }),
-      this.prisma.driver.count({ where: { status: 'online' } }),
-      this.prisma.driver.count({ where: { verificationStatus: 'pending' } }),
+      this.prisma.driver.count({ where: { status: 'ONLINE' } }),
+      this.prisma.driver.count({ where: { verificationStatus: 'PENDING' } }),
       this.prisma.rating.aggregate({
         _avg: { ratingValue: true },
       }),
@@ -1272,7 +1272,7 @@ export class DriversService {
     return {
       totalActiveDrivers,
       totalRidesToday,
-      totalEarningsToday: Number(totalEarningsToday._sum.farePrice) || 0,
+      totalEarningsToday: Number(totalEarningsToday._sum?.farePrice) || 0,
       averageDriverRating:
         Math.round((Number(averageRating._avg.ratingValue) || 0) * 10) / 10,
       onlineDrivers,
@@ -1311,7 +1311,7 @@ export class DriversService {
     // Update drivers
     await this.prisma.driver.updateMany({
       where: { id: { in: driverIds.map((id) => Number(id)) } },
-      data: { verificationStatus },
+      data: { verificationStatus: verificationStatus as any },
     });
 
     return { updated: drivers.length };

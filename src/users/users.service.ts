@@ -33,15 +33,7 @@ export class UsersService {
 
     if (!user) return null;
 
-    return {
-      ...user,
-      userType: user.userType || 'user',
-      adminRole: user.adminRole || null,
-      adminPermissions: user.adminPermissions || [],
-      lastAdminLogin: user.lastAdminLogin || null,
-      adminCreatedAt: user.adminCreatedAt || null,
-      adminUpdatedAt: user.adminUpdatedAt || null,
-    };
+    return user;
   }
 
   async findUserByIdWithRelations(id: number): Promise<User | null> {
@@ -66,12 +58,21 @@ export class UsersService {
         lastLogin: true,
         createdAt: true,
         updatedAt: true,
-        userType: true,
-        adminRole: true,
-        adminPermissions: true,
-        lastAdminLogin: true,
-        adminCreatedAt: true,
-        adminUpdatedAt: true,
+        phone: true,
+        dateOfBirth: true,
+        gender: true,
+        profileImage: true,
+        address: true,
+        city: true,
+        state: true,
+        country: true,
+        postalCode: true,
+        preferredLanguage: true,
+        timezone: true,
+        currency: true,
+        emailVerified: true,
+        phoneVerified: true,
+        identityVerified: true,
         wallet: true,
         emergencyContacts: true,
         rides: true,
@@ -82,7 +83,6 @@ export class UsersService {
         notificationPreferences: true,
         pushTokens: true,
         notifications: true,
-        adminAuditLogs: true,
       },
     });
   }
@@ -348,13 +348,6 @@ export class UsersService {
     }
 
     // Filtros exactos
-    if (userType !== undefined) {
-      where.userType = userType;
-    }
-
-    if (adminRole !== undefined) {
-      where.adminRole = adminRole;
-    }
 
     if (isActive !== undefined) {
       where.isActive = isActive;

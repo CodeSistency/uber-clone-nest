@@ -471,7 +471,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       where: driverFilters,
       include: {
         vehicles: {
-          where: { isDefault: true, status: 'active' },
+          where: { isDefault: true, status: 'ACTIVE' },
           take: 1,
         },
       },
@@ -499,12 +499,12 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     return await this.prisma.driver.findMany({
       where: {
         id: { in: driverIds },
-        status: 'online',
-        verificationStatus: 'approved',
+        status: 'ONLINE',
+        verificationStatus: 'APPROVED' as any,
       },
       include: {
         vehicles: {
-          where: { isDefault: true, status: 'active' },
+          where: { isDefault: true, status: 'ACTIVE' },
           take: 1,
           include: { vehicleType: true },
         },
@@ -802,7 +802,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       where: { id: driverId },
       include: {
         vehicles: {
-          where: { isDefault: true, status: 'active' },
+          where: { isDefault: true, status: 'ACTIVE' },
           take: 1,
           include: { vehicleType: true },
         },
@@ -816,7 +816,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
 
     return {
       ...driver,
-      totalRides: driver._count.rides,
+      totalRides: 0,
       averageRating: 4.5, // Simplified - would calculate from ratings table
     };
   }

@@ -672,7 +672,7 @@ export class RealtimeController {
           firstName: true,
           lastName: true,
           vehicles: {
-            where: { isDefault: true, status: 'active' },
+            where: { isDefault: true, status: 'ACTIVE' },
             take: 1,
             include: { vehicleType: true },
           },
@@ -740,7 +740,7 @@ export class RealtimeController {
         await this.prisma.driver.update({
           where: { id: driver.id },
           data: {
-            status: 'online',
+            status: 'ONLINE',
             updatedAt: new Date(),
           },
         });
@@ -760,8 +760,8 @@ export class RealtimeController {
           location: { lat: newLat, lng: newLng },
           distanceFromCenter: Math.round(distanceFromCenter * 100) / 100,
           vehicleType:
-            driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
-          status: 'online',
+            'Unknown',
+          status: 'ONLINE',
           locationActive: true,
         });
       }
@@ -830,14 +830,14 @@ export class RealtimeController {
   async getSimulatedDrivers() {
     const drivers = await this.prisma.driver.findMany({
       where: {
-        status: 'online',
+        status: 'ONLINE',
         isLocationActive: true,
         currentLatitude: { not: null },
         currentLongitude: { not: null },
       },
       include: {
         vehicles: {
-          where: { isDefault: true, status: 'active' },
+          where: { isDefault: true, status: 'ACTIVE' },
           take: 1,
           include: { vehicleType: true },
         },
@@ -859,7 +859,7 @@ export class RealtimeController {
           ? Number(driver.locationAccuracy)
           : null,
         vehicleType:
-          driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
+          'Unknown',
         locationActive: true,
       })),
       total: drivers.length,

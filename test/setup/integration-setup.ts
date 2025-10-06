@@ -70,7 +70,7 @@ export class TestDatabaseManager {
       data: {
         firstName: 'Test',
         lastName: 'Driver',
-        status: 'online',
+        status: 'ONLINE' as any,
         carSeats: 4,
       },
     });

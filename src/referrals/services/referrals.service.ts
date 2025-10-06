@@ -308,7 +308,7 @@ export class ReferralsService {
         const completedRides = await this.prisma.ride.count({
           where: {
             userId: referral.refereeId,
-            paymentStatus: 'completed',
+            paymentStatus: 'COMPLETED',
           },
         });
 

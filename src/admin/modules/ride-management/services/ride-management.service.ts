@@ -322,8 +322,8 @@ export class RideManagementService {
     }
 
     if (
-      newDriver.status !== 'online' ||
-      newDriver.verificationStatus !== 'approved'
+      newDriver.status !== 'ONLINE' ||
+      newDriver.verificationStatus !== 'VERIFIED'
     ) {
       throw new Error(`Driver ${newDriverId} is not available for assignment`);
     }
@@ -333,7 +333,7 @@ export class RideManagementService {
       where: { rideId },
       data: {
         driverId: newDriverId,
-        status: 'accepted', // Reset to accepted status
+        status: 'ACCEPTED', // Reset to accepted status
       },
       include: {
         driver: {
@@ -405,7 +405,7 @@ export class RideManagementService {
     const updatedRide = await this.prisma.ride.update({
       where: { rideId },
       data: {
-        status: 'cancelled',
+        status: 'CANCELLED',
         cancelledAt: new Date(),
         cancelledBy: 'admin',
         cancellationReason: reason,
@@ -469,11 +469,11 @@ export class RideManagementService {
     }
 
     // Check if ride can be completed
-    if (ride.status === 'completed') {
+    if (ride.status === 'COMPLETED') {
       throw new Error(`Ride ${rideId} is already completed`);
     }
 
-    if (ride.status === 'cancelled') {
+    if (ride.status === 'CANCELLED') {
       throw new Error(`Cannot complete a cancelled ride ${rideId}`);
     }
 
@@ -481,7 +481,7 @@ export class RideManagementService {
     const updatedRide = await this.prisma.ride.update({
       where: { rideId },
       data: {
-        status: 'completed',
+        status: 'COMPLETED',
       },
       include: {
         driver: {

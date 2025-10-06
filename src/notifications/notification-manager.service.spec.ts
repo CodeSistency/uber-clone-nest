@@ -66,7 +66,7 @@ describe('NotificationManagerService', () => {
       // Trigger onModuleInit by creating a new instance
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -79,7 +79,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -90,7 +90,7 @@ describe('NotificationManagerService', () => {
     it('should switch provider dynamically', () => {
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -116,7 +116,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -147,7 +147,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -174,7 +174,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -208,7 +208,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -237,7 +237,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -263,7 +263,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -289,7 +289,7 @@ describe('NotificationManagerService', () => {
 
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();
@@ -309,7 +309,7 @@ describe('NotificationManagerService', () => {
     it('should return provider status information', () => {
       const newService = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newService.onModuleInit();

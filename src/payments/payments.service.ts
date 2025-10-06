@@ -78,7 +78,7 @@ export class PaymentsService {
         isPartial: dto.isPartial || false,
         groupId: dto.groupId,
         expiresAt,
-        status: 'pending',
+        status: 'PENDING',
       },
     });
 
@@ -128,7 +128,7 @@ export class PaymentsService {
       throw new Error('Esta referencia no pertenece al usuario actual');
     }
 
-    if (reference.status !== 'pending') {
+    if (reference.status !== 'PENDING') {
       throw new Error(
         `Referencia ya procesada con estado: ${reference.status}`,
       );
@@ -138,7 +138,7 @@ export class PaymentsService {
       // Marcar como expirada
       await this.prisma.paymentReference.update({
         where: { referenceNumber: dto.referenceNumber },
-        data: { status: 'expired' },
+        data: { status: 'CANCELLED' as any },
       });
       throw new Error('La referencia ha expirado');
     }
@@ -164,7 +164,7 @@ export class PaymentsService {
       await this.prisma.paymentReference.update({
         where: { referenceNumber: dto.referenceNumber },
         data: {
-          status: 'confirmed',
+          status: 'COMPLETED' as any,
           confirmedAt: new Date(),
         },
       });
@@ -383,7 +383,7 @@ Para completar el pago:
         // Marcar el ride como pagado (tanto para wallet como otros métodos)
         await this.prisma.ride.update({
           where: { rideId: reference.serviceId },
-          data: { paymentStatus: 'paid' },
+          data: { paymentStatus: 'COMPLETED' as any },
         });
 
         // 🆕 NUEVO: Notificar conductores después del pago confirmado
@@ -405,7 +405,7 @@ Para completar el pago:
       case 'delivery':
         await this.prisma.deliveryOrder.update({
           where: { orderId: reference.serviceId },
-          data: { paymentStatus: 'paid' },
+          data: { paymentStatus: 'COMPLETED' as any },
         });
         break;
 
@@ -564,7 +564,7 @@ Para completar el pago:
 
       if (paymentGroup) {
         const totalPaid = paymentGroup.paymentReferences
-          .filter((ref) => ref.status === 'confirmed')
+          .filter((ref) => ref.status === 'COMPLETED')
           .reduce((sum, ref) => sum + Number(ref.amount), 0);
 
         const remainingAmount = Number(paymentGroup.totalAmount) - totalPaid;
@@ -628,13 +628,13 @@ Para completar el pago:
     // Calcular estadísticas
     const totalReferences = paymentGroup.paymentReferences.length;
     const confirmedReferences = paymentGroup.paymentReferences.filter(
-      (ref) => ref.status === 'confirmed',
+      (ref) => ref.status === 'COMPLETED',
     ).length;
     const pendingReferences = paymentGroup.paymentReferences.filter(
-      (ref) => ref.status === 'pending',
+      (ref) => ref.status === 'PENDING',
     ).length;
     const expiredReferences = paymentGroup.paymentReferences.filter(
-      (ref) => ref.status === 'expired',
+      (ref) => ref.status === 'CANCELLED',
     ).length;
 
     return {
@@ -702,10 +702,10 @@ Para completar el pago:
     await this.prisma.paymentReference.updateMany({
       where: {
         groupId: groupId,
-        status: 'pending',
+        status: 'PENDING',
       },
       data: {
-        status: 'expired',
+        status: 'CANCELLED' as any,
       },
     });
 

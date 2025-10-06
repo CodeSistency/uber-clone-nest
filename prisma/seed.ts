@@ -131,8 +131,8 @@ async function main() {
         phone: '+58-412-1234567',
         profileImageUrl:
           'https://api.dicebear.com/7.x/avataaars/svg?seed=carlos',
-        status: 'online',
-        verificationStatus: 'approved',
+        status: 'ONLINE' as any,
+        verificationStatus: 'VERIFIED' as any,
         isLocationActive: true,
         currentLatitude: 10.5061, // Caracas - Centro
         currentLongitude: -66.9146,
@@ -153,8 +153,8 @@ async function main() {
         phone: '+58-414-7654321',
         profileImageUrl:
           'https://api.dicebear.com/7.x/avataaars/svg?seed=maria',
-        status: 'online',
-        verificationStatus: 'approved',
+        status: 'ONLINE' as any,
+        verificationStatus: 'VERIFIED' as any,
         isLocationActive: true,
         currentLatitude: 10.5000, // Caracas - Altamira
         currentLongitude: -66.8500,
@@ -174,8 +174,8 @@ async function main() {
         email: 'luis.driver@example.com',
         phone: '+58-416-9876543',
         profileImageUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=luis',
-        status: 'offline',
-        verificationStatus: 'approved',
+        status: 'OFFLINE' as any,
+        verificationStatus: 'VERIFIED' as any,
         isLocationActive: true,
         currentLatitude: 10.4806, // Caracas - La Castellana
         currentLongitude: -66.9036,
@@ -213,8 +213,8 @@ async function main() {
         insuranceExpiryDate: new Date('2024-12-31'),
         frontImageUrl: 'https://images.unsplash.com/photo-1549924231-f129b911e442?w=400',
         backImageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
-        status: 'active',
-        verificationStatus: 'verified',
+        status: 'ACTIVE' as any,
+        verificationStatus: 'VERIFIED' as any,
         isDefault: true,
       },
     }),
@@ -236,8 +236,8 @@ async function main() {
         insurancePolicyNumber: 'POL-005678',
         insuranceExpiryDate: new Date('2024-10-15'),
         frontImageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
-        status: 'active',
-        verificationStatus: 'verified',
+        status: 'ACTIVE' as any,
+        verificationStatus: 'VERIFIED' as any,
         isDefault: true,
       },
     }),
@@ -259,8 +259,8 @@ async function main() {
         insurancePolicyNumber: 'POL-009012',
         insuranceExpiryDate: new Date('2024-08-20'),
         frontImageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
-        status: 'active',
-        verificationStatus: 'verified',
+        status: 'ACTIVE' as any,
+        verificationStatus: 'VERIFIED' as any,
         isDefault: true,
       },
     }),
@@ -276,7 +276,7 @@ async function main() {
         driverId: drivers[0].id,
         documentType: 'license',
         documentUrl: 'https://example.com/docs/license-carlos.jpg',
-        verificationStatus: 'verified',
+        verificationStatus: 'VERIFIED' as any,
       },
     }),
     prisma.driverDocument.create({
@@ -284,7 +284,7 @@ async function main() {
         driverId: drivers[0].id,
         documentType: 'insurance',
         documentUrl: 'https://example.com/docs/insurance-carlos.jpg',
-        verificationStatus: 'verified',
+        verificationStatus: 'VERIFIED' as any,
       },
     }),
     prisma.driverDocument.create({
@@ -292,7 +292,7 @@ async function main() {
         driverId: drivers[1].id,
         documentType: 'license',
         documentUrl: 'https://example.com/docs/license-maria.jpg',
-        verificationStatus: 'verified',
+        verificationStatus: 'VERIFIED' as any,
       },
     }),
   ]);
@@ -308,7 +308,7 @@ async function main() {
         vehicleId: vehicles[0].id,
         documentType: 'registration',
         documentUrl: 'https://example.com/vehicle-docs/toyota-registration.jpg',
-        verificationStatus: 'verified',
+        verificationStatus: 'VERIFIED' as any,
         verifiedAt: new Date(),
         verifiedBy: 1, // Admin ID
       },
@@ -318,7 +318,7 @@ async function main() {
         vehicleId: vehicles[0].id,
         documentType: 'insurance',
         documentUrl: 'https://example.com/vehicle-docs/toyota-insurance.jpg',
-        verificationStatus: 'verified',
+        verificationStatus: 'VERIFIED' as any,
         verifiedAt: new Date(),
         verifiedBy: 1,
       },
@@ -329,7 +329,7 @@ async function main() {
         vehicleId: vehicles[1].id,
         documentType: 'registration',
         documentUrl: 'https://example.com/vehicle-docs/honda-registration.jpg',
-        verificationStatus: 'verified',
+        verificationStatus: 'VERIFIED' as any,
         verifiedAt: new Date(),
         verifiedBy: 1,
       },
@@ -340,7 +340,7 @@ async function main() {
         vehicleId: vehicles[2].id,
         documentType: 'registration',
         documentUrl: 'https://example.com/vehicle-docs/yamaha-registration.jpg',
-        verificationStatus: 'verified',
+        verificationStatus: 'VERIFIED' as any,
         verifiedAt: new Date(),
         verifiedBy: 1,
       },
@@ -455,7 +455,7 @@ async function main() {
         destinationLongitude: -73.9851,
         rideTime: 15,
         farePrice: 12.5,
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED' as any,
         driverId: drivers[0].id,
         userId: users[0].id,
         tierId: rideTiers[0].id,
@@ -473,7 +473,7 @@ async function main() {
         destinationLongitude: -73.9934,
         rideTime: 22,
         farePrice: 18.75,
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED' as any,
         driverId: drivers[1].id,
         userId: users[1].id,
         tierId: rideTiers[1].id,
@@ -491,7 +491,7 @@ async function main() {
         destinationLongitude: -74.0113,
         rideTime: 30,
         farePrice: 25.0,
-        paymentStatus: 'pending',
+        paymentStatus: 'PENDING' as any,
         userId: users[2].id,
         tierId: rideTiers[2].id,
         scheduledFor: new Date(Date.now() + 3600000), // 1 hour from now
@@ -650,7 +650,7 @@ async function main() {
         deliveryFee: 3.99,
         tip: 5.0,
         status: 'delivered',
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED' as any,
       },
     }),
     prisma.deliveryOrder.create({
@@ -665,7 +665,7 @@ async function main() {
         deliveryFee: 2.99,
         tip: 3.0,
         status: 'in_transit',
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED' as any,
       },
     }),
   ]);
@@ -946,11 +946,7 @@ async function main() {
       name: 'Super Admin',
       email: 'superadmin@uberclone.com',
       password: superAdminPassword,
-      userType: 'admin',
-      adminRole: 'super_admin',
-      adminPermissions: ROLE_PERMISSIONS[AdminRole.SUPER_ADMIN],
       isActive: true,
-      adminCreatedAt: new Date(),
     },
   });
 
@@ -962,12 +958,8 @@ async function main() {
       name: 'System Admin',
       email: 'admin@uberclone.com',
       password: adminPassword,
-      userType: 'admin',
       refreshToken: '',
-      adminRole: 'admin',
-      adminPermissions: ROLE_PERMISSIONS[AdminRole.ADMIN],
       isActive: true,
-      adminCreatedAt: new Date(),
     },
   });
 
@@ -979,12 +971,8 @@ async function main() {
       name: 'Content Moderator',
       email: 'moderator@uberclone.com',
       password: moderatorPassword,
-      userType: 'admin',
       refreshToken: '',
-      adminRole: 'moderator',
-      adminPermissions: ROLE_PERMISSIONS[AdminRole.MODERATOR],
       isActive: true,
-      adminCreatedAt: new Date(),
     },
   });
 
@@ -996,12 +984,8 @@ async function main() {
       name: 'Customer Support',
       email: 'support@uberclone.com',
       password: supportPassword,
-      userType: 'admin',
       refreshToken: '',
-      adminRole: 'support',
-      adminPermissions: ROLE_PERMISSIONS[AdminRole.SUPPORT],
       isActive: true,
-      adminCreatedAt: new Date(),
     },
   });
 
@@ -1436,7 +1420,7 @@ async function main() {
       serviceType: 'ride',
       serviceId: 1,
       paymentMethod: 'transfer',
-      status: 'pending',
+      status: 'PENDING' as any,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
     },
     {
@@ -1447,7 +1431,7 @@ async function main() {
       serviceType: 'delivery',
       serviceId: 1,
       paymentMethod: 'pago_movil',
-      status: 'confirmed',
+      status: 'COMPLETED' as any,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       confirmedAt: new Date(),
     },
@@ -1459,7 +1443,7 @@ async function main() {
       serviceType: 'errand',
       serviceId: 1,
       paymentMethod: 'transfer',
-      status: 'expired',
+      status: 'CANCELLED' as any,
       expiresAt: new Date(Date.now() - 60 * 60 * 1000), // Expired 1 hour ago
     },
     {
@@ -1470,14 +1454,17 @@ async function main() {
       serviceType: 'parcel',
       serviceId: 1,
       paymentMethod: 'zelle',
-      status: 'pending',
+      status: 'PENDING' as any,
       expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12 hours from now
     },
   ];
 
   for (const ref of paymentReferences) {
     await prisma.paymentReference.create({
-      data: ref,
+      data: {
+        ...ref,
+        status: ref.status as any,
+      },
     });
   }
 

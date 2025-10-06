@@ -25,10 +25,10 @@ export class IdentityVerificationService {
     });
 
     if (existingVerification) {
-      if (existingVerification.status === IdentityVerificationStatus.PENDING) {
+      if (existingVerification.status === 'PENDING') {
         throw new BadRequestException('Ya tienes una solicitud de verificación de identidad pendiente');
       }
-      if (existingVerification.status === IdentityVerificationStatus.VERIFIED) {
+      if (existingVerification.status === 'VERIFIED') {
         throw new BadRequestException('Tu identidad ya ha sido verificada');
       }
     }
@@ -37,7 +37,7 @@ export class IdentityVerificationService {
     const dniInUse = await this.prisma.identityVerification.findFirst({
       where: {
         dniNumber,
-        status: IdentityVerificationStatus.VERIFIED,
+        status: 'VERIFIED' as any,
         userId: { not: userId },
       },
     });
@@ -53,7 +53,7 @@ export class IdentityVerificationService {
         dniNumber,
         frontPhotoUrl,
         backPhotoUrl,
-        status: IdentityVerificationStatus.PENDING,
+        status: 'PENDING' as any,
         verifiedAt: null,
         verifiedBy: null,
         rejectionReason: null,
@@ -63,12 +63,12 @@ export class IdentityVerificationService {
         dniNumber,
         frontPhotoUrl,
         backPhotoUrl,
-        status: IdentityVerificationStatus.PENDING,
+        status: 'PENDING' as any,
       },
     });
 
     this.logger.log(`Identity verification request created: ${verification.id} for user ${userId}`);
-    return verification as IdentityVerificationData;
+    return verification as any;
   }
 
   /**
@@ -86,7 +86,7 @@ export class IdentityVerificationService {
   async getPendingVerifications(): Promise<IdentityVerificationData[]> {
     return this.prisma.identityVerification.findMany({
       where: {
-        status: IdentityVerificationStatus.PENDING,
+        status: 'PENDING' as any,
       },
       include: {
         user: {
@@ -102,7 +102,7 @@ export class IdentityVerificationService {
       orderBy: {
         createdAt: 'asc',
       },
-    }) as Promise<IdentityVerificationData[]>;
+    }) as any;
   }
 
   /**
@@ -125,12 +125,12 @@ export class IdentityVerificationService {
       throw new NotFoundException('Solicitud de verificación no encontrada');
     }
 
-    if (verification.status !== IdentityVerificationStatus.PENDING) {
+    if (verification.status !== 'PENDING') {
       throw new BadRequestException('Esta solicitud ya ha sido procesada');
     }
 
     const updateData: any = {
-      status: status === 'verified' ? IdentityVerificationStatus.VERIFIED : IdentityVerificationStatus.REJECTED,
+      status: status === 'verified' ? 'VERIFIED' as any : 'REJECTED' as any,
       verifiedBy: adminId,
       verifiedAt: new Date(),
     };
@@ -159,7 +159,7 @@ export class IdentityVerificationService {
     }
 
     this.logger.log(`Identity verification ${verificationId} processed: ${status}`);
-    return updatedVerification as IdentityVerificationData;
+    return updatedVerification as any;
   }
 
   /**
@@ -174,13 +174,13 @@ export class IdentityVerificationService {
     const [total, pending, verified, rejected] = await Promise.all([
       this.prisma.identityVerification.count(),
       this.prisma.identityVerification.count({
-        where: { status: IdentityVerificationStatus.PENDING },
+        where: { status: 'PENDING' as any },
       }),
       this.prisma.identityVerification.count({
-        where: { status: IdentityVerificationStatus.VERIFIED },
+        where: { status: 'VERIFIED' as any },
       }),
       this.prisma.identityVerification.count({
-        where: { status: IdentityVerificationStatus.REJECTED },
+        where: { status: 'REJECTED' as any },
       }),
     ]);
 
@@ -205,7 +205,7 @@ export class IdentityVerificationService {
 
     const [data, total] = await Promise.all([
       this.prisma.identityVerification.findMany({
-        where: { status },
+        where: { status: status as any },
         include: {
           user: {
             select: {
@@ -222,14 +222,14 @@ export class IdentityVerificationService {
         take: limit,
       }),
       this.prisma.identityVerification.count({
-        where: { status },
+        where: { status: status as any },
       }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: data as IdentityVerificationData[],
+      data: data as any,
       total,
       page,
       limit,

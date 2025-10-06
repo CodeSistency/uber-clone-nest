@@ -40,7 +40,7 @@ export class TemporalPricingService {
       data: {
         name: createDto.name,
         description: createDto.description,
-        ruleType: createDto.ruleType,
+        ruleType: createDto.ruleType?.toUpperCase() as any,
         startTime: createDto.startTime,
         endTime: createDto.endTime,
         daysOfWeek: createDto.daysOfWeek,
@@ -206,7 +206,7 @@ export class TemporalPricingService {
       data: {
         name: updateDto.name,
         description: updateDto.description,
-        ruleType: updateDto.ruleType,
+        ruleType: updateDto.ruleType?.toUpperCase() as any,
         startTime: updateDto.startTime,
         endTime: updateDto.endTime,
         daysOfWeek: updateDto.daysOfWeek,

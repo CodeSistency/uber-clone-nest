@@ -207,12 +207,12 @@ export class DriverManagementService {
       where,
       include: {
         workZoneAssignments: {
-          where: { status: 'active' },
+          where: { status: 'ACTIVE' },
           include: { zone: true },
           take: 1,
         },
         vehicles: {
-          where: { status: 'active' },
+          where: { status: 'ACTIVE' },
           include: {
             vehicleType: true,
           },
@@ -307,7 +307,7 @@ export class DriverManagementService {
               take: 5,
             },
             rides: {
-              where: { status: 'completed' },
+              where: { status: 'COMPLETED' },
               orderBy: { createdAt: 'desc' },
               take: 5,
               include: {
@@ -671,7 +671,7 @@ export class DriverManagementService {
     const updatedDriver = await this.prisma.driver.update({
       where: { id: driverId },
       data: {
-        verificationStatus,
+        verificationStatus: verificationStatus as any,
       },
     });
 
@@ -792,8 +792,8 @@ export class DriverManagementService {
       select: { status: true },
     });
 
-    const completed = rides.filter((r) => r.status === 'completed').length;
-    const cancelled = rides.filter((r) => r.status === 'cancelled').length;
+    const completed = rides.filter((r) => r.status === 'COMPLETED').length;
+    const cancelled = rides.filter((r) => r.status === 'CANCELLED').length;
     const total = rides.length;
 
     return { total, completed, cancelled };
@@ -803,7 +803,7 @@ export class DriverManagementService {
     const result = await this.prisma.driverPayment.aggregate({
       where: {
         driverId,
-        status: 'processed',
+        status: 'COMPLETED' as any,
       },
       _sum: {
         amount: true,
@@ -811,7 +811,7 @@ export class DriverManagementService {
     });
 
     return {
-      total: result._sum.amount || 0,
+      total: result._sum?.amount || 0,
     };
   }
 
@@ -852,7 +852,7 @@ export class DriverManagementService {
           gte: startDate,
           lte: endDate,
         },
-        status: 'completed',
+        status: 'COMPLETED',
       },
       select: {
         farePrice: true,

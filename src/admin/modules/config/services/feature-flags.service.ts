@@ -55,11 +55,7 @@ export class FeatureFlagsService {
         description: createDto.description,
         category: createDto.category,
         isEnabled: createDto.autoEnable ? true : (createDto.isEnabled ?? false),
-        config: createDto.config,
         rolloutPercentage: createDto.rolloutPercentage ?? 100,
-        userRoles: createDto.userRoles,
-        userIds: createDto.userIds,
-        environments: createDto.environments,
         isActive: createDto.isActive ?? true,
         autoEnable: createDto.autoEnable ?? false,
         createdBy,
@@ -214,11 +210,7 @@ export class FeatureFlagsService {
         description: updateDto.description,
         category: updateDto.category,
         isEnabled: updateDto.isEnabled,
-        config: updateDto.config,
         rolloutPercentage: updateDto.rolloutPercentage,
-        userRoles: updateDto.userRoles,
-        userIds: updateDto.userIds,
-        environments: updateDto.environments,
         isActive: updateDto.isActive,
         autoEnable: updateDto.autoEnable,
         updatedBy,
@@ -307,7 +299,6 @@ export class FeatureFlagsService {
         isTargeted: true, // If cached, it was previously targeted
         rolloutPercentage: 100, // Simplified for cache
         isInRollout: true,
-        config: cachedEvaluation.config,
         context: { userId, userRole, environment },
       };
     }
@@ -342,7 +333,6 @@ export class FeatureFlagsService {
         isTargeted: false,
         rolloutPercentage: 0,
         isInRollout: false,
-        config: null,
         context: { userId, userRole, environment },
       };
     }
@@ -387,7 +377,6 @@ export class FeatureFlagsService {
       isTargeted,
       rolloutPercentage: flag.rolloutPercentage || 100,
       isInRollout,
-      config: flag.config,
       context: { userId, userRole, environment, userHash },
     };
   }

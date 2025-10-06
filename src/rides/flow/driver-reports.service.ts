@@ -65,7 +65,7 @@ export class DriverReportsService {
       throw new Error('Driver not authorized for this ride');
     }
 
-    if (ride.status === 'completed' || ride.status === 'cancelled') {
+    if (ride.status === 'COMPLETED' || ride.status === 'CANCELLED') {
       throw new Error('Cannot report issues on completed or cancelled rides');
     }
 

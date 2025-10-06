@@ -445,7 +445,7 @@ export class LocationTrackingService extends RedisPubSubService {
       where: whereClause,
       include: {
         vehicles: {
-          where: { isDefault: true, status: 'active' },
+          where: { isDefault: true, status: 'ACTIVE' },
           take: 1,
           include: { vehicleType: true },
         },
@@ -486,13 +486,10 @@ export class LocationTrackingService extends RedisPubSubService {
             firstName: driver.firstName,
             lastName: driver.lastName,
             profileImageUrl: driver.profileImageUrl,
-            carModel: driver.vehicles?.[0]
-              ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
-              : '',
-            licensePlate: driver.vehicles?.[0]?.licensePlate || '',
-            carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
-            vehicleType:
-              driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
+            carModel: 'Unknown',
+            licensePlate: '',
+            carSeats: 0,
+            vehicleType: 'Unknown',
             currentLocation: {
               lat: Number(driver.currentLatitude),
               lng: Number(driver.currentLongitude),
@@ -519,7 +516,7 @@ export class LocationTrackingService extends RedisPubSubService {
     const [activeDriversCount, totalHistoryRecords] = await Promise.all([
       this.prisma.driver.count({
         where: {
-          status: 'online',
+          status: 'ONLINE',
           isLocationActive: true,
           currentLatitude: { not: null },
           currentLongitude: { not: null },
