@@ -71,11 +71,11 @@ describe('RidesController (Integration)', () => {
     it('should return fare estimate with basic parameters', async () => {
       const tierId = 1;
       const minutes = 20;
-      const miles = 5;
+      const kilometers = 5;
 
       const response = await requestAgent(
         'GET',
-        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}`,
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&kilometers=${kilometers}`,
       ).expect(200);
 
       expect(response.body).toHaveProperty('data');
@@ -92,13 +92,13 @@ describe('RidesController (Integration)', () => {
     it('should return fare estimate with geographic pricing', async () => {
       const tierId = 1;
       const minutes = 20;
-      const miles = 5;
+      const kilometers = 5;
       const userLat = 10.5061;
       const userLng = -66.9146;
 
       const response = await requestAgent(
         'GET',
-        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&userLat=${userLat}&userLng=${userLng}`,
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&kilometers=${kilometers}&userLat=${userLat}&userLng=${userLng}`,
       ).expect(200);
 
       expect(response.body.data).toHaveProperty('geographic');
@@ -108,12 +108,12 @@ describe('RidesController (Integration)', () => {
     it('should return fare estimate with valid promo code', async () => {
       const tierId = 1;
       const minutes = 20;
-      const miles = 5;
+      const kilometers = 5;
       const promoCode = 'TEST20'; // Assuming this promo exists in test data
 
       const response = await requestAgent(
         'GET',
-        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&promoCode=${promoCode}`,
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&kilometers=${kilometers}&promoCode=${promoCode}`,
       ).expect(200);
 
       expect(response.body.data).toHaveProperty('promotion');
@@ -124,12 +124,12 @@ describe('RidesController (Integration)', () => {
     it('should handle invalid promo code gracefully', async () => {
       const tierId = 1;
       const minutes = 20;
-      const miles = 5;
+      const kilometers = 5;
       const promoCode = 'INVALID';
 
       const response = await requestAgent(
         'GET',
-        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&promoCode=${promoCode}`,
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&kilometers=${kilometers}&promoCode=${promoCode}`,
       ).expect(200);
 
       // Should not fail, just ignore invalid promo
@@ -142,20 +142,20 @@ describe('RidesController (Integration)', () => {
     });
 
     it('should return 400 for invalid tierId', async () => {
-      await requestAgent('GET', '/api/ride/estimate?tierId=999&minutes=20&miles=5').expect(400);
+      await requestAgent('GET', '/api/ride/estimate?tierId=999&minutes=20&kilometers=5').expect(400);
     });
 
     it('should calculate consistent pricing for define-ride flow', async () => {
       const tierId = 1;
       const minutes = 20;
-      const miles = 5;
+      const kilometers = 5;
       const userLat = 10.5061;
       const userLng = -66.9146;
 
       // 1. Get estimate price
       const estimateResponse = await requestAgent(
         'GET',
-        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&miles=${miles}&userLat=${userLat}&userLng=${userLng}`,
+        `/api/ride/estimate?tierId=${tierId}&minutes=${minutes}&kilometers=${kilometers}&userLat=${userLat}&userLng=${userLng}`,
       ).expect(200);
 
       const estimatedPrice = estimateResponse.body.data.totalFare;

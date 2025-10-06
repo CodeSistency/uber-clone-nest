@@ -405,7 +405,7 @@ export class PricingCalculationDto {
   tierId: number;
 
   @ApiProperty({
-    description: 'Trip distance in miles/kilometers',
+    description: 'Trip distance in kilometers',
     example: 5.2,
   })
   @Type(() => Number)

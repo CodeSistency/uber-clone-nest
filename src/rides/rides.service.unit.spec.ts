@@ -155,28 +155,28 @@ describe('RidesService (Unit)', () => {
     it('should calculate fare estimate correctly', async () => {
       const tierId = 1;
       const minutes = 20;
-      const miles = 5;
+      const kilometers = 5;
 
       const mockTier = {
         id: tierId,
         name: 'Economy',
         baseFare: 2.5,
         perMinuteRate: 0.25,
-        perMileRate: 1.25,
+        perKmRate: 80, // $0.80 per kilometer
       };
 
       mockPrismaService.rideTier.findUnique.mockResolvedValue(mockTier);
 
-      const result = await service.getFareEstimate(tierId, minutes, miles);
+      const result = await service.getFareEstimate(tierId, minutes, kilometers);
 
       expect(result).toEqual({
         tier: 'Economy',
         baseFare: 2.5,
         perMinuteRate: 0.25,
-        perMileRate: 1.25,
+        perKmRate: 80,
         estimatedMinutes: minutes,
-        estimatedMiles: miles,
-        totalFare: 13.75, // 2.5 + (20 * 0.25) + (5 * 1.25) = 13.75
+        estimatedKilometers: kilometers,
+        totalFare: 407.5, // 2.5 + (20 * 0.25) + (5 * 80) = 407.5
       });
     });
 
