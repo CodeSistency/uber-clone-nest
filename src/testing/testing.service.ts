@@ -32,7 +32,7 @@ export class TestingService {
     const [rides, deliveries, errands, parcels] = await Promise.all([
       this.prisma.ride.findMany({
         where: {
-          paymentStatus: { in: ['pending', 'paid'] },
+          paymentStatus: { in: ['PENDING', 'PAID'] as any },
           createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
           },
@@ -47,7 +47,7 @@ export class TestingService {
       }),
       this.prisma.deliveryOrder.findMany({
         where: {
-          status: { in: ['pending', 'accepted', 'picked_up'] },
+          status: { in: ['PENDING', 'ACCEPTED', 'PICKED_UP'] },
           createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
           },
@@ -137,7 +137,7 @@ export class TestingService {
             destinationLongitude: dto.data.destLng || -66.91,
             rideTime: dto.data.rideTime || 15,
             farePrice: dto.data.farePrice || 10.0,
-            paymentStatus: 'pending',
+            paymentStatus: 'PENDING',
             userId: dto.userId || 1,
             driverId: dto.driverId,
             tierId: dto.data.tierId || 1,
@@ -157,7 +157,7 @@ export class TestingService {
             deliveryLongitude: dto.data.deliveryLng || -66.9,
             totalPrice: dto.data.totalPrice || 25.0,
             deliveryFee: dto.data.deliveryFee || 5.0,
-            status: 'pending',
+            status: 'PENDING',
           },
         });
         break;
@@ -223,7 +223,7 @@ export class TestingService {
       case 'ride':
         result = await this.prisma.ride.update({
           where: { rideId: serviceId },
-          data: { paymentStatus: newState },
+          data: { paymentStatus: newState as any },
         });
         break;
 
@@ -325,13 +325,13 @@ export class TestingService {
         this.prisma.ride.deleteMany({
           where: {
             createdAt: { gte: oneHourAgo },
-            paymentStatus: 'pending',
+            paymentStatus: 'PENDING',
           },
         }),
         this.prisma.deliveryOrder.deleteMany({
           where: {
             createdAt: { gte: oneHourAgo },
-            status: 'pending',
+            status: 'PENDING',
           },
         }),
         this.prisma.errand.deleteMany({

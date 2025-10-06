@@ -700,14 +700,14 @@ export class TransportDriverController {
       where: { id: req.user.id },
       include: {
         vehicles: {
-          where: { status: 'active' },
+          where: { status: 'ACTIVE' },
           select: { vehicleTypeId: true },
           take: 1,
         },
       },
     });
 
-    if (!driver?.vehicles?.[0]?.vehicleTypeId) {
+    if (!driver?.vehicleTypeId) {
       throw new Error('Driver vehicle type not configured');
     }
 
@@ -716,7 +716,7 @@ export class TransportDriverController {
       0, // Default lat (will be filtered by vehicle type only)
       0, // Default lng (will be filtered by vehicle type only)
       1000, // Large radius to get all rides (filtered by vehicle type)
-      driver.vehicles[0].vehicleTypeId, // Filter by driver's vehicle type
+      driver.vehicleTypeId, // Filter by driver's vehicle type
     );
     return { data: list };
   }
@@ -1371,8 +1371,8 @@ export class TransportDriverController {
         id: req.user.id,
         firstName: user.name?.split(' ')[0] || 'Test',
         lastName: user.name?.split(' ')[1] || 'Driver',
-        status: body.status,
-        verificationStatus: 'approved',
+        status: body.status as any,
+        verificationStatus: 'APPROVED' as any,
         canDoDeliveries: true,
         carSeats: 4, // Default number of seats
       },

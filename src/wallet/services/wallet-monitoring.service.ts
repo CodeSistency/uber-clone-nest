@@ -160,7 +160,7 @@ export class WalletMonitoringService {
         where: {
           wallet: { userId },
           createdAt: { gte: oneHourAgo },
-          status: 'failed',
+          status: 'FAILED' as any,
         },
       });
 
@@ -238,7 +238,7 @@ export class WalletMonitoringService {
 
       // Check failed transactions
       const failedTransactions = wallet.walletTransactions.filter(
-        t => t.status === 'failed'
+        t => t.status === 'FAILED'
       );
       
       if (failedTransactions.length > 5) {
@@ -604,7 +604,7 @@ export class WalletMonitoringService {
         }
 
         // Failed transactions
-        const failedTransactions = transactions.filter(t => t.status === 'failed');
+        const failedTransactions = transactions.filter(t => t.status === 'FAILED');
         if (failedTransactions.length > 5) {
           reasons.push('Múltiples transacciones fallidas');
           riskScore += 20;

@@ -324,10 +324,10 @@ export class ReportsAnalyticsService {
     // Calculate summary metrics
     const summary = {
       totalRides: rides.length,
-      completedRides: rides.filter((r) => r.status === 'completed').length,
-      cancelledRides: rides.filter((r) => r.status === 'cancelled').length,
+      completedRides: rides.filter((r) => r.status === 'COMPLETED').length,
+      cancelledRides: rides.filter((r) => r.status === 'CANCELLED').length,
       totalRevenue: rides
-        .filter((r) => r.paymentStatus === 'paid')
+        .filter((r) => r.paymentStatus === 'COMPLETED')
         .reduce((sum, r) => sum + Number(r.farePrice), 0),
       averageFare: 0,
       completionRate: 0,
@@ -421,10 +421,10 @@ export class ReportsAnalyticsService {
     const summary = {
       totalDrivers: drivers.length,
       activeDrivers: drivers.filter(
-        (d) => d.status === 'online' || d.status === 'busy',
+        (d) => d.status === 'ONLINE' || d.status === 'BUSY',
       ).length,
       verifiedDrivers: drivers.filter(
-        (d) => d.verificationStatus === 'approved',
+        (d) => d.verificationStatus === 'VERIFIED',
       ).length,
       totalRides: drivers.reduce((sum, d) => sum + d._count.rides, 0),
       averageRating: 0,
@@ -466,7 +466,7 @@ export class ReportsAnalyticsService {
         this.prisma.ride.aggregate({
           where: {
             createdAt: { gte: dateFrom, lte: dateTo },
-            paymentStatus: 'paid',
+            paymentStatus: 'COMPLETED',
           },
           _sum: { farePrice: true },
           _count: true,
@@ -474,7 +474,7 @@ export class ReportsAnalyticsService {
         this.prisma.driverPayment.aggregate({
           where: {
             createdAt: { gte: dateFrom, lte: dateTo },
-            status: 'processed',
+            status: 'COMPLETED',
           },
           _sum: { amount: true },
         }),
@@ -488,16 +488,16 @@ export class ReportsAnalyticsService {
     );
 
     const summary = {
-      totalRevenue: Number(rideRevenue._sum.farePrice || 0),
+      totalRevenue: Number(rideRevenue._sum?.farePrice || 0),
       totalRides: rideRevenue._count,
-      driverPayouts: Number(driverPayments._sum.amount || 0),
+      driverPayouts: Number(driverPayments._sum?.amount || 0),
       walletTransactions: Number(walletTransactions._sum.amount || 0),
       netIncome:
-        Number(rideRevenue._sum.farePrice || 0) -
-        Number(driverPayments._sum.amount || 0),
+        Number(rideRevenue._sum?.farePrice || 0) -
+        Number(driverPayments._sum?.amount || 0),
       averageFare:
         rideRevenue._count > 0
-          ? Number(rideRevenue._sum.farePrice || 0) / rideRevenue._count
+          ? Number(rideRevenue._sum?.farePrice || 0) / rideRevenue._count
           : 0,
     };
 
@@ -641,19 +641,19 @@ export class ReportsAnalyticsService {
         this.prisma.ride.aggregate({
           where: {
             createdAt: { gte: today, lte: tomorrow },
-            paymentStatus: 'paid',
+            paymentStatus: 'COMPLETED',
           },
           _sum: { farePrice: true },
         }),
         this.prisma.driver.count({
-          where: { status: { in: ['online', 'busy'] } },
+          where: { status: { in: ['ONLINE', 'BUSY'] } },
         }),
         this.prisma.user.count(),
       ]);
 
     return {
       todayRides,
-      todayRevenue: Number(todayRevenue._sum.farePrice || 0),
+      todayRevenue: Number(todayRevenue._sum?.farePrice || 0),
       activeDrivers,
       totalUsers,
     };
@@ -670,14 +670,14 @@ export class ReportsAnalyticsService {
       const revenue = await this.prisma.ride.aggregate({
         where: {
           createdAt: { gte: dayStart, lte: dayEnd },
-          paymentStatus: 'paid',
+            paymentStatus: 'COMPLETED',
         },
         _sum: { farePrice: true },
       });
 
       data.push({
         date: format(date, 'yyyy-MM-dd'),
-        revenue: Number(revenue._sum.farePrice || 0),
+        revenue: Number(revenue._sum?.farePrice || 0),
       });
     }
 

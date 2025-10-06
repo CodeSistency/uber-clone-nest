@@ -18,7 +18,7 @@ const createMockTemporalPricingRule = (overrides = {}) => ({
   id: 1,
   name: 'Mock Rule',
   description: 'Mock description',
-  ruleType: 'time_range' as const,
+  ruleType: 'TIME_RANGE' as any,
   startTime: '08:00',
   endTime: '10:00',
   daysOfWeek: [1, 2, 3, 4, 5],
@@ -61,7 +61,7 @@ describe('TemporalPricingService', () => {
       const createDto: CreateTemporalPricingRuleDto = {
         name: 'Morning Peak Hours',
         description: 'Increased pricing during morning rush hour',
-        ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
         startTime: '07:00',
         endTime: '09:00',
         daysOfWeek: [1, 2, 3, 4, 5], // Monday to Friday
@@ -85,14 +85,14 @@ describe('TemporalPricingService', () => {
         multiplier: createDto.multiplier, // Service transforms Decimal to number
       };
 
-      prismaService.temporalPricingRule.create.mockResolvedValue(prismaResult);
+      prismaService.temporalPricingRule.create.mockResolvedValue(prismaResult as any);
 
       const result = await service.create(createDto);
 
       expect(prismaService.temporalPricingRule.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           name: createDto.name,
-          ruleType: createDto.ruleType,
+          ruleType: createDto.ruleType as any,
           multiplier: createDto.multiplier,
           priority: createDto.priority,
         }),
@@ -104,7 +104,7 @@ describe('TemporalPricingService', () => {
     it('should create seasonal rule', async () => {
       const createDto: CreateTemporalPricingRuleDto = {
         name: 'Holiday Season',
-        ruleType: 'seasonal',
+        ruleType: 'SEASONAL' as any,
         dateRanges: [
           { start: '2024-12-20', end: '2024-12-31' },
           { start: '2024-01-01', end: '2024-01-05' },
@@ -117,6 +117,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 2,
           ...createDto,
+          ruleType: 'TIME_RANGE' as any,
           description: createDto.description || null,
           multiplier: new Decimal(createDto.multiplier),
           createdAt: new Date(),
@@ -145,7 +146,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'Morning Peak',
-          ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
           startTime: '07:00',
           endTime: '09:00',
           daysOfWeek: [1, 2, 3, 4, 5], // Monday-Friday
@@ -157,7 +158,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 2,
           name: 'Weekend Surcharge',
-          ruleType: 'day_of_week',
+          ruleType: 'DAY_OF_WEEK' as any,
           daysOfWeek: [0, 6], // Saturday-Sunday
           multiplier: new Decimal(1.2),
           priority: 10,
@@ -166,7 +167,7 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -195,7 +196,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'High Priority Rule',
-          ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
           startTime: '07:00',
           endTime: '10:00',
           multiplier: new Decimal(1.8),
@@ -205,7 +206,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 2,
           name: 'Low Priority Rule',
-          ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
           startTime: '07:00',
           endTime: '10:00',
           multiplier: new Decimal(1.4),
@@ -214,7 +215,7 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -241,7 +242,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'Weekend Surcharge',
-          ruleType: 'day_of_week',
+          ruleType: 'DAY_OF_WEEK' as any,
           daysOfWeek: [0, 6], // Saturday-Sunday
           multiplier: new Decimal(1.2),
           priority: 10,
@@ -249,7 +250,7 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -277,7 +278,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'Christmas Day',
-          ruleType: 'date_specific',
+          ruleType: 'DATE_SPECIFIC' as any,
           specificDates: ['2024-12-25'],
           multiplier: new Decimal(2.0),
           priority: 100,
@@ -285,7 +286,7 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -312,7 +313,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'Holiday Season',
-          ruleType: 'seasonal',
+          ruleType: 'SEASONAL' as any,
           dateRanges: [{ start: '2024-12-20', end: '2024-12-31' }],
           multiplier: new Decimal(1.6),
           priority: 40,
@@ -320,7 +321,7 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -347,7 +348,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'Night Hours',
-          ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
           startTime: '22:00',
           endTime: '06:00', // Overnight range
           multiplier: new Decimal(1.5),
@@ -356,7 +357,7 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -386,7 +387,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'Global Rule',
-          ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
           startTime: '07:00',
           endTime: '09:00',
           multiplier: new Decimal(1.2),
@@ -397,7 +398,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 2,
           name: 'City Specific Rule',
-          ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
           startTime: '07:00',
           endTime: '09:00',
           multiplier: new Decimal(1.4),
@@ -409,7 +410,7 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -454,7 +455,7 @@ describe('TemporalPricingService', () => {
         createMockTemporalPricingRule({
           id: 1,
           name: 'Morning Peak Hours',
-          ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
           startTime: '07:00',
           endTime: '09:00',
           multiplier: new Decimal(1.4),
@@ -516,7 +517,7 @@ describe('TemporalPricingService', () => {
     it('should handle rules with missing required fields', async () => {
       const createDto: CreateTemporalPricingRuleDto = {
         name: 'Invalid Rule',
-        ruleType: 'time_range',
+          ruleType: 'TIME_RANGE' as any,
         // Missing startTime, endTime
         multiplier: 1.2,
       };

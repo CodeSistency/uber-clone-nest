@@ -24,7 +24,7 @@ export class AdminAuthService {
   async login(loginDto: AdminLoginDto): Promise<AdminLoginResponseDto> {
     const { email, password } = loginDto;
 
-    // Find admin user
+    // Find admin user with admin relation
     const user = await this.prisma.user.findUnique({
       where: { email },
       select: {
@@ -33,10 +33,14 @@ export class AdminAuthService {
         name: true,
         password: true,
         isActive: true,
-        userType: true,
-        adminRole: true,
-        adminPermissions: true,
-        lastAdminLogin: true,
+        lastLogin: true,
+        admin: {
+          select: {
+            role: true,
+            permissions: true,
+            lastLogin: true,
+          },
+        },
       },
     });
 
@@ -50,8 +54,8 @@ export class AdminAuthService {
       this.logger.warn(`Login attempt for inactive user: ${email}`);
       throw new UnauthorizedException('Cuenta inactiva');
     }
-
-    if (user.userType !== 'admin' || !user.adminRole) {
+    console.log(user);
+    if (!user.admin) {
       this.logger.warn(`Login attempt for non-admin user: ${email}`);
       throw new UnauthorizedException('Acceso no autorizado');
     }
@@ -72,21 +76,25 @@ export class AdminAuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        lastAdminLogin: new Date(),
         lastLogin: new Date(),
+        admin: {
+          update: {
+            lastLogin: new Date(),
+          },
+        },
       },
     });
 
     // Generate tokens
     const permissions =
-      (user.adminPermissions as AdminPermission[]) ||
-      ROLE_PERMISSIONS[user.adminRole as AdminRole] ||
+      (user.admin.permissions as AdminPermission[]) ||
+      ROLE_PERMISSIONS[user.admin.role as AdminRole] ||
       [];
 
     const payload: AdminJwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.adminRole as AdminRole,
+      role: user.admin.role as AdminRole,
       permissions,
     };
 
@@ -94,7 +102,7 @@ export class AdminAuthService {
     const refreshToken = this.generateRefreshToken(payload);
 
     // Log successful login
-    this.logger.log(`Admin login successful: ${email} (${user.adminRole})`);
+    this.logger.log(`Admin login successful: ${email} (${user.admin.role})`);
 
     return {
       access_token: accessToken,
@@ -103,7 +111,7 @@ export class AdminAuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.adminRole,
+        role: user.admin.role || 'ADMIN',
         permissions,
       },
       expires_in: this.getAccessTokenExpiration(),
@@ -118,13 +126,16 @@ export class AdminAuthService {
         email: true,
         name: true,
         isActive: true,
-        userType: true,
-        adminRole: true,
-        adminPermissions: true,
+        admin: {
+          select: {
+            role: true,
+            permissions: true,
+          },
+        },
       },
     });
 
-    if (!user || !user.isActive || user.userType !== 'admin') {
+    if (!user || !user.isActive || !user.admin) {
       return null;
     }
 
@@ -132,10 +143,10 @@ export class AdminAuthService {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.adminRole,
+      role: user.admin.role,
       permissions:
-        user.adminPermissions ||
-        ROLE_PERMISSIONS[user.adminRole as AdminRole] ||
+        user.admin.permissions ||
+        ROLE_PERMISSIONS[user.admin.role as AdminRole] ||
         [],
     };
   }

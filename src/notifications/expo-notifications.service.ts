@@ -160,13 +160,13 @@ export class ExpoNotificationsService {
       // Find nearby drivers (within 5km)
       const nearbyDrivers = await this.prisma.driver.findMany({
         where: {
-          status: 'online',
+          status: 'ONLINE' as any,
           canDoDeliveries: false, // For now, only non-delivery drivers
-          verificationStatus: 'approved',
+          verificationStatus: 'APPROVED' as any,
         },
         include: {
           vehicles: {
-            where: { isDefault: true, status: 'active' },
+            where: { isDefault: true, status: 'ACTIVE' },
             take: 1,
             include: { vehicleType: true },
           },
@@ -184,7 +184,7 @@ export class ExpoNotificationsService {
       // Log details of found drivers
       nearbyDrivers.forEach((driver, index) => {
         this.logger.log(
-          `  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} (${driver.vehicles?.[0]?.vehicleType?.displayName || 'Sin tipo'})`,
+          `  ${index + 1}. Driver ${driver.id}: ${driver.firstName} ${driver.lastName} (Sin tipo)`,
         );
       });
 
@@ -235,13 +235,13 @@ export class ExpoNotificationsService {
       // 1. Buscar drivers online disponibles
       const availableDrivers = await this.prisma.driver.findMany({
         where: {
-          status: 'online',
+          status: 'ONLINE' as any,
           canDoDeliveries: false,
-          verificationStatus: 'approved',
+          verificationStatus: 'APPROVED' as any,
         },
         include: {
           vehicles: {
-            where: { isDefault: true, status: 'active' },
+            where: { isDefault: true, status: 'ACTIVE' },
             take: 1,
             include: { vehicleType: true },
           },
@@ -375,7 +375,7 @@ export class ExpoNotificationsService {
         where: { id: driverId },
       });
 
-      if (!driver || driver.status !== 'online') {
+      if (!driver || driver.status !== 'ONLINE') {
         throw new Error('DRIVER_NOT_AVAILABLE');
       }
 
@@ -384,7 +384,7 @@ export class ExpoNotificationsService {
         where: { rideId },
         data: {
           driverId: driverId,
-          status: 'driver_confirmed',
+          status: 'DRIVER_CONFIRMED',
           updatedAt: new Date(),
         },
       });

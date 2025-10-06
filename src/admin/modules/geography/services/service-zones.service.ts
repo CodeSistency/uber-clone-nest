@@ -79,7 +79,7 @@ export class ServiceZonesService {
       data: {
         name: createServiceZoneDto.name,
         cityId: createServiceZoneDto.cityId,
-        zoneType: createServiceZoneDto.zoneType,
+        zoneType: createServiceZoneDto.zoneType?.toUpperCase() as any,
         boundaries: createServiceZoneDto.boundaries,
         centerLat: createServiceZoneDto.centerLat,
         centerLng: createServiceZoneDto.centerLng,
@@ -314,7 +314,7 @@ export class ServiceZonesService {
       data: {
         name: updateServiceZoneDto.name,
         cityId: updateServiceZoneDto.cityId,
-        zoneType: updateServiceZoneDto.zoneType,
+        zoneType: updateServiceZoneDto.zoneType?.toUpperCase() as any,
         boundaries: updateServiceZoneDto.boundaries,
         centerLat: updateServiceZoneDto.centerLat,
         centerLng: updateServiceZoneDto.centerLng,

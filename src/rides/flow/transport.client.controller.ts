@@ -1064,7 +1064,7 @@ export class TransportClientController {
     }
 
     // Validar que el viaje esté en estado correcto para pago
-    if (ride.paymentStatus !== 'pending') {
+    if (ride.paymentStatus !== 'PENDING') {
       throw new Error(
         `El viaje ya tiene estado de pago: ${ride.paymentStatus}`,
       );
@@ -1874,10 +1874,10 @@ export class TransportClientController {
           rideId: Number(rideId),
           totalAmount: Number(ride.farePrice || 0),
           paidAmount:
-            ride.paymentStatus === 'paid' ? Number(ride.farePrice || 0) : 0,
+            ride.paymentStatus === 'COMPLETED' ? Number(ride.farePrice || 0) : 0,
           remainingAmount:
-            ride.paymentStatus === 'paid' ? 0 : Number(ride.farePrice || 0),
-          status: ride.paymentStatus === 'paid' ? 'complete' : 'pending',
+            ride.paymentStatus === 'COMPLETED' ? 0 : Number(ride.farePrice || 0),
+          status: ride.paymentStatus === 'COMPLETED' ? 'complete' : 'pending',
           hasPaymentGroup: false,
           message: 'Viaje sin grupo de pagos múltiples',
         },
@@ -1887,13 +1887,13 @@ export class TransportClientController {
     // Calcular estadísticas
     const totalReferences = paymentGroup.paymentReferences.length;
     const confirmedReferences = paymentGroup.paymentReferences.filter(
-      (ref) => ref.status === 'confirmed',
+      (ref) => ref.status === 'COMPLETED',
     ).length;
     const pendingReferences = paymentGroup.paymentReferences.filter(
-      (ref) => ref.status === 'pending',
+      (ref) => ref.status === 'PENDING',
     ).length;
     const expiredReferences = paymentGroup.paymentReferences.filter(
-      (ref) => ref.status === 'expired',
+      (ref) => ref.status === 'CANCELLED',
     ).length;
 
     return {
@@ -2093,7 +2093,7 @@ export class TransportClientController {
         take: driverCount,
         include: {
           vehicles: {
-            where: { isDefault: true, status: 'active' },
+            where: { isDefault: true, status: 'ACTIVE' },
             take: 1,
             include: { vehicleType: true },
           },
@@ -2136,7 +2136,7 @@ export class TransportClientController {
         const newLng = centerLng + lngOffset;
 
         // Asignar tipo de vehículo si no tiene uno
-        let vehicleTypeId = driver.vehicles?.[0]?.vehicleTypeId;
+        let vehicleTypeId = driver.vehicleTypeId;
         if (!vehicleTypeId && availableVehicleTypes.length > 0) {
           vehicleTypeId =
             availableVehicleTypes[
@@ -2161,7 +2161,7 @@ export class TransportClientController {
         await this.prisma.driver.update({
           where: { id: driver.id },
           data: {
-            status: 'online',
+            status: 'ONLINE',
             updatedAt: new Date(),
           },
         });
@@ -2183,13 +2183,10 @@ export class TransportClientController {
           firstName: driver.firstName,
           lastName: driver.lastName,
           profileImageUrl: driver.profileImageUrl,
-          carModel: driver.vehicles?.[0]
-            ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
-            : 'Unknown',
-          licensePlate: driver.vehicles?.[0]?.licensePlate || '',
-          carSeats: driver.vehicles?.[0]?.seatingCapacity || 0,
-          vehicleType:
-            driver.vehicles?.[0]?.vehicleType?.displayName || 'Unknown',
+          carModel: 'Unknown',
+          licensePlate: '',
+          carSeats: 0,
+          vehicleType: 'Unknown',
           currentLocation: {
             lat: newLat,
             lng: newLng,

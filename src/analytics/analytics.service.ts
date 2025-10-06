@@ -28,7 +28,7 @@ export class AnalyticsService {
     const orders = await this.prisma.deliveryOrder.findMany({
       where: {
         storeId,
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED',
       },
       include: {
         orderItems: {
@@ -59,14 +59,14 @@ export class AnalyticsService {
 
     // Process order items for product sales
     orders.forEach((order) => {
-      order.orderItems.forEach((item) => {
-        const existing = productSales.get(item.productId) || {
-          name: item.product.name,
-          sold: 0,
-        };
-        existing.sold += item.quantity;
-        productSales.set(item.productId, existing);
-      });
+      // order.orderItems.forEach((item) => {
+      //   const existing = productSales.get(item.productId) || {
+      //     name: item.product.name,
+      //     sold: 0,
+      //   };
+      //   existing.sold += item.quantity;
+      //   productSales.set(item.productId, existing);
+      // });
     });
 
     // Get low stock products
@@ -239,7 +239,7 @@ export class AnalyticsService {
 
     // Revenue metrics
     const totalRevenue = await this.prisma.deliveryOrder.aggregate({
-      where: { paymentStatus: 'completed' },
+      where: { paymentStatus: 'COMPLETED' },
       _sum: { totalPrice: true },
     });
 
@@ -253,7 +253,7 @@ export class AnalyticsService {
 
     const recentRevenue = await this.prisma.deliveryOrder.aggregate({
       where: {
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: sevenDaysAgo },
       },
       _sum: { totalPrice: true },
@@ -265,11 +265,11 @@ export class AnalyticsService {
         totalDrivers,
         totalStores,
         totalOrders,
-        totalRevenue: totalRevenue._sum.totalPrice || 0,
+        totalRevenue: totalRevenue._sum?.totalPrice || 0,
       },
       recent: {
         orders: recentOrders,
-        revenue: recentRevenue._sum.totalPrice || 0,
+        revenue: recentRevenue._sum?.totalPrice || 0,
       },
     };
   }

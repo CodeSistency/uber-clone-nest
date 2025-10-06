@@ -1,0 +1,578 @@
+{
+  "proyecto": "database-migration-fix",
+  "etapas": [
+    {
+      "id": "E1",
+      "nombre": "Corrección de Enums y Tipos de Datos",
+      "modulos": [
+        {
+          "id": "M1.1",
+          "nombre": "Corrección de Enums en Seed y Archivos Base",
+          "progreso": 50,
+          "prioridad": "Alta",
+          "descripcion": "Corregir todos los valores de enums en archivos de seed y servicios base para usar valores en mayúsculas",
+          "dependencias": ["prisma/seed.ts", "src/prisma/prisma.service.ts"],
+          "tareas": [
+            {
+              "id": "T1.1.1",
+              "nombre": "Corregir valores de enum en seed.ts",
+              "descripcion": "Cambiar todos los valores de enum de minúsculas a mayúsculas en prisma/seed.ts",
+              "subtareas": [
+                {
+                  "id": "ST1.1.1.1",
+                  "nombre": "Corregir DriverStatus en seed.ts",
+                  "descripcion": "Cambiar 'online', 'offline' por 'ONLINE', 'OFFLINE' en seed.ts"
+                },
+                {
+                  "id": "ST1.1.1.2",
+                  "nombre": "Corregir VerificationStatus en seed.ts",
+                  "descripcion": "Cambiar 'approved', 'verified' por 'APPROVED', 'VERIFIED' en seed.ts"
+                },
+                {
+                  "id": "ST1.1.1.3",
+                  "nombre": "Corregir VehicleStatus en seed.ts",
+                  "descripcion": "Cambiar 'active' por 'ACTIVE' en seed.ts"
+                },
+                {
+                  "id": "ST1.1.1.4",
+                  "nombre": "Corregir PaymentStatus en seed.ts",
+                  "descripcion": "Cambiar 'completed', 'pending' por 'COMPLETED', 'PENDING' en seed.ts"
+                },
+                {
+                  "id": "ST1.1.1.5",
+                  "nombre": "Eliminar campos userType del seed.ts",
+                  "descripcion": "Remover referencias a userType, adminRole, adminPermissions que ya no existen en User"
+                }
+              ]
+            },
+            {
+              "id": "T1.1.2",
+              "nombre": "Corregir PrismaService cleanDatabase",
+              "descripcion": "Actualizar método cleanDatabase para usar nuevos nombres de tablas y relaciones",
+              "subtareas": [
+                {
+                  "id": "ST1.1.2.1",
+                  "nombre": "Actualizar orden de limpieza en cleanDatabase",
+                  "descripcion": "Reordenar las operaciones de deleteMany para respetar las nuevas foreign keys"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M1.2",
+          "nombre": "Corrección de Servicios Core",
+          "progreso": 75,
+          "prioridad": "Alta",
+          "descripcion": "Corregir servicios principales que usan enums y campos eliminados",
+          "dependencias": ["src/users/users.service.ts", "src/drivers/drivers.service.ts", "src/rides/rides.service.ts"],
+          "tareas": [
+            {
+              "id": "T1.2.1",
+              "nombre": "Corregir UsersService",
+              "descripcion": "Eliminar referencias a campos admin eliminados y corregir tipos",
+              "subtareas": [
+                {
+                  "id": "ST1.2.1.1",
+                  "nombre": "Eliminar campos admin de select en findUserByEmail",
+                  "descripcion": "Remover userType, adminRole, adminPermissions, lastAdminLogin, adminCreatedAt, adminUpdatedAt, adminAuditLogs del select"
+                },
+                {
+                  "id": "ST1.2.1.2",
+                  "nombre": "Actualizar createUser para eliminar campos admin",
+                  "descripcion": "Remover referencias a userType, adminRole, adminPermissions en createUser"
+                },
+                {
+                  "id": "ST1.2.1.3",
+                  "nombre": "Corregir searchUsers para eliminar filtros admin",
+                  "descripcion": "Remover filtros por userType, adminRole que ya no existen"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.2",
+              "nombre": "Corregir DriversService",
+              "descripcion": "Actualizar DriversService para usar nuevos enums y relaciones",
+              "subtareas": [
+                {
+                  "id": "ST1.2.2.1",
+                  "nombre": "Corregir enums en DriversService",
+                  "descripcion": "Cambiar 'online', 'offline', 'approved' por 'ONLINE', 'OFFLINE', 'APPROVED'"
+                },
+                {
+                  "id": "ST1.2.2.2",
+                  "nombre": "Actualizar includes para nuevas relaciones",
+                  "descripcion": "Agregar includes para vehicles, workZoneAssignments, driverPaymentMethods, documents, rides"
+                },
+                {
+                  "id": "ST1.2.2.3",
+                  "nombre": "Corregir filtros de búsqueda",
+                  "descripcion": "Actualizar filtros para usar nuevos enums y relaciones"
+                }
+              ]
+            },
+            {
+              "id": "T1.2.3",
+              "nombre": "Corregir RidesService",
+              "descripcion": "Actualizar RidesService para usar nuevos enums y tipos",
+              "subtareas": [
+                {
+                  "id": "ST1.2.3.1",
+                  "nombre": "Corregir tipos de PaymentStatus en RidesService",
+                  "descripcion": "Cambiar strings por enums en createRide y otros métodos"
+                },
+                {
+                  "id": "ST1.2.3.2",
+                  "nombre": "Actualizar includes para nuevas relaciones",
+                  "descripcion": "Agregar includes para driver, vehicle, tier, user en consultas de rides"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "nombre": "Corrección de Módulos Admin",
+      "modulos": [
+        {
+          "id": "M2.1",
+          "nombre": "Corrección de Admin Auth Service",
+          "progreso": 50,
+          "prioridad": "Alta",
+          "descripcion": "Actualizar admin-auth.service.ts para usar nueva tabla Admin separada",
+          "dependencias": ["src/admin/services/admin-auth.service.ts", "src/admin/services/dashboard.service.ts"],
+          "tareas": [
+            {
+              "id": "T2.1.1",
+              "nombre": "Migrar lógica admin a tabla Admin",
+              "descripcion": "Actualizar admin-auth.service.ts para usar relación con tabla Admin",
+              "subtareas": [
+                {
+                  "id": "ST2.1.1.1",
+                  "nombre": "Actualizar loginAdmin para usar tabla Admin",
+                  "descripcion": "Modificar loginAdmin para hacer join con tabla Admin y obtener datos de admin"
+                },
+                {
+                  "id": "ST2.1.1.2",
+                  "nombre": "Actualizar validateAdmin para nueva estructura",
+                  "descripcion": "Modificar validateAdmin para usar relación admin en lugar de campos en User"
+                },
+                {
+                  "id": "ST2.1.1.3",
+                  "nombre": "Crear Admin si no existe en login",
+                  "descripcion": "Agregar lógica para crear registro en tabla Admin si no existe"
+                }
+              ]
+            },
+            {
+              "id": "T2.1.2",
+              "nombre": "Corregir Dashboard Service",
+              "descripcion": "Actualizar dashboard.service.ts para usar nuevos enums",
+              "subtareas": [
+                {
+                  "id": "ST2.1.2.1",
+                  "nombre": "Corregir enums en consultas de dashboard",
+                  "descripcion": "Cambiar 'completed', 'online', 'busy' por 'COMPLETED', 'ONLINE', 'BUSY'"
+                },
+                {
+                  "id": "ST2.1.2.2",
+                  "nombre": "Actualizar includes para nuevas relaciones",
+                  "descripcion": "Agregar includes necesarios para driver, vehicle, tier en consultas"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2.2",
+          "nombre": "Corrección de Módulos Admin Específicos",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Corregir módulos admin específicos como driver-management, ride-management, etc.",
+          "dependencias": ["src/admin/modules/driver-management", "src/admin/modules/ride-management", "src/admin/modules/reports-analytics"],
+          "tareas": [
+            {
+              "id": "T2.2.1",
+              "nombre": "Corregir Driver Management Service",
+              "descripcion": "Actualizar driver-management.service.ts para usar nuevos enums y relaciones",
+              "subtareas": [
+                {
+                  "id": "ST2.2.1.1",
+                  "nombre": "Corregir enums en driver-management",
+                  "descripcion": "Cambiar todos los enums a mayúsculas en driver-management.service.ts"
+                },
+                {
+                  "id": "ST2.2.1.2",
+                  "nombre": "Actualizar includes para nuevas relaciones",
+                  "descripcion": "Agregar includes para vehicles, rides, workZoneAssignments, driverPaymentMethods"
+                }
+              ]
+            },
+            {
+              "id": "T2.2.2",
+              "nombre": "Corregir Reports Analytics Service",
+              "descripcion": "Actualizar reports-analytics.service.ts para usar nuevos enums",
+              "subtareas": [
+                {
+                  "id": "ST2.2.2.1",
+                  "nombre": "Corregir enums en reports-analytics",
+                  "descripcion": "Cambiar 'completed', 'cancelled', 'paid', 'online', 'busy', 'approved' por enums en mayúsculas"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "nombre": "Corrección de Módulos de Negocio",
+      "modulos": [
+        {
+          "id": "M3.1",
+          "nombre": "Corrección de Notificaciones",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Corregir servicios de notificaciones para usar nuevos enums y relaciones",
+          "dependencias": ["src/notifications/notifications.service.ts", "src/notifications/expo-notifications.service.ts"],
+          "tareas": [
+            {
+              "id": "T3.1.1",
+              "nombre": "Corregir Notifications Service",
+              "descripcion": "Actualizar notifications.service.ts para usar nuevos enums",
+              "subtareas": [
+                {
+                  "id": "ST3.1.1.1",
+                  "nombre": "Corregir enums en notifications.service.ts",
+                  "descripcion": "Cambiar 'online', 'busy', 'approved', 'active' por 'ONLINE', 'BUSY', 'APPROVED', 'ACTIVE'"
+                },
+                {
+                  "id": "ST3.1.1.2",
+                  "nombre": "Actualizar includes para nuevas relaciones",
+                  "descripcion": "Agregar includes para vehicles en consultas de drivers"
+                }
+              ]
+            },
+            {
+              "id": "T3.1.2",
+              "nombre": "Corregir Expo Notifications Service",
+              "descripcion": "Actualizar expo-notifications.service.ts para usar nuevos enums",
+              "subtareas": [
+                {
+                  "id": "ST3.1.2.1",
+                  "nombre": "Corregir enums en expo-notifications.service.ts",
+                  "descripcion": "Cambiar todos los enums a mayúsculas"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M3.2",
+          "nombre": "Corrección de Payments y Wallet",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Corregir servicios de pagos y wallet para usar nuevos enums",
+          "dependencias": ["src/payments/payments.service.ts", "src/wallet/wallet.service.ts"],
+          "tareas": [
+            {
+              "id": "T3.2.1",
+              "nombre": "Corregir Payments Service",
+              "descripcion": "Actualizar payments.service.ts para usar nuevos enums de PaymentStatus",
+              "subtareas": [
+                {
+                  "id": "ST3.2.1.1",
+                  "nombre": "Corregir PaymentStatus en payments.service.ts",
+                  "descripcion": "Cambiar 'pending', 'confirmed', 'expired', 'paid' por 'PENDING', 'CONFIRMED', 'EXPIRED', 'PAID'"
+                }
+              ]
+            },
+            {
+              "id": "T3.2.2",
+              "nombre": "Corregir Wallet Monitoring Service",
+              "descripcion": "Actualizar wallet-monitoring.service.ts para usar nuevos enums",
+              "subtareas": [
+                {
+                  "id": "ST3.2.2.1",
+                  "nombre": "Corregir PaymentStatus en wallet-monitoring.service.ts",
+                  "descripcion": "Cambiar 'failed' por 'FAILED' en filtros de transacciones"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "nombre": "Corrección de Módulos de Rides y Flow",
+      "modulos": [
+        {
+          "id": "M4.1",
+          "nombre": "Corrección de Rides Flow Service",
+          "progreso": 75,
+          "prioridad": "Alta",
+          "descripcion": "Corregir rides-flow.service.ts para usar nuevos enums y relaciones",
+          "dependencias": ["src/rides/flow/rides-flow.service.ts", "src/rides/flow/transport.client.controller.ts"],
+          "tareas": [
+            {
+              "id": "T4.1.1",
+              "nombre": "Corregir enums en Rides Flow Service",
+              "descripcion": "Actualizar todos los enums en rides-flow.service.ts",
+              "subtareas": [
+                {
+                  "id": "ST4.1.1.1",
+                  "nombre": "Corregir RideStatus en rides-flow.service.ts",
+                  "descripcion": "Cambiar 'completed', 'cancelled', 'driver_confirmed', 'accepted', 'arrived', 'in_progress' por enums en mayúsculas"
+                },
+                {
+                  "id": "ST4.1.1.2",
+                  "nombre": "Corregir PaymentStatus en rides-flow.service.ts",
+                  "descripcion": "Cambiar 'paid', 'pending' por 'PAID', 'PENDING'"
+                },
+                {
+                  "id": "ST4.1.1.3",
+                  "nombre": "Corregir DriverStatus en rides-flow.service.ts",
+                  "descripcion": "Cambiar 'online', 'offline', 'busy' por 'ONLINE', 'OFFLINE', 'BUSY'"
+                },
+                {
+                  "id": "ST4.1.1.4",
+                  "nombre": "Corregir VerificationStatus en rides-flow.service.ts",
+                  "descripcion": "Cambiar 'approved' por 'APPROVED'"
+                }
+              ]
+            },
+            {
+              "id": "T4.1.2",
+              "nombre": "Actualizar includes para nuevas relaciones",
+              "descripcion": "Agregar includes necesarios para driver, vehicle, tier, user en consultas",
+              "subtareas": [
+                {
+                  "id": "ST4.1.2.1",
+                  "nombre": "Agregar includes para driver en consultas de rides",
+                  "descripcion": "Incluir driver con vehicles, workZoneAssignments en consultas de rides"
+                },
+                {
+                  "id": "ST4.1.2.2",
+                  "nombre": "Agregar includes para user en consultas de rides",
+                  "descripcion": "Incluir user en consultas de rides para obtener información del pasajero"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M4.2",
+          "nombre": "Corrección de Controllers de Rides",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Corregir controllers de rides para usar nuevos enums",
+          "dependencias": ["src/rides/flow/transport.driver.controller.ts", "src/rides/flow/driver.availability.controller.ts"],
+          "tareas": [
+            {
+              "id": "T4.2.1",
+              "nombre": "Corregir Transport Driver Controller",
+              "descripcion": "Actualizar transport.driver.controller.ts para usar nuevos enums",
+              "subtareas": [
+                {
+                  "id": "ST4.2.1.1",
+                  "nombre": "Corregir enums en transport.driver.controller.ts",
+                  "descripcion": "Cambiar todos los enums a mayúsculas en transport.driver.controller.ts"
+                }
+              ]
+            },
+            {
+              "id": "T4.2.2",
+              "nombre": "Corregir Driver Availability Controller",
+              "descripcion": "Actualizar driver.availability.controller.ts para usar nuevos enums",
+              "subtareas": [
+                {
+                  "id": "ST4.2.2.1",
+                  "nombre": "Corregir enums en driver.availability.controller.ts",
+                  "descripcion": "Cambiar todos los enums a mayúsculas en driver.availability.controller.ts"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "nombre": "Corrección de Módulos de Testing y Utilidades",
+      "modulos": [
+        {
+          "id": "M5.1",
+          "nombre": "Corrección de Testing Service",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Corregir testing.service.ts para usar nuevos enums",
+          "dependencias": ["src/testing/testing.service.ts"],
+          "tareas": [
+            {
+              "id": "T5.1.1",
+              "nombre": "Corregir enums en Testing Service",
+              "descripcion": "Actualizar testing.service.ts para usar nuevos enums de PaymentStatus",
+              "subtareas": [
+                {
+                  "id": "ST5.1.1.1",
+                  "nombre": "Corregir PaymentStatus en testing.service.ts",
+                  "descripcion": "Cambiar 'pending', 'paid' por 'PENDING', 'PAID' en testing.service.ts"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M5.2",
+          "nombre": "Corrección de Identity Verification Service",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Corregir identity-verification.service.ts para usar nuevos enums",
+          "dependencias": ["src/users/services/identity-verification.service.ts"],
+          "tareas": [
+            {
+              "id": "T5.2.1",
+              "nombre": "Corregir enums en Identity Verification Service",
+              "descripcion": "Actualizar identity-verification.service.ts para usar VerificationStatus enum",
+              "subtareas": [
+                {
+                  "id": "ST5.2.1.1",
+                  "nombre": "Reemplazar IdentityVerificationStatus por VerificationStatus",
+                  "descripcion": "Cambiar todas las referencias de IdentityVerificationStatus por VerificationStatus enum"
+                },
+                {
+                  "id": "ST5.2.1.2",
+                  "nombre": "Actualizar comparaciones de status",
+                  "descripcion": "Cambiar comparaciones de IdentityVerificationStatus por VerificationStatus"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "nombre": "Corrección de Dependencias y Módulos Externos",
+      "modulos": [
+        {
+          "id": "M6.1",
+          "nombre": "Instalación de Dependencias Faltantes",
+          "progreso": 0,
+          "prioridad": "Alta",
+          "descripcion": "Instalar dependencias faltantes identificadas en los errores",
+          "dependencias": ["package.json"],
+          "tareas": [
+            {
+              "id": "T6.1.1",
+              "nombre": "Instalar dependencias faltantes",
+              "descripcion": "Instalar paquetes faltantes identificados en los errores",
+              "subtareas": [
+                {
+                  "id": "ST6.1.1.1",
+                  "nombre": "Instalar @nestjs/axios",
+                  "descripcion": "Ejecutar npm install @nestjs/axios para exchange-rates module"
+                },
+                {
+                  "id": "ST6.1.1.2",
+                  "nombre": "Instalar eventemitter2",
+                  "descripcion": "Ejecutar npm install eventemitter2 para driver-events.service.ts"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M6.2",
+          "nombre": "Corrección de Feature Flags Service",
+          "progreso": 50,
+          "prioridad": "Media",
+          "descripcion": "Corregir feature-flags.service.ts para usar nueva estructura de FeatureFlag",
+          "dependencias": ["src/admin/modules/config/services/feature-flags.service.ts"],
+          "tareas": [
+            {
+              "id": "T6.2.1",
+              "nombre": "Eliminar campo config de FeatureFlag",
+              "descripcion": "Remover referencias al campo config que fue movido a FeatureFlagTargeting",
+              "subtareas": [
+                {
+                  "id": "ST6.2.1.1",
+                  "nombre": "Actualizar createFeatureFlag",
+                  "descripcion": "Remover campo config de createFeatureFlag y usar FeatureFlagTargeting"
+                },
+                {
+                  "id": "ST6.2.1.2",
+                  "nombre": "Actualizar updateFeatureFlag",
+                  "descripcion": "Remover campo config de updateFeatureFlag y usar FeatureFlagTargeting"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E7",
+      "nombre": "Validación y Testing",
+      "modulos": [
+        {
+          "id": "M7.1",
+          "nombre": "Validación de Compilación",
+          "progreso": 25,
+          "prioridad": "Alta",
+          "descripcion": "Verificar que no hay errores de TypeScript después de las correcciones",
+          "dependencias": ["Todos los archivos corregidos"],
+          "tareas": [
+            {
+              "id": "T7.1.1",
+              "nombre": "Ejecutar verificación de tipos",
+              "descripcion": "Ejecutar npx tsc --noEmit para verificar que no hay errores de TypeScript",
+              "subtareas": [
+                {
+                  "id": "ST7.1.1.1",
+                  "nombre": "Verificar compilación sin errores",
+                  "descripcion": "Confirmar que npx tsc --noEmit no reporta errores"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M7.2",
+          "nombre": "Testing de Funcionalidad",
+          "progreso": 0,
+          "prioridad": "Media",
+          "descripcion": "Probar funcionalidad básica después de las correcciones",
+          "dependencias": ["Base de datos migrada", "Servicios corregidos"],
+          "tareas": [
+            {
+              "id": "T7.2.1",
+              "nombre": "Probar endpoints principales",
+              "descripcion": "Probar endpoints de usuarios, drivers, rides para verificar funcionalidad",
+              "subtareas": [
+                {
+                  "id": "ST7.2.1.1",
+                  "nombre": "Probar registro de usuarios",
+                  "descripcion": "Verificar que el registro de usuarios funciona correctamente"
+                },
+                {
+                  "id": "ST7.2.1.2",
+                  "nombre": "Probar registro de drivers",
+                  "descripcion": "Verificar que el registro de drivers funciona correctamente"
+                },
+                {
+                  "id": "ST7.2.1.3",
+                  "nombre": "Probar creación de rides",
+                  "descripcion": "Verificar que la creación de rides funciona correctamente"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

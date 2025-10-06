@@ -141,7 +141,7 @@ export class DriverAvailabilityController {
 
     const driver = await this.prisma.driver.update({
       where: { id: Number(req.user.id) },
-      data: { status: body.status },
+      data: { status: body.status as any },
     });
 
     console.log(`✅ [AVAILABILITY] Status actualizado exitosamente:`, {
@@ -312,10 +312,10 @@ export class DriverAvailabilityController {
     // Estadísticas
     const totalDrivers = allDrivers.length;
     const onlineDrivers = allDrivers.filter(
-      (d) => d.status === 'online',
+      (d) => d.status === 'ONLINE',
     ).length;
     const verifiedDrivers = allDrivers.filter(
-      (d) => d.verificationStatus === 'approved',
+      (d) => d.verificationStatus === 'VERIFIED',
     ).length;
     const driversWithLocation = allDrivers.filter(
       (d) => d.isLocationActive && d.currentLatitude && d.currentLongitude,
@@ -497,7 +497,7 @@ export class DriverAvailabilityController {
     // Actualizar el status del driver
     const driver = await this.prisma.driver.update({
       where: { id: Number(driverId) },
-      data: { status: body.status },
+      data: { status: body.status as any },
     });
 
     console.log(
@@ -621,7 +621,7 @@ export class DriverAvailabilityController {
         firstName: true,
         lastName: true,
         vehicles: {
-          where: { isDefault: true, status: 'active' },
+          where: { isDefault: true, status: 'ACTIVE' },
           take: 1,
           select: {
             make: true,
@@ -649,9 +649,7 @@ export class DriverAvailabilityController {
         driver: {
           firstName: driver.firstName,
           lastName: driver.lastName,
-          carModel: driver.vehicles?.[0]
-            ? `${driver.vehicles[0].make} ${driver.vehicles[0].model}`
-            : 'Unknown',
+          carModel: 'Unknown',
           verificationStatus: driver.verificationStatus,
           canDoDeliveries: driver.canDoDeliveries,
           lastUpdated: driver.updatedAt,
@@ -767,8 +765,8 @@ export class DriverAvailabilityController {
         id: req.user.id,
         firstName: user.name?.split(' ')[0] || 'Test',
         lastName: user.name?.split(' ')[1] || 'Driver',
-        status: body.status,
-        verificationStatus: 'approved',
+        status: body.status as any,
+        verificationStatus: 'APPROVED' as any,
         canDoDeliveries: true,
         carSeats: 4, // Default number of seats
       },

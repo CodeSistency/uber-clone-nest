@@ -668,8 +668,8 @@ export class UserManagementService {
       select: { status: true },
     });
 
-    const completed = rides.filter((r) => r.status === 'completed').length;
-    const cancelled = rides.filter((r) => r.status === 'cancelled').length;
+    const completed = rides.filter((r) => r.status === 'COMPLETED').length;
+    const cancelled = rides.filter((r) => r.status === 'CANCELLED').length;
     const total = rides.length;
 
     return { total, completed, cancelled };

@@ -4,6 +4,61 @@ This document provides a detailed overview of all the Admin API endpoints availa
 
 ---
 
+## 0. System Enums and Status Values
+
+The system uses the following enums for consistent data validation and integrity:
+
+### Ride Status
+- `PENDING` - Ride request created, waiting for driver
+- `DRIVER_CONFIRMED` - Driver has confirmed the ride
+- `ACCEPTED` - Driver has accepted the ride
+- `ARRIVED` - Driver has arrived at pickup location
+- `IN_PROGRESS` - Ride is currently in progress
+- `COMPLETED` - Ride has been completed
+- `CANCELLED` - Ride has been cancelled
+
+### Driver Status
+- `ONLINE` - Driver is available for rides
+- `OFFLINE` - Driver is not available
+- `BUSY` - Driver is currently on a ride
+- `SUSPENDED` - Driver account is suspended
+
+### Verification Status
+- `PENDING` - Verification is pending review
+- `VERIFIED` - Verification has been approved
+- `REJECTED` - Verification has been rejected
+
+### Payment Status
+- `PENDING` - Payment is pending
+- `COMPLETED` - Payment has been completed
+- `FAILED` - Payment has failed
+- `CANCELLED` - Payment has been cancelled
+
+### Vehicle Status
+- `ACTIVE` - Vehicle is active and available
+- `INACTIVE` - Vehicle is inactive
+- `SUSPENDED` - Vehicle is suspended
+- `MAINTENANCE` - Vehicle is under maintenance
+
+### Notification Priority
+- `LOW` - Low priority notification
+- `NORMAL` - Normal priority notification
+- `HIGH` - High priority notification
+- `URGENT` - Urgent notification
+
+### Rule Type (Temporal Pricing)
+- `TIME_RANGE` - Time-based pricing rule
+- `DAY_OF_WEEK` - Day of week pricing rule
+- `DATE_SPECIFIC` - Specific date pricing rule
+- `SEASONAL` - Seasonal pricing rule
+
+### Zone Type
+- `REGULAR` - Regular service zone
+- `PREMIUM` - Premium service zone
+- `RESTRICTED` - Restricted service zone
+
+---
+
 ## 1. Admin Authentication
 
 ### `POST /admin/auth/login`
@@ -288,7 +343,7 @@ Retrieves complete details of a specific user.
     "recentRides": [
       {
         "id": 123,
-        "status": "completed",
+        "status": "COMPLETED",
         "createdAt": "2024-01-15T08:00:00Z",
         "farePrice": 25.5
       }
@@ -461,8 +516,8 @@ Lists drivers with advanced filters and pagination.
               "year": 2021,
               "color": "Black",
               "licensePlate": "MOT789",
-              "status": "active",
-              "verificationStatus": "verified",
+        "status": "ACTIVE",
+        "verificationStatus": "VERIFIED",
               "isDefault": true,
               "vehicleType": {
                 "id": 1,
@@ -514,8 +569,8 @@ Retrieves complete details of a specific driver.
         "phone": "+58-416-9876543",
         "dateOfBirth": null,
         "gender": null,
-        "status": "offline",
-        "verificationStatus": "approved",
+        "status": "OFFLINE",
+        "verificationStatus": "VERIFIED",
         "canDoDeliveries": true,
         "lastActive": null,
         "createdAt": "2025-09-30T03:02:27.623Z"
@@ -563,8 +618,8 @@ Retrieves complete details of a specific driver.
           "fuelType": "gasoline",
           "hasAC": true,
           "hasGPS": true,
-          "status": "active",
-          "verificationStatus": "verified",
+        "status": "ACTIVE",
+        "verificationStatus": "VERIFIED",
           "isDefault": true,
           "vehicleType": {
             "id": 1,
@@ -597,7 +652,7 @@ Retrieves complete details of a specific driver.
           "recentRides": [
             {
               "rideId": 123,
-              "status": "completed",
+              "status": "COMPLETED",
               "createdAt": "2025-09-29T10:00:00Z",
               "farePrice": 15.50,
               "user": {
@@ -685,8 +740,8 @@ Retrieves complete details of a specific driver.
           "destinationAddress": "Aeropuerto Internacional",
           "rideTime": 45,
           "farePrice": 25.50,
-          "status": "completed",
-          "paymentStatus": "completed",
+          "status": "COMPLETED",
+          "paymentStatus": "COMPLETED",
           "userId": 1,
           "tierId": 1,
           "vehicleId": 1,
@@ -747,8 +802,8 @@ Retrieves complete details of a specific driver.
           "totalPrice": 35.75,
           "deliveryFee": 5.00,
           "tip": 3.00,
-          "status": "completed",
-          "paymentStatus": "completed",
+          "status": "COMPLETED",
+          "paymentStatus": "COMPLETED",
           "createdAt": "2025-09-29T14:00:00Z",
           "store": {
             "id": 1,
@@ -767,7 +822,7 @@ Retrieves complete details of a specific driver.
           "description": "Comprar medicamentos en farmacia",
           "pickupAddress": "Centro Médico Caracas",
           "dropoffAddress": "Av. Universidad",
-          "status": "completed",
+          "status": "COMPLETED",
           "serviceFee": 12.50,
           "totalAmount": 15.00,
           "createdAt": "2025-09-28T16:00:00Z",
@@ -791,7 +846,7 @@ Retrieves complete details of a specific driver.
           "type": "documents",
           "description": "Paquete de documentos importantes",
           "weight": 1.5,
-          "status": "completed",
+          "status": "COMPLETED",
           "serviceFee": 8.50,
           "totalAmount": 10.00,
           "recipientName": "María González",
@@ -987,7 +1042,290 @@ Updates status for multiple drivers in bulk.
 
 ---
 
-## 5. Ride Management
+## 5. Vehicle Management
+
+### `GET /admin/vehicles`
+
+Lists vehicles with advanced filters and pagination.
+
+**Query Parameters:**
+- `status`: Vehicle status filter (ACTIVE/INACTIVE/SUSPENDED/MAINTENANCE) - array
+- `verificationStatus`: Verification status filter (PENDING/VERIFIED/REJECTED) - array
+- `vehicleTypeId`: Vehicle type ID filter - number
+- `driverId`: Driver ID filter - number
+- `isDefault`: Default vehicle filter - boolean
+- `dateFrom`: Registration date from - ISO string
+- `dateTo`: Registration date to - ISO string
+- `search`: Search in make, model, licensePlate - string
+- `page`: Page number (default: 1) - number
+- `limit`: Items per page (default: 20) - number
+
+**Responses:**
+- `200 OK`: Vehicles list retrieved successfully.
+  ```json
+  {
+    "vehicles": [
+      {
+        "id": 1,
+        "driverId": 8,
+        "vehicleTypeId": 1,
+        "make": "Toyota",
+        "model": "Camry",
+        "year": 2020,
+        "color": "White",
+        "licensePlate": "ABC123",
+        "vin": "1HGBH41JXMN109186",
+        "seatingCapacity": 4,
+        "hasAC": true,
+        "hasGPS": true,
+        "fuelType": "gasoline",
+        "insuranceProvider": "Seguros Caracas",
+        "insurancePolicyNumber": "POL-001234",
+        "insuranceExpiryDate": "2024-12-31T00:00:00Z",
+        "status": "ACTIVE",
+        "verificationStatus": "VERIFIED",
+        "isDefault": true,
+        "vehicleType": {
+          "id": 1,
+          "name": "car",
+          "displayName": "Carro",
+          "icon": "🚗"
+        },
+        "driver": {
+          "id": 8,
+          "firstName": "Luis",
+          "lastName": "Martinez"
+        },
+        "createdAt": "2025-09-30T03:02:27.621Z",
+        "updatedAt": "2025-09-30T03:02:27.621Z"
+      }
+    ],
+    "total": 25,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 2
+  }
+  ```
+
+### `GET /admin/vehicles/:id`
+
+Retrieves complete details of a specific vehicle.
+
+**Path Parameters:**
+- `id`: Vehicle unique ID - number
+
+**Responses:**
+- `200 OK`: Vehicle details retrieved successfully.
+  ```json
+  {
+    "basic": {
+      "id": 1,
+      "driverId": 8,
+      "vehicleTypeId": 1,
+      "make": "Toyota",
+      "model": "Camry",
+      "year": 2020,
+      "color": "White",
+      "licensePlate": "ABC123",
+      "vin": "1HGBH41JXMN109186",
+      "seatingCapacity": 4,
+      "hasAC": true,
+      "hasGPS": true,
+      "fuelType": "gasoline",
+      "status": "ACTIVE",
+      "verificationStatus": "VERIFIED",
+      "isDefault": true
+    },
+    "insurance": {
+      "provider": "Seguros Caracas",
+      "policyNumber": "POL-001234",
+      "expiryDate": "2024-12-31T00:00:00Z"
+    },
+    "images": {
+      "frontImageUrl": "https://example.com/vehicles/1/front.jpg",
+      "sideImageUrl": "https://example.com/vehicles/1/side.jpg",
+      "backImageUrl": "https://example.com/vehicles/1/back.jpg",
+      "interiorImageUrl": "https://example.com/vehicles/1/interior.jpg"
+    },
+    "vehicleType": {
+      "id": 1,
+      "name": "car",
+      "displayName": "Carro",
+      "icon": "🚗"
+    },
+    "driver": {
+      "id": 8,
+      "firstName": "Luis",
+      "lastName": "Martinez",
+      "email": "luis.driver@example.com"
+    },
+    "documents": [
+      {
+        "id": 1,
+        "documentType": "registration",
+        "documentUrl": "https://example.com/vehicle-docs/registration.pdf",
+        "verificationStatus": "VERIFIED",
+        "verifiedAt": "2025-09-30T03:02:27.622Z",
+        "verifiedBy": 1
+      }
+    ],
+    "recentRides": [
+      {
+        "rideId": 123,
+        "status": "COMPLETED",
+        "createdAt": "2025-09-29T10:00:00Z",
+        "farePrice": 25.50
+      }
+    ],
+    "changeHistory": [
+      {
+        "id": 1,
+        "changeType": "status_change",
+        "oldValue": { "status": "PENDING" },
+        "newValue": { "status": "ACTIVE" },
+        "reason": "Vehicle verification completed",
+        "changedBy": 1,
+        "changedAt": "2025-09-30T03:02:27.623Z"
+      }
+    ]
+  }
+  ```
+
+### `PUT /admin/vehicles/:id/status`
+
+Updates a vehicle's status.
+
+**Path Parameters:**
+- `id`: Vehicle ID - number
+
+**Request Body:**
+```json
+{
+  "status": "SUSPENDED",
+  "reason": "Insurance expired"
+}
+```
+
+**Responses:**
+- `200 OK`: Vehicle status updated successfully.
+- `404 Not Found`: Vehicle not found.
+
+### `PUT /admin/vehicles/:id/verification`
+
+Updates a vehicle's verification status.
+
+**Path Parameters:**
+- `id`: Vehicle ID - number
+
+**Request Body:**
+```json
+{
+  "verificationStatus": "VERIFIED",
+  "notes": "All documents verified successfully"
+}
+```
+
+**Responses:**
+- `200 OK`: Vehicle verification updated successfully.
+- `404 Not Found`: Vehicle not found.
+
+---
+
+## 6. Vehicle Types Management
+
+### `GET /admin/vehicle-types`
+
+Lists vehicle types with filters.
+
+**Query Parameters:**
+- `isActive`: Active status filter - boolean
+- `search`: Search in name, displayName - string
+- `page`: Page number - number
+- `limit`: Items per page - number
+
+**Responses:**
+- `200 OK`: Vehicle types retrieved successfully.
+  ```json
+  {
+    "vehicleTypes": [
+      {
+        "id": 1,
+        "name": "car",
+        "displayName": "Carro",
+        "icon": "🚗",
+        "isActive": true,
+        "createdAt": "2025-09-30T03:02:26.801Z",
+        "updatedAt": "2025-09-30T03:02:26.801Z"
+      },
+      {
+        "id": 2,
+        "name": "motorcycle",
+        "displayName": "Moto",
+        "icon": "🏍️",
+        "isActive": true,
+        "createdAt": "2025-09-30T03:02:26.801Z",
+        "updatedAt": "2025-09-30T03:02:26.801Z"
+      }
+    ],
+    "total": 4,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+  ```
+
+### `POST /admin/vehicle-types`
+
+Creates a new vehicle type.
+
+**Request Body:**
+```json
+{
+  "name": "bicycle",
+  "displayName": "Bicicleta",
+  "icon": "🚲",
+  "isActive": true
+}
+```
+
+**Responses:**
+- `201 Created`: Vehicle type created successfully.
+
+### `PUT /admin/vehicle-types/:id`
+
+Updates a vehicle type.
+
+**Path Parameters:**
+- `id`: Vehicle type ID - number
+
+**Request Body:**
+```json
+{
+  "displayName": "Automóvil",
+  "icon": "🚙",
+  "isActive": true
+}
+```
+
+**Responses:**
+- `200 OK`: Vehicle type updated successfully.
+- `404 Not Found`: Vehicle type not found.
+
+### `DELETE /admin/vehicle-types/:id`
+
+Deletes a vehicle type.
+
+**Path Parameters:**
+- `id`: Vehicle type ID - number
+
+**Responses:**
+- `200 OK`: Vehicle type deleted successfully.
+- `404 Not Found`: Vehicle type not found.
+- `409 Conflict`: Cannot delete - has associated vehicles.
+
+---
+
+## 7. Ride Management
 
 ### `GET /admin/rides`
 
@@ -1014,7 +1352,7 @@ Lists rides with advanced filters and pagination.
       {
         "rideId": 123,
         "createdAt": "2024-01-15T10:30:00Z",
-        "status": "completed",
+        "status": "COMPLETED",
         "originAddress": "123 Main St, City",
         "destinationAddress": "456 Oak Ave, City",
         "farePrice": 25.5,
@@ -1379,6 +1717,7 @@ Creates a new service zone.
     {"lat": 40.7505, "lng": -74.0134}
   ],
   "isActive": true,
+  "zoneType": "REGULAR",
   "baseFare": 2.5,
   "perMileRate": 1.25,
   "perMinuteRate": 0.25,
@@ -1610,7 +1949,7 @@ Creates a temporal pricing rule.
 {
   "name": "Morning Peak Hours",
   "description": "Higher pricing during morning rush hour",
-  "ruleType": "time_range",
+  "ruleType": "TIME_RANGE",
   "multiplier": 1.5,
   "startTime": "07:00",
   "endTime": "09:30",
@@ -1714,7 +2053,7 @@ Evaluates active temporal rules for a date/time.
       {
         "id": 1,
         "name": "Morning Peak Hours",
-        "ruleType": "time_range",
+        "ruleType": "TIME_RANGE",
         "multiplier": 1.5,
         "reason": "Within morning peak hours (07:00-09:30)"
       }
@@ -1777,7 +2116,217 @@ Updates multiple temporal rules.
 
 ---
 
-## 8. Configuration Management
+## 8. Venezuelan Payment System Management
+
+### Payment References
+
+#### `GET /admin/payments/references`
+
+Lists payment references with filters.
+
+**Query Parameters:**
+- `status`: Payment status filter (PENDING/COMPLETED/FAILED/CANCELLED) - array
+- `serviceType`: Service type filter (ride/delivery/errand/parcel) - array
+- `paymentMethod`: Payment method filter (transfer/pago_movil/zelle/bitcoin/cash) - array
+- `bankCode`: Bank code filter - string
+- `userId`: User ID filter - number
+- `dateFrom`: Date from - ISO string
+- `dateTo`: Date to - ISO string
+- `search`: Search in referenceNumber - string
+- `page`: Page number - number
+- `limit`: Items per page - number
+
+**Responses:**
+- `200 OK`: Payment references retrieved successfully.
+  ```json
+  {
+    "references": [
+      {
+        "id": 1,
+        "referenceNumber": "12345678901234567890",
+        "bankCode": "0102",
+        "amount": 25.50,
+        "currency": "VES",
+        "userId": 1,
+        "serviceType": "ride",
+        "serviceId": 123,
+        "paymentMethod": "transfer",
+        "status": "PENDING",
+        "isPartial": false,
+        "groupId": "group-uuid-123",
+        "expiresAt": "2025-01-15T14:00:00Z",
+        "confirmedAt": null,
+        "user": {
+          "id": 1,
+          "name": "John Doe",
+          "email": "john@example.com"
+        },
+        "createdAt": "2025-01-15T10:00:00Z"
+      }
+    ],
+    "total": 150,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 8
+  }
+  ```
+
+#### `GET /admin/payments/references/:id`
+
+Retrieves details of a specific payment reference.
+
+**Path Parameters:**
+- `id`: Payment reference ID - number
+
+**Responses:**
+- `200 OK`: Payment reference details retrieved successfully.
+  ```json
+  {
+    "reference": {
+      "id": 1,
+      "referenceNumber": "12345678901234567890",
+      "bankCode": "0102",
+      "amount": 25.50,
+      "currency": "VES",
+      "userId": 1,
+      "serviceType": "ride",
+      "serviceId": 123,
+      "paymentMethod": "transfer",
+      "status": "COMPLETED",
+      "isPartial": false,
+      "groupId": "group-uuid-123",
+      "expiresAt": "2025-01-15T14:00:00Z",
+      "confirmedAt": "2025-01-15T11:30:00Z",
+      "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "bankTransactions": [
+        {
+          "id": 1,
+          "bankTransactionId": "TXN123456789",
+          "confirmedAmount": 25.50,
+          "confirmationTimestamp": "2025-01-15T11:30:00Z",
+          "bankResponse": {
+            "transactionId": "TXN123456789",
+            "status": "confirmed",
+            "bankCode": "0102"
+          }
+        }
+      ],
+      "paymentGroup": {
+        "id": "group-uuid-123",
+        "totalAmount": 25.50,
+        "paidAmount": 25.50,
+        "remainingAmount": 0.00,
+        "status": "complete"
+      }
+    }
+  }
+  ```
+
+#### `PUT /admin/payments/references/:id/status`
+
+Updates a payment reference status.
+
+**Path Parameters:**
+- `id`: Payment reference ID - number
+
+**Request Body:**
+```json
+{
+  "status": "COMPLETED",
+  "confirmedAmount": 25.50,
+  "bankTransactionId": "TXN123456789",
+  "bankResponse": {
+    "transactionId": "TXN123456789",
+    "status": "confirmed"
+  }
+}
+```
+
+**Responses:**
+- `200 OK`: Payment reference status updated successfully.
+- `404 Not Found`: Payment reference not found.
+
+### Payment Groups
+
+#### `GET /admin/payments/groups`
+
+Lists payment groups with filters.
+
+**Query Parameters:**
+- `status`: Group status filter (incomplete/complete/cancelled/expired) - array
+- `serviceType`: Service type filter - array
+- `userId`: User ID filter - number
+- `dateFrom`: Date from - ISO string
+- `dateTo`: Date to - ISO string
+- `page`: Page number - number
+- `limit`: Items per page - number
+
+**Responses:**
+- `200 OK`: Payment groups retrieved successfully.
+
+#### `GET /admin/payments/groups/:id`
+
+Retrieves details of a specific payment group.
+
+**Path Parameters:**
+- `id`: Payment group ID - string (UUID)
+
+**Responses:**
+- `200 OK`: Payment group details retrieved successfully.
+  ```json
+  {
+    "group": {
+      "id": "group-uuid-123",
+      "userId": 1,
+      "serviceType": "ride",
+      "serviceId": 123,
+      "totalAmount": 50.00,
+      "paidAmount": 25.50,
+      "remainingAmount": 24.50,
+      "status": "incomplete",
+      "expiresAt": "2025-01-16T10:00:00Z",
+      "completedAt": null,
+      "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "paymentReferences": [
+        {
+          "id": 1,
+          "referenceNumber": "12345678901234567890",
+          "amount": 25.50,
+          "status": "COMPLETED",
+          "paymentMethod": "transfer"
+        }
+      ]
+    }
+  }
+  ```
+
+### Bank Transactions
+
+#### `GET /admin/payments/bank-transactions`
+
+Lists bank transactions with filters.
+
+**Query Parameters:**
+- `bankCode`: Bank code filter - string
+- `dateFrom`: Date from - ISO string
+- `dateTo`: Date to - ISO string
+- `page`: Page number - number
+- `limit`: Items per page - number
+
+**Responses:**
+- `200 OK`: Bank transactions retrieved successfully.
+
+---
+
+## 9. Configuration Management
 
 ### API Keys
 
@@ -2028,8 +2577,12 @@ Creates a new feature flag.
   "description": "New payment flow with improved UX",
   "isEnabled": false,
   "rolloutPercentage": 0,
-  "targetUsers": [],
-  "targetCountries": [1],
+  "targeting": {
+    "userRoles": ["premium"],
+    "userIds": [],
+    "environments": ["production"],
+    "countries": [1]
+  },
   "conditions": {
     "userType": "premium",
     "appVersion": ">=2.0.0"
@@ -2386,7 +2939,7 @@ Sends a custom notification.
   "title": "System Maintenance",
   "message": "The system will be under maintenance tonight from 2 AM to 4 AM EST",
   "type": "announcement",
-  "priority": "high",
+  "priority": "HIGH",
   "targetAudience": {
     "userType": "all",
     "countries": [1],
@@ -2501,6 +3054,14 @@ Each endpoint requires specific permissions that are validated by the `Permissio
 - `drivers:write` - Modify driver data
 - `drivers:suspend` - Suspend drivers
 - `drivers:verify` - Verify driver documents
+- `vehicles:read` - Read vehicle data
+- `vehicles:write` - Modify vehicle data
+- `vehicles:verify` - Verify vehicle documents
+- `vehicle-types:read` - Read vehicle types
+- `vehicle-types:write` - Modify vehicle types
+- `payments:read` - Read payment data
+- `payments:write` - Modify payment data
+- `payments:verify` - Verify payment references
 - `rides:read` - Read ride data
 - `rides:write` - Modify ride data
 - `rides:cancel` - Cancel rides

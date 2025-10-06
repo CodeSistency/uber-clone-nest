@@ -121,7 +121,7 @@ export class OrdersService {
           totalPrice,
           deliveryFee,
           status: 'pending',
-          paymentStatus: 'pending',
+          paymentStatus: 'PENDING',
           ...(specialInstructions && { specialInstructions }),
         },
         include: {
@@ -230,11 +230,11 @@ export class OrdersService {
       throw new NotFoundException('Driver not found');
     }
 
-    if (driver.status !== 'online') {
+    if (driver.status !== 'ONLINE') {
       throw new BadRequestException('Driver is not available');
     }
 
-    if (driver.verificationStatus !== 'approved') {
+    if (driver.verificationStatus !== 'VERIFIED') {
       throw new BadRequestException('Driver is not verified');
     }
 
@@ -259,7 +259,7 @@ export class OrdersService {
     // Update driver status to busy
     await this.prisma.driver.update({
       where: { id: driverId },
-      data: { status: 'busy' },
+      data: { status: 'BUSY' },
     });
 
     // Notify customer and store
@@ -310,7 +310,7 @@ export class OrdersService {
     // Free up driver
     await this.prisma.driver.update({
       where: { id: driverId },
-      data: { status: 'online' },
+      data: { status: 'ONLINE' },
     });
 
     await this.notifyOrderDelivered(order);

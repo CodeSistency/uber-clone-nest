@@ -344,7 +344,7 @@ export class ReferralRewardsService {
         const completedRides = await this.prisma.ride.count({
           where: {
             userId: referral.refereeId,
-            paymentStatus: 'completed',
+            paymentStatus: 'COMPLETED',
           },
         });
 
@@ -357,7 +357,7 @@ export class ReferralRewardsService {
           const recentRide = await this.prisma.ride.findFirst({
             where: {
               userId: referral.refereeId,
-              paymentStatus: 'completed',
+              paymentStatus: 'COMPLETED',
             },
             orderBy: { createdAt: 'desc' },
           });

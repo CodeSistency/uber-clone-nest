@@ -170,7 +170,7 @@ export class NotificationsService {
           select: { id: true, name: true, email: true, phone: true },
         }),
         this.prisma.driver.findMany({
-          where: { status: { in: ['online', 'busy'] } },
+          where: { status: { in: ['ONLINE', 'BUSY'] } },
           select: {
             id: true,
             firstName: true,

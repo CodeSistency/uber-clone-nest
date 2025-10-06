@@ -64,7 +64,7 @@ export class RidesService {
         destinationLongitude: destination_longitude,
         rideTime: ride_time,
         farePrice: fare_price,
-        paymentStatus: payment_status,
+        paymentStatus: payment_status as any,
         driverId: driver_id,
         userId: user_id,
         tierId: tier_id,
@@ -123,7 +123,7 @@ export class RidesService {
         driver: {
           include: {
             vehicles: {
-              where: { isDefault: true, status: 'active' },
+              where: { isDefault: true, status: 'ACTIVE' },
               take: 1,
               include: { vehicleType: true },
             },
@@ -190,7 +190,7 @@ export class RidesService {
         destinationLongitude: destination_longitude,
         rideTime: ride_time,
         farePrice: 0, // Will be calculated later
-        paymentStatus: 'pending',
+        paymentStatus: 'PENDING',
         userId: user_id,
         tierId: tier_id,
         requestedVehicleTypeId: vehicle_type_id,
@@ -254,7 +254,7 @@ export class RidesService {
         driver: {
           include: {
             vehicles: {
-              where: { isDefault: true, status: 'active' },
+              where: { isDefault: true, status: 'ACTIVE' },
               take: 1,
             },
           },
@@ -282,7 +282,7 @@ export class RidesService {
         driver: {
           include: {
             vehicles: {
-              where: { isDefault: true, status: 'active' },
+              where: { isDefault: true, status: 'ACTIVE' },
               take: 1,
               include: { vehicleType: true },
             },
@@ -384,7 +384,7 @@ export class RidesService {
         driver: {
           include: {
             vehicles: {
-              where: { isDefault: true, status: 'active' },
+              where: { isDefault: true, status: 'ACTIVE' },
               take: 1,
             },
           },
@@ -685,7 +685,7 @@ export class RidesService {
         driver: {
           include: {
             vehicles: {
-              where: { isDefault: true, status: 'active' },
+              where: { isDefault: true, status: 'ACTIVE' },
               take: 1,
             },
           },
@@ -803,7 +803,7 @@ export class RidesService {
         rideId,
         ride.userId.toString(),
         ride.driverId,
-        'completed',
+        'COMPLETED',
         {
           finalFare: finalFare,
           distance: finalDistance,
@@ -836,7 +836,7 @@ export class RidesService {
 
     return {
       rideId: updatedRide.rideId,
-      status: 'completed',
+      status: 'COMPLETED',
       finalFare: Math.round(finalFare * 100) / 100,
       finalDistance: finalDistance,
       finalTime: finalTime,
@@ -872,7 +872,7 @@ export class RidesService {
       // Find pending referrals for this user
       const pendingReferrals = await this.referralsService
         .getUserReferrals(userId)
-        .then((referrals) => referrals.filter((r) => r.status === 'pending'));
+        .then((referrals) => referrals.filter((r) => r.status === 'PENDING'));
 
       if (pendingReferrals.length === 0) {
         this.logger.debug(`No pending referrals found for user ${userId}`);
@@ -932,7 +932,7 @@ export class RidesService {
       const completedRides = await this.prisma.ride.count({
         where: {
           userId: userIdNum, // userId is Int in Ride model
-          paymentStatus: 'completed',
+          paymentStatus: 'COMPLETED',
         },
       });
 
@@ -945,7 +945,7 @@ export class RidesService {
       const recentRide = await this.prisma.ride.findFirst({
         where: {
           userId: userIdNum, // userId is Int in Ride model
-          paymentStatus: 'completed',
+          paymentStatus: 'COMPLETED',
         },
         orderBy: { createdAt: 'desc' },
       });

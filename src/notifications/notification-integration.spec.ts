@@ -83,7 +83,7 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       manager.onModuleInit();
@@ -125,7 +125,7 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       manager.onModuleInit();
@@ -163,7 +163,7 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       manager.onModuleInit();
@@ -208,7 +208,7 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       manager.onModuleInit();
@@ -228,7 +228,7 @@ describe('NotificationManagerService - Integration Tests', () => {
     it('should validate provider configuration', () => {
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
 
@@ -246,7 +246,7 @@ describe('NotificationManagerService - Integration Tests', () => {
       jest.spyOn(configService, 'get').mockReturnValue('invalid');
       const newManager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       newManager.onModuleInit();
@@ -256,7 +256,7 @@ describe('NotificationManagerService - Integration Tests', () => {
     it('should provide provider status information', () => {
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       manager.onModuleInit();
@@ -275,7 +275,7 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       manager.onModuleInit();
@@ -323,7 +323,7 @@ describe('NotificationManagerService - Integration Tests', () => {
 
       const manager = new NotificationManagerService(
         configService,
-        firebaseService,
+        {} as any, // firebaseService
         expoService,
       );
       manager.onModuleInit();

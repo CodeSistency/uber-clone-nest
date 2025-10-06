@@ -100,7 +100,7 @@ export class DashboardService {
         revenueToday: revenueData.today,
         revenueThisWeek: revenueData.week,
         averageFare: revenueData.averageFare,
-        totalTransactions: revenueData.totalTransactions,
+        totalTransactions: revenueData.totalTransactions || 0,
 
         // Drivers metrics
         onlineDrivers: driverStats.online,
@@ -167,7 +167,7 @@ export class DashboardService {
     return this.prisma.ride.count({
       where: {
         status: {
-          in: ['accepted', 'driver_confirmed', 'arrived', 'in_progress'],
+          in: ['ACCEPTED', 'DRIVER_CONFIRMED', 'ARRIVED', 'IN_PROGRESS'],
         },
       },
     });
@@ -186,8 +186,8 @@ export class DashboardService {
       },
     });
 
-    const completed = rides.filter((r) => r.status === 'completed').length;
-    const cancelled = rides.filter((r) => r.status === 'cancelled').length;
+    const completed = rides.filter((r) => r.status === 'COMPLETED').length;
+    const cancelled = rides.filter((r) => r.status === 'CANCELLED').length;
     const total = rides.length;
 
     return { completed, cancelled, total };
@@ -202,7 +202,7 @@ export class DashboardService {
     const [todayRevenue, weekRevenue, allCompletedRides] = await Promise.all([
       this.prisma.ride.aggregate({
         where: {
-          status: 'completed',
+          status: 'COMPLETED',
           updatedAt: {
             gte: todayStart,
             lt: todayEnd,
@@ -215,7 +215,7 @@ export class DashboardService {
       }),
       this.prisma.ride.aggregate({
         where: {
-          status: 'completed',
+          status: 'COMPLETED',
           updatedAt: {
             gte: weekStart,
             lt: weekEnd,
@@ -227,7 +227,7 @@ export class DashboardService {
       }),
       this.prisma.ride.findMany({
         where: {
-          status: 'completed',
+          status: 'COMPLETED',
         },
         select: {
           farePrice: true,
@@ -259,11 +259,11 @@ export class DashboardService {
   private async getDriverStats() {
     const [onlineDrivers, busyDrivers, allDrivers] = await Promise.all([
       this.prisma.driver.count({
-        where: { status: 'online' },
+        where: { status: 'ONLINE' },
       }),
       this.prisma.driver.count({
         where: {
-          status: 'busy',
+          status: 'BUSY',
         },
       }),
       this.prisma.driver.findMany({
@@ -352,7 +352,7 @@ export class DashboardService {
       // Check for critical issues
       const criticalIssues = await this.prisma.ride.count({
         where: {
-          status: 'in_progress',
+          status: 'IN_PROGRESS',
           updatedAt: {
             lt: new Date(Date.now() - 2 * 60 * 60 * 1000), // Older than 2 hours
           },
@@ -366,7 +366,7 @@ export class DashboardService {
       // Check for warning conditions
       const activeRides = await this.getActiveRidesCount();
       const onlineDrivers = await this.prisma.driver.count({
-        where: { status: 'online' },
+        where: { status: 'ONLINE' },
       });
 
       if (activeRides > onlineDrivers * 2) {
@@ -385,7 +385,7 @@ export class DashboardService {
 
     // Check driver availability
     const onlineDrivers = await this.prisma.driver.count({
-      where: { status: 'online' },
+      where: { status: 'ONLINE' },
     });
 
     if (onlineDrivers < 5) {
@@ -417,7 +417,7 @@ export class DashboardService {
 
     const cancelledToday = await this.prisma.ride.count({
       where: {
-        status: 'cancelled',
+        status: 'CANCELLED',
         createdAt: {
           gte: today,
           lt: tomorrow,
@@ -457,7 +457,7 @@ export class DashboardService {
     const [yesterdayRevenue, todayRevenue] = await Promise.all([
       this.prisma.ride.aggregate({
         where: {
-          status: 'completed',
+          status: 'COMPLETED',
           updatedAt: {
             gte: yesterday,
             lt: today,
@@ -467,7 +467,7 @@ export class DashboardService {
       }),
       this.prisma.ride.aggregate({
         where: {
-          status: 'completed',
+          status: 'COMPLETED',
           updatedAt: {
             gte: today,
             lt: new Date(),
@@ -477,8 +477,8 @@ export class DashboardService {
       }),
     ]);
 
-    const yesterdayAmount = Number(yesterdayRevenue._sum.farePrice || 0);
-    const todayAmount = Number(todayRevenue._sum.farePrice || 0);
+    const yesterdayAmount = Number(yesterdayRevenue._sum?.farePrice || 0);
+    const todayAmount = Number(todayRevenue._sum?.farePrice || 0);
 
     if (yesterdayAmount > 0) {
       const changePercent =
@@ -506,7 +506,7 @@ export class DashboardService {
     // Check for stuck rides
     const stuckRides = await this.prisma.ride.count({
       where: {
-        status: 'in_progress',
+        status: 'IN_PROGRESS',
         updatedAt: {
           lt: new Date(Date.now() - 60 * 60 * 1000), // Older than 1 hour
         },
