@@ -190,7 +190,7 @@ model User {
   name          String    @db.VarChar(100)
   email         String    @unique @db.VarChar(100)
   password      String?   @db.VarChar(255) // Contraseña hasheada para autenticación
-  refreshToken  String?   @db.VarChar(255) // Token de refresco hasheado
+  refreshToken  String?   @map("refresh_token") // Token de refresco hasheado
   isActive      Boolean   @default(true) @map("is_active")
   deletedAt     DateTime? @map("deleted_at") // Timestamp de soft delete
   deletedReason String?   @map("deleted_reason") // Razón de soft delete
