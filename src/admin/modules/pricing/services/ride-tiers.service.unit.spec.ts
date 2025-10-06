@@ -437,7 +437,7 @@ describe('RideTiersService', () => {
       expect(result.tier.id).toBe(1);
       expect(result.tier.name).toBe('UberX');
       expect(result.basePricing.baseFare).toBe(250);
-      expect(result.basePricing.distanceCost).toBe(1200); // 10 miles * 120
+      expect(result.basePricing.distanceCost).toBe(1200); // 10 km * 120 cents/km
       expect(result.basePricing.timeCost).toBe(300); // 20 min * 15
       expect(result.basePricing.subtotal).toBe(1750); // 250 + 1200 + 300
     });
@@ -608,7 +608,7 @@ describe('RideTiersService', () => {
         name: 'Invalid Tier',
         baseFare: 0, // Invalid: zero base fare
         perMinuteRate: 0, // Invalid: zero per minute
-        perKmRate: 0, // Invalid: zero per mile
+        perKmRate: 0, // Invalid: zero per kilometer
         tierMultiplier: 1.0,
         surgeMultiplier: 1.0,
         demandMultiplier: 1.0,

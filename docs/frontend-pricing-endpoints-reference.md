@@ -211,7 +211,7 @@ interface RideTierPathParams {
 ```typescript
 interface PricingCalculationDto {
   tierId: number;                  // Required: Ride tier ID
-  distanceMiles: number;           // Required: Distance in miles (0.1-500)
+  distanceKilometers: number;      // Required: Distance in kilometers (0.1-500)
   durationMinutes: number;         // Required: Duration in minutes (1-1440)
   surgeMultiplier?: number;        // Optional: Surge multiplier (1.0-10.0)
   demandMultiplier?: number;       // Optional: Demand multiplier (1.0-5.0)

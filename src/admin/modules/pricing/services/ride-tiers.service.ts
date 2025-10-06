@@ -393,7 +393,7 @@ export class RideTiersService {
       },
       metadata: {
         currency: 'USD',
-        distanceUnit: 'miles',
+        distanceUnit: 'kilometers',
         calculationTimestamp: new Date(),
         appliedRules: this.getAppliedRules(
           regionalMultipliers,
