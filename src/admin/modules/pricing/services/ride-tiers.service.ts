@@ -872,6 +872,41 @@ export class RideTiersService {
     return rules;
   }
 
+  async toggleActiveStatus(id: number) {
+    const tier = await this.prisma.rideTier.findUnique({
+      where: { id },
+    });
+
+    if (!tier) {
+      throw new NotFoundException(`Ride tier with ID ${id} not found`);
+    }
+
+    const updatedTier = await this.prisma.rideTier.update({
+      where: { id },
+      data: {
+        isActive: !tier.isActive,
+      },
+      include: {
+        _count: {
+          select: {
+            rides: true,
+          },
+        },
+        vehicleTypes: {
+          include: {
+            vehicleType: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Ride tier ${tier.name} status changed to: ${updatedTier.isActive ? 'active' : 'inactive'}`,
+    );
+
+    return this.transformRideTier(updatedTier);
+  }
+
   private transformRideTier(tier: any) {
     return {
       ...tier,

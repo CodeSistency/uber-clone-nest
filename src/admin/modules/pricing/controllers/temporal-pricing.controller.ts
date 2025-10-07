@@ -315,4 +315,27 @@ export class TemporalPricingController {
       note: 'Complete pricing simulation requires integration with RideTiersService.calculatePricing method',
     };
   }
+
+  @Patch(':id/toggle-status')
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
+  @ApiOperation({
+    summary: 'Cambiar estado activo/inactivo',
+    description: 'Alterna el estado activo de una regla temporal de pricing',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID de la regla temporal',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estado de la regla temporal cambiado exitosamente',
+    type: TemporalPricingRuleResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Regla temporal no encontrada' })
+  async toggleActiveStatus(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<TemporalPricingRuleResponseDto> {
+    return this.temporalPricingService.toggleActiveStatus(id);
+  }
 }

@@ -311,4 +311,27 @@ export class RideTiersController {
       failed: results.filter((r) => !r.success).length,
     };
   }
+
+  @Patch(':id/toggle-status')
+  @RequirePermissions(AdminPermission.PRICING_WRITE)
+  @ApiOperation({
+    summary: 'Cambiar estado activo/inactivo',
+    description: 'Alterna el estado activo de un tier de pricing',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del tier',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estado del tier cambiado exitosamente',
+    type: RideTierResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Tier no encontrado' })
+  async toggleActiveStatus(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<RideTierResponseDto> {
+    return this.rideTiersService.toggleActiveStatus(id);
+  }
 }

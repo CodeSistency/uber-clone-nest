@@ -626,6 +626,29 @@ export class TemporalPricingService {
     return zone?.name;
   }
 
+  async toggleActiveStatus(id: number) {
+    const rule = await this.prisma.temporalPricingRule.findUnique({
+      where: { id },
+    });
+
+    if (!rule) {
+      throw new NotFoundException(`Temporal pricing rule with ID ${id} not found`);
+    }
+
+    const updatedRule = await this.prisma.temporalPricingRule.update({
+      where: { id },
+      data: {
+        isActive: !rule.isActive,
+      },
+    });
+
+    this.logger.log(
+      `Temporal pricing rule ${rule.name} status changed to: ${updatedRule.isActive ? 'active' : 'inactive'}`,
+    );
+
+    return this.transformRule(updatedRule);
+  }
+
   private transformRule(rule: any) {
     return {
       ...rule,
