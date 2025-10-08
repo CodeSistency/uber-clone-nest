@@ -48,6 +48,7 @@ export class RideTiersService {
       data: {
         name: createRideTierDto.name,
         baseFare: createRideTierDto.baseFare,
+        minimunFare: createRideTierDto.minimunFare,
         perMinuteRate: createRideTierDto.perMinuteRate,
         perKmRate: createRideTierDto.perKmRate,
         imageUrl: createRideTierDto.imageUrl,
@@ -225,6 +226,7 @@ export class RideTiersService {
       data: {
         name: updateRideTierDto.name,
         baseFare: updateRideTierDto.baseFare,
+        minimunFare: updateRideTierDto.minimunFare,
         perMinuteRate: updateRideTierDto.perMinuteRate,
         perKmRate: updateRideTierDto.perKmRate,
         imageUrl: updateRideTierDto.imageUrl,
@@ -356,6 +358,7 @@ export class RideTiersService {
         id: tier.id,
         name: tier.name,
         baseFare: Number(tier.baseFare),
+        minimunFare: Number(tier.minimunFare),
         perMinuteRate: Number(tier.perMinuteRate),
         perKmRate: Number(tier.perKmRate),
         tierMultiplier: Number(tier.tierMultiplier),
@@ -535,6 +538,7 @@ export class RideTiersService {
       {
         name: 'UberX',
         baseFare: 250, // $2.50
+        minimunFare: 200, // $2.00
         perMinuteRate: 15, // $0.15/min
         perKmRate: 80, // $0.80/km
         tierMultiplier: 1.0, // Economy
@@ -551,6 +555,7 @@ export class RideTiersService {
       {
         name: 'UberXL',
         baseFare: 350, // $3.50
+        minimunFare: 300, // $3.00
         perMinuteRate: 20, // $0.20/min
         perKmRate: 100, // $1.00/km
         tierMultiplier: 1.3, // Comfort
@@ -567,6 +572,7 @@ export class RideTiersService {
       {
         name: 'Comfort',
         baseFare: 400, // $4.00
+        minimunFare: 350, // $3.50
         perMinuteRate: 25, // $0.25/min
         perKmRate: 120, // $1.20/km
         tierMultiplier: 1.8, // Premium
@@ -583,6 +589,7 @@ export class RideTiersService {
       {
         name: 'Uber Black',
         baseFare: 800, // $8.00
+        minimunFare: 750, // $7.50
         perMinuteRate: 40, // $0.40/min
         perKmRate: 250, // $2.50/km
         tierMultiplier: 2.5, // Luxury
@@ -615,6 +622,7 @@ export class RideTiersService {
           tier = await this.create({
             ...createData,
             baseFare: createData.baseFare,
+            minimunFare: createData.minimunFare,
             perMinuteRate: createData.perMinuteRate,
             perKmRate: createData.perKmRate,
           } as CreateRideTierDto);
@@ -711,6 +719,11 @@ export class RideTiersService {
           ? tiers.reduce((sum, tier) => sum + Number(tier.baseFare), 0) /
             tiers.length
           : 0,
+      averageMinimumFare:
+        tiers.length > 0
+          ? tiers.reduce((sum, tier) => sum + Number(tier.minimunFare), 0) /
+            tiers.length
+          : 0,
       priceRanges: {
         lowest:
           tiers.length > 0
@@ -737,6 +750,7 @@ export class RideTiersService {
         id: tier.id,
         name: tier.name,
         baseFare: Number(tier.baseFare),
+        minimunFare: Number(tier.minimunFare),
         tierMultiplier: Number(tier.tierMultiplier),
         ridesCount: tier._count.rides,
         isActive: tier.isActive,
@@ -911,6 +925,7 @@ export class RideTiersService {
     return {
       ...tier,
       baseFare: Number(tier.baseFare),
+      minimunFare: Number(tier.minimunFare),
       perMinuteRate: Number(tier.perMinuteRate),
       perKmRate: Number(tier.perKmRate),
       tierMultiplier: Number(tier.tierMultiplier),
@@ -924,7 +939,11 @@ export class RideTiersService {
       priority: tier.priority,
       ridesCount: tier._count?.rides || 0,
       vehicleTypes:
-        tier.vehicleTypes?.map((vt: any) => vt.vehicleType.name) || [],
+        tier.vehicleTypes?.map((vt: any) => ({
+          id: vt.vehicleType.id,
+          name: vt.vehicleType.name,
+          displayName: vt.vehicleType.displayName,
+        })) || [],
       _count: undefined,
     };
   }

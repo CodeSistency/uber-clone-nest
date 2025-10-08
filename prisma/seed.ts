@@ -356,6 +356,7 @@ async function main() {
       data: {
         name: 'Economy',
         baseFare: 2.5,
+        minimunFare: 2.0,
         perMinuteRate: 0.15,
         perKmRate: 80,
         imageUrl:
@@ -366,6 +367,7 @@ async function main() {
       data: {
         name: 'Comfort',
         baseFare: 4.0,
+        minimunFare: 3.5,
         perMinuteRate: 0.25,
         perKmRate: 120,
         imageUrl:
@@ -376,6 +378,7 @@ async function main() {
       data: {
         name: 'Premium',
         baseFare: 6.0,
+        minimunFare: 5.5,
         perMinuteRate: 0.35,
         perKmRate: 200,
         imageUrl:

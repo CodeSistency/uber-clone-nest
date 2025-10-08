@@ -11,6 +11,25 @@ Esta guía explica cómo consumir todos los endpoints del módulo de pricing des
 
 **Autenticación:** Requiere token JWT en el header `Authorization: Bearer <token>`
 
+## 🔄 CAMBIOS RECIENTES
+
+### v1.1.0 - Mejoras en Ride Tiers
+- ✅ **Campo `minimunFare`**: Nuevo campo que establece la tarifa mínima garantizada para cada tier
+- ✅ **Vehicle Types completos**: Los endpoints ahora retornan IDs completos de tipos de vehículos asociados:
+  ```json
+  "vehicleTypes": [
+    { "id": 1, "name": "car", "displayName": "Carro" },
+    { "id": 2, "name": "motorcycle", "displayName": "Moto" }
+  ]
+  ```
+- ✅ **Validaciones mejoradas**: Validación que `minimunFare ≤ baseFare`
+- ✅ **Seed actualizado**: Tiers estándar incluyen tarifas mínimas apropiadas
+
+### Beneficios para el Frontend:
+- **Precios garantizados**: El `minimunFare` asegura que los usuarios vean un precio mínimo claro
+- **Gestión de vehículos**: IDs completos permiten mejor manejo de asociaciones en la UI
+- **Compatibilidad**: Todos los endpoints existentes mantienen compatibilidad hacia atrás
+
 ---
 
 ## 🏗️ ARQUITECTURA DEL SISTEMA
@@ -45,6 +64,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 {
   "name": "Premium Plus",
   "baseFare": 600,
+  "minimunFare": 550,
   "perMinuteRate": 35,
   "perKmRate": 180,
   "imageUrl": "https://example.com/premium-plus.png",
@@ -67,6 +87,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
   "id": 7,
   "name": "Premium Plus",
   "baseFare": 600,
+  "minimunFare": 550,
   "perMinuteRate": 35,
   "perKmRate": 180,
   "imageUrl": "https://example.com/premium-plus.png",
@@ -80,7 +101,10 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
   "isActive": true,
   "priority": 5,
   "ridesCount": 0,
-  "vehicleTypes": ["car"],
+  "vehicleTypes": [
+    { "id": 1, "name": "car", "displayName": "Carro" },
+    { "id": 4, "name": "truck", "displayName": "Camión" }
+  ],
   "createdAt": "2024-01-15T10:30:00.000Z",
   "updatedAt": "2024-01-15T10:30:00.000Z"
 }
@@ -149,12 +173,16 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
       "id": 4,
       "name": "UberX",
       "baseFare": 250,
+      "minimunFare": 200,
       "perMinuteRate": 15,
       "perKmRate": 80,
       "tierMultiplier": 1,
       "isActive": true,
       "ridesCount": 1250,
-      "vehicleTypes": ["car", "motorcycle"]
+      "vehicleTypes": [
+        { "id": 1, "name": "car", "displayName": "Carro" },
+        { "id": 2, "name": "motorcycle", "displayName": "Moto" }
+      ]
     }
   ],
   "total": 6,
@@ -178,6 +206,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
   "id": 4,
   "name": "UberX",
   "baseFare": 250,
+  "minimunFare": 200,
   "perMinuteRate": 15,
   "perKmRate": 80,
   "imageUrl": "https://example.com/uberx.png",
@@ -191,7 +220,10 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
   "isActive": true,
   "priority": 10,
   "ridesCount": 1250,
-  "vehicleTypes": ["car", "motorcycle"],
+  "vehicleTypes": [
+    { "id": 1, "name": "car", "displayName": "Carro" },
+    { "id": 2, "name": "motorcycle", "displayName": "Moto" }
+  ],
   "createdAt": "2024-01-01T10:00:00.000Z",
   "updatedAt": "2024-01-10T08:30:00.000Z"
 }
@@ -409,6 +441,8 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 
 **DESCRIPCIÓN:** Calcula el precio total de un ride considerando todos los factores.
 
+**NOTA SOBRE `minimunFare`:** El campo `minimunFare` establece el precio mínimo garantizado para el tier. El precio calculado nunca será menor a este valor, asegurando rentabilidad mínima para los conductores.
+
 **ENVÍO:**
 ```json
 {
@@ -430,6 +464,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
     "id": 4,
     "name": "UberX",
     "baseFare": 250,
+    "minimunFare": 200,
     "perMinuteRate": 15,
     "perKmRate": 80,
     "tierMultiplier": 1
@@ -905,8 +940,22 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 ### Campos requeridos para Ride Tiers:
 - `name`: 3-50 caracteres
 - `baseFare`: 50-10000 centavos
+- `minimunFare`: 0-10000 centavos (debe ser ≤ baseFare)
 - `perMinuteRate`: 5-200 centavos
 - `perKmRate`: 20-500 centavos
+
+### Campos opcionales para Ride Tiers:
+- `vehicleTypeIds`: Array de IDs de tipos de vehículos asociados
+- `tierMultiplier`: Multiplicador base del tier (1.0 por defecto)
+- `surgeMultiplier`: Multiplicador de surge pricing (1.0 por defecto)
+- `demandMultiplier`: Multiplicador basado en demanda (1.0 por defecto)
+- `luxuryMultiplier`: Multiplicador de servicio luxury (1.0 por defecto)
+- `comfortMultiplier`: Multiplicador de características de comfort (1.0 por defecto)
+- `imageUrl`: URL de imagen del tier
+- `minPassengers`: Número mínimo de pasajeros (1 por defecto)
+- `maxPassengers`: Número máximo de pasajeros (4 por defecto)
+- `isActive`: Estado activo del tier (true por defecto)
+- `priority`: Prioridad de display (1 por defecto)
 
 ### Campos requeridos para Temporal Rules:
 - `name`: 3-100 caracteres

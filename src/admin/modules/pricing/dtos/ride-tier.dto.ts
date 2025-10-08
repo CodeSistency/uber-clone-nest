@@ -31,6 +31,16 @@ export class CreateRideTierDto {
   baseFare: number;
 
   @ApiProperty({
+    description: 'Minimum fare in cents',
+    example: 200,
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(10000)
+  minimunFare: number;
+
+  @ApiProperty({
     description: 'Rate per minute in cents',
     example: 15,
   })
@@ -207,6 +217,12 @@ export class RideTierResponseDto {
   baseFare: number;
 
   @ApiProperty({
+    description: 'Minimum fare in cents',
+    example: 200,
+  })
+  minimunFare: number;
+
+  @ApiProperty({
     description: 'Rate per minute in cents',
     example: 15,
   })
@@ -297,10 +313,17 @@ export class RideTierResponseDto {
   ridesCount?: number;
 
   @ApiPropertyOptional({
-    description: 'Associated vehicle types',
-    example: ['sedan', 'suv'],
+    description: 'Associated vehicle types with IDs and names',
+    example: [
+      { id: 1, name: 'car', displayName: 'Carro' },
+      { id: 2, name: 'motorcycle', displayName: 'Moto' }
+    ],
   })
-  vehicleTypes?: string[];
+  vehicleTypes?: Array<{
+    id: number;
+    name: string;
+    displayName: string;
+  }>;
 }
 
 export class RideTierListQueryDto {
@@ -478,6 +501,7 @@ export class PricingCalculationResultDto {
     id: number;
     name: string;
     baseFare: number;
+    minimunFare: number;
     perMinuteRate: number;
     perKmRate: number;
     tierMultiplier: number;
