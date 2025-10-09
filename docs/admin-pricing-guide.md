@@ -42,15 +42,24 @@ Esta guía explica cómo consumir todos los endpoints del módulo de pricing des
 - ✅ **Campos optimizados**: `RideTierListItemDto` y `TemporalPricingRuleListItemDto` con datos mínimos
 - ✅ **Alcance geográfico**: Campo `scope` en reglas temporales para mostrar ubicación de aplicación
 
+### v1.1.4 - Simulación de Pricing Completa
+- ✅ **Simulación integrada**: Endpoint `simulate-pricing` ahora calcula precios completos con integración total
+- ✅ **DTOs de respuesta completos**: 9 nuevos DTOs para estructurar completamente la respuesta
+- ✅ **Cálculo de flujo completo**: Base pricing + multiplicadores regionales + pricing temporal + fees
+- ✅ **Documentación completa**: Swagger con ejemplos detallados para todos los campos
+- ✅ **Validación de tipos**: TypeScript completo con validaciones automáticas
+
 ### Beneficios para el Frontend:
 - **Precios garantizados**: El `minimunFare` asegura que los usuarios vean un precio mínimo claro
 - **Gestión de vehículos**: IDs completos permiten mejor manejo de asociaciones en la UI
-- **Simulación de precios**: Endpoint `simulate-pricing` permite previsualizar cálculos completos
+- **Simulación de precios completa**: Endpoint `simulate-pricing` calcula precios reales idénticos al sistema de producción
 - **Simulación avanzada**: Modo manual permite testing de combinaciones específicas de reglas
 - **Flexibilidad de testing**: Debugging y validación de escenarios específicos
 - **Validación robusta**: Todos los parámetros son validados correctamente antes del procesamiento
 - **Performance optimizada**: Listas retornan solo datos esenciales, reduciendo payload y tiempo de respuesta
 - **Alcance geográfico claro**: Campo `scope` facilita comprensión de aplicación de reglas
+- **Respuestas estructuradas**: DTOs completos facilitan el parsing y manejo de datos
+- **Documentación automática**: Swagger genera documentación completa con ejemplos detallados
 - **Compatibilidad**: Todos los endpoints existentes mantienen compatibilidad hacia atrás
 
 ---
@@ -891,7 +900,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 
 **MÉTODO:** `POST /admin/pricing/temporal-rules/simulate-pricing`
 
-**DESCRIPCIÓN:** Simula el cálculo completo de precio incluyendo tier + reglas temporales + multiplicadores regionales.
+**DESCRIPCIÓN:** Simula el cálculo completo de precio incluyendo tier + reglas temporales + multiplicadores regionales + fees. Retorna el mismo cálculo que se usaría en producción.
 
 **MODO AUTOMÁTICO (por defecto):** Evalúa automáticamente las reglas temporales aplicables basándose en fecha, hora y ubicación.
 
@@ -909,6 +918,15 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 - `stateId`: ID del estado para reglas geográficas
 - `cityId`: ID de la ciudad para reglas geográficas
 - `zoneId`: ID de la zona para reglas geográficas
+
+**FLUJO DE CÁLCULO:**
+1. **Evaluación Temporal**: Determina qué reglas temporales aplican
+2. **Cálculo Base del Tier**: baseFare + (distance × perKmRate) + (duration × perMinuteRate)
+3. **Multiplicadores del Tier**: Aplica tierMultiplier
+4. **Multiplicadores Regionales**: Aplica country/state/city/zone multipliers
+5. **Pricing Dinámico**: Aplica surgeMultiplier y demandMultiplier
+6. **Aplicación Temporal**: Multiplica por temporalMultiplier
+7. **Fees Finales**: Agrega serviceFees (10%) y taxes (8%)
 
 **EJEMPLOS DE ENVÍO:**
 
@@ -943,7 +961,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 ```json
 {
   "temporalEvaluation": {
-    "evaluatedAt": "2024-01-15T08:30:00Z",
+    "evaluatedAt": "2024-01-15T08:30:00.000Z",
     "dayOfWeek": 1,
     "time": "08:30",
     "applicableRules": [
@@ -969,15 +987,79 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
       "city": "Caracas"
     }
   },
-  "simulationMode": "automatic_evaluation",
-  "note": "Complete pricing simulation requires integration with RideTiersService.calculatePricing method"
+  "basePricing": {
+    "baseFare": 250,
+    "distanceCost": 1000,
+    "timeCost": 375,
+    "subtotal": 1625,
+    "tierAdjustedTotal": 1625
+  },
+  "regionalMultipliers": {
+    "countryMultiplier": 1.0,
+    "stateMultiplier": 1.1,
+    "cityMultiplier": 1.05,
+    "zoneMultiplier": 1.2,
+    "totalMultiplier": 1.386
+  },
+  "dynamicPricing": {
+    "surgeMultiplier": 1.0,
+    "demandMultiplier": 1.0,
+    "totalDynamicMultiplier": 1.0
+  },
+  "temporalPricing": {
+    "temporalMultiplier": 1.4,
+    "temporalAdjustedTotal": 2275,
+    "temporalAdjustments": 650
+  },
+  "finalPricing": {
+    "baseAmount": 2250.25,
+    "regionalAdjustments": 625.25,
+    "dynamicAdjustments": 0,
+    "serviceFees": 292,
+    "taxes": 233,
+    "temporalAdjustedTotal": 2275,
+    "temporalAdjustments": 650,
+    "totalAmountWithTemporal": 2800
+  },
+  "metadata": {
+    "currency": "USD",
+    "distanceUnit": "kilometers",
+    "calculationTimestamp": "2024-01-15T08:30:00.000Z",
+    "appliedRules": ["country_pricing_multiplier", "state_pricing_multiplier", "temporal_pricing"],
+    "simulationMode": "automatic_evaluation"
+  },
+  "tier": {
+    "id": 1,
+    "name": "UberX",
+    "baseFare": 250,
+    "minimunFare": 200,
+    "perMinuteRate": 15,
+    "perKmRate": 80,
+    "tierMultiplier": 1.0,
+    "surgeMultiplier": 1.0,
+    "demandMultiplier": 1.0,
+    "luxuryMultiplier": 1.0,
+    "comfortMultiplier": 1.0
+  },
+  "scope": {
+    "country": "Venezuela",
+    "state": "Miranda",
+    "city": "Caracas"
+  }
 }
 ```
 
-**Campos de respuesta:**
-- `temporalEvaluation`: Resultado de la evaluación temporal
+**Campos de respuesta principales:**
+- `temporalEvaluation`: Resultado completo de la evaluación temporal
+- `basePricing`: Desglose del cálculo base del tier
+- `regionalMultipliers`: Multiplicadores geográficos aplicados
+- `dynamicPricing`: Multiplicadores dinámicos (surge, demanda)
+- `temporalPricing`: Aplicación del multiplicador temporal
+- `finalPricing`: Cálculo final incluyendo fees y taxes
+- `metadata`: Información adicional del cálculo
+- `tier`: Información completa del tier utilizado
+- `scope`: Alcance geográfico de la evaluación
 - `simulationMode`: `"automatic_evaluation"` o `"manual_rules"`
-- `note`: Recordatorio sobre integración pendiente
 
 ---
 
@@ -1010,7 +1092,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 10. `GET /summary/overview` - Resumen de reglas temporales
 11. `POST /simulate-pricing` - Simular cálculo completo
 
-**Total: 23 endpoints** (12 para tiers + 11 para reglas temporales)
+**Total: 23 endpoints** (12 para tiers + 11 para reglas temporales) + **9 DTOs de respuesta** para simulación completa
 
 ---
 
@@ -1140,12 +1222,26 @@ POST /admin/pricing/ride-tiers/calculate-pricing
   "tierId": 4,
   "distance": 10,
   "duration": 20,
-  "dateTime": "2024-01-15T08:30:00Z",
   "countryId": 1
 }
 ```
 
-### 4. Actualizaciones masivas:
+### 4. Simular precio completo (nuevo):
+```bash
+POST /admin/pricing/temporal-rules/simulate-pricing
+{
+  "tierId": 4,
+  "distance": 10,
+  "duration": 20,
+  "dateTime": "2024-01-15T08:30:00Z",
+  "countryId": 1,
+  "stateId": 5,
+  "cityId": 25
+}
+# Retorna cálculo completo idéntico a producción
+```
+
+### 5. Actualizaciones masivas:
 ```bash
 # Aumentar precios en 10%
 POST /admin/pricing/ride-tiers/bulk-update
@@ -1165,8 +1261,47 @@ POST /admin/pricing/ride-tiers/bulk-update
 2. **Multiplicadores**: Se acumulan (tierMultiplier * temporalMultiplier * regionalMultipliers)
 3. **Zonas geográficas**: Las reglas más específicas (zona > ciudad > estado > país) tienen prioridad
 4. **Cálculos en tiempo real**: Los precios se calculan dinámicamente en cada solicitud
-5. **Auditoría**: Todos los cambios quedan registrados para trazabilidad
-6. **Rendimiento**: Los cálculos están optimizados con índices en las consultas de BD
+5. **Simulación completa**: El endpoint `simulate-pricing` retorna cálculos idénticos a producción
+6. **Auditoría**: Todos los cambios quedan registrados para trazabilidad
+7. **Rendimiento**: Los cálculos están optimizados con índices en las consultas de BD
+8. **DTOs estructurados**: Todas las respuestas siguen esquemas TypeScript validados
+
+---
+
+## 📋 DTOs DE RESPUESTA PARA SIMULACIÓN
+
+### Estructura de Respuesta Completa
+
+Los DTOs de simulación proporcionan una estructura completa y validada para todas las respuestas del sistema de pricing:
+
+#### `SimulatePricingResponseDto`
+DTO principal que agrupa todos los componentes del cálculo:
+- `temporalEvaluation`: `TemporalPricingEvaluationResultDto`
+- `basePricing`: `SimulatePricingBasePricingDto`
+- `regionalMultipliers`: `SimulatePricingRegionalMultipliersDto`
+- `dynamicPricing`: `SimulatePricingDynamicPricingDto`
+- `temporalPricing`: `SimulatePricingTemporalPricingDto`
+- `finalPricing`: `SimulatePricingFinalPricingDto`
+- `metadata`: `SimulatePricingMetadataDto`
+- `tier`: `SimulatePricingTierDto`
+- `scope`: `SimulatePricingScopeDto`
+
+#### DTOs de Componentes
+- **`SimulatePricingBasePricingDto`**: Desglose del cálculo base (baseFare, distanceCost, timeCost, subtotal, tierAdjustedTotal)
+- **`SimulatePricingRegionalMultipliersDto`**: Multiplicadores geográficos (country, state, city, zone, total)
+- **`SimulatePricingDynamicPricingDto`**: Multiplicadores dinámicos (surge, demand, total)
+- **`SimulatePricingTemporalPricingDto`**: Aplicación temporal (multiplier, adjusted total, adjustments)
+- **`SimulatePricingFinalPricingDto`**: Cálculo final (base amount, adjustments, fees, taxes, total)
+- **`SimulatePricingMetadataDto`**: Información adicional (currency, units, timestamp, applied rules, mode)
+- **`SimulatePricingTierDto`**: Información completa del tier utilizado
+- **`SimulatePricingScopeDto`**: Alcance geográfico de evaluación
+
+#### Beneficios de los DTOs Estructurados
+- **TypeScript completo**: Validación automática de tipos en tiempo de compilación
+- **Swagger integrado**: Documentación automática de API con ejemplos detallados
+- **Mantenibilidad**: Cambios en estructura automáticamente reflejados en documentación
+- **Consistencia**: Todas las respuestas siguen el mismo patrón de nomenclatura
+- **Extensibilidad**: Fácil agregar nuevos campos sin romper compatibilidad
 
 ---
 

@@ -27,6 +27,7 @@ import { RequirePermissions } from '../../../decorators/permissions.decorator';
 import { AdminPermission } from '../../../interfaces/admin.interface';
 
 import { TemporalPricingService } from '../services/temporal-pricing.service';
+import { RideTiersService } from '../services/ride-tiers.service';
 import {
   CreateTemporalPricingRuleDto,
   UpdateTemporalPricingRuleDto,
@@ -39,6 +40,7 @@ import {
   CreateStandardTemporalRulesDto,
   BulkTemporalRuleUpdateDto,
   SimulatePricingDto,
+  SimulatePricingResponseDto,
 } from '../dtos/temporal-pricing.dto';
 
 @ApiTags('Admin Pricing - Temporal Rules')
@@ -48,6 +50,7 @@ import {
 export class TemporalPricingController {
   constructor(
     private readonly temporalPricingService: TemporalPricingService,
+    private readonly rideTiersService: RideTiersService,
   ) {}
 
   @Post()
@@ -270,8 +273,9 @@ export class TemporalPricingController {
   @ApiResponse({
     status: 200,
     description: 'Simulación completada',
+    type: SimulatePricingResponseDto,
   })
-  async simulatePricing(@Body() simulationDto: SimulatePricingDto) {
+  async simulatePricing(@Body() simulationDto: SimulatePricingDto): Promise<SimulatePricingResponseDto> {
     const {
       tierId,
       distance,
@@ -284,8 +288,8 @@ export class TemporalPricingController {
       zoneId,
     } = simulationDto;
 
+    // Evaluate temporal pricing
     let temporalResult;
-
     if (ruleIds && ruleIds.length > 0) {
       // Use specific rules provided by user
       temporalResult = await this.temporalPricingService.evaluateSpecificRules(
@@ -310,12 +314,55 @@ export class TemporalPricingController {
         });
     }
 
-    // Get tier pricing calculation (this would need to be implemented in RideTiersService)
-    // For now, return the temporal evaluation
+    // Calculate base pricing using RideTiersService
+    const basePricing = await this.rideTiersService.calculatePricing({
+      tierId,
+      distance,
+      duration,
+      countryId,
+      stateId,
+      cityId,
+      zoneId,
+      surgeMultiplier: 1.0, // Base calculation without surge
+    });
+
+    // Apply temporal multiplier to the base pricing
+    const temporalMultiplier = temporalResult.combinedMultiplier || 1.0;
+    const temporalAdjustedTotal = basePricing.finalPricing.baseAmount * temporalMultiplier;
+    const temporalAdjustments = temporalAdjustedTotal - basePricing.finalPricing.baseAmount;
+
+    // Recalculate final pricing with temporal adjustments
+    const totalAmountWithTemporal = temporalAdjustedTotal + basePricing.finalPricing.serviceFees + basePricing.finalPricing.taxes;
+
+    // Combine all applied rules
+    const allAppliedRules = [
+      ...basePricing.metadata.appliedRules,
+      ...(temporalMultiplier !== 1.0 ? ['temporal_pricing'] : [])
+    ];
+
     return {
       temporalEvaluation: temporalResult,
-      simulationMode: ruleIds && ruleIds.length > 0 ? 'manual_rules' : 'automatic_evaluation',
-      note: 'Complete pricing simulation requires integration with RideTiersService.calculatePricing method',
+      basePricing: basePricing.basePricing,
+      regionalMultipliers: basePricing.regionalMultipliers,
+      dynamicPricing: basePricing.dynamicPricing,
+      temporalPricing: {
+        temporalMultiplier,
+        temporalAdjustedTotal,
+        temporalAdjustments,
+      },
+      finalPricing: {
+        ...basePricing.finalPricing,
+        temporalAdjustedTotal,
+        temporalAdjustments,
+        totalAmountWithTemporal,
+      },
+      metadata: {
+        ...basePricing.metadata,
+        appliedRules: allAppliedRules,
+        simulationMode: ruleIds && ruleIds.length > 0 ? 'manual_rules' : 'automatic_evaluation',
+      },
+      tier: basePricing.tier,
+      scope: temporalResult.scope,
     };
   }
 

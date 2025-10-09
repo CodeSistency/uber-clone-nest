@@ -708,3 +708,336 @@ export class SimulatePricingDto {
   @IsNumber()
   zoneId?: number;
 }
+
+// Simulate Pricing Response DTOs
+export class SimulatePricingBasePricingDto {
+  @ApiProperty({
+    description: 'Base fare amount in cents',
+    example: 250,
+  })
+  baseFare: number;
+
+  @ApiProperty({
+    description: 'Distance cost in cents',
+    example: 1200,
+  })
+  distanceCost: number;
+
+  @ApiProperty({
+    description: 'Time cost in cents',
+    example: 300,
+  })
+  timeCost: number;
+
+  @ApiProperty({
+    description: 'Subtotal before tier multipliers',
+    example: 1750,
+  })
+  subtotal: number;
+
+  @ApiProperty({
+    description: 'Total after tier multiplier application',
+    example: 2450,
+  })
+  tierAdjustedTotal: number;
+}
+
+export class SimulatePricingRegionalMultipliersDto {
+  @ApiProperty({
+    description: 'Country pricing multiplier',
+    example: 1.0,
+  })
+  countryMultiplier: number;
+
+  @ApiProperty({
+    description: 'State pricing multiplier',
+    example: 1.1,
+  })
+  stateMultiplier: number;
+
+  @ApiProperty({
+    description: 'City pricing multiplier',
+    example: 1.0,
+  })
+  cityMultiplier: number;
+
+  @ApiProperty({
+    description: 'Zone pricing multiplier',
+    example: 0.9,
+  })
+  zoneMultiplier: number;
+
+  @ApiProperty({
+    description: 'Combined regional multiplier',
+    example: 0.99,
+  })
+  totalMultiplier: number;
+}
+
+export class SimulatePricingDynamicPricingDto {
+  @ApiProperty({
+    description: 'Surge pricing multiplier',
+    example: 1.0,
+  })
+  surgeMultiplier: number;
+
+  @ApiProperty({
+    description: 'Demand-based multiplier',
+    example: 1.0,
+  })
+  demandMultiplier: number;
+
+  @ApiProperty({
+    description: 'Combined dynamic multiplier',
+    example: 1.0,
+  })
+  totalDynamicMultiplier: number;
+}
+
+export class SimulatePricingTemporalPricingDto {
+  @ApiProperty({
+    description: 'Temporal pricing multiplier applied',
+    example: 0.7,
+  })
+  temporalMultiplier: number;
+
+  @ApiProperty({
+    description: 'Total after temporal multiplier application',
+    example: 1715,
+  })
+  temporalAdjustedTotal: number;
+
+  @ApiProperty({
+    description: 'Adjustment amount due to temporal pricing',
+    example: -735,
+  })
+  temporalAdjustments: number;
+}
+
+export class SimulatePricingFinalPricingDto {
+  @ApiProperty({
+    description: 'Base amount before temporal adjustments',
+    example: 2450,
+  })
+  baseAmount: number;
+
+  @ApiProperty({
+    description: 'Regional pricing adjustments',
+    example: 0,
+  })
+  regionalAdjustments: number;
+
+  @ApiProperty({
+    description: 'Dynamic pricing adjustments',
+    example: 0,
+  })
+  dynamicAdjustments: number;
+
+  @ApiProperty({
+    description: 'Service fees in cents',
+    example: 245,
+  })
+  serviceFees: number;
+
+  @ApiProperty({
+    description: 'Taxes in cents',
+    example: 196,
+  })
+  taxes: number;
+
+  @ApiProperty({
+    description: 'Total amount with temporal adjustments',
+    example: 1715,
+  })
+  temporalAdjustedTotal: number;
+
+  @ApiProperty({
+    description: 'Temporal pricing adjustments',
+    example: -735,
+  })
+  temporalAdjustments: number;
+
+  @ApiProperty({
+    description: 'Final total amount including all fees',
+    example: 2156,
+  })
+  totalAmountWithTemporal: number;
+}
+
+export class SimulatePricingTierDto {
+  @ApiProperty({
+    description: 'Tier ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Tier name',
+    example: 'UberX',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Base fare in cents',
+    example: 250,
+  })
+  baseFare: number;
+
+  @ApiProperty({
+    description: 'Minimum fare in cents',
+    example: 200,
+  })
+  minimunFare: number;
+
+  @ApiProperty({
+    description: 'Rate per minute in cents',
+    example: 15,
+  })
+  perMinuteRate: number;
+
+  @ApiProperty({
+    description: 'Rate per kilometer in cents',
+    example: 80,
+  })
+  perKmRate: number;
+
+  @ApiProperty({
+    description: 'Tier-specific multiplier',
+    example: 1.0,
+  })
+  tierMultiplier: number;
+
+  @ApiProperty({
+    description: 'Surge multiplier',
+    example: 1.0,
+  })
+  surgeMultiplier: number;
+
+  @ApiProperty({
+    description: 'Demand multiplier',
+    example: 1.0,
+  })
+  demandMultiplier: number;
+
+  @ApiProperty({
+    description: 'Luxury multiplier',
+    example: 1.0,
+  })
+  luxuryMultiplier: number;
+
+  @ApiProperty({
+    description: 'Comfort multiplier',
+    example: 1.0,
+  })
+  comfortMultiplier: number;
+}
+
+export class SimulatePricingMetadataDto {
+  @ApiProperty({
+    description: 'Currency code',
+    example: 'USD',
+  })
+  currency: string;
+
+  @ApiProperty({
+    description: 'Distance unit',
+    example: 'kilometers',
+  })
+  distanceUnit: string;
+
+  @ApiProperty({
+    description: 'Calculation timestamp',
+    example: '2024-01-15T08:30:00Z',
+  })
+  calculationTimestamp: Date;
+
+  @ApiProperty({
+    description: 'List of applied pricing rules',
+    example: ['country_pricing_multiplier', 'temporal_pricing'],
+    type: [String],
+  })
+  appliedRules: string[];
+
+  @ApiProperty({
+    description: 'Simulation mode',
+    example: 'automatic_evaluation',
+    enum: ['manual_rules', 'automatic_evaluation'],
+  })
+  simulationMode: 'manual_rules' | 'automatic_evaluation';
+}
+
+export class SimulatePricingScopeDto {
+  @ApiProperty({
+    description: 'Country name',
+    example: 'Venezuela',
+  })
+  country: string;
+
+  @ApiProperty({
+    description: 'State name',
+    example: 'Guárico',
+  })
+  state: string;
+
+  @ApiProperty({
+    description: 'City name',
+    example: 'San Juan de los Morros',
+  })
+  city: string;
+}
+
+export class SimulatePricingResponseDto {
+  @ApiProperty({
+    description: 'Temporal pricing evaluation result',
+    type: TemporalPricingEvaluationResultDto,
+  })
+  temporalEvaluation: TemporalPricingEvaluationResultDto;
+
+  @ApiProperty({
+    description: 'Base pricing breakdown',
+    type: SimulatePricingBasePricingDto,
+  })
+  basePricing: SimulatePricingBasePricingDto;
+
+  @ApiProperty({
+    description: 'Regional pricing multipliers',
+    type: SimulatePricingRegionalMultipliersDto,
+  })
+  regionalMultipliers: SimulatePricingRegionalMultipliersDto;
+
+  @ApiProperty({
+    description: 'Dynamic pricing multipliers',
+    type: SimulatePricingDynamicPricingDto,
+  })
+  dynamicPricing: SimulatePricingDynamicPricingDto;
+
+  @ApiProperty({
+    description: 'Temporal pricing application',
+    type: SimulatePricingTemporalPricingDto,
+  })
+  temporalPricing: SimulatePricingTemporalPricingDto;
+
+  @ApiProperty({
+    description: 'Final pricing breakdown',
+    type: SimulatePricingFinalPricingDto,
+  })
+  finalPricing: SimulatePricingFinalPricingDto;
+
+  @ApiProperty({
+    description: 'Pricing calculation metadata',
+    type: SimulatePricingMetadataDto,
+  })
+  metadata: SimulatePricingMetadataDto;
+
+  @ApiProperty({
+    description: 'Ride tier information',
+    type: SimulatePricingTierDto,
+  })
+  tier: SimulatePricingTierDto;
+
+  @ApiProperty({
+    description: 'Geographic scope of evaluation',
+    type: SimulatePricingScopeDto,
+  })
+  scope: SimulatePricingScopeDto;
+}
