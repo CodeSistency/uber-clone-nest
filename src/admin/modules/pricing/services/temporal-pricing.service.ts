@@ -146,7 +146,7 @@ export class TemporalPricingService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      rules: rules.map((rule) => this.transformRule(rule)),
+      rules: rules.map((rule) => this.transformRuleListItem(rule)),
       total,
       page,
       limit,
@@ -305,6 +305,90 @@ export class TemporalPricingService {
             priority: appliedRule.priority,
           }
         : undefined,
+      combinedMultiplier,
+      scope: {
+        country: countryId ? await this.getCountryName(countryId) : undefined,
+        state: stateId ? await this.getStateName(stateId) : undefined,
+        city: cityId ? await this.getCityName(cityId) : undefined,
+        zone: zoneId ? await this.getZoneName(zoneId) : undefined,
+      },
+    };
+  }
+
+  async evaluateSpecificRules(
+    ruleIds: number[],
+    context: { dateTime: string; countryId?: number; stateId?: number; cityId?: number; zoneId?: number }
+  ) {
+    const { dateTime, countryId, stateId, cityId, zoneId } = context;
+
+    // Get specific rules by IDs
+    const rules = await this.prisma.temporalPricingRule.findMany({
+      where: {
+        id: { in: ruleIds },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        ruleType: true,
+        multiplier: true,
+        priority: true,
+      },
+    });
+
+    if (rules.length === 0) {
+      // Return empty evaluation if no rules found
+      const date = new Date(dateTime);
+      const dayOfWeek = date.getDay();
+      const timeString = date.toTimeString().substring(0, 5);
+
+      return {
+        evaluatedAt: dateTime,
+        dayOfWeek,
+        time: timeString,
+        applicableRules: [],
+        appliedRule: undefined,
+        combinedMultiplier: 1.0,
+        scope: {
+          country: countryId ? await this.getCountryName(countryId) : undefined,
+          state: stateId ? await this.getStateName(stateId) : undefined,
+          city: cityId ? await this.getCityName(cityId) : undefined,
+          zone: zoneId ? await this.getZoneName(zoneId) : undefined,
+        },
+      };
+    }
+
+    // Sort by priority (highest first)
+    rules.sort((a, b) => b.priority - a.priority);
+
+    // Apply highest priority rule
+    const appliedRule = rules[0];
+
+    // Calculate combined multiplier
+    const combinedMultiplier = Number(appliedRule.multiplier);
+
+    const date = new Date(dateTime);
+    const dayOfWeek = date.getDay();
+    const timeString = date.toTimeString().substring(0, 5);
+
+    return {
+      evaluatedAt: dateTime,
+      dayOfWeek,
+      time: timeString,
+      applicableRules: rules.map((rule) => ({
+        id: rule.id,
+        name: rule.name,
+        ruleType: rule.ruleType,
+        multiplier: Number(rule.multiplier),
+        priority: rule.priority,
+      })),
+      appliedRule: {
+        id: appliedRule.id,
+        name: appliedRule.name,
+        ruleType: appliedRule.ruleType,
+        multiplier: Number(appliedRule.multiplier),
+        priority: appliedRule.priority,
+      },
       combinedMultiplier,
       scope: {
         country: countryId ? await this.getCountryName(countryId) : undefined,
@@ -654,5 +738,43 @@ export class TemporalPricingService {
       ...rule,
       multiplier: Number(rule.multiplier),
     };
+  }
+
+  private transformRuleListItem(rule: any) {
+    let scope = 'Global';
+    if (rule.zoneId) {
+      scope = `Zona: ${rule.serviceZone?.name || 'N/A'}`;
+    } else if (rule.cityId) {
+      scope = `Ciudad: ${rule.city?.name || 'N/A'}`;
+    } else if (rule.stateId) {
+      scope = `Estado: ${rule.state?.name || 'N/A'}`;
+    } else if (rule.countryId) {
+      scope = `País: ${rule.country?.name || 'N/A'}`;
+    }
+
+    return {
+      id: rule.id,
+      name: rule.name,
+      ruleType: rule.ruleType,
+      multiplier: Number(rule.multiplier),
+      priority: rule.priority,
+      isActive: rule.isActive,
+      scope,
+    };
+  }
+
+  async getRawRulesForSummary() {
+    return this.prisma.temporalPricingRule.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        ruleType: true,
+        multiplier: true,
+        countryId: true,
+        stateId: true,
+        cityId: true,
+        zoneId: true,
+      },
+    });
   }
 }

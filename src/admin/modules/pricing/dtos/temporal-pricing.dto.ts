@@ -402,12 +402,57 @@ export class TemporalPricingRuleListQueryDto {
   limit?: number = 20;
 }
 
+export class TemporalPricingRuleListItemDto {
+  @ApiProperty({
+    description: 'Rule ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Rule name',
+    example: 'Morning Peak Hours',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Rule type',
+    example: 'time_range',
+    enum: ['time_range', 'day_of_week', 'date_specific', 'seasonal'],
+  })
+  ruleType: string;
+
+  @ApiProperty({
+    description: 'Pricing multiplier',
+    example: 1.4,
+  })
+  multiplier: number;
+
+  @ApiProperty({
+    description: 'Rule priority',
+    example: 10,
+  })
+  priority: number;
+
+  @ApiProperty({
+    description: 'Whether rule is active',
+    example: true,
+  })
+  isActive: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Geographic scope summary',
+    example: 'Country: Venezuela',
+  })
+  scope?: string;
+}
+
 export class TemporalPricingRuleListResponseDto {
   @ApiProperty({
-    description: 'Array of temporal pricing rules',
-    type: [TemporalPricingRuleResponseDto],
+    description: 'Array of temporal pricing rules (reduced data for list view)',
+    type: [TemporalPricingRuleListItemDto],
   })
-  rules: TemporalPricingRuleResponseDto[];
+  rules: TemporalPricingRuleListItemDto[];
 
   @ApiProperty({
     description: 'Total number of rules',
@@ -581,4 +626,85 @@ export class BulkTemporalRuleUpdateDto {
   })
   @IsObject()
   updates: Partial<CreateTemporalPricingRuleDto>;
+}
+
+export class SimulatePricingDto {
+  @ApiProperty({
+    description: 'Tier ID to use for pricing calculation',
+    example: 1,
+  })
+  @Type(() => Number)
+  @IsNumber()
+  tierId: number;
+
+  @ApiProperty({
+    description: 'Trip distance in kilometers',
+    example: 12.5,
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.1)
+  distance: number;
+
+  @ApiProperty({
+    description: 'Trip duration in minutes',
+    example: 25,
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  duration: number;
+
+  @ApiProperty({
+    description: 'Date and time for simulation (ISO string)',
+    example: '2024-01-15T08:30:00Z',
+  })
+  @IsDateString()
+  dateTime: string;
+
+  @ApiPropertyOptional({
+    description: 'Specific temporal rule IDs to apply (overrides automatic evaluation)',
+    example: [1, 5, 8],
+    type: [Number],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  ruleIds?: number[];
+
+  @ApiPropertyOptional({
+    description: 'Country ID for geographic scope',
+    example: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  countryId?: number;
+
+  @ApiPropertyOptional({
+    description: 'State ID for geographic scope',
+    example: 5,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  stateId?: number;
+
+  @ApiPropertyOptional({
+    description: 'City ID for geographic scope',
+    example: 25,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  cityId?: number;
+
+  @ApiPropertyOptional({
+    description: 'Zone ID for geographic scope',
+    example: 10,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  zoneId?: number;
 }

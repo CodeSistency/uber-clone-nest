@@ -34,6 +34,7 @@ import {
   RideTierListQueryDto,
   RideTierResponseDto,
   RideTierListResponseDto,
+  RideTierListItemDto,
   PricingCalculationDto,
   PricingCalculationResultDto,
   PricingValidationDto,

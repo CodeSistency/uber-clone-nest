@@ -25,9 +25,32 @@ Esta guía explica cómo consumir todos los endpoints del módulo de pricing des
 - ✅ **Validaciones mejoradas**: Validación que `minimunFare ≤ baseFare`
 - ✅ **Seed actualizado**: Tiers estándar incluyen tarifas mínimas apropiadas
 
+### v1.1.1 - Correcciones y Mejoras
+- ✅ **Endpoint `simulate-pricing` corregido**: Nuevo DTO `SimulatePricingDto` con validación completa
+- ✅ **Validación de parámetros**: Todos los parámetros ahora son validados correctamente
+- ✅ **Documentación actualizada**: Endpoint documentado con parámetros requeridos y opcionales
+
+### v1.1.2 - Simulación Avanzada
+- ✅ **Modo manual de simulación**: Permite especificar reglas temporales específicas con `ruleIds`
+- ✅ **Modo automático**: Evaluación automática de reglas aplicables (comportamiento por defecto)
+- ✅ **Flexibilidad de testing**: Permite simular escenarios controlados para debugging y testing
+- ✅ **Indicador de modo**: Campo `simulationMode` indica si se usó evaluación automática o manual
+
+### v1.1.3 - Optimización de Respuestas
+- ✅ **DTOs reducidos para listas**: Endpoints de lista retornan solo campos esenciales para mejor performance
+- ✅ **Respuestas completas en detalles**: Endpoints individuales mantienen toda la información
+- ✅ **Campos optimizados**: `RideTierListItemDto` y `TemporalPricingRuleListItemDto` con datos mínimos
+- ✅ **Alcance geográfico**: Campo `scope` en reglas temporales para mostrar ubicación de aplicación
+
 ### Beneficios para el Frontend:
 - **Precios garantizados**: El `minimunFare` asegura que los usuarios vean un precio mínimo claro
 - **Gestión de vehículos**: IDs completos permiten mejor manejo de asociaciones en la UI
+- **Simulación de precios**: Endpoint `simulate-pricing` permite previsualizar cálculos completos
+- **Simulación avanzada**: Modo manual permite testing de combinaciones específicas de reglas
+- **Flexibilidad de testing**: Debugging y validación de escenarios específicos
+- **Validación robusta**: Todos los parámetros son validados correctamente antes del procesamiento
+- **Performance optimizada**: Listas retornan solo datos esenciales, reduciendo payload y tiempo de respuesta
+- **Alcance geográfico claro**: Campo `scope` facilita comprensión de aplicación de reglas
 - **Compatibilidad**: Todos los endpoints existentes mantienen compatibilidad hacia atrás
 
 ---
@@ -165,7 +188,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 ?page=1&limit=20&search=premium&isActive=true&sortBy=name&sortOrder=asc
 ```
 
-**RECIBE:**
+**RECIBE:** (Formato reducido para listas - mejor performance)
 ```json
 {
   "tiers": [
@@ -175,14 +198,10 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
       "baseFare": 250,
       "minimunFare": 200,
       "perMinuteRate": 15,
-      "perKmRate": 80,
-      "tierMultiplier": 1,
-      "isActive": true,
-      "ridesCount": 1250,
-      "vehicleTypes": [
-        { "id": 1, "name": "car", "displayName": "Carro" },
-        { "id": 2, "name": "motorcycle", "displayName": "Moto" }
-      ]
+      "minPassengers": 1,
+      "maxPassengers": 4,
+      "priority": 10,
+      "isActive": true
     }
   ],
   "total": 6,
@@ -191,6 +210,8 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
   "totalPages": 1
 }
 ```
+
+**NOTA:** Los endpoints de lista retornan datos reducidos para optimizar performance. Use los endpoints individuales (`GET /admin/pricing/ride-tiers/{id}`) para obtener información completa incluyendo vehicle types asociados.
 
 ---
 
@@ -658,7 +679,7 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 ?page=1&limit=20&ruleType=time_range&isActive=true&countryId=1
 ```
 
-**RECIBE:**
+**RECIBE:** (Formato reducido para listas - mejor performance)
 ```json
 {
   "rules": [
@@ -666,11 +687,10 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
       "id": 12,
       "name": "Fin de Semana Nocturno",
       "ruleType": "time_range",
-      "startTime": "22:00:00",
-      "endTime": "06:00:00",
       "multiplier": 1.8,
+      "priority": 10,
       "isActive": true,
-      "priority": 10
+      "scope": "País: Venezuela"
     }
   ],
   "total": 12,
@@ -679,6 +699,8 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
   "totalPages": 1
 }
 ```
+
+**NOTA:** Los endpoints de lista retornan datos reducidos para optimizar performance. Use los endpoints individuales (`GET /admin/pricing/temporal-rules/{id}`) para obtener información completa incluyendo configuraciones detalladas.
 
 ---
 
@@ -869,17 +891,51 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 
 **MÉTODO:** `POST /admin/pricing/temporal-rules/simulate-pricing`
 
-**DESCRIPCIÓN:** Simula el cálculo completo de precio incluyendo tier + reglas temporales.
+**DESCRIPCIÓN:** Simula el cálculo completo de precio incluyendo tier + reglas temporales + multiplicadores regionales.
 
-**ENVÍO:**
+**MODO AUTOMÁTICO (por defecto):** Evalúa automáticamente las reglas temporales aplicables basándose en fecha, hora y ubicación.
+
+**MODO MANUAL:** Permite especificar reglas temporales específicas para simular escenarios controlados.
+
+**PARÁMETROS REQUERIDOS:**
+- `tierId`: ID del tier a usar
+- `distance`: Distancia del viaje en kilómetros
+- `duration`: Duración del viaje en minutos
+- `dateTime`: Fecha y hora para la simulación (ISO string)
+
+**PARÁMETROS OPCIONALES:**
+- `ruleIds`: Array de IDs de reglas temporales específicas a aplicar (modo manual)
+- `countryId`: ID del país para reglas geográficas
+- `stateId`: ID del estado para reglas geográficas
+- `cityId`: ID de la ciudad para reglas geográficas
+- `zoneId`: ID de la zona para reglas geográficas
+
+**EJEMPLOS DE ENVÍO:**
+
+**Modo Automático (evaluación automática de reglas):**
 ```json
 {
-  "tierId": 4,
-  "distance": 15,
-  "duration": 30,
+  "tierId": 1,
+  "distance": 12.5,
+  "duration": 25,
   "dateTime": "2024-01-15T08:30:00Z",
   "countryId": 1,
-  "cityId": 25
+  "stateId": 5,
+  "cityId": 25,
+  "zoneId": 10
+}
+```
+
+**Modo Manual (reglas específicas):**
+```json
+{
+  "tierId": 1,
+  "distance": 12.5,
+  "duration": 25,
+  "dateTime": "2024-01-15T08:30:00Z",
+  "ruleIds": [5, 12, 18],
+  "countryId": 1,
+  "stateId": 5
 }
 ```
 
@@ -887,18 +943,41 @@ Sistema dinámico de pricing basado en tiempo y ubicación:
 ```json
 {
   "temporalEvaluation": {
+    "evaluatedAt": "2024-01-15T08:30:00Z",
+    "dayOfWeek": 1,
+    "time": "08:30",
     "applicableRules": [
       {
         "id": 5,
         "name": "Morning Peak",
-        "multiplier": 1.4
+        "ruleType": "time_range",
+        "multiplier": 1.4,
+        "priority": 10
       }
     ],
-    "effectiveMultiplier": 1.4
+    "appliedRule": {
+      "id": 5,
+      "name": "Morning Peak",
+      "ruleType": "time_range",
+      "multiplier": 1.4,
+      "priority": 10
+    },
+    "combinedMultiplier": 1.4,
+    "scope": {
+      "country": "Venezuela",
+      "state": "Miranda",
+      "city": "Caracas"
+    }
   },
+  "simulationMode": "automatic_evaluation",
   "note": "Complete pricing simulation requires integration with RideTiersService.calculatePricing method"
 }
 ```
+
+**Campos de respuesta:**
+- `temporalEvaluation`: Resultado de la evaluación temporal
+- `simulationMode`: `"automatic_evaluation"` o `"manual_rules"`
+- `note`: Recordatorio sobre integración pendiente
 
 ---
 

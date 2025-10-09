@@ -150,7 +150,7 @@ export class RideTiersService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      tiers: tiers.map((tier) => this.transformRideTier(tier)),
+      tiers: tiers.map((tier) => this.transformRideTierListItem(tier)),
       total,
       page,
       limit,
@@ -945,6 +945,20 @@ export class RideTiersService {
           displayName: vt.vehicleType.displayName,
         })) || [],
       _count: undefined,
+    };
+  }
+
+  private transformRideTierListItem(tier: any) {
+    return {
+      id: tier.id,
+      name: tier.name,
+      baseFare: Number(tier.baseFare),
+      minimunFare: Number(tier.minimunFare),
+      perMinuteRate: Number(tier.perMinuteRate),
+      minPassengers: tier.minPassengers,
+      maxPassengers: tier.maxPassengers,
+      priority: tier.priority,
+      isActive: tier.isActive,
     };
   }
 }

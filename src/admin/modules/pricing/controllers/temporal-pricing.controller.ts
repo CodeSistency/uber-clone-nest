@@ -33,10 +33,12 @@ import {
   TemporalPricingRuleListQueryDto,
   TemporalPricingRuleResponseDto,
   TemporalPricingRuleListResponseDto,
+  TemporalPricingRuleListItemDto,
   TemporalPricingEvaluationDto,
   TemporalPricingEvaluationResultDto,
   CreateStandardTemporalRulesDto,
   BulkTemporalRuleUpdateDto,
+  SimulatePricingDto,
 } from '../dtos/temporal-pricing.dto';
 
 @ApiTags('Admin Pricing - Temporal Rules')
@@ -222,42 +224,37 @@ export class TemporalPricingController {
     description: 'Resumen obtenido exitosamente',
   })
   async getSummary() {
-    const rules = await this.temporalPricingService.findAll({
-      isActive: true,
-      limit: 1000, // Get all active rules
-    });
+    // Get raw data for summary calculations (not transformed)
+    const rawRules = await this.temporalPricingService.getRawRulesForSummary();
 
     const summary = {
-      totalActiveRules: rules.total,
+      totalActiveRules: rawRules.length,
       rulesByType: {
-        time_range: rules.rules.filter((r) => r.ruleType === 'time_range')
-          .length,
-        day_of_week: rules.rules.filter((r) => r.ruleType === 'day_of_week')
-          .length,
-        date_specific: rules.rules.filter((r) => r.ruleType === 'date_specific')
-          .length,
-        seasonal: rules.rules.filter((r) => r.ruleType === 'seasonal').length,
+        time_range: rawRules.filter((r) => r.ruleType === 'TIME_RANGE').length,
+        day_of_week: rawRules.filter((r) => r.ruleType === 'DAY_OF_WEEK').length,
+        date_specific: rawRules.filter((r) => r.ruleType === 'DATE_SPECIFIC').length,
+        seasonal: rawRules.filter((r) => r.ruleType === 'SEASONAL').length,
       },
       rulesByScope: {
-        global: rules.rules.filter(
+        global: rawRules.filter(
           (r) => !r.countryId && !r.stateId && !r.cityId && !r.zoneId,
         ).length,
-        country: rules.rules.filter(
+        country: rawRules.filter(
           (r) => r.countryId && !r.stateId && !r.cityId && !r.zoneId,
         ).length,
-        state: rules.rules.filter((r) => r.stateId).length,
-        city: rules.rules.filter((r) => r.cityId).length,
-        zone: rules.rules.filter((r) => r.zoneId).length,
+        state: rawRules.filter((r) => r.stateId).length,
+        city: rawRules.filter((r) => r.cityId).length,
+        zone: rawRules.filter((r) => r.zoneId).length,
       },
       averageMultiplier:
-        rules.total > 0
-          ? rules.rules.reduce((sum, rule) => sum + rule.multiplier, 0) /
-            rules.total
+        rawRules.length > 0
+          ? rawRules.reduce((sum, rule) => sum + Number(rule.multiplier), 0) /
+            rawRules.length
           : 0,
       highestMultiplier:
-        rules.total > 0 ? Math.max(...rules.rules.map((r) => r.multiplier)) : 0,
+        rawRules.length > 0 ? Math.max(...rawRules.map((r) => Number(r.multiplier))) : 0,
       lowestMultiplier:
-        rules.total > 0 ? Math.min(...rules.rules.map((r) => r.multiplier)) : 0,
+        rawRules.length > 0 ? Math.min(...rawRules.map((r) => Number(r.multiplier))) : 0,
     };
 
     return { summary };
@@ -274,44 +271,50 @@ export class TemporalPricingController {
     status: 200,
     description: 'Simulación completada',
   })
-  async simulatePricing(
-    @Body()
-    simulationDto: {
-      tierId: number;
-      distance: number;
-      duration: number;
-      dateTime: string;
-      countryId?: number;
-      stateId?: number;
-      cityId?: number;
-      zoneId?: number;
-    },
-  ) {
+  async simulatePricing(@Body() simulationDto: SimulatePricingDto) {
     const {
       tierId,
       distance,
       duration,
       dateTime,
+      ruleIds,
       countryId,
       stateId,
       cityId,
       zoneId,
     } = simulationDto;
 
-    // Evaluate temporal pricing
-    const temporalResult =
-      await this.temporalPricingService.evaluateTemporalPricing({
-        dateTime,
-        countryId,
-        stateId,
-        cityId,
-        zoneId,
-      });
+    let temporalResult;
+
+    if (ruleIds && ruleIds.length > 0) {
+      // Use specific rules provided by user
+      temporalResult = await this.temporalPricingService.evaluateSpecificRules(
+        ruleIds,
+        {
+          dateTime,
+          countryId,
+          stateId,
+          cityId,
+          zoneId,
+        }
+      );
+    } else {
+      // Evaluate temporal pricing automatically
+      temporalResult =
+        await this.temporalPricingService.evaluateTemporalPricing({
+          dateTime,
+          countryId,
+          stateId,
+          cityId,
+          zoneId,
+        });
+    }
 
     // Get tier pricing calculation (this would need to be implemented in RideTiersService)
     // For now, return the temporal evaluation
     return {
       temporalEvaluation: temporalResult,
+      simulationMode: ruleIds && ruleIds.length > 0 ? 'manual_rules' : 'automatic_evaluation',
       note: 'Complete pricing simulation requires integration with RideTiersService.calculatePricing method',
     };
   }

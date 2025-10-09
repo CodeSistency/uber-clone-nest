@@ -386,12 +386,68 @@ export class RideTierListQueryDto {
   limit?: number = 20;
 }
 
+export class RideTierListItemDto {
+  @ApiProperty({
+    description: 'Tier ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Tier name',
+    example: 'UberX',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Base fare in cents',
+    example: 250,
+  })
+  baseFare: number;
+
+  @ApiProperty({
+    description: 'Minimum fare in cents',
+    example: 200,
+  })
+  minimunFare: number;
+
+  @ApiProperty({
+    description: 'Rate per minute in cents',
+    example: 15,
+  })
+  perMinuteRate: number;
+
+  @ApiProperty({
+    description: 'Minimum passengers',
+    example: 1,
+  })
+  minPassengers: number;
+
+  @ApiProperty({
+    description: 'Maximum passengers',
+    example: 4,
+  })
+  maxPassengers: number;
+
+  @ApiProperty({
+    description: 'Display priority',
+    example: 1,
+  })
+  priority: number;
+
+  @ApiProperty({
+    description: 'Whether tier is active',
+    example: true,
+  })
+  isActive: boolean;
+}
+
 export class RideTierListResponseDto {
   @ApiProperty({
-    description: 'Array of ride tiers',
-    type: [RideTierResponseDto],
+    description: 'Array of ride tiers (reduced data for list view)',
+    type: [RideTierListItemDto],
   })
-  tiers: RideTierResponseDto[];
+  tiers: RideTierListItemDto[];
 
   @ApiProperty({
     description: 'Total number of tiers',
