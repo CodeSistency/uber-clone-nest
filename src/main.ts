@@ -298,6 +298,8 @@ async function bootstrap() {
       'http://localhost:3001',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
+      'http://72.60.119.19:3000', // Tu frontend de Next.js
+      'http://72.60.119.19:3001', // Tu propio backend (a veces útil)
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: [
