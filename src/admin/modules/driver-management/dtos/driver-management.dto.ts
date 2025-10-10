@@ -250,6 +250,26 @@ export class BulkUpdateDriverStatusDto {
   reason?: string;
 }
 
+export class DeleteDriverDto {
+  @ApiPropertyOptional({
+    description: 'Reason for driver deletion',
+    example: 'Violation of terms of service',
+  })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether to permanently delete or soft delete',
+    example: false,
+    default: false,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  permanent?: boolean = false;
+}
+
 // Response DTOs
 export class DriverListItemDto {
   @ApiPropertyOptional({

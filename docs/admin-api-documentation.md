@@ -1040,6 +1040,35 @@ Updates status for multiple drivers in bulk.
 **Responses:**
 - `200 OK`: Bulk status update completed successfully.
 
+### `DELETE /admin/drivers/:id`
+
+Deletes a driver from the system.
+
+**Path Parameters:**
+- `id`: Driver unique ID - number
+
+**Request Body:**
+```json
+{
+  "reason": "Violation of terms of service",
+  "permanent": false
+}
+```
+
+**Responses:**
+- `200 OK`: Driver deleted successfully.
+  ```json
+  {
+    "success": true,
+    "message": "Driver soft deleted successfully",
+    "driverId": 123,
+    "permanent": false,
+    "reason": "Violation of terms of service"
+  }
+  ```
+- `404 Not Found`: Driver not found.
+- `400 Bad Request`: Cannot delete driver - has active services.
+
 ---
 
 ## 5. Vehicle Management

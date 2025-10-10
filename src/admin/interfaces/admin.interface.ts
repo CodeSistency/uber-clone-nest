@@ -96,6 +96,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     // Driver permissions
     AdminPermission.DRIVERS_READ,
     AdminPermission.DRIVERS_WRITE,
+    AdminPermission.DRIVERS_DELETE,
     AdminPermission.DRIVERS_VERIFY,
     AdminPermission.DRIVERS_SUSPEND,
 

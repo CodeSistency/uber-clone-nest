@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Param,
   Query,
   Body,
@@ -31,6 +32,7 @@ import {
   UpdateDriverVerificationDto,
   UpdateDriverWorkZonesDto,
   BulkUpdateDriverStatusDto,
+  DeleteDriverDto,
   DriverListResponseDto,
   DriverDetailsDto,
 } from '../dtos/driver-management.dto';
@@ -311,6 +313,45 @@ export class DriverManagementController {
       bulkDto.status,
       adminId,
       bulkDto.reason,
+    );
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(AdminPermission.DRIVERS_DELETE)
+  @ApiOperation({
+    summary: 'Eliminar driver',
+    description: 'Elimina un driver del sistema. Por defecto hace soft delete, pero puede hacer eliminación permanente.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del driver a eliminar',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Driver eliminado exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Driver no encontrado',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'No se puede eliminar el driver (tiene rides activos, etc.)',
+  })
+  async deleteDriver(
+    @Param('id', ParseIntPipe) driverId: number,
+    @Body() deleteDto: DeleteDriverDto,
+    // @Req() req: Request
+  ): Promise<any> {
+    const adminId = 1; // Should come from JWT
+
+    return this.driverManagementService.deleteDriver(
+      driverId,
+      adminId,
+      deleteDto.reason,
+      deleteDto.permanent,
     );
   }
 }

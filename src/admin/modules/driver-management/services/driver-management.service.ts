@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../prisma/prisma.service';
 
 export interface DriverFilters {
@@ -867,6 +867,123 @@ export class DriverManagementService {
     return {
       rides: rides.length,
       earnings: totalEarnings,
+    };
+  }
+
+  async deleteDriver(
+    driverId: number,
+    adminId: number,
+    reason?: string,
+    permanent: boolean = false,
+  ): Promise<any> {
+    // First, check if driver exists
+    const driver = await this.prisma.driver.findUnique({
+      where: { id: driverId },
+      include: {
+        rides: {
+          where: {
+            status: {
+              in: ['PENDING', 'ACCEPTED', 'IN_PROGRESS'],
+            },
+          },
+        },
+        deliveryOrders: {
+          where: {
+            status: {
+              in: ['PENDING', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT'],
+            },
+          },
+        },
+        errands: {
+          where: {
+            status: {
+              in: ['PENDING', 'ACCEPTED', 'IN_PROGRESS'],
+            },
+          },
+        },
+        parcels: {
+          where: {
+            status: {
+              in: ['PENDING', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT'],
+            },
+          },
+        },
+      },
+    });
+
+    if (!driver) {
+      throw new NotFoundException(`Driver with ID ${driverId} not found`);
+    }
+
+    // Check if driver has active services
+    const hasActiveRides = driver.rides.length > 0;
+    const hasActiveDeliveries = driver.deliveryOrders.length > 0;
+    const hasActiveErrands = driver.errands.length > 0;
+    const hasActiveParcels = driver.parcels.length > 0;
+
+    if (hasActiveRides || hasActiveDeliveries || hasActiveErrands || hasActiveParcels) {
+      const activeServices: string[] = [];
+      if (hasActiveRides) activeServices.push('rides');
+      if (hasActiveDeliveries) activeServices.push('deliveries');
+      if (hasActiveErrands) activeServices.push('errands');
+      if (hasActiveParcels) activeServices.push('parcels');
+
+      throw new BadRequestException(
+        `Cannot delete driver. Driver has active ${activeServices.join(', ')}. Please complete or cancel active services first.`,
+      );
+    }
+
+    let result;
+
+    if (permanent) {
+      // Permanent deletion - this will cascade delete related records
+      result = await this.prisma.driver.delete({
+        where: { id: driverId },
+      });
+
+      this.logger.log(`Admin ${adminId} permanently deleted driver ${driverId}`);
+    } else {
+      // Soft delete - mark as deleted but keep the record
+      result = await this.prisma.driver.update({
+        where: { id: driverId },
+        data: {
+          status: 'DELETED' as any, // Assuming DELETED is a valid status
+          statusChangedBy: adminId,
+          lastStatusChange: new Date(),
+          suspensionReason: reason || 'Driver deleted by admin',
+        },
+      });
+
+      this.logger.log(`Admin ${adminId} soft deleted driver ${driverId}`);
+    }
+
+    // Log the action
+    await this.logAdminAction(
+      adminId,
+      permanent ? 'driver_permanent_delete' : 'driver_soft_delete',
+      `driver_${driverId}`,
+      `Driver ${driverId} ${permanent ? 'permanently deleted' : 'soft deleted'} by admin ${adminId}. Reason: ${reason || 'No reason provided'}`,
+      {
+        driverId,
+        driverName: `${driver.firstName} ${driver.lastName}`,
+        driverEmail: driver.email,
+        driverStatus: driver.status,
+        driverVerificationStatus: driver.verificationStatus,
+      },
+      {
+        driverId,
+        permanent,
+        reason,
+        deletedAt: new Date(),
+      },
+    );
+
+    return {
+      success: true,
+      message: `Driver ${permanent ? 'permanently deleted' : 'soft deleted'} successfully`,
+      driverId,
+      permanent,
+      reason,
     };
   }
 
