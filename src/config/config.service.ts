@@ -305,6 +305,22 @@ export class AppConfigService {
   }
 
   // ===============================
+  // MINIO CONFIGURATION
+  // ===============================
+  get minio() {
+    return {
+      endpoint: this.configService.get<string>('MINIO_ENDPOINT', 'localhost'),
+      port: parseInt(this.configService.get<string>('MINIO_PORT', '9000'), 10),
+      accessKey: this.configService.get<string>('MINIO_ACCESS_KEY', 'minioadmin'),
+      secretKey: this.configService.get<string>('MINIO_SECRET_KEY', 'minioadmin'),
+      useSSL: this.configService.get<string>('MINIO_USE_SSL', 'false') === 'true',
+      bucketName: this.configService.get<string>('MINIO_BUCKET_NAME', 'uber-clone-uploads'),
+      region: this.configService.get<string>('MINIO_REGION', 'us-east-1'),
+      publicUrl: this.configService.get<string>('MINIO_PUBLIC_URL'),
+    };
+  }
+
+  // ===============================
   // UTILITY METHODS
   // ===============================
   isProduction(): boolean {
@@ -331,6 +347,7 @@ export class AppConfigService {
       clerk: this.clerk,
       notification: this.notification,
       referral: this.referral,
+      minio: this.minio,
     };
   }
 

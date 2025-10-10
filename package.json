@@ -48,6 +48,8 @@
     "test:matching": "npm run db:seed:fresh && node -e \"console.log('🚀 Ejecutando Test Completo del Sistema de Matching Optimizado\\n'); console.log('📋 Características del test:'); console.log('   ✅ Sistema de caché inteligente con Redis'); console.log('   ✅ Scoring por lotes con MatchingEngine'); console.log('   ✅ Comparación OPTIMIZADO vs BÁSICO'); console.log('   ✅ Logging detallado y explicaciones'); console.log('   ✅ Datos dummy realistas'); console.log('   ✅ Métricas de performance\\n');\" && jest --config jest.matching.config.js --verbose --runInBand --testTimeout=60000"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.907.0",
+    "@aws-sdk/s3-request-presigner": "^3.907.0",
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
@@ -78,6 +80,7 @@
     "firebase-admin": "^13.5.0",
     "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
+    "mime-types": "^3.0.1",
     "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

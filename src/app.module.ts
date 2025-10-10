@@ -31,6 +31,7 @@ import { TestingModule } from './testing/testing.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { CommonModule } from './common/common.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
+import { StorageModule } from './storage/storage.module';
 
 
 @Module({
@@ -70,6 +71,8 @@ import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
     TestingModule,
     ReferralsModule,
     ExchangeRatesModule,
+    // Storage module
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

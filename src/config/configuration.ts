@@ -212,6 +212,20 @@ export default (): Config => ({
       10,
     ),
   },
+
+  // ===============================
+  // MINIO CONFIGURATION
+  // ===============================
+  minio: {
+    endpoint: process.env.MINIO_ENDPOINT || 'localhost',
+    port: parseInt(process.env.MINIO_PORT || '9000', 10),
+    accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+    secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+    useSSL: process.env.MINIO_USE_SSL === 'true',
+    bucketName: process.env.MINIO_BUCKET_NAME || 'uber-clone-uploads',
+    region: process.env.MINIO_REGION || 'us-east-1',
+    publicUrl: process.env.MINIO_PUBLIC_URL,
+  },
 });
 
 // ===============================

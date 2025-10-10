@@ -100,6 +100,17 @@ export interface ReferralConfig {
   maxSameIpReferrals: number;
 }
 
+export interface MinioConfig {
+  endpoint: string;
+  port: number;
+  accessKey: string;
+  secretKey: string;
+  useSSL: boolean;
+  bucketName: string;
+  region: string;
+  publicUrl?: string;
+}
+
 export interface AppConfig {
   port: number;
   environment: 'development' | 'production' | 'test';
@@ -127,4 +138,5 @@ export interface Config {
   clerk: ClerkConfig;
   notification: NotificationConfig;
   referral: ReferralConfig;
+  minio: MinioConfig;
 }
