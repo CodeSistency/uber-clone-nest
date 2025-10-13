@@ -107,17 +107,32 @@ export class ReportsAnalyticsController {
       exportDto.format,
     );
 
-    if (exportDto.format === 'csv') {
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${exportData.filename}"`,
-      );
-      res.send(exportData.data);
-    } else {
-      // For Excel and PDF, return file info (in real implementation, stream the file)
-      res.json(exportData);
+    // Set appropriate headers based on format
+    switch (exportDto.format) {
+      case 'csv':
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
+        break;
+      case 'excel':
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
+        break;
+      case 'pdf':
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
+        break;
+      default:
+        res.status(400).json({ error: 'Unsupported format' });
+        return;
     }
+
+    // Set additional headers for file download
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    // Send the file data
+    res.send(exportData.data);
   }
 
   @Get('dashboard/widgets')

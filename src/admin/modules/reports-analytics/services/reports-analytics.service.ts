@@ -8,8 +8,10 @@ import {
   endOfWeek,
   startOfMonth,
   endOfMonth,
-  format,
+  format as formatDate,
 } from 'date-fns';
+import * as ExcelJS from 'exceljs';
+import PDFDocument from 'pdfkit';
 
 export interface ReportFilters {
   dateFrom?: Date;
@@ -143,19 +145,36 @@ export class ReportsAnalyticsService {
   async exportReport(
     filters: ReportFilters,
     format: 'csv' | 'excel' | 'pdf',
-  ): Promise<any> {
+  ): Promise<{ filename: string; data: Buffer | string; format: string }> {
     const reportData = await this.generateReport(filters);
+    const reportTitle = this.getReportTypeTitle(filters);
+    const timestamp = formatDate(new Date(), 'yyyy-MM-dd_HH-mm-ss');
+
+    let filename: string;
+    let data: Buffer | string;
 
     switch (format) {
       case 'csv':
-        return this.exportToCSV(reportData);
+        filename = `${reportTitle.replace(/\s+/g, '_').toLowerCase()}_${timestamp}.csv`;
+        data = this.exportToCSV(reportData);
+        break;
       case 'excel':
-        return this.exportToExcel(reportData);
+        filename = `${reportTitle.replace(/\s+/g, '_').toLowerCase()}_${timestamp}.xlsx`;
+        data = await this.exportToExcel(reportData);
+        break;
       case 'pdf':
-        return this.exportToPDF(reportData);
+        filename = `${reportTitle.replace(/\s+/g, '_').toLowerCase()}_${timestamp}.pdf`;
+        data = await this.exportToPDF(reportData);
+        break;
       default:
         throw new Error(`Unsupported export format: ${format}`);
     }
+
+    return {
+      filename,
+      data,
+      format,
+    };
   }
 
   async getDashboardWidgets(): Promise<DashboardWidget[]> {
@@ -597,7 +616,7 @@ export class ReportsAnalyticsService {
   private groupRidesByDay(rides: any[], dateFrom: Date, dateTo: Date): any[] {
     const days = {};
     rides.forEach((ride) => {
-      const day = format(ride.createdAt, 'yyyy-MM-dd');
+      const day = formatDate(ride.createdAt, 'yyyy-MM-dd');
       if (!days[day]) {
         days[day] = { date: day, rides: 0, revenue: 0 };
       }
@@ -635,7 +654,7 @@ export class ReportsAnalyticsService {
   private groupUsersByDay(users: any[], dateFrom: Date, dateTo: Date): any[] {
     const days = {};
     users.forEach((user) => {
-      const day = format(user.createdAt, 'yyyy-MM-dd');
+      const day = formatDate(user.createdAt, 'yyyy-MM-dd');
       if (!days[day]) {
         days[day] = { date: day, users: 0 };
       }
@@ -695,7 +714,7 @@ export class ReportsAnalyticsService {
       });
 
       data.push({
-        date: format(date, 'yyyy-MM-dd'),
+        date: formatDate(date, 'yyyy-MM-dd'),
         revenue: Number(revenue._sum?.farePrice || 0),
       });
     }
@@ -737,7 +756,7 @@ export class ReportsAnalyticsService {
       });
 
       data.push({
-        month: format(monthStart, 'yyyy-MM'),
+        month: formatDate(monthStart, 'yyyy-MM'),
         users,
       });
     }
@@ -808,6 +827,72 @@ export class ReportsAnalyticsService {
     };
   }
 
+  // Helper functions for data formatting
+  private formatCurrency(value: any): string {
+    if (typeof value !== 'number') return value?.toString() || '';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(value);
+  }
+
+  private formatDate(value: any): string {
+    if (!value) return '';
+    try {
+      const date = new Date(value);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return value?.toString() || '';
+    }
+  }
+
+  private formatPercentage(value: any): string {
+    if (typeof value !== 'number') return value?.toString() || '';
+    return `${(value * 100).toFixed(2)}%`;
+  }
+
+  private flattenObject(obj: any, prefix = ''): any {
+    const flattened: any = {};
+
+    for (const key in obj) {
+      if (obj[key] === null || obj[key] === undefined) {
+        flattened[prefix + key] = '';
+      } else if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+        Object.assign(flattened, this.flattenObject(obj[key], prefix + key + '.'));
+      } else if (Array.isArray(obj[key])) {
+        flattened[prefix + key] = obj[key].join('; ');
+      } else {
+        flattened[prefix + key] = obj[key];
+      }
+    }
+
+    return flattened;
+  }
+
+  private getReportTypeTitle(filters: ReportFilters): string {
+    const entityType = filters.entityType;
+    switch (entityType) {
+      case 'rides':
+        return 'Rides Report';
+      case 'users':
+        return 'Users Report';
+      case 'drivers':
+        return 'Drivers Report';
+      case 'financial':
+        return 'Financial Report';
+      case 'performance':
+        return 'Performance Report';
+      default:
+        return 'Comprehensive Report';
+    }
+  }
+
   private exportToCSV(reportData: ReportData): string {
     // Simple CSV export implementation
     const { summary, details } = reportData;
@@ -827,24 +912,470 @@ export class ReportsAnalyticsService {
     return csv;
   }
 
-  private exportToExcel(reportData: ReportData): any {
-    // In a real implementation, this would use a library like exceljs
-    // For now, return mock data
-    return {
-      filename: 'report.xlsx',
-      data: reportData,
-      format: 'excel',
-    };
+  private async exportToExcel(reportData: ReportData): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const { summary, details, chartData, metadata } = reportData;
+
+    // Set workbook properties
+    workbook.creator = 'Uber Clone Admin';
+    workbook.lastModifiedBy = 'Uber Clone System';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    const reportTitle = this.getReportTypeTitle(metadata.filters);
+
+    // ===== SUMMARY SHEET =====
+    const summarySheet = workbook.addWorksheet('Summary');
+
+    // Title
+    const titleRow = summarySheet.addRow([reportTitle]);
+    titleRow.font = { size: 16, bold: true };
+    summarySheet.mergeCells('A1:D1');
+
+    // Generated info
+    summarySheet.addRow([]);
+    summarySheet.addRow(['Generated At:', this.formatDate(metadata.generatedAt)]);
+    summarySheet.addRow(['Total Records:', metadata.totalRecords]);
+    summarySheet.addRow(['Execution Time:', `${metadata.executionTime}ms`]);
+
+    // Period info
+    summarySheet.addRow([]);
+    summarySheet.addRow(['Report Period:']);
+    if (metadata.filters.dateFrom && metadata.filters.dateTo) {
+      summarySheet.addRow(['From:', this.formatDate(metadata.filters.dateFrom)]);
+      summarySheet.addRow(['To:', this.formatDate(metadata.filters.dateTo)]);
+    } else {
+      summarySheet.addRow(['Period:', metadata.filters.period || 'Custom']);
+    }
+
+    // Summary data
+    summarySheet.addRow([]);
+    summarySheet.addRow(['SUMMARY METRICS']);
+    summarySheet.addRow([]);
+
+    // Flatten and format summary data
+    const flattenedSummary = this.flattenObject(summary);
+    Object.entries(flattenedSummary).forEach(([key, value]) => {
+      let formattedValue = value;
+      if (key.toLowerCase().includes('revenue') ||
+          key.toLowerCase().includes('price') ||
+          key.toLowerCase().includes('fee') ||
+          key.toLowerCase().includes('balance')) {
+        formattedValue = this.formatCurrency(value);
+      } else if (key.toLowerCase().includes('rate') ||
+                 key.toLowerCase().includes('percentage')) {
+        formattedValue = this.formatPercentage(value);
+      } else if (key.toLowerCase().includes('date') ||
+                 key.toLowerCase().includes('at')) {
+        formattedValue = this.formatDate(value);
+      }
+
+      summarySheet.addRow([key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()), formattedValue]);
+    });
+
+    // Auto-fit columns
+    summarySheet.columns.forEach(column => {
+      column.width = Math.max(15, column.width || 0);
+    });
+
+    // ===== DETAILS SHEET =====
+    if (details && details.length > 0) {
+      const detailsSheet = workbook.addWorksheet('Details');
+
+      // Get all possible keys from details
+      const allKeys = new Set<string>();
+      details.forEach(item => {
+        const flattened = this.flattenObject(item);
+        Object.keys(flattened).forEach(key => allKeys.add(key));
+      });
+
+      const headers = Array.from(allKeys);
+      detailsSheet.addRow(headers);
+
+      // Style headers
+      const headerRow = detailsSheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE6E6FA' },
+      };
+
+      // Add data rows
+      details.forEach(item => {
+        const flattened = this.flattenObject(item);
+        const row = headers.map(header => {
+          const value = flattened[header];
+
+          // Format specific columns
+          if (header.toLowerCase().includes('revenue') ||
+              header.toLowerCase().includes('price') ||
+              header.toLowerCase().includes('fee') ||
+              header.toLowerCase().includes('balance') ||
+              header.toLowerCase().includes('fare')) {
+            return this.formatCurrency(value);
+          } else if (header.toLowerCase().includes('date') ||
+                     header.toLowerCase().includes('at') ||
+                     header.toLowerCase().includes('created') ||
+                     header.toLowerCase().includes('updated')) {
+            return this.formatDate(value);
+          } else if (header.toLowerCase().includes('rating')) {
+            return typeof value === 'number' ? value.toFixed(1) : value;
+          }
+
+          return value || '';
+        });
+        detailsSheet.addRow(row);
+      });
+
+      // Auto-fit columns
+      detailsSheet.columns.forEach((column, index) => {
+        column.width = Math.min(30, Math.max(12, headers[index].length + 2));
+      });
+    }
+
+    // ===== CHART DATA SHEET =====
+    if (chartData && chartData.length > 0) {
+      const chartSheet = workbook.addWorksheet('Chart Data');
+
+      // Process each chart dataset
+      let currentRow = 1;
+      chartData.forEach((chart, chartIndex) => {
+        if (chartIndex > 0) {
+          chartSheet.addRow([]); // Empty row between charts
+          currentRow += 1;
+        }
+
+        // Chart title
+        const titleRow = chartSheet.addRow([chart.title || `Chart ${chartIndex + 1}`]);
+        titleRow.font = { bold: true, size: 12 };
+        currentRow += 1;
+
+        // Chart data
+        if (chart.data && Array.isArray(chart.data) && chart.data.length > 0) {
+          // Get headers from first data item
+          const dataHeaders = Object.keys(chart.data[0]);
+          chartSheet.addRow(dataHeaders);
+
+          // Style headers
+          const headerStartRow = currentRow;
+          const headerRow = chartSheet.getRow(headerStartRow);
+          headerRow.font = { bold: true };
+          headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE6E6FA' },
+          };
+          currentRow += 1;
+
+          // Add data rows
+          chart.data.forEach(item => {
+            const row = dataHeaders.map(header => {
+              const value = item[header];
+
+              // Format values based on header
+              if (header.toLowerCase().includes('revenue') ||
+                  header.toLowerCase().includes('price') ||
+                  header.toLowerCase().includes('fee')) {
+                return this.formatCurrency(value);
+              } else if (header.toLowerCase().includes('date')) {
+                return this.formatDate(value);
+              } else if (typeof value === 'number') {
+                return value;
+              }
+
+              return value || '';
+            });
+            chartSheet.addRow(row);
+            currentRow += 1;
+          });
+        }
+      });
+
+      // Auto-fit columns
+      chartSheet.columns.forEach(column => {
+        column.width = Math.max(15, column.width || 0);
+      });
+    }
+
+    // Generate buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
   }
 
-  private exportToPDF(reportData: ReportData): any {
-    // In a real implementation, this would use a library like pdfkit
-    // For now, return mock data
-    return {
-      filename: 'report.pdf',
-      data: reportData,
-      format: 'pdf',
-    };
+  private async exportToPDF(reportData: ReportData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const { summary, details, chartData, metadata } = reportData;
+      const reportTitle = this.getReportTypeTitle(metadata.filters);
+
+      // Create PDF document
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: reportTitle,
+          Author: 'Uber Clone Admin System',
+          Subject: `${reportTitle} - Generated on ${this.formatDate(metadata.generatedAt)}`,
+          CreationDate: metadata.generatedAt,
+        }
+      });
+
+      const buffers: Buffer[] = [];
+
+      doc.on('data', (chunk) => buffers.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
+
+      // ===== HEADER =====
+      // Title
+      doc.fontSize(24).font('Helvetica-Bold');
+      doc.text(reportTitle, { align: 'center' });
+      doc.moveDown(2);
+
+      // Metadata
+      doc.fontSize(10).font('Helvetica');
+      doc.text(`Generated: ${this.formatDate(metadata.generatedAt)}`, { align: 'right' });
+      doc.text(`Total Records: ${metadata.totalRecords}`, { align: 'right' });
+      doc.text(`Execution Time: ${metadata.executionTime}ms`, { align: 'right' });
+      doc.moveDown();
+
+      // Period information
+      doc.fontSize(12).font('Helvetica-Bold');
+      doc.text('Report Period:', { underline: true });
+      doc.fontSize(10).font('Helvetica');
+      if (metadata.filters.dateFrom && metadata.filters.dateTo) {
+        doc.text(`From: ${this.formatDate(metadata.filters.dateFrom)}`);
+        doc.text(`To: ${this.formatDate(metadata.filters.dateTo)}`);
+      } else {
+        doc.text(`Period: ${metadata.filters.period || 'Custom'}`);
+      }
+      doc.moveDown(2);
+
+      // ===== SUMMARY SECTION =====
+      if (summary) {
+        doc.fontSize(16).font('Helvetica-Bold');
+        doc.text('EXECUTIVE SUMMARY', { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(11).font('Helvetica');
+
+        // Flatten summary for display
+        const flattenedSummary = this.flattenObject(summary);
+        const summaryEntries = Object.entries(flattenedSummary);
+
+        // Create a table-like structure for summary
+        const summaryTable: Array<{ label: string; value: string }> = [];
+
+        summaryEntries.forEach(([key, value]) => {
+          let formattedValue = value;
+          if (key.toLowerCase().includes('revenue') ||
+              key.toLowerCase().includes('price') ||
+              key.toLowerCase().includes('fee') ||
+              key.toLowerCase().includes('balance')) {
+            formattedValue = this.formatCurrency(value);
+          } else if (key.toLowerCase().includes('rate') ||
+                     key.toLowerCase().includes('percentage')) {
+            formattedValue = this.formatPercentage(value);
+          } else if (key.toLowerCase().includes('date') ||
+                     key.toLowerCase().includes('at')) {
+            formattedValue = this.formatDate(value);
+          } else if (typeof value === 'number') {
+            formattedValue = value.toLocaleString();
+          }
+
+          summaryTable.push({
+            label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+            value: formattedValue?.toString() || ''
+          });
+        });
+
+        // Display summary in two columns
+        const midPoint = Math.ceil(summaryTable.length / 2);
+        const leftColumn = summaryTable.slice(0, midPoint);
+        const rightColumn = summaryTable.slice(midPoint);
+
+        // Calculate positions for two-column layout
+        const pageWidth = doc.page.width - 100; // accounting for margins
+        const leftWidth = pageWidth * 0.45;
+        const rightStart = pageWidth * 0.55;
+
+        leftColumn.forEach((item, index) => {
+          const rightItem = rightColumn[index];
+          const y = doc.y;
+
+          // Left column
+          doc.font('Helvetica-Bold').text(item.label + ':', 50, y, { width: leftWidth, continued: false });
+          doc.font('Helvetica').text(item.value, 50, doc.y, { width: leftWidth });
+
+          // Right column
+          if (rightItem) {
+            doc.font('Helvetica-Bold').text(rightItem.label + ':', rightStart, y, { width: leftWidth, continued: false });
+            doc.font('Helvetica').text(rightItem.value, rightStart, doc.y, { width: leftWidth });
+          }
+        });
+
+        doc.moveDown(2);
+      }
+
+      // ===== DETAILS SECTION =====
+      if (details && details.length > 0) {
+        // Check if we need a new page
+        if (doc.y > doc.page.height - 200) {
+          doc.addPage();
+        }
+
+        doc.fontSize(16).font('Helvetica-Bold');
+        doc.text('DETAILED DATA', { underline: true });
+        doc.moveDown();
+
+        // Limit details to first 50 records for PDF readability
+        const displayDetails = details.slice(0, 50);
+        const showAllRecords = details.length <= 50;
+
+        if (!showAllRecords) {
+          doc.fontSize(10).font('Helvetica-Oblique');
+          doc.text(`Showing first 50 of ${details.length} records`, { align: 'center' });
+          doc.moveDown();
+        }
+
+        if (displayDetails.length > 0) {
+          // Get headers from flattened first item
+          const firstItem = this.flattenObject(displayDetails[0]);
+          const headers = Object.keys(firstItem);
+
+          // Table header
+          doc.fontSize(9).font('Helvetica-Bold');
+          let xPos = 50;
+          const colWidth = (doc.page.width - 100) / headers.length;
+
+          headers.forEach(header => {
+            const displayHeader = header.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            doc.text(displayHeader.substring(0, 15), xPos, doc.y, { width: colWidth, align: 'left' });
+            xPos += colWidth;
+          });
+
+          doc.moveDown(0.5);
+
+          // Table rows
+          doc.fontSize(8).font('Helvetica');
+
+          displayDetails.forEach((item, index) => {
+            // Check if we need a new page
+            if (doc.y > doc.page.height - 50) {
+              doc.addPage();
+              // Re-add headers on new page
+              doc.fontSize(9).font('Helvetica-Bold');
+              xPos = 50;
+              headers.forEach(header => {
+                const displayHeader = header.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                doc.text(displayHeader.substring(0, 15), xPos, doc.y, { width: colWidth, align: 'left' });
+                xPos += colWidth;
+              });
+              doc.moveDown(0.5);
+              doc.fontSize(8).font('Helvetica');
+            }
+
+            xPos = 50;
+            const flattened = this.flattenObject(item);
+
+            headers.forEach(header => {
+              let value = flattened[header] || '';
+
+              // Format specific columns
+              if (header.toLowerCase().includes('revenue') ||
+                  header.toLowerCase().includes('price') ||
+                  header.toLowerCase().includes('fee') ||
+                  header.toLowerCase().includes('balance') ||
+                  header.toLowerCase().includes('fare')) {
+                value = this.formatCurrency(value);
+              } else if (header.toLowerCase().includes('date') ||
+                         header.toLowerCase().includes('at') ||
+                         header.toLowerCase().includes('created') ||
+                         header.toLowerCase().includes('updated')) {
+                value = this.formatDate(value);
+              } else if (header.toLowerCase().includes('rating')) {
+                value = typeof value === 'number' ? value.toFixed(1) : value;
+              }
+
+              const displayValue = value?.toString().substring(0, 15) || '';
+              doc.text(displayValue, xPos, doc.y, { width: colWidth, align: 'left' });
+              xPos += colWidth;
+            });
+
+            doc.moveDown(0.3);
+          });
+        }
+
+        doc.moveDown(2);
+      }
+
+      // ===== CHART DATA SUMMARY =====
+      if (chartData && chartData.length > 0) {
+        // Check if we need a new page
+        if (doc.y > doc.page.height - 200) {
+          doc.addPage();
+        }
+
+        doc.fontSize(16).font('Helvetica-Bold');
+        doc.text('CHART DATA SUMMARY', { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(11).font('Helvetica');
+
+        chartData.forEach((chart, index) => {
+          doc.font('Helvetica-Bold').text(`${index + 1}. ${chart.title || 'Chart Data'}`, { underline: true });
+          doc.moveDown(0.5);
+
+          if (chart.data && Array.isArray(chart.data) && chart.data.length > 0) {
+            const sampleData = chart.data.slice(0, 3); // Show first 3 rows as sample
+
+            sampleData.forEach((item, itemIndex) => {
+              const entries = Object.entries(item);
+              const displayText = entries
+                .slice(0, 3) // Show first 3 columns
+                .map(([key, value]) => {
+                  let formattedValue = value;
+                  if (key.toLowerCase().includes('revenue') ||
+                      key.toLowerCase().includes('price') ||
+                      key.toLowerCase().includes('fee')) {
+                    formattedValue = this.formatCurrency(value);
+                  } else if (key.toLowerCase().includes('date')) {
+                    formattedValue = this.formatDate(value);
+                  }
+                  return `${key}: ${formattedValue}`;
+                })
+                .join(', ');
+
+              doc.font('Helvetica').text(`  Row ${itemIndex + 1}: ${displayText}`);
+            });
+
+            if (chart.data.length > 3) {
+              doc.font('Helvetica-Oblique').text(`  ... and ${chart.data.length - 3} more rows`);
+            }
+          } else {
+            doc.font('Helvetica').text('  No data available');
+          }
+
+          doc.moveDown();
+        });
+      }
+
+      // ===== FOOTER =====
+      const totalPages = doc.bufferedPageRange().count;
+      for (let i = 0; i < totalPages; i++) {
+        doc.switchToPage(i);
+        doc.fontSize(8).font('Helvetica-Oblique');
+        doc.text(
+          `Generated by Uber Clone Admin System - Page ${i + 1} of ${totalPages}`,
+          50,
+          doc.page.height - 30,
+          { align: 'center', width: doc.page.width - 100 }
+        );
+      }
+
+      // Finalize the PDF
+      doc.end();
+    });
   }
 
   // Analytics Methods
