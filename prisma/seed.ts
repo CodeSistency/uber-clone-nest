@@ -444,60 +444,187 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 5: RIDES
+  // SECTION 5: RIDES - WITH FINANCIAL REPORTS DATA
   // =========================================
-  console.log('🚕 Seeding rides...');
+  console.log('🚕 Seeding rides with financial data...');
+
+  // Helper function to get date in the past
+  const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
   const rides = await Promise.all([
+    // Recent completed rides for last 30 days
     prisma.ride.create({
       data: {
-        originAddress: '123 Main St, New York, NY 10001',
-        destinationAddress: '456 Broadway, New York, NY 10002',
-        originLatitude: 40.7505,
-        originLongitude: -73.9934,
-        destinationLatitude: 40.7589,
-        destinationLongitude: -73.9851,
+        originAddress: 'Centro de Caracas, Venezuela',
+        destinationAddress: 'Altamira, Caracas, Venezuela',
+        originLatitude: 10.5061,
+        originLongitude: -66.9146,
+        destinationLatitude: 10.5000,
+        destinationLongitude: -66.8500,
         rideTime: 15,
-        farePrice: 12.5,
+        farePrice: 150.00, // 150 VES
         paymentStatus: 'COMPLETED' as any,
         driverId: drivers[0].id,
         userId: users[0].id,
-        tierId: rideTiers[0].id,
-        vehicleId: vehicles[0].id, // Toyota Camry
-        requestedVehicleTypeId: vehicleTypes[0].id, // Solicitó carro
+        tierId: rideTiers[0].id, // Economy
+        vehicleId: vehicles[0].id,
+        requestedVehicleTypeId: vehicleTypes[0].id,
+        createdAt: daysAgo(1), // Yesterday
       },
     }),
     prisma.ride.create({
       data: {
-        originAddress: '789 Park Ave, New York, NY 10003',
-        destinationAddress: '321 5th Ave, New York, NY 10004',
-        originLatitude: 40.7829,
-        originLongitude: -73.9654,
-        destinationLatitude: 40.7505,
-        destinationLongitude: -73.9934,
-        rideTime: 22,
-        farePrice: 18.75,
+        originAddress: 'La Castellana, Caracas, Venezuela',
+        destinationAddress: 'Centro de Caracas, Venezuela',
+        originLatitude: 10.4806,
+        originLongitude: -66.9036,
+        destinationLatitude: 10.5061,
+        destinationLongitude: -66.9146,
+        rideTime: 12,
+        farePrice: 120.00,
         paymentStatus: 'COMPLETED' as any,
         driverId: drivers[1].id,
         userId: users[1].id,
-        tierId: rideTiers[1].id,
-        vehicleId: vehicles[1].id, // Honda Civic
-        requestedVehicleTypeId: vehicleTypes[1].id, // Solicitó moto
+        tierId: rideTiers[1].id, // Comfort
+        vehicleId: vehicles[1].id,
+        requestedVehicleTypeId: vehicleTypes[0].id,
+        createdAt: daysAgo(2),
       },
     }),
     prisma.ride.create({
       data: {
-        originAddress: '555 Madison Ave, New York, NY 10005',
-        destinationAddress: '999 Wall St, New York, NY 10006',
-        originLatitude: 40.7589,
-        originLongitude: -73.9851,
-        destinationLatitude: 40.7074,
-        destinationLongitude: -74.0113,
-        rideTime: 30,
-        farePrice: 25.0,
-        paymentStatus: 'PENDING' as any,
+        originAddress: 'Chacao, Caracas, Venezuela',
+        destinationAddress: 'Las Mercedes, Caracas, Venezuela',
+        originLatitude: 10.4969,
+        originLongitude: -66.8531,
+        destinationLatitude: 10.4733,
+        destinationLongitude: -66.8667,
+        rideTime: 8,
+        farePrice: 180.00,
+        paymentStatus: 'COMPLETED' as any,
+        driverId: drivers[0].id,
+        userId: users[2].id,
+        tierId: rideTiers[2].id, // Premium
+        vehicleId: vehicles[0].id,
+        requestedVehicleTypeId: vehicleTypes[0].id,
+        createdAt: daysAgo(3),
+      },
+    }),
+    // More rides for the last week
+    prisma.ride.create({
+      data: {
+        originAddress: 'Plaza Venezuela, Caracas',
+        destinationAddress: 'El Rosal, Caracas',
+        originLatitude: 10.4998,
+        originLongitude: -66.9036,
+        destinationLatitude: 10.4969,
+        destinationLongitude: -66.8531,
+        rideTime: 10,
+        farePrice: 95.00,
+        paymentStatus: 'COMPLETED' as any,
+        driverId: drivers[2].id,
+        userId: users[0].id,
+        tierId: rideTiers[0].id,
+        vehicleId: vehicles[2].id,
+        requestedVehicleTypeId: vehicleTypes[1].id, // Motorcycle
+        createdAt: daysAgo(5),
+      },
+    }),
+    prisma.ride.create({
+      data: {
+        originAddress: 'Sabana Grande, Caracas',
+        destinationAddress: 'Centro de Caracas',
+        originLatitude: 10.5033,
+        originLongitude: -66.9167,
+        destinationLatitude: 10.5061,
+        destinationLongitude: -66.9146,
+        rideTime: 18,
+        farePrice: 200.00,
+        paymentStatus: 'COMPLETED' as any,
+        driverId: drivers[0].id,
+        userId: users[1].id,
+        tierId: rideTiers[1].id,
+        vehicleId: vehicles[0].id,
+        requestedVehicleTypeId: vehicleTypes[0].id,
+        createdAt: daysAgo(7),
+      },
+    }),
+    // Rides from last month (older data)
+    prisma.ride.create({
+      data: {
+        originAddress: 'El Hatillo, Caracas',
+        destinationAddress: 'Colinas de Bello Monte',
+        originLatitude: 10.4250,
+        originLongitude: -66.8167,
+        destinationLatitude: 10.4833,
+        destinationLongitude: -66.8667,
+        rideTime: 25,
+        farePrice: 250.00,
+        paymentStatus: 'COMPLETED' as any,
+        driverId: drivers[1].id,
         userId: users[2].id,
         tierId: rideTiers[2].id,
-        scheduledFor: new Date(Date.now() + 3600000), // 1 hour from now
+        vehicleId: vehicles[1].id,
+        requestedVehicleTypeId: vehicleTypes[0].id,
+        createdAt: daysAgo(15),
+      },
+    }),
+    prisma.ride.create({
+      data: {
+        originAddress: 'Los Palos Grandes, Caracas',
+        destinationAddress: 'La Trinidad, Caracas',
+        originLatitude: 10.5000,
+        originLongitude: -66.8833,
+        destinationLatitude: 10.4333,
+        destinationLongitude: -66.8667,
+        rideTime: 20,
+        farePrice: 175.00,
+        paymentStatus: 'COMPLETED' as any,
+        driverId: drivers[2].id,
+        userId: users[0].id,
+        tierId: rideTiers[1].id,
+        vehicleId: vehicles[2].id,
+        requestedVehicleTypeId: vehicleTypes[1].id,
+        createdAt: daysAgo(20),
+      },
+    }),
+    // Some pending and failed rides
+    prisma.ride.create({
+      data: {
+        originAddress: 'San Bernardino, Caracas',
+        destinationAddress: 'Parque Nacional El Ávila',
+        originLatitude: 10.5167,
+        originLongitude: -66.9167,
+        destinationLatitude: 10.5333,
+        destinationLongitude: -66.8500,
+        rideTime: 35,
+        farePrice: 300.00,
+        paymentStatus: 'PENDING' as any,
+        driverId: drivers[0].id,
+        userId: users[1].id,
+        tierId: rideTiers[2].id,
+        vehicleId: vehicles[0].id,
+        requestedVehicleTypeId: vehicleTypes[0].id,
+        createdAt: daysAgo(1),
+      },
+    }),
+    prisma.ride.create({
+      data: {
+        originAddress: 'Catia, Caracas',
+        destinationAddress: 'Centro de Caracas',
+        originLatitude: 10.4833,
+        originLongitude: -66.9333,
+        destinationLatitude: 10.5061,
+        destinationLongitude: -66.9146,
+        rideTime: 14,
+        farePrice: 110.00,
+        paymentStatus: 'FAILED' as any,
+        driverId: drivers[1].id,
+        userId: users[2].id,
+        tierId: rideTiers[0].id,
+        vehicleId: vehicles[1].id,
+        requestedVehicleTypeId: vehicleTypes[0].id,
+        createdAt: daysAgo(3),
       },
     }),
   ]);
@@ -771,40 +898,101 @@ async function main() {
   ]);
 
   // =========================================
-  // SECTION 16: WALLET TRANSACTIONS
+  // SECTION 16: WALLET TRANSACTIONS - EXPANDED FOR REPORTS
   // =========================================
-  console.log('💸 Seeding wallet transactions...');
+  console.log('💸 Seeding wallet transactions for financial reports...');
   await Promise.all([
+    // Wallet 0 transactions (John Doe)
     prisma.walletTransaction.create({
       data: {
         walletId: wallets[0].id,
-        amount: 50.0,
+        amount: 500.0,
         transactionType: 'credit',
         description: 'Initial deposit',
+        createdAt: daysAgo(30),
       },
     }),
     prisma.walletTransaction.create({
       data: {
         walletId: wallets[0].id,
-        amount: -12.5,
+        amount: -150.0,
         transactionType: 'debit',
-        description: 'Ride payment',
+        description: 'Ride payment - Centro to Altamira',
+        createdAt: daysAgo(1),
       },
     }),
     prisma.walletTransaction.create({
       data: {
-        walletId: wallets[1].id,
-        amount: 100.0,
+        walletId: wallets[0].id,
+        amount: 200.0,
         transactionType: 'credit',
         description: 'Referral bonus',
+        createdAt: daysAgo(15),
+      },
+    }),
+    prisma.walletTransaction.create({
+      data: {
+        walletId: wallets[0].id,
+        amount: -95.0,
+        transactionType: 'debit',
+        description: 'Ride payment - Plaza Venezuela to El Rosal',
+        createdAt: daysAgo(5),
+      },
+    }),
+    // Wallet 1 transactions (Jane Smith)
+    prisma.walletTransaction.create({
+      data: {
+        walletId: wallets[1].id,
+        amount: 300.0,
+        transactionType: 'credit',
+        description: 'Bank transfer',
+        createdAt: daysAgo(25),
       },
     }),
     prisma.walletTransaction.create({
       data: {
         walletId: wallets[1].id,
-        amount: -18.75,
+        amount: -120.0,
         transactionType: 'debit',
-        description: 'Ride payment',
+        description: 'Ride payment - La Castellana to Centro',
+        createdAt: daysAgo(2),
+      },
+    }),
+    prisma.walletTransaction.create({
+      data: {
+        walletId: wallets[1].id,
+        amount: -200.0,
+        transactionType: 'debit',
+        description: 'Ride payment - Sabana Grande to Centro',
+        createdAt: daysAgo(7),
+      },
+    }),
+    // Wallet 2 transactions (Mike Johnson)
+    prisma.walletTransaction.create({
+      data: {
+        walletId: wallets[2].id,
+        amount: 1000.0,
+        transactionType: 'credit',
+        description: 'Initial deposit',
+        createdAt: daysAgo(20),
+      },
+    }),
+    prisma.walletTransaction.create({
+      data: {
+        walletId: wallets[2].id,
+        amount: -180.0,
+        transactionType: 'debit',
+        description: 'Ride payment - Chacao to Las Mercedes',
+        createdAt: daysAgo(3),
+      },
+    }),
+    prisma.walletTransaction.create({
+      data: {
+        walletId: wallets[2].id,
+        amount: -250.0,
+        transactionType: 'debit',
+        description: 'Ride payment - El Hatillo to Colinas',
+        createdAt: daysAgo(15),
       },
     }),
   ]);
