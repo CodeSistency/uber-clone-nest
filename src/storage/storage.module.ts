@@ -5,7 +5,7 @@ import { StorageController } from './storage.controller';
 /**
  * Módulo de Storage
  * Proporciona funcionalidades para la gestión de archivos con MinIO/S3
- * 
+ *
  * Características:
  * - Subida de archivos con validaciones
  * - Gestión automática de buckets

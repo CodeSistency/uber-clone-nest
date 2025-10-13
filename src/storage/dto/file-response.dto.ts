@@ -30,7 +30,8 @@ export class FileResponseDto {
 
   @ApiProperty({
     description: 'URL pública del archivo (opcional)',
-    example: 'http://localhost:9000/uber-clone-uploads/uploads/2024/10/10/1739123456789-profile-picture.jpg',
+    example:
+      'http://localhost:9000/uber-clone-uploads/uploads/2024/10/10/1739123456789-profile-picture.jpg',
     required: false,
   })
   url?: string;

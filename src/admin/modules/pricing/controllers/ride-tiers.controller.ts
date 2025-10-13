@@ -194,9 +194,7 @@ export class RideTiersController {
   async validatePricing(
     @Body() validationDto: PricingValidationDto,
   ): Promise<PricingValidationResultDto> {
-    return this.rideTiersService.validatePricingConfiguration(
-      validationDto,
-    );
+    return this.rideTiersService.validatePricingConfiguration(validationDto);
   }
 
   @Post('create-standard-tiers')
@@ -235,7 +233,8 @@ export class RideTiersController {
   @RequirePermissions(AdminPermission.PRICING_READ)
   @ApiOperation({
     summary: 'Obtener tipos de vehículo',
-    description: 'Obtiene la lista de tipos de vehículo disponibles para asociar con tiers',
+    description:
+      'Obtiene la lista de tipos de vehículo disponibles para asociar con tiers',
   })
   @ApiResponse({
     status: 201,

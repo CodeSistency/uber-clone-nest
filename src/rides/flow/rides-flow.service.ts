@@ -208,8 +208,12 @@ export class RidesFlowService {
     } as any);
 
     // Log del cálculo de precio para debugging
-    this.logger.log(`💰 Ride ${ride.rideId} created with calculated price: ${pricingResult.totalFare}`);
-    this.logger.log(`📍 Distance: ${distanceKm.toFixed(2)}km (${distanceMiles.toFixed(2)} miles)`);
+    this.logger.log(
+      `💰 Ride ${ride.rideId} created with calculated price: ${pricingResult.totalFare}`,
+    );
+    this.logger.log(
+      `📍 Distance: ${distanceKm.toFixed(2)}km (${distanceMiles.toFixed(2)} miles)`,
+    );
 
     // Note: Driver notifications moved to after payment confirmation
     // This ensures users pay before drivers are notified
@@ -1755,8 +1759,8 @@ export class RidesFlowService {
     }
 
     // Calcular rating promedio de los últimos 30 días
-    const recentRatings = ([]).flatMap((ride) =>
-      ([]).map((r: any) => r.ratingValue),
+    const recentRatings = [].flatMap((ride) =>
+      [].map((r: any) => r.ratingValue),
     );
     const avgRating =
       recentRatings.length > 0

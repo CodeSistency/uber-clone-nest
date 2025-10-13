@@ -1,14 +1,22 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { S3Client, CreateBucketCommand, HeadBucketCommand, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  CreateBucketCommand,
+  HeadBucketCommand,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { AppConfigService } from '../config/config.service';
-import { 
-  FileUploadResult, 
-  FileMetadata, 
-  UploadOptions, 
-  ListFilesOptions, 
+import {
+  FileUploadResult,
+  FileMetadata,
+  UploadOptions,
+  ListFilesOptions,
   ListFilesResult,
   StorageError,
-  BucketPolicy
+  BucketPolicy,
 } from './interfaces/storage.interface';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -26,7 +34,7 @@ export class StorageService implements OnModuleInit {
 
   constructor(private readonly configService: AppConfigService) {
     const config = this.configService.minio;
-    
+
     this.s3Client = new S3Client({
       endpoint: `http${config.useSSL ? 's' : ''}://${config.endpoint}:${config.port}`,
       region: config.region,
@@ -49,7 +57,9 @@ export class StorageService implements OnModuleInit {
   async onModuleInit() {
     try {
       await this.ensureBucketExists();
-      this.logger.log(`Storage service initialized with bucket: ${this.bucketName}`);
+      this.logger.log(
+        `Storage service initialized with bucket: ${this.bucketName}`,
+      );
     } catch (error) {
       this.logger.error('Failed to initialize storage service:', error);
       throw error;
@@ -62,10 +72,15 @@ export class StorageService implements OnModuleInit {
   private async ensureBucketExists(): Promise<void> {
     try {
       // Verificar si el bucket existe
-      await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucketName }));
+      await this.s3Client.send(
+        new HeadBucketCommand({ Bucket: this.bucketName }),
+      );
       this.logger.log(`Bucket ${this.bucketName} already exists`);
     } catch (error) {
-      if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      if (
+        error.name === 'NotFound' ||
+        error.$metadata?.httpStatusCode === 404
+      ) {
         // El bucket no existe, crearlo
         await this.createBucket();
         await this.setBucketPublicPolicy();
@@ -82,9 +97,11 @@ export class StorageService implements OnModuleInit {
    */
   private async createBucket(): Promise<void> {
     try {
-      await this.s3Client.send(new CreateBucketCommand({
-        Bucket: this.bucketName,
-      }));
+      await this.s3Client.send(
+        new CreateBucketCommand({
+          Bucket: this.bucketName,
+        }),
+      );
     } catch (error) {
       this.logger.error(`Error creating bucket: ${error.message}`);
       throw this.createStorageError('BUCKET_CREATION_FAILED', error.message);
@@ -110,7 +127,9 @@ export class StorageService implements OnModuleInit {
 
       // Nota: La configuración de políticas de bucket requiere permisos adicionales
       // En un entorno de producción, esto debería manejarse por separado
-      this.logger.log(`Bucket ${this.bucketName} configured for public read access`);
+      this.logger.log(
+        `Bucket ${this.bucketName} configured for public read access`,
+      );
     } catch (error) {
       this.logger.warn(`Could not set bucket policy: ${error.message}`);
       // No lanzamos error aquí ya que el bucket puede funcionar sin política pública
@@ -120,12 +139,15 @@ export class StorageService implements OnModuleInit {
   /**
    * Sube un archivo al bucket
    */
-  async uploadFile(file: Express.Multer.File, options: UploadOptions = {}): Promise<FileUploadResult> {
+  async uploadFile(
+    file: Express.Multer.File,
+    options: UploadOptions = {},
+  ): Promise<FileUploadResult> {
     try {
       const { path = 'uploads', generateUniqueName = true } = options;
-      
+
       // Generar nombre único si es necesario
-      const fileName = generateUniqueName 
+      const fileName = generateUniqueName
         ? `${Date.now()}-${uuidv4()}-${this.sanitizeFileName(file.originalname)}`
         : this.sanitizeFileName(file.originalname);
 
@@ -133,24 +155,35 @@ export class StorageService implements OnModuleInit {
 
       // Validar tamaño del archivo si se especifica
       if (options.maxFileSize && file.size > options.maxFileSize) {
-        throw this.createStorageError('FILE_TOO_LARGE', `File size ${file.size} exceeds maximum allowed size ${options.maxFileSize}`);
+        throw this.createStorageError(
+          'FILE_TOO_LARGE',
+          `File size ${file.size} exceeds maximum allowed size ${options.maxFileSize}`,
+        );
       }
 
       // Validar tipo MIME si se especifica
-      if (options.allowedMimeTypes && !options.allowedMimeTypes.includes(file.mimetype)) {
-        throw this.createStorageError('INVALID_FILE_TYPE', `File type ${file.mimetype} is not allowed`);
+      if (
+        options.allowedMimeTypes &&
+        !options.allowedMimeTypes.includes(file.mimetype)
+      ) {
+        throw this.createStorageError(
+          'INVALID_FILE_TYPE',
+          `File type ${file.mimetype} is not allowed`,
+        );
       }
 
-      await this.s3Client.send(new PutObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        Metadata: {
-          originalName: file.originalname,
-          uploadedAt: new Date().toISOString(),
-        },
-      }));
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+          Metadata: {
+            originalName: file.originalname,
+            uploadedAt: new Date().toISOString(),
+          },
+        }),
+      );
 
       this.logger.log(`File uploaded successfully: ${key}`);
 
@@ -185,10 +218,12 @@ export class StorageService implements OnModuleInit {
    */
   async deleteFile(key: string): Promise<void> {
     try {
-      await this.s3Client.send(new DeleteObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-      }));
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        }),
+      );
 
       this.logger.log(`File deleted successfully: ${key}`);
     } catch (error) {
@@ -213,7 +248,7 @@ export class StorageService implements OnModuleInit {
 
       const response = await this.s3Client.send(command);
 
-      const files: FileMetadata[] = (response.Contents || []).map(obj => ({
+      const files: FileMetadata[] = (response.Contents || []).map((obj) => ({
         key: obj.Key!,
         size: obj.Size || 0,
         lastModified: obj.LastModified || new Date(),
@@ -252,7 +287,10 @@ export class StorageService implements OnModuleInit {
         mimetype: response.ContentType,
       };
     } catch (error) {
-      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      if (
+        error.name === 'NoSuchKey' ||
+        error.$metadata?.httpStatusCode === 404
+      ) {
         return null;
       }
       this.logger.error(`Error getting file metadata: ${error.message}`);

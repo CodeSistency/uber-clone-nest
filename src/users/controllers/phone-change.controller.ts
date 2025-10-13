@@ -19,7 +19,11 @@ import { GetUser } from '../../auth/decorators/get-user.decorator';
 import { UsersService } from '../users.service';
 import { VerificationCodesService } from '../services/verification-codes.service';
 import { SMSVerificationService } from '../services/sms-verification.service';
-import { RequestPhoneChangeDto, VerifyPhoneChangeDto, CancelPhoneChangeDto } from '../dto/phone-change.dto';
+import {
+  RequestPhoneChangeDto,
+  VerifyPhoneChangeDto,
+  CancelPhoneChangeDto,
+} from '../dto/phone-change.dto';
 import { VerificationType } from '../interfaces/verification.interface';
 
 @ApiTags('users')
@@ -75,8 +79,15 @@ export class PhoneChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Código de verificación enviado por SMS' },
-        expiresAt: { type: 'string', format: 'date-time', example: '2024-01-15T10:45:00.000Z' },
+        message: {
+          type: 'string',
+          example: 'Código de verificación enviado por SMS',
+        },
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:45:00.000Z',
+        },
       },
     },
   })
@@ -87,7 +98,10 @@ export class PhoneChangeController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'El teléfono ya está en uso por otro usuario' },
+        message: {
+          type: 'string',
+          example: 'El teléfono ya está en uso por otro usuario',
+        },
         error: { type: 'string', example: 'Bad Request' },
       },
     },
@@ -111,7 +125,10 @@ export class PhoneChangeController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 429 },
-        message: { type: 'string', example: 'Demasiadas solicitudes. Intenta más tarde' },
+        message: {
+          type: 'string',
+          example: 'Demasiadas solicitudes. Intenta más tarde',
+        },
         error: { type: 'string', example: 'Too Many Requests' },
       },
     },
@@ -123,7 +140,10 @@ export class PhoneChangeController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 503 },
-        message: { type: 'string', example: 'Servicio SMS temporalmente no disponible' },
+        message: {
+          type: 'string',
+          example: 'Servicio SMS temporalmente no disponible',
+        },
         error: { type: 'string', example: 'Service Unavailable' },
       },
     },
@@ -135,7 +155,9 @@ export class PhoneChangeController {
     try {
       const { newPhone } = requestPhoneChangeDto;
 
-      this.logger.log(`Phone change request for user ${user.id}, new phone: ${newPhone}`);
+      this.logger.log(
+        `Phone change request for user ${user.id}, new phone: ${newPhone}`,
+      );
 
       // 1. Verificar que el servicio SMS esté disponible
       if (!this.smsVerificationService.isServiceAvailable()) {
@@ -146,7 +168,8 @@ export class PhoneChangeController {
       }
 
       // 2. Validar formato del teléfono
-      const isValidPhone = await this.smsVerificationService.validatePhoneNumber(newPhone);
+      const isValidPhone =
+        await this.smsVerificationService.validatePhoneNumber(newPhone);
       if (!isValidPhone) {
         throw new HttpException(
           'Formato de teléfono inválido',
@@ -176,11 +199,12 @@ export class PhoneChangeController {
       }
 
       // 5. Crear código de verificación
-      const verificationCode = await this.verificationCodesService.createVerificationCode(
-        user.id,
-        VerificationType.PHONE_CHANGE,
-        newPhone,
-      );
+      const verificationCode =
+        await this.verificationCodesService.createVerificationCode(
+          user.id,
+          VerificationType.PHONE_CHANGE,
+          newPhone,
+        );
 
       // 6. Enviar código por SMS
       await this.smsVerificationService.sendVerificationCode({
@@ -189,7 +213,9 @@ export class PhoneChangeController {
         userName: user.name,
       });
 
-      this.logger.log(`Phone change code sent to ${newPhone} for user ${user.id}`);
+      this.logger.log(
+        `Phone change code sent to ${newPhone} for user ${user.id}`,
+      );
 
       return {
         success: true,
@@ -197,11 +223,17 @@ export class PhoneChangeController {
         expiresAt: verificationCode.expiresAt,
       };
     } catch (error) {
-      this.logger.error(`Phone change request failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Phone change request failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -244,7 +276,10 @@ export class PhoneChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Teléfono actualizado exitosamente' },
+        message: {
+          type: 'string',
+          example: 'Teléfono actualizado exitosamente',
+        },
         user: {
           type: 'object',
           properties: {
@@ -276,7 +311,9 @@ export class PhoneChangeController {
     try {
       const { newPhone, code } = verifyPhoneChangeDto;
 
-      this.logger.log(`Phone change verification for user ${user.id}, new phone: ${newPhone}`);
+      this.logger.log(
+        `Phone change verification for user ${user.id}, new phone: ${newPhone}`,
+      );
 
       // 1. Verificar código
       const verificationResult = await this.verificationCodesService.verifyCode(
@@ -286,7 +323,10 @@ export class PhoneChangeController {
       );
 
       if (!verificationResult.success) {
-        throw new HttpException(verificationResult.message, HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          verificationResult.message,
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // 2. Actualizar teléfono del usuario
@@ -301,7 +341,9 @@ export class PhoneChangeController {
         user.name,
       );
 
-      this.logger.log(`Phone changed successfully for user ${user.id} to ${newPhone}`);
+      this.logger.log(
+        `Phone changed successfully for user ${user.id} to ${newPhone}`,
+      );
 
       return {
         success: true,
@@ -314,11 +356,17 @@ export class PhoneChangeController {
         },
       };
     } catch (error) {
-      this.logger.error(`Phone change verification failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Phone change verification failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -357,7 +405,10 @@ export class PhoneChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Solicitud de cambio de teléfono cancelada' },
+        message: {
+          type: 'string',
+          example: 'Solicitud de cambio de teléfono cancelada',
+        },
       },
     },
   })
@@ -369,7 +420,10 @@ export class PhoneChangeController {
       const { confirm } = cancelPhoneChangeDto;
 
       if (!confirm) {
-        throw new HttpException('Confirmación requerida para cancelar', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Confirmación requerida para cancelar',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       this.logger.log(`Cancelling phone change for user ${user.id}`);
@@ -387,11 +441,17 @@ export class PhoneChangeController {
         message: 'Solicitud de cambio de teléfono cancelada',
       };
     } catch (error) {
-      this.logger.error(`Phone change cancellation failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Phone change cancellation failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

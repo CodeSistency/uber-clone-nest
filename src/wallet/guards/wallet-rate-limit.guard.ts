@@ -1,4 +1,11 @@
-import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus, SetMetadata } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  HttpException,
+  HttpStatus,
+  SetMetadata,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { WalletRateLimitService } from '../services/wallet-rate-limit.service';
 
@@ -28,7 +35,10 @@ export class WalletRateLimitGuard implements CanActivate {
     const ipAddress = request.ip || request.connection.remoteAddress;
 
     if (!user?.id) {
-      throw new HttpException('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Usuario no autenticado',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
@@ -54,14 +64,17 @@ export class WalletRateLimitGuard implements CanActivate {
       const response = context.switchToHttp().getResponse();
       response.setHeader('X-RateLimit-Limit', this.getMaxAttempts(operation));
       response.setHeader('X-RateLimit-Remaining', result.remaining);
-      response.setHeader('X-RateLimit-Reset', Math.ceil(result.resetTime.getTime() / 1000));
+      response.setHeader(
+        'X-RateLimit-Reset',
+        Math.ceil(result.resetTime.getTime() / 1000),
+      );
 
       return true;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
-      
+
       // Log error but don't block the request
       console.error('Error en rate limiting:', error);
       return true;

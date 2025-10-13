@@ -317,7 +317,13 @@ export class TemporalPricingService {
 
   async evaluateSpecificRules(
     ruleIds: number[],
-    context: { dateTime: string; countryId?: number; stateId?: number; cityId?: number; zoneId?: number }
+    context: {
+      dateTime: string;
+      countryId?: number;
+      stateId?: number;
+      cityId?: number;
+      zoneId?: number;
+    },
   ) {
     const { dateTime, countryId, stateId, cityId, zoneId } = context;
 
@@ -716,7 +722,9 @@ export class TemporalPricingService {
     });
 
     if (!rule) {
-      throw new NotFoundException(`Temporal pricing rule with ID ${id} not found`);
+      throw new NotFoundException(
+        `Temporal pricing rule with ID ${id} not found`,
+      );
     }
 
     const updatedRule = await this.prisma.temporalPricingRule.update({

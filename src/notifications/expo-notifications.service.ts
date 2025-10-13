@@ -443,7 +443,7 @@ export class ExpoNotificationsService {
 
     // Create Expo push messages
     const messages: ExpoPushMessage[] = validTokens.map((token) => ({
-      to: token as ExpoPushToken,
+      to: token,
       title: payload.title,
       body: payload.message,
       data: payload.data || {},

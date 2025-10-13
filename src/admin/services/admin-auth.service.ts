@@ -72,8 +72,6 @@ export class AdminAuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    
-
     // Generate tokens
     const permissions =
       (user.admin.permissions as AdminPermission[]) ||
@@ -96,7 +94,7 @@ export class AdminAuthService {
         lastLogin: new Date(),
         refreshToken: refreshToken,
         admin: {
-          update: { 
+          update: {
             lastLogin: new Date(),
           },
         },
@@ -185,14 +183,21 @@ export class AdminAuthService {
       });
 
       if (!storedUser || !storedUser.isActive || !storedUser.admin) {
-        this.logger.warn(`Refresh token validation failed: user not found or inactive`);
+        this.logger.warn(
+          `Refresh token validation failed: user not found or inactive`,
+        );
         throw new UnauthorizedException('Token inválido');
       }
 
       // Compare provided refresh token with stored one
-      if (!storedUser.refreshToken || storedUser.refreshToken !== refreshToken) {
+      if (
+        !storedUser.refreshToken ||
+        storedUser.refreshToken !== refreshToken
+      ) {
         this.logger.warn(`Refresh token mismatch for user: ${payload.sub}`);
-        throw new UnauthorizedException('Token de refresco inválido o expirado');
+        throw new UnauthorizedException(
+          'Token de refresco inválido o expirado',
+        );
       }
 
       const user = await this.validateAdmin(payload);
@@ -224,7 +229,9 @@ export class AdminAuthService {
       });
 
       // Log successful token refresh
-      this.logger.log(`Admin token refresh successful: ${user.email} (${user.role})`);
+      this.logger.log(
+        `Admin token refresh successful: ${user.email} (${user.role})`,
+      );
 
       return {
         access_token: newAccessToken,

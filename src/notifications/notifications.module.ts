@@ -20,6 +20,12 @@ import { TwilioService } from '../services/twilio.service';
     FirebaseService,
     TwilioService,
   ],
-  exports: [NotificationsService, NotificationManagerService, ExpoNotificationsService, FirebaseService, TwilioService],
+  exports: [
+    NotificationsService,
+    NotificationManagerService,
+    ExpoNotificationsService,
+    FirebaseService,
+    TwilioService,
+  ],
 })
 export class NotificationsModule {}

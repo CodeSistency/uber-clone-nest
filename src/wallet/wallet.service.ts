@@ -1,9 +1,9 @@
-import { 
-  Injectable, 
-  Logger, 
-  NotFoundException, 
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
   BadRequestException,
-  ForbiddenException 
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Wallet, WalletTransaction } from '@prisma/client';
@@ -54,7 +54,9 @@ export class WalletService {
     // Log access
     await this.walletAudit.logWalletAccess(userId, 'wallet_accessed');
 
-    this.logger.log(`✅ Wallet obtenida: Usuario ${userId}, Balance: ${wallet.balance}`);
+    this.logger.log(
+      `✅ Wallet obtenida: Usuario ${userId}, Balance: ${wallet.balance}`,
+    );
     return { wallet, transactions };
   }
 
@@ -92,7 +94,7 @@ export class WalletService {
       type?: 'credit' | 'debit' | 'all';
       startDate?: string;
       endDate?: string;
-    }
+    },
   ): Promise<{
     transactions: WalletTransaction[];
     pagination: {
@@ -102,7 +104,9 @@ export class WalletService {
       totalPages: number;
     };
   }> {
-    this.logger.log(`🔍 Obteniendo historial para usuario ${userId}, página ${options.page}`);
+    this.logger.log(
+      `🔍 Obteniendo historial para usuario ${userId}, página ${options.page}`,
+    );
 
     const { page, limit, type, startDate, endDate } = options;
     const skip = (page - 1) * limit;
@@ -149,7 +153,10 @@ export class WalletService {
       this.prisma.walletTransaction.count({ where }),
     ]);
 
-    await this.walletAudit.logWalletAccess(userId, 'transaction_history_accessed');
+    await this.walletAudit.logWalletAccess(
+      userId,
+      'transaction_history_accessed',
+    );
 
     return {
       transactions,
@@ -163,9 +170,9 @@ export class WalletService {
   }
 
   async addFunds(
-    addFundsDto: AddFundsDto, 
-    userId: number, 
-    ipAddress?: string
+    addFundsDto: AddFundsDto,
+    userId: number,
+    ipAddress?: string,
   ): Promise<{
     success: boolean;
     wallet: Wallet;
@@ -218,7 +225,11 @@ export class WalletService {
       });
 
       // Log audit
-      await this.walletAudit.logTransaction(result.transaction, userId, ipAddress);
+      await this.walletAudit.logTransaction(
+        result.transaction,
+        userId,
+        ipAddress,
+      );
 
       // Send notification
       await this.walletNotification.notifyTransactionSuccess(
@@ -226,10 +237,12 @@ export class WalletService {
         amount,
         Number(result.wallet.balance),
         result.transaction.id.toString(),
-        description
+        description,
       );
 
-      this.logger.log(`✅ Fondos agregados exitosamente: Usuario ${userId}, Nuevo balance: ${result.wallet.balance}`);
+      this.logger.log(
+        `✅ Fondos agregados exitosamente: Usuario ${userId}, Nuevo balance: ${result.wallet.balance}`,
+      );
 
       return {
         success: true,
@@ -237,7 +250,9 @@ export class WalletService {
         transaction: result.transaction,
       };
     } catch (error) {
-      this.logger.error(`❌ Error agregando fondos: Usuario ${userId}, Error: ${error.message}`);
+      this.logger.error(
+        `❌ Error agregando fondos: Usuario ${userId}, Error: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -246,9 +261,11 @@ export class WalletService {
     userId: number,
     amount: number,
     description: string,
-    ipAddress?: string
+    ipAddress?: string,
   ): Promise<Wallet> {
-    this.logger.log(`💸 Descontando fondos: Usuario ${userId}, Monto: ${amount}`);
+    this.logger.log(
+      `💸 Descontando fondos: Usuario ${userId}, Monto: ${amount}`,
+    );
 
     try {
       // Validate operation
@@ -292,17 +309,21 @@ export class WalletService {
         return updatedWallet;
       });
 
-      this.logger.log(`✅ Fondos descontados exitosamente: Usuario ${userId}, Nuevo balance: ${result.balance}`);
+      this.logger.log(
+        `✅ Fondos descontados exitosamente: Usuario ${userId}, Nuevo balance: ${result.balance}`,
+      );
       return result;
     } catch (error) {
-      this.logger.error(`❌ Error descontando fondos: Usuario ${userId}, Error: ${error.message}`);
+      this.logger.error(
+        `❌ Error descontando fondos: Usuario ${userId}, Error: ${error.message}`,
+      );
       throw error;
     }
   }
 
   async transferFunds(
     dto: TransferFundsDto & { fromUserId: number },
-    ipAddress?: string
+    ipAddress?: string,
   ): Promise<{
     success: boolean;
     transactionId: string;
@@ -312,17 +333,21 @@ export class WalletService {
   }> {
     const { fromUserId, toUserEmail, amount, description, referenceType } = dto;
 
-    this.logger.log(`🔄 Transferencia: De ${fromUserId} a ${toUserEmail}, Monto: ${amount}`);
+    this.logger.log(
+      `🔄 Transferencia: De ${fromUserId} a ${toUserEmail}, Monto: ${amount}`,
+    );
 
     try {
       // Find recipient user by email
       const toUser = await this.prisma.user.findUnique({
         where: { email: toUserEmail },
-        select: { id: true, name: true, email: true, isActive: true }
+        select: { id: true, name: true, email: true, isActive: true },
       });
 
       if (!toUser) {
-        throw new NotFoundException(`Usuario con email ${toUserEmail} no encontrado`);
+        throw new NotFoundException(
+          `Usuario con email ${toUserEmail} no encontrado`,
+        );
       }
 
       if (!toUser.isActive) {
@@ -332,7 +357,11 @@ export class WalletService {
       const toUserId = toUser.id;
 
       // Validate transfer
-      await this.walletValidation.validateTransfer(fromUserId, toUserId, amount);
+      await this.walletValidation.validateTransfer(
+        fromUserId,
+        toUserId,
+        amount,
+      );
 
       // Process transfer with transaction
       const result = await this.prisma.$transaction(async (tx) => {
@@ -393,13 +422,21 @@ export class WalletService {
         });
 
         // Log audits
-        await this.walletAudit.logTransaction(debitTransaction, fromUserId, ipAddress);
-        await this.walletAudit.logTransaction(creditTransaction, toUserId, ipAddress);
+        await this.walletAudit.logTransaction(
+          debitTransaction,
+          fromUserId,
+          ipAddress,
+        );
+        await this.walletAudit.logTransaction(
+          creditTransaction,
+          toUserId,
+          ipAddress,
+        );
 
         // Get sender user name for notifications
-        const fromUser = await this.prisma.user.findUnique({ 
-          where: { id: fromUserId }, 
-          select: { name: true } 
+        const fromUser = await this.prisma.user.findUnique({
+          where: { id: fromUserId },
+          select: { name: true },
         });
 
         const transactionId = `TRF-${Date.now()}`;
@@ -411,14 +448,14 @@ export class WalletService {
             amount,
             Number(updatedFromWallet.balance),
             toUser.name,
-            transactionId
+            transactionId,
           ),
           this.walletNotification.notifyTransferReceived(
             toUserId,
             amount,
             Number(updatedToWallet.balance),
             fromUser?.name || 'Usuario',
-            transactionId
+            transactionId,
           ),
         ]);
 
@@ -429,7 +466,9 @@ export class WalletService {
         };
       });
 
-      this.logger.log(`✅ Transferencia exitosa: De ${fromUserId} a ${toUserEmail}`);
+      this.logger.log(
+        `✅ Transferencia exitosa: De ${fromUserId} a ${toUserEmail}`,
+      );
 
       return {
         success: true,
@@ -439,7 +478,9 @@ export class WalletService {
         message: 'Transferencia exitosa',
       };
     } catch (error) {
-      this.logger.error(`❌ Error en transferencia: De ${fromUserId} a ${toUserEmail}, Error: ${error.message}`);
+      this.logger.error(
+        `❌ Error en transferencia: De ${fromUserId} a ${toUserEmail}, Error: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -478,12 +519,17 @@ export class WalletService {
     // Calculate stats
     const totalTransactions = transactions.length;
     const totalCredits = transactions
-      .filter(t => Number(t.amount) > 0)
+      .filter((t) => Number(t.amount) > 0)
       .reduce((sum, t) => sum + Number(t.amount), 0);
-    const totalDebits = Math.abs(transactions
-      .filter(t => Number(t.amount) < 0)
-      .reduce((sum, t) => sum + Number(t.amount), 0));
-    const averageTransaction = totalTransactions > 0 ? (totalCredits + totalDebits) / totalTransactions : 0;
+    const totalDebits = Math.abs(
+      transactions
+        .filter((t) => Number(t.amount) < 0)
+        .reduce((sum, t) => sum + Number(t.amount), 0),
+    );
+    const averageTransaction =
+      totalTransactions > 0
+        ? (totalCredits + totalDebits) / totalTransactions
+        : 0;
 
     // Calculate monthly stats (last 12 months)
     interface MonthlyStat {
@@ -492,26 +538,28 @@ export class WalletService {
       debits: number;
       net: number;
     }
-    
+
     const monthlyStats: MonthlyStat[] = [];
     const now = new Date();
-    
+
     for (let i = 11; i >= 0; i--) {
       const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
-      
-      const monthTransactions = transactions.filter(t => 
-        t.createdAt >= month && t.createdAt < nextMonth
+
+      const monthTransactions = transactions.filter(
+        (t) => t.createdAt >= month && t.createdAt < nextMonth,
       );
-      
+
       const credits = monthTransactions
-        .filter(t => Number(t.amount) > 0)
+        .filter((t) => Number(t.amount) > 0)
         .reduce((sum, t) => sum + Number(t.amount), 0);
-      
-      const debits = Math.abs(monthTransactions
-        .filter(t => Number(t.amount) < 0)
-        .reduce((sum, t) => sum + Number(t.amount), 0));
-      
+
+      const debits = Math.abs(
+        monthTransactions
+          .filter((t) => Number(t.amount) < 0)
+          .reduce((sum, t) => sum + Number(t.amount), 0),
+      );
+
       monthlyStats.push({
         month: month.toISOString().substring(0, 7), // YYYY-MM
         credits,
@@ -539,7 +587,8 @@ export class WalletService {
     remainingToday: number;
   }> {
     const limits = this.walletValidation.getLimits();
-    const usedToday = await this.walletValidation['getDailyTransactionTotal'](userId);
+    const usedToday =
+      await this.walletValidation['getDailyTransactionTotal'](userId);
 
     return {
       ...limits,
@@ -548,25 +597,28 @@ export class WalletService {
     };
   }
 
-  async validateOperation(userId: number, operation: any): Promise<{
+  async validateOperation(
+    userId: number,
+    operation: any,
+  ): Promise<{
     valid: boolean;
     message: string;
     limits: any;
   }> {
     let toUserId = operation.toUserId;
-    
+
     // If operation is transfer and toUserEmail is provided, resolve the user ID
     if (operation.operation === 'transfer' && operation.toUserEmail) {
       const toUser = await this.prisma.user.findUnique({
         where: { email: operation.toUserEmail },
-        select: { id: true, isActive: true }
+        select: { id: true, isActive: true },
       });
 
       if (!toUser) {
         return {
           valid: false,
           message: `Usuario con email ${operation.toUserEmail} no encontrado`,
-          limits: this.walletValidation.getLimits()
+          limits: this.walletValidation.getLimits(),
         };
       }
 
@@ -574,7 +626,7 @@ export class WalletService {
         return {
           valid: false,
           message: 'Usuario destinatario inactivo',
-          limits: this.walletValidation.getLimits()
+          limits: this.walletValidation.getLimits(),
         };
       }
 
@@ -585,7 +637,7 @@ export class WalletService {
       userId,
       operation.operation,
       operation.amount,
-      toUserId
+      toUserId,
     );
   }
 
@@ -602,7 +654,9 @@ export class WalletService {
       | 'payment_refund',
     referenceId: string,
   ): Promise<{ wallet: Wallet; transaction: WalletTransaction }> {
-    this.logger.log(`💸 Procesando reembolso: Usuario ${userId}, Monto: ${amount}, Razón: ${reason}`);
+    this.logger.log(
+      `💸 Procesando reembolso: Usuario ${userId}, Monto: ${amount}, Razón: ${reason}`,
+    );
 
     // Find or create wallet
     let wallet = await this.prisma.wallet.findUnique({
@@ -651,19 +705,26 @@ export class WalletService {
       amount,
       Number(result.wallet.balance),
       reason,
-      result.transaction.id.toString()
+      result.transaction.id.toString(),
     );
 
-    this.logger.log(`✅ Reembolso procesado: Usuario ${userId}, Nuevo balance: ${result.wallet.balance}`);
+    this.logger.log(
+      `✅ Reembolso procesado: Usuario ${userId}, Nuevo balance: ${result.wallet.balance}`,
+    );
     return result;
   }
 
   // Admin methods
-  async blockWallet(dto: BlockWalletDto, ipAddress?: string): Promise<{
+  async blockWallet(
+    dto: BlockWalletDto,
+    ipAddress?: string,
+  ): Promise<{
     success: boolean;
     message: string;
   }> {
-    this.logger.log(`🚫 Bloqueando wallet: Usuario ${dto.userId}, Admin: ${dto.adminId}`);
+    this.logger.log(
+      `🚫 Bloqueando wallet: Usuario ${dto.userId}, Admin: ${dto.adminId}`,
+    );
 
     try {
       // Check if user exists
@@ -691,14 +752,11 @@ export class WalletService {
         dto.userId,
         dto.adminId,
         dto.reason,
-        ipAddress
+        ipAddress,
       );
 
       // Send notification
-      await this.walletNotification.notifyWalletBlocked(
-        dto.userId,
-        dto.reason
-      );
+      await this.walletNotification.notifyWalletBlocked(dto.userId, dto.reason);
 
       this.logger.log(`✅ Wallet bloqueada: Usuario ${dto.userId}`);
       return {
@@ -711,11 +769,16 @@ export class WalletService {
     }
   }
 
-  async unblockWallet(dto: UnblockWalletDto, ipAddress?: string): Promise<{
+  async unblockWallet(
+    dto: UnblockWalletDto,
+    ipAddress?: string,
+  ): Promise<{
     success: boolean;
     message: string;
   }> {
-    this.logger.log(`🔓 Desbloqueando wallet: Usuario ${dto.userId}, Admin: ${dto.adminId}`);
+    this.logger.log(
+      `🔓 Desbloqueando wallet: Usuario ${dto.userId}, Admin: ${dto.adminId}`,
+    );
 
     try {
       // Check if user exists
@@ -743,13 +806,13 @@ export class WalletService {
         dto.userId,
         dto.adminId,
         dto.reason,
-        ipAddress
+        ipAddress,
       );
 
       // Send notification
       await this.walletNotification.notifyWalletUnblocked(
         dto.userId,
-        dto.reason
+        dto.reason,
       );
 
       this.logger.log(`✅ Wallet desbloqueada: Usuario ${dto.userId}`);
@@ -763,12 +826,17 @@ export class WalletService {
     }
   }
 
-  async adjustBalance(dto: AdjustBalanceDto, ipAddress?: string): Promise<{
+  async adjustBalance(
+    dto: AdjustBalanceDto,
+    ipAddress?: string,
+  ): Promise<{
     success: boolean;
     wallet: Wallet;
     transaction: WalletTransaction;
   }> {
-    this.logger.log(`⚖️ Ajustando balance: Usuario ${dto.userId}, Monto: ${dto.amount}, Admin: ${dto.adminId}`);
+    this.logger.log(
+      `⚖️ Ajustando balance: Usuario ${dto.userId}, Monto: ${dto.amount}, Admin: ${dto.adminId}`,
+    );
 
     try {
       // Check if user exists
@@ -825,13 +893,15 @@ export class WalletService {
           Number(updatedWallet.balance),
           dto.amount,
           dto.description,
-          ipAddress
+          ipAddress,
         );
 
         return { wallet: updatedWallet, transaction };
       });
 
-      this.logger.log(`✅ Balance ajustado: Usuario ${dto.userId}, Nuevo balance: ${result.wallet.balance}`);
+      this.logger.log(
+        `✅ Balance ajustado: Usuario ${dto.userId}, Nuevo balance: ${result.wallet.balance}`,
+      );
       return {
         success: true,
         wallet: result.wallet,

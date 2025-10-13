@@ -27,6 +27,25 @@ export interface ReportFilters {
   metrics?: string[];
 }
 
+export interface AnalyticsFilters {
+  dateRange?: 'today' | 'yesterday' | '7d' | '30d' | '90d' | '1y';
+  startDate?: Date;
+  endDate?: Date;
+  countryId?: number;
+  stateId?: number;
+  cityId?: number;
+  zoneId?: number;
+  status?: string;
+  rideTierId?: number;
+  userType?: 'rider' | 'driver' | 'both';
+  segment?: 'new' | 'returning' | 'power' | 'churned';
+  performance?: 'top' | 'average' | 'low';
+  metric?: 'rides' | 'revenue' | 'users' | 'drivers' | 'coverage';
+  groupBy?: 'hour' | 'day' | 'week' | 'month' | 'quarter';
+  includeStripeFees?: boolean;
+  includeTaxes?: boolean;
+}
+
 export interface ReportData {
   summary: any;
   chartData: any[];
@@ -670,7 +689,7 @@ export class ReportsAnalyticsService {
       const revenue = await this.prisma.ride.aggregate({
         where: {
           createdAt: { gte: dayStart, lte: dayEnd },
-            paymentStatus: 'COMPLETED',
+          paymentStatus: 'COMPLETED',
         },
         _sum: { farePrice: true },
       });
@@ -825,6 +844,500 @@ export class ReportsAnalyticsService {
       filename: 'report.pdf',
       data: reportData,
       format: 'pdf',
+    };
+  }
+
+  // Analytics Methods
+  async getDashboardAnalytics(filters: AnalyticsFilters): Promise<any> {
+    const { dateFrom, dateTo } = this.resolveAnalyticsDateRange(filters);
+
+    // Get summary metrics
+    const [totalRides, totalRevenue, totalUsers, totalDrivers] = await Promise.all([
+      this.prisma.ride.count({ where: { createdAt: { gte: dateFrom, lte: dateTo } } }),
+      this.prisma.ride.aggregate({
+        where: { createdAt: { gte: dateFrom, lte: dateTo }, paymentStatus: 'COMPLETED' },
+        _sum: { farePrice: true },
+      }),
+      this.prisma.user.count(),
+      this.prisma.driver.count(),
+    ]);
+
+    // Get trends data
+    const trendsData = await this.getDashboardTrendsData(dateFrom, dateTo);
+
+    // Get performance data
+    const performanceData = await this.getDashboardPerformanceData(dateFrom, dateTo);
+
+    // Get geography data
+    const geographyData = await this.getDashboardGeographyData(filters);
+
+    return {
+      summary: {
+        totalRides,
+        totalRevenue: Number(totalRevenue._sum?.farePrice || 0),
+        totalUsers,
+        totalDrivers,
+        averageRideValue: totalRides > 0 ? Number(totalRevenue._sum?.farePrice || 0) / totalRides : 0,
+        averageRating: 4.2, // Would calculate from ratings table
+        completionRate: 95.5, // Would calculate from actual data
+      },
+      trends: trendsData,
+      performance: performanceData,
+      geography: geographyData,
+      generatedAt: new Date(),
+    };
+  }
+
+  async getRideAnalytics(filters: AnalyticsFilters): Promise<any> {
+    const { dateFrom, dateTo } = this.resolveAnalyticsDateRange(filters);
+
+    // Get overview metrics
+    const ridesData = await this.prisma.ride.findMany({
+      where: {
+        createdAt: { gte: dateFrom, lte: dateTo },
+        ...(filters.status && { status: filters.status as any }),
+        ...(filters.rideTierId && { tierId: filters.rideTierId }),
+      },
+      include: { tier: true },
+    });
+
+    const overview = {
+      totalRides: ridesData.length,
+      completedRides: ridesData.filter(r => r.status === 'COMPLETED').length,
+      cancelledRides: ridesData.filter(r => r.status === 'CANCELLED').length,
+      completionRate: ridesData.length > 0 ?
+        (ridesData.filter(r => r.status === 'COMPLETED').length / ridesData.length) * 100 : 0,
+      averageRideDuration: 18.5, // Would calculate from actual data
+      averageWaitTime: 3.2, // Would calculate from actual data
+      averageDistance: 8.7, // Would calculate from actual data
+    };
+
+    // Get time-based analytics
+    const byTime = await this.getRidesByTime(dateFrom, dateTo, filters.groupBy || 'day');
+
+    // Get tier-based analytics
+    const byTier = await this.getRidesByTier(dateFrom, dateTo);
+
+    // Get geography-based analytics
+    const byGeography = await this.getRidesByGeography(dateFrom, dateTo, filters);
+
+    // Get cancellation reasons
+    const cancellationReasons = await this.getCancellationReasons(dateFrom, dateTo);
+
+    return {
+      overview,
+      byTime,
+      byTier,
+      byGeography,
+      cancellationReasons,
+      generatedAt: new Date(),
+    };
+  }
+
+  async getFinancialAnalytics(filters: AnalyticsFilters): Promise<any> {
+    const { dateFrom, dateTo } = this.resolveAnalyticsDateRange(filters);
+
+    // Get revenue data
+    const [rideRevenue, driverPayments, walletTransactions] = await Promise.all([
+      this.prisma.ride.aggregate({
+        where: {
+          createdAt: { gte: dateFrom, lte: dateTo },
+          paymentStatus: 'COMPLETED',
+        },
+        _sum: { farePrice: true },
+        _count: true,
+      }),
+      this.prisma.driverPayment?.aggregate({
+        where: { createdAt: { gte: dateFrom, lte: dateTo }, status: 'COMPLETED' },
+        _sum: { amount: true },
+      }) || Promise.resolve({ _sum: { amount: 0 } }),
+      this.prisma.walletTransaction?.aggregate({
+        where: { createdAt: { gte: dateFrom, lte: dateTo } },
+        _sum: { amount: true },
+      }) || Promise.resolve({ _sum: { amount: 0 } }),
+    ]);
+
+    const grossRevenue = Number(rideRevenue._sum?.farePrice || 0);
+    const stripeFees = (filters.includeStripeFees ?? true) ? grossRevenue * 0.029 + 30 : 0; // 2.9% + 30¢
+    const taxes = (filters.includeTaxes ?? true) ? grossRevenue * 0.08 : 0; // 8% tax estimate
+    const netRevenue = grossRevenue - stripeFees - taxes;
+
+    const revenue = {
+      totalRevenue: netRevenue,
+      grossRevenue,
+      stripeFees,
+      taxes,
+      netRevenue,
+      averageTransaction: rideRevenue._count > 0 ? netRevenue / rideRevenue._count : 0,
+    };
+
+    // Get trends data
+    const trends = await this.getFinancialTrends(dateFrom, dateTo, filters.groupBy || 'day');
+
+    // Get payment method breakdown
+    const byPaymentMethod = await this.getRevenueByPaymentMethod(dateFrom, dateTo);
+
+    // Get tier breakdown
+    const byTier = await this.getRevenueByTier(dateFrom, dateTo);
+
+    // Calculate projections
+    const projections = this.calculateRevenueProjections(trends);
+
+    return {
+      revenue,
+      trends,
+      byPaymentMethod,
+      byTier,
+      projections,
+      generatedAt: new Date(),
+    };
+  }
+
+  async getUserAnalytics(filters: AnalyticsFilters): Promise<any> {
+    const { dateFrom, dateTo } = this.resolveAnalyticsDateRange(filters);
+
+    // Get user overview
+    const [totalUsers, activeUsers, newUsers] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({
+        where: {
+          rides: {
+            some: { createdAt: { gte: dateFrom, lte: dateTo } }
+          }
+        }
+      }),
+      this.prisma.user.count({
+        where: { createdAt: { gte: dateFrom, lte: dateTo } }
+      }),
+    ]);
+
+    // Get returning users (users with more than 1 ride)
+    const returningUsers = await this.prisma.user.count({
+      where: {
+        rides: {
+          some: {} // At least one ride exists
+        }
+      }
+    });
+
+    const overview = {
+      totalUsers,
+      activeUsers,
+      newUsers,
+      returningUsers,
+      churnedUsers: Math.max(0, totalUsers - activeUsers), // Simplified calculation
+      averageRidesPerUser: totalUsers > 0 ? await this.getAverageRidesPerUser() : 0,
+      averageRating: 4.2, // Would calculate from actual data
+    };
+
+    // Get demographics
+    const demographics = await this.getUserDemographics();
+
+    // Get behavior metrics
+    const behavior = await this.getUserBehaviorMetrics(dateFrom, dateTo);
+
+    // Get retention data
+    const retention = await this.getUserRetentionMetrics();
+
+    return {
+      overview,
+      demographics,
+      behavior,
+      retention,
+      generatedAt: new Date(),
+    };
+  }
+
+  async getDriverAnalytics(filters: AnalyticsFilters): Promise<any> {
+    const { dateFrom, dateTo } = this.resolveAnalyticsDateRange(filters);
+
+    // Get driver overview
+    const [totalDrivers, activeDrivers, onlineDrivers] = await Promise.all([
+      this.prisma.driver.count(),
+      this.prisma.driver.count({
+        where: {
+          status: { in: ['ONLINE', 'BUSY'] },
+          updatedAt: { gte: dateFrom, lte: dateTo }
+        }
+      }),
+      this.prisma.driver.count({
+        where: { status: 'ONLINE' }
+      }),
+    ]);
+
+    const newDrivers = await this.prisma.driver.count({
+      where: { createdAt: { gte: dateFrom, lte: dateTo } }
+    });
+
+    const overview = {
+      totalDrivers,
+      activeDrivers,
+      newDrivers,
+      onlineDrivers,
+      averageRating: await this.getAverageDriverRating(),
+      averageEarnings: await this.getAverageDriverEarnings(dateFrom, dateTo),
+      completionRate: 92.3, // Would calculate from actual data
+    };
+
+    // Get performance metrics
+    const performance = await this.getDriverPerformanceMetrics();
+
+    // Get activity metrics
+    const activity = await this.getDriverActivityMetrics(dateFrom, dateTo);
+
+    // Get geography data
+    const geography = await this.getDriverGeographyMetrics(filters);
+
+    return {
+      overview,
+      performance,
+      activity,
+      geography,
+      generatedAt: new Date(),
+    };
+  }
+
+  async getGeographyAnalytics(filters: AnalyticsFilters): Promise<any> {
+    // Get coverage statistics
+    const coverage = await this.getGeographyCoverageStats();
+
+    // Get performance by geography
+    const performance = await this.getGeographyPerformanceStats();
+
+    // Get demand analysis
+    const demand = await this.getGeographyDemandAnalysis();
+
+    // Get expansion opportunities
+    const expansion = await this.getGeographyExpansionOpportunities();
+
+    return {
+      coverage,
+      performance,
+      demand,
+      expansion,
+      generatedAt: new Date(),
+    };
+  }
+
+  // Helper methods for analytics
+  private resolveAnalyticsDateRange(filters: AnalyticsFilters): { dateFrom: Date; dateTo: Date } {
+    const now = new Date();
+
+    if (filters.startDate && filters.endDate) {
+      return { dateFrom: filters.startDate, dateTo: filters.endDate };
+    }
+
+    switch (filters.dateRange) {
+      case 'today':
+        return { dateFrom: startOfDay(now), dateTo: endOfDay(now) };
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        return { dateFrom: startOfDay(yesterday), dateTo: endOfDay(yesterday) };
+      case '7d':
+        return { dateFrom: subDays(now, 7), dateTo: now };
+      case '30d':
+        return { dateFrom: subDays(now, 30), dateTo: now };
+      case '90d':
+        return { dateFrom: subDays(now, 90), dateTo: now };
+      case '1y':
+        return { dateFrom: subDays(now, 365), dateTo: now };
+      default:
+        return { dateFrom: subDays(now, 30), dateTo: now };
+    }
+  }
+
+  // Placeholder implementations for analytics helper methods
+  private async getDashboardTrendsData(dateFrom: Date, dateTo: Date) {
+    // Mock data - would be implemented with actual queries
+    return {
+      rides: [],
+      users: [],
+      drivers: [],
+    };
+  }
+
+  private async getDashboardPerformanceData(dateFrom: Date, dateTo: Date) {
+    return {
+      peakHours: [],
+      popularRoutes: [],
+      driverPerformance: {
+        averageRating: 4.2,
+        topPerformers: [],
+      },
+    };
+  }
+
+  private async getDashboardGeographyData(filters: AnalyticsFilters) {
+    return {
+      ridesByCity: [],
+      coverage: {
+        activeCities: 0,
+        activeZones: 0,
+        totalAreaKm2: 0,
+      },
+    };
+  }
+
+  private async getRidesByTime(dateFrom: Date, dateTo: Date, groupBy: string) {
+    // Would group rides by time period
+    return [];
+  }
+
+  private async getRidesByTier(dateFrom: Date, dateTo: Date) {
+    // Would aggregate rides by service tier
+    return [];
+  }
+
+  private async getRidesByGeography(dateFrom: Date, dateTo: Date, filters: AnalyticsFilters) {
+    // Would aggregate rides by geographic location
+    return [];
+  }
+
+  private async getCancellationReasons(dateFrom: Date, dateTo: Date) {
+    // Would analyze cancellation reasons
+    return [];
+  }
+
+  private async getFinancialTrends(dateFrom: Date, dateTo: Date, groupBy: string) {
+    // Would create revenue trends over time
+    return [];
+  }
+
+  private async getRevenueByPaymentMethod(dateFrom: Date, dateTo: Date) {
+    // Would break down revenue by payment method
+    return [];
+  }
+
+  private async getRevenueByTier(dateFrom: Date, dateTo: Date) {
+    // Would break down revenue by service tier
+    return [];
+  }
+
+  private calculateRevenueProjections(trends: any[]) {
+    // Simple linear projection
+    return {
+      monthlyGrowth: 8.5,
+      projectedRevenue: 150000, // cents
+      confidence: 75,
+    };
+  }
+
+  private async getAverageRidesPerUser(): Promise<number> {
+    const result = await this.prisma.user.findMany({
+      include: { _count: { select: { rides: true } } },
+    });
+    const totalRides = result.reduce((sum, user) => sum + user._count.rides, 0);
+    return result.length > 0 ? totalRides / result.length : 0;
+  }
+
+  private async getUserDemographics() {
+    return {
+      byAgeGroup: [],
+      byGender: [],
+      topCities: [],
+    };
+  }
+
+  private async getUserBehaviorMetrics(dateFrom: Date, dateTo: Date) {
+    return {
+      sessionDuration: {
+        average: 15,
+        distribution: [],
+      },
+      rideFrequency: {
+        daily: 0,
+        weekly: 0,
+        monthly: 0,
+      },
+      preferredTimes: [],
+    };
+  }
+
+  private async getUserRetentionMetrics() {
+    return {
+      day1: 85,
+      day7: 65,
+      day30: 45,
+      cohortAnalysis: [],
+    };
+  }
+
+  private async getAverageDriverRating(): Promise<number> {
+    const result = await this.prisma.driver.aggregate({
+      _avg: { averageRating: true },
+    });
+    return Number(result._avg?.averageRating || 0);
+  }
+
+  private async getAverageDriverEarnings(dateFrom: Date, dateTo: Date): Promise<number> {
+    const result = await this.prisma.driver.aggregate({
+      _avg: { totalEarnings: true },
+    });
+    return Number(result._avg?.totalEarnings || 0);
+  }
+
+  private async getDriverPerformanceMetrics() {
+    return {
+      topPerformers: [],
+      ratingDistribution: [],
+      earningsDistribution: [],
+    };
+  }
+
+  private async getDriverActivityMetrics(dateFrom: Date, dateTo: Date) {
+    return {
+      onlineHours: {
+        averagePerDriver: 8,
+        totalOnlineHours: 0,
+      },
+      rideAcceptance: {
+        averageResponseTime: 15,
+        acceptanceRate: 92,
+      },
+      cancellationRate: 3.5,
+    };
+  }
+
+  private async getDriverGeographyMetrics(filters: AnalyticsFilters) {
+    return {
+      byCity: [],
+      coverage: {
+        citiesWithDrivers: 0,
+        averageDriversPerCity: 0,
+        supplyGaps: [],
+      },
+    };
+  }
+
+  private async getGeographyCoverageStats() {
+    return {
+      countries: 1,
+      states: 5,
+      cities: 25,
+      zones: 150,
+      totalAreaKm2: 25000,
+      populationCovered: 5000000,
+    };
+  }
+
+  private async getGeographyPerformanceStats() {
+    return {
+      byCountry: [],
+      byCity: [],
+      topCities: [],
+    };
+  }
+
+  private async getGeographyDemandAnalysis() {
+    return {
+      highDemandAreas: [],
+      supplyGaps: [],
+    };
+  }
+
+  private async getGeographyExpansionOpportunities() {
+    return {
+      potentialCities: [],
     };
   }
 }

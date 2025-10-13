@@ -663,7 +663,8 @@ export class SimulatePricingDto {
   dateTime: string;
 
   @ApiPropertyOptional({
-    description: 'Specific temporal rule IDs to apply (overrides automatic evaluation)',
+    description:
+      'Specific temporal rule IDs to apply (overrides automatic evaluation)',
     example: [1, 5, 8],
     type: [Number],
   })

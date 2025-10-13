@@ -1309,7 +1309,8 @@ export class TransportClientController {
           try {
             // Buscar la referencia generada para este pago
             const reference = groupResult.references.find(
-              (ref) => ref.method === payment.method && ref.amount === payment.amount,
+              (ref) =>
+                ref.method === payment.method && ref.amount === payment.amount,
             );
 
             if (reference) {
@@ -1336,7 +1337,10 @@ export class TransportClientController {
         }
 
         // Si todos los pagos se confirmaron exitosamente
-        if (allConfirmed && confirmedReferences.length === body.payments.length) {
+        if (
+          allConfirmed &&
+          confirmedReferences.length === body.payments.length
+        ) {
           // Confirmar el pago en el ride
           await this.flow.confirmTransportPayment(
             Number(rideId),
@@ -1874,9 +1878,13 @@ export class TransportClientController {
           rideId: Number(rideId),
           totalAmount: Number(ride.farePrice || 0),
           paidAmount:
-            ride.paymentStatus === 'COMPLETED' ? Number(ride.farePrice || 0) : 0,
+            ride.paymentStatus === 'COMPLETED'
+              ? Number(ride.farePrice || 0)
+              : 0,
           remainingAmount:
-            ride.paymentStatus === 'COMPLETED' ? 0 : Number(ride.farePrice || 0),
+            ride.paymentStatus === 'COMPLETED'
+              ? 0
+              : Number(ride.farePrice || 0),
           status: ride.paymentStatus === 'COMPLETED' ? 'complete' : 'pending',
           hasPaymentGroup: false,
           message: 'Viaje sin grupo de pagos múltiples',
@@ -2270,7 +2278,8 @@ export class TransportClientController {
       },
       specific_requirements: {
         summary: '🎯 Requisitos específicos',
-        description: 'Busca conductor con moto (tier Economy) en zona específica',
+        description:
+          'Busca conductor con moto (tier Economy) en zona específica',
         value: {
           lat: 10.4998,
           lng: -66.8517,
@@ -2330,7 +2339,8 @@ export class TransportClientController {
         error: { type: 'string', example: 'USER_ALREADY_HAS_ACTIVE_SEARCH' },
         message: {
           type: 'string',
-          example: 'Ya tienes una búsqueda activa. Cancélala antes de iniciar una nueva.',
+          example:
+            'Ya tienes una búsqueda activa. Cancélala antes de iniciar una nueva.',
         },
       },
     },
@@ -2344,7 +2354,8 @@ export class TransportClientController {
         error: { type: 'string', example: 'MAX_CONCURRENT_SEARCHES' },
         message: {
           type: 'string',
-          example: 'Demasiadas búsquedas activas. Intenta nuevamente en unos minutos.',
+          example:
+            'Demasiadas búsquedas activas. Intenta nuevamente en unos minutos.',
         },
       },
     },
@@ -2373,13 +2384,15 @@ export class TransportClientController {
       if (error.message === 'User already has an active search') {
         throw new ConflictException({
           error: 'USER_ALREADY_HAS_ACTIVE_SEARCH',
-          message: 'Ya tienes una búsqueda activa. Cancélala antes de iniciar una nueva.',
+          message:
+            'Ya tienes una búsqueda activa. Cancélala antes de iniciar una nueva.',
         });
       }
       if (error.message === 'Maximum concurrent searches reached') {
         throw new ConflictException({
           error: 'MAX_CONCURRENT_SEARCHES',
-          message: 'Demasiadas búsquedas activas. Intenta nuevamente en unos minutos.',
+          message:
+            'Demasiadas búsquedas activas. Intenta nuevamente en unos minutos.',
         });
       }
       throw error;
@@ -2433,7 +2446,10 @@ export class TransportClientController {
       type: 'object',
       properties: {
         error: { type: 'string', example: 'SEARCH_NOT_FOUND' },
-        message: { type: 'string', example: 'La búsqueda especificada no existe.' },
+        message: {
+          type: 'string',
+          example: 'La búsqueda especificada no existe.',
+        },
       },
     },
   })
@@ -2518,7 +2534,10 @@ export class TransportClientController {
       },
     },
   })
-  async getAsyncSearchStatus(@Param('searchId') searchId: string, @Req() req: any) {
+  async getAsyncSearchStatus(
+    @Param('searchId') searchId: string,
+    @Req() req: any,
+  ) {
     try {
       const result = await this.asyncMatchingService.getAsyncSearchStatus(
         searchId,
@@ -2597,7 +2616,10 @@ export class TransportClientController {
       },
     },
   })
-  async confirmAsyncDriver(@Body() body: ConfirmAsyncDriverDto, @Req() req: any) {
+  async confirmAsyncDriver(
+    @Body() body: ConfirmAsyncDriverDto,
+    @Req() req: any,
+  ) {
     try {
       const result = await this.asyncMatchingService.confirmAsyncDriver(
         body.searchId,

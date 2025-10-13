@@ -573,7 +573,9 @@ describe('RideTiersService', () => {
 
       const result = await service.createStandardTiers();
 
-      expect(result.message).toContain('Standard tiers and combinations creation completed');
+      expect(result.message).toContain(
+        'Standard tiers and combinations creation completed',
+      );
       expect(result.created).toBeGreaterThan(0);
       expect(mockPrismaService.rideTier.create).toHaveBeenCalled();
     });

@@ -4,22 +4,22 @@ import { MatchBestDriverDto } from './transport-flow.dtos';
  * Estados posibles de una sesión de búsqueda
  */
 export enum SearchStatus {
-  SEARCHING = 'searching',           // Buscando activamente
-  FOUND = 'found',                   // Conductor encontrado
-  TIMEOUT = 'timeout',               // Búsqueda expiró
-  CANCELLED = 'cancelled',           // Usuario canceló
-  COMPLETED = 'completed'            // Matching completado exitosamente
+  SEARCHING = 'searching', // Buscando activamente
+  FOUND = 'found', // Conductor encontrado
+  TIMEOUT = 'timeout', // Búsqueda expiró
+  CANCELLED = 'cancelled', // Usuario canceló
+  COMPLETED = 'completed', // Matching completado exitosamente
 }
 
 /**
  * Criterios de búsqueda extendidos
  */
 export interface SearchCriteria extends MatchBestDriverDto {
-  searchId: string;                  // ID único de la búsqueda
-  userId: number;                    // ID del usuario que busca
-  maxWaitTime?: number;              // Tiempo máximo de espera (segundos)
+  searchId: string; // ID único de la búsqueda
+  userId: number; // ID del usuario que busca
+  maxWaitTime?: number; // Tiempo máximo de espera (segundos)
   priority?: 'low' | 'normal' | 'high'; // Prioridad de la búsqueda
-  websocketRoom?: string;            // Sala WebSocket para notificaciones
+  websocketRoom?: string; // Sala WebSocket para notificaciones
 }
 
 /**
@@ -56,20 +56,20 @@ export interface MatchedDriverInfo {
  * Sesión de búsqueda activa
  */
 export interface SearchSession {
-  searchId: string;                  // ID único de la búsqueda
-  userId: number;                    // ID del usuario
+  searchId: string; // ID único de la búsqueda
+  userId: number; // ID del usuario
   criteria: Omit<SearchCriteria, 'searchId' | 'userId'>; // Criterios de búsqueda
-  status: SearchStatus;              // Estado actual
-  createdAt: Date;                   // Fecha de creación
-  updatedAt: Date;                   // Última actualización
-  expiresAt: Date;                   // Fecha de expiración
+  status: SearchStatus; // Estado actual
+  createdAt: Date; // Fecha de creación
+  updatedAt: Date; // Última actualización
+  expiresAt: Date; // Fecha de expiración
   matchedDriver?: MatchedDriverInfo; // Conductor encontrado (si aplica)
-  attempts: number;                  // Número de intentos de búsqueda
-  lastSearchAt?: Date;               // Última vez que se buscó
-  searchInterval: number;            // Intervalo entre búsquedas (ms)
-  maxWaitTime: number;               // Tiempo máximo de espera (segundos)
+  attempts: number; // Número de intentos de búsqueda
+  lastSearchAt?: Date; // Última vez que se buscó
+  searchInterval: number; // Intervalo entre búsquedas (ms)
+  maxWaitTime: number; // Tiempo máximo de espera (segundos)
   priority: 'low' | 'normal' | 'high'; // Prioridad
-  websocketRoom?: string;            // Sala WebSocket para notificaciones
+  websocketRoom?: string; // Sala WebSocket para notificaciones
 }
 
 /**
@@ -97,7 +97,11 @@ export interface AsyncSearchResult {
  * Evento WebSocket para matching
  */
 export interface MatchingWebSocketEvent {
-  type: 'driver-found' | 'search-timeout' | 'search-cancelled' | 'search-expired';
+  type:
+    | 'driver-found'
+    | 'search-timeout'
+    | 'search-cancelled'
+    | 'search-expired';
   searchId: string;
   userId: number;
   data?: MatchedDriverInfo | any;
@@ -108,13 +112,13 @@ export interface MatchingWebSocketEvent {
  * Configuración del sistema de matching asíncrono
  */
 export interface AsyncMatchingConfig {
-  defaultMaxWaitTime: number;        // 300s = 5 minutos por defecto
-  searchInterval: number;            // 10000ms = 10 segundos entre búsquedas
-  maxConcurrentSearches: number;     // 100 búsquedas simultáneas máximo
-  cleanupInterval: number;           // 60000ms = 1 minuto para limpieza
+  defaultMaxWaitTime: number; // 300s = 5 minutos por defecto
+  searchInterval: number; // 10000ms = 10 segundos entre búsquedas
+  maxConcurrentSearches: number; // 100 búsquedas simultáneas máximo
+  cleanupInterval: number; // 60000ms = 1 minuto para limpieza
   priorityWeights: {
-    high: number;    // 3x más frecuente
-    normal: number;  // 1x frecuencia normal
-    low: number;     // 0.5x menos frecuente
+    high: number; // 3x más frecuente
+    normal: number; // 1x frecuencia normal
+    low: number; // 0.5x menos frecuente
   };
 }

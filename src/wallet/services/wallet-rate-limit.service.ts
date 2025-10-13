@@ -53,12 +53,14 @@ export class WalletRateLimitService {
   async checkRateLimit(
     userId: number,
     operation: string,
-    ipAddress?: string
+    ipAddress?: string,
   ): Promise<RateLimitResult> {
     try {
       const config = this.rateLimits[operation];
       if (!config) {
-        this.logger.warn(`⚠️ Configuración de rate limit no encontrada para operación: ${operation}`);
+        this.logger.warn(
+          `⚠️ Configuración de rate limit no encontrada para operación: ${operation}`,
+        );
         return {
           allowed: true,
           remaining: 999,
@@ -82,12 +84,22 @@ export class WalletRateLimitService {
       }
 
       // Count attempts in current window
-      const attempts = await this.getAttemptCount(userId, operation, windowStart, ipAddress);
+      const attempts = await this.getAttemptCount(
+        userId,
+        operation,
+        windowStart,
+        ipAddress,
+      );
 
       if (attempts >= config.maxAttempts) {
         // Block user for the configured duration
-        await this.blockUser(userId, operation, config.blockDurationMs, ipAddress);
-        
+        await this.blockUser(
+          userId,
+          operation,
+          config.blockDurationMs,
+          ipAddress,
+        );
+
         const resetTime = new Date(now.getTime() + config.blockDurationMs);
         return {
           allowed: false,
@@ -128,13 +140,18 @@ export class WalletRateLimitService {
         },
       });
 
-      this.logger.log(`🔄 Rate limit reseteado para usuario ${userId}, operación ${operation}`);
+      this.logger.log(
+        `🔄 Rate limit reseteado para usuario ${userId}, operación ${operation}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Error reseteando rate limit: ${error.message}`);
     }
   }
 
-  async getRateLimitStatus(userId: number, operation: string): Promise<{
+  async getRateLimitStatus(
+    userId: number,
+    operation: string,
+  ): Promise<{
     attempts: number;
     maxAttempts: number;
     remaining: number;
@@ -145,7 +162,9 @@ export class WalletRateLimitService {
     try {
       const config = this.rateLimits[operation];
       if (!config) {
-        throw new Error(`Configuración no encontrada para operación: ${operation}`);
+        throw new Error(
+          `Configuración no encontrada para operación: ${operation}`,
+        );
       }
 
       const now = new Date();
@@ -169,7 +188,9 @@ export class WalletRateLimitService {
         blockExpiry,
       };
     } catch (error) {
-      this.logger.error(`❌ Error obteniendo estado de rate limit: ${error.message}`);
+      this.logger.error(
+        `❌ Error obteniendo estado de rate limit: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -178,7 +199,7 @@ export class WalletRateLimitService {
     userId: number,
     operation: string,
     windowStart: Date,
-    ipAddress?: string
+    ipAddress?: string,
   ): Promise<number> {
     const where: any = {
       userId,
@@ -193,7 +214,10 @@ export class WalletRateLimitService {
     return this.prisma.walletRateLimit.count({ where });
   }
 
-  private async isUserBlocked(userId: number, operation: string): Promise<boolean> {
+  private async isUserBlocked(
+    userId: number,
+    operation: string,
+  ): Promise<boolean> {
     const block = await this.prisma.walletRateLimit.findFirst({
       where: {
         userId,
@@ -206,7 +230,10 @@ export class WalletRateLimitService {
     return !!block;
   }
 
-  private async getBlockExpiry(userId: number, operation: string): Promise<Date> {
+  private async getBlockExpiry(
+    userId: number,
+    operation: string,
+  ): Promise<Date> {
     const block = await this.prisma.walletRateLimit.findFirst({
       where: {
         userId,
@@ -224,7 +251,7 @@ export class WalletRateLimitService {
     userId: number,
     operation: string,
     blockDurationMs: number,
-    ipAddress?: string
+    ipAddress?: string,
   ): Promise<void> {
     const blockedUntil = new Date(Date.now() + blockDurationMs);
 
@@ -239,13 +266,15 @@ export class WalletRateLimitService {
       },
     });
 
-    this.logger.warn(`🚫 Usuario ${userId} bloqueado para operación ${operation} hasta ${blockedUntil.toISOString()}`);
+    this.logger.warn(
+      `🚫 Usuario ${userId} bloqueado para operación ${operation} hasta ${blockedUntil.toISOString()}`,
+    );
   }
 
   private async recordAttempt(
     userId: number,
     operation: string,
-    ipAddress?: string
+    ipAddress?: string,
   ): Promise<void> {
     await this.prisma.walletRateLimit.create({
       data: {
@@ -270,9 +299,13 @@ export class WalletRateLimitService {
         },
       });
 
-      this.logger.log(`🧹 Limpieza de rate limits: ${deleted.count} registros eliminados`);
+      this.logger.log(
+        `🧹 Limpieza de rate limits: ${deleted.count} registros eliminados`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Error en limpieza de rate limits: ${error.message}`);
+      this.logger.error(
+        `❌ Error en limpieza de rate limits: ${error.message}`,
+      );
     }
   }
 }

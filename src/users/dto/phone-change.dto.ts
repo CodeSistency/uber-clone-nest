@@ -1,9 +1,4 @@
-import {
-  IsNotEmpty,
-  IsString,
-  IsPhoneNumber,
-  Matches,
-} from 'class-validator';
+import { IsNotEmpty, IsString, IsPhoneNumber, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RequestPhoneChangeDto {
@@ -15,7 +10,8 @@ export class RequestPhoneChangeDto {
   @IsNotEmpty({ message: 'El número de teléfono es requerido' })
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
   @Matches(/^\+[1-9]\d{1,14}$/, {
-    message: 'El teléfono debe estar en formato internacional (ej: +584121234567)',
+    message:
+      'El teléfono debe estar en formato internacional (ej: +584121234567)',
   })
   newPhone: string;
 }
@@ -29,7 +25,8 @@ export class VerifyPhoneChangeDto {
   @IsNotEmpty({ message: 'El número de teléfono es requerido' })
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
   @Matches(/^\+[1-9]\d{1,14}$/, {
-    message: 'El teléfono debe estar en formato internacional (ej: +584121234567)',
+    message:
+      'El teléfono debe estar en formato internacional (ej: +584121234567)',
   })
   newPhone: string;
 

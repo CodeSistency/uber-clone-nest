@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import {
   SearchSession,
@@ -10,7 +15,10 @@ import {
   AsyncMatchingConfig,
 } from '../flow/dto/async-matching.interfaces';
 import { WebSocketGatewayClass } from '../../websocket/websocket.gateway';
-import { DriverEventsService, DriverOnlineEvent } from '../../common/events/driver-events.service';
+import {
+  DriverEventsService,
+  DriverOnlineEvent,
+} from '../../common/events/driver-events.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -23,13 +31,13 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   // Configuración por defecto
   private readonly config: AsyncMatchingConfig = {
     defaultMaxWaitTime: 300, // 5 minutos
-    searchInterval: 10000,   // 10 segundos
+    searchInterval: 10000, // 10 segundos
     maxConcurrentSearches: 100,
-    cleanupInterval: 60000,  // 1 minuto
+    cleanupInterval: 60000, // 1 minuto
     priorityWeights: {
-      high: 3,     // 3x más frecuente
-      normal: 1,   // frecuencia normal
-      low: 0.5,    // 2x menos frecuente
+      high: 3, // 3x más frecuente
+      normal: 1, // frecuencia normal
+      low: 0.5, // 2x menos frecuente
     },
   };
 
@@ -50,7 +58,9 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       this.handleDriverOnline(event);
     });
 
-    this.logger.log('AsyncMatchingService initialized with driver event listeners');
+    this.logger.log(
+      'AsyncMatchingService initialized with driver event listeners',
+    );
   }
 
   onModuleDestroy() {
@@ -72,7 +82,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
    */
   async startAsyncDriverSearch(
     userId: number,
-    criteria: Omit<SearchCriteria, 'searchId' | 'userId'>
+    criteria: Omit<SearchCriteria, 'searchId' | 'userId'>,
   ): Promise<AsyncSearchResult> {
     const searchId = uuidv4();
 
@@ -95,9 +105,14 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       status: SearchStatus.SEARCHING,
       createdAt: new Date(),
       updatedAt: new Date(),
-      expiresAt: new Date(Date.now() + (criteria.maxWaitTime || this.config.defaultMaxWaitTime) * 1000),
+      expiresAt: new Date(
+        Date.now() +
+          (criteria.maxWaitTime || this.config.defaultMaxWaitTime) * 1000,
+      ),
       attempts: 0,
-      searchInterval: this.calculateSearchInterval(criteria.priority || 'normal'),
+      searchInterval: this.calculateSearchInterval(
+        criteria.priority || 'normal',
+      ),
       maxWaitTime: criteria.maxWaitTime || this.config.defaultMaxWaitTime,
       priority: criteria.priority || 'normal',
       websocketRoom: criteria.websocketRoom || `user-${userId}`,
@@ -111,7 +126,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
 
     // Log de inicio
     this.logger.log(
-      `🎯 [ASYNC] Started search ${searchId} for user ${userId} - Priority: ${session.priority}`
+      `🎯 [ASYNC] Started search ${searchId} for user ${userId} - Priority: ${session.priority}`,
     );
 
     return this.formatSearchResult(session);
@@ -120,7 +135,10 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Cancela una búsqueda activa
    */
-  async cancelAsyncSearch(searchId: string, userId: number): Promise<AsyncSearchResult> {
+  async cancelAsyncSearch(
+    searchId: string,
+    userId: number,
+  ): Promise<AsyncSearchResult> {
     const session = this.searchSessions.get(searchId);
 
     if (!session) {
@@ -148,7 +166,9 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     // Remover de memoria (se limpiará automáticamente)
     this.searchSessions.delete(searchId);
 
-    this.logger.log(`❌ [ASYNC] Cancelled search ${searchId} for user ${userId}`);
+    this.logger.log(
+      `❌ [ASYNC] Cancelled search ${searchId} for user ${userId}`,
+    );
 
     return this.formatSearchResult(session);
   }
@@ -156,7 +176,10 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Obtiene el estado de una búsqueda
    */
-  async getAsyncSearchStatus(searchId: string, userId: number): Promise<AsyncSearchResult> {
+  async getAsyncSearchStatus(
+    searchId: string,
+    userId: number,
+  ): Promise<AsyncSearchResult> {
     const session = this.searchSessions.get(searchId);
 
     if (!session) {
@@ -177,7 +200,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     searchId: string,
     driverId: number,
     userId: number,
-    notes?: string
+    notes?: string,
   ): Promise<any> {
     const session = this.searchSessions.get(searchId);
 
@@ -217,7 +240,9 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     // Remover sesión
     this.searchSessions.delete(searchId);
 
-    this.logger.log(`✅ [ASYNC] Confirmed driver ${driverId} for search ${searchId}`);
+    this.logger.log(
+      `✅ [ASYNC] Confirmed driver ${driverId} for search ${searchId}`,
+    );
 
     return result;
   }
@@ -228,13 +253,13 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   private async handleDriverOnline(event: DriverOnlineEvent): Promise<void> {
     try {
       this.logger.debug(
-        `🚗 [ASYNC] Driver ${event.driverId} came online at ${event.lat}, ${event.lng}`
+        `🚗 [ASYNC] Driver ${event.driverId} came online at ${event.lat}, ${event.lng}`,
       );
 
       await this.checkPendingSearchesForNewDriver(event.lat, event.lng);
     } catch (error) {
       this.logger.error(
-        `Error handling driver online event for driver ${event.driverId}: ${error.message}`
+        `Error handling driver online event for driver ${event.driverId}: ${error.message}`,
       );
     }
   }
@@ -243,16 +268,20 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
    * Busca conductores disponibles cuando un conductor se conecta
    * Este método será llamado desde el sistema de detección de conexiones
    */
-  async checkPendingSearchesForNewDriver(driverLat: number, driverLng: number): Promise<void> {
+  async checkPendingSearchesForNewDriver(
+    driverLat: number,
+    driverLng: number,
+  ): Promise<void> {
     if (this.searchSessions.size === 0) return;
 
-    const activeSearches = Array.from(this.searchSessions.values())
-      .filter(session => session.status === SearchStatus.SEARCHING);
+    const activeSearches = Array.from(this.searchSessions.values()).filter(
+      (session) => session.status === SearchStatus.SEARCHING,
+    );
 
     if (activeSearches.length === 0) return;
 
     this.logger.debug(
-      `🔍 [ASYNC] Checking ${activeSearches.length} pending searches for new driver at ${driverLat}, ${driverLng}`
+      `🔍 [ASYNC] Checking ${activeSearches.length} pending searches for new driver at ${driverLat}, ${driverLng}`,
     );
 
     for (const session of activeSearches) {
@@ -262,19 +291,19 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
           session.criteria.lat,
           session.criteria.lng,
           driverLat,
-          driverLng
+          driverLng,
         );
 
         // Si está dentro del radio, intentar matching
         if (distance <= (session.criteria.radiusKm || 5)) {
           this.logger.log(
-            `🎯 [ASYNC] Driver came online within range of search ${session.searchId} (${distance.toFixed(1)}km)`
+            `🎯 [ASYNC] Driver came online within range of search ${session.searchId} (${distance.toFixed(1)}km)`,
           );
           await this.attemptMatchingForSession(session);
         }
       } catch (error) {
         this.logger.warn(
-          `Error checking search ${session.searchId} for new driver: ${error.message}`
+          `Error checking search ${session.searchId} for new driver: ${error.message}`,
         );
       }
     }
@@ -300,10 +329,9 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       if (matchedDriver) {
         this.handleDriverFound(session, { matchedDriver });
       }
-
     } catch (error) {
       this.logger.warn(
-        `Search attempt ${session.attempts} failed for ${session.searchId}: ${error.message}`
+        `Search attempt ${session.attempts} failed for ${session.searchId}: ${error.message}`,
       );
     }
   }
@@ -311,20 +339,26 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Maneja cuando se encuentra un conductor
    */
-  private async handleDriverFound(session: SearchSession, matchedDriver: any): Promise<void> {
+  private async handleDriverFound(
+    session: SearchSession,
+    matchedDriver: any,
+  ): Promise<void> {
     // Detener búsqueda periódica
     this.stopPeriodicSearch(session.searchId);
 
     // Actualizar sesión
     session.status = SearchStatus.FOUND;
     session.updatedAt = new Date();
-    session.matchedDriver = { ...matchedDriver.matchedDriver, searchId: session.searchId };
+    session.matchedDriver = {
+      ...matchedDriver.matchedDriver,
+      searchId: session.searchId,
+    };
 
     // Notificar via WebSocket
     this.notifyWebSocket(session, 'driver-found', session.matchedDriver);
 
     this.logger.log(
-      `🎉 [ASYNC] Driver found for search ${session.searchId} - Score: ${session.matchedDriver?.matchScore}`
+      `🎉 [ASYNC] Driver found for search ${session.searchId} - Score: ${session.matchedDriver?.matchScore}`,
     );
   }
 
@@ -353,7 +387,9 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Encuentra el mejor conductor disponible usando el algoritmo de matching
    */
-  private async findBestDriverMatch(criteria: Omit<SearchCriteria, 'searchId' | 'userId'>): Promise<MatchedDriverInfo | null> {
+  private async findBestDriverMatch(
+    criteria: Omit<SearchCriteria, 'searchId' | 'userId'>,
+  ): Promise<MatchedDriverInfo | null> {
     try {
       // 1. Obtener conductores candidatos con filtros básicos
       const driverFilters: any = {
@@ -399,12 +435,13 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       }
 
       // 5. Calcular distancias
-      const driversWithDistance = await this.calculateDistancesWithConcurrencyLimit(
-        detailedDrivers,
-        criteria.lat,
-        criteria.lng,
-        criteria.radiusKm || 5,
-      );
+      const driversWithDistance =
+        await this.calculateDistancesWithConcurrencyLimit(
+          detailedDrivers,
+          criteria.lat,
+          criteria.lng,
+          criteria.radiusKm || 5,
+        );
 
       // 6. Calcular scores y seleccionar el mejor
       const scoredDrivers = await this.calculateDriversScores(
@@ -429,10 +466,14 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
         Math.round(((bestDriver.distance * 1000) / 30) * 60),
       );
 
-      const result = this.formatMatchedDriverFromDetails(bestDriver, driverDetails, estimatedMinutes, criteria.tierId);
+      const result = this.formatMatchedDriverFromDetails(
+        bestDriver,
+        driverDetails,
+        estimatedMinutes,
+        criteria.tierId,
+      );
       result.searchId = uuidv4(); // Generate a temporary search ID
       return result;
-
     } catch (error) {
       this.logger.error('Error in findBestDriverMatch:', error);
       return null;
@@ -442,7 +483,10 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Construye filtros de tipo de vehículo basados en tier y vehicleType
    */
-  private async buildVehicleTypeFilters(tierId?: number, vehicleTypeId?: number) {
+  private async buildVehicleTypeFilters(
+    tierId?: number,
+    vehicleTypeId?: number,
+  ) {
     if (!tierId && !vehicleTypeId) return null;
 
     const tierVehicleTypes = await this.prisma.tierVehicleType.findMany({
@@ -454,7 +498,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       select: { vehicleTypeId: true },
     });
 
-    return tierVehicleTypes.map(tvt => tvt.vehicleTypeId);
+    return tierVehicleTypes.map((tvt) => tvt.vehicleTypeId);
   }
 
   /**
@@ -479,12 +523,14 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     });
 
     // Filter by distance (simplified - would use PostGIS in production)
-    return drivers.filter(driver => {
+    return drivers.filter((driver) => {
       if (!driver.currentLatitude || !driver.currentLongitude) return false;
 
       const distance = this.calculateDistance(
-        lat, lng,
-        Number(driver.currentLatitude), Number(driver.currentLongitude)
+        lat,
+        lng,
+        Number(driver.currentLatitude),
+        Number(driver.currentLongitude),
       );
 
       return distance <= radiusKm;
@@ -527,8 +573,10 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
       if (!driver.currentLatitude || !driver.currentLongitude) continue;
 
       const distance = this.calculateDistance(
-        userLat, userLng,
-        Number(driver.currentLatitude), Number(driver.currentLongitude)
+        userLat,
+        userLng,
+        Number(driver.currentLatitude),
+        Number(driver.currentLongitude),
       );
 
       if (distance <= radiusKm) {
@@ -602,15 +650,22 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Calcula distancia entre dos puntos (fórmula Haversine)
    */
-  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  private calculateDistance(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
     const R = 6371; // Radio de la Tierra en km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
     const a =
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
 
@@ -621,7 +676,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     bestDriver: any,
     driverDetails: any,
     estimatedMinutes: number,
-    tierId?: number
+    tierId?: number,
   ): MatchedDriverInfo {
     return {
       driverId: bestDriver.id,
@@ -636,7 +691,8 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
           : 'Unknown',
         licensePlate: driverDetails.vehicles?.[0]?.licensePlate || '',
         carSeats: driverDetails.vehicles?.[0]?.seatingCapacity || 0,
-        vehicleType: driverDetails.vehicles?.[0]?.vehicleType?.displayName || null,
+        vehicleType:
+          driverDetails.vehicles?.[0]?.vehicleType?.displayName || null,
       },
       location: {
         distance: Math.round(bestDriver.distance * 100) / 100,
@@ -659,7 +715,10 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Formatea resultado de matched driver
    */
-  private formatMatchedDriver(matchedDriver: any, searchId: string): MatchedDriverInfo {
+  private formatMatchedDriver(
+    matchedDriver: any,
+    searchId: string,
+  ): MatchedDriverInfo {
     return {
       driverId: matchedDriver.driver.driverId,
       firstName: matchedDriver.driver.firstName,
@@ -686,7 +745,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   private formatSearchResult(session: SearchSession): AsyncSearchResult {
     const timeRemaining = Math.max(
       0,
-      Math.round((session.expiresAt.getTime() - Date.now()) / 1000)
+      Math.round((session.expiresAt.getTime() - Date.now()) / 1000),
     );
 
     return {
@@ -703,7 +762,8 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
         maxWaitTime: session.maxWaitTime,
         priority: session.priority,
       },
-      timeRemaining: session.status === SearchStatus.SEARCHING ? timeRemaining : undefined,
+      timeRemaining:
+        session.status === SearchStatus.SEARCHING ? timeRemaining : undefined,
       createdAt: session.createdAt,
     };
   }
@@ -732,17 +792,18 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
    * Busca sesión activa de un usuario
    */
   private findActiveSearchByUser(userId: number): SearchSession | undefined {
-    return Array.from(this.searchSessions.values())
-      .find(session =>
-        session.userId === userId &&
-        session.status === SearchStatus.SEARCHING
-      );
+    return Array.from(this.searchSessions.values()).find(
+      (session) =>
+        session.userId === userId && session.status === SearchStatus.SEARCHING,
+    );
   }
 
   /**
    * Intenta matching para una sesión específica
    */
-  private async attemptMatchingForSession(session: SearchSession): Promise<void> {
+  private async attemptMatchingForSession(
+    session: SearchSession,
+  ): Promise<void> {
     // Este método se usaría cuando un conductor se conecta
     // Reutiliza la lógica de búsqueda periódica
     await this.executeSearch(session);
@@ -754,20 +815,24 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   private notifyWebSocket(
     session: SearchSession,
     eventType: MatchingWebSocketEvent['type'],
-    data?: any
+    data?: any,
   ): void {
     try {
       // Usar el método público del WebSocket gateway
       this.websocketGateway.sendMatchingEvent(
-        eventType as 'driver-found' | 'search-timeout' | 'search-cancelled' | 'search-expired',
+        eventType,
         session.searchId,
         session.userId,
-        data
+        data,
       );
 
-      this.logger.debug(`📡 [WS] Sent ${eventType} for search ${session.searchId}`);
+      this.logger.debug(
+        `📡 [WS] Sent ${eventType} for search ${session.searchId}`,
+      );
     } catch (error) {
-      this.logger.warn(`Failed to send WebSocket notification: ${error.message}`);
+      this.logger.warn(
+        `Failed to send WebSocket notification: ${error.message}`,
+      );
     }
   }
 
@@ -779,18 +844,23 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
     const expiredSessions: string[] = [];
 
     for (const [searchId, session] of this.searchSessions.entries()) {
-      if (session.expiresAt.getTime() < now && session.status === SearchStatus.SEARCHING) {
+      if (
+        session.expiresAt.getTime() < now &&
+        session.status === SearchStatus.SEARCHING
+      ) {
         expiredSessions.push(searchId);
         this.stopPeriodicSearch(searchId);
       }
     }
 
-    expiredSessions.forEach(searchId => {
+    expiredSessions.forEach((searchId) => {
       this.searchSessions.delete(searchId);
     });
 
     if (expiredSessions.length > 0) {
-      this.logger.log(`🧹 Cleaned up ${expiredSessions.length} expired search sessions`);
+      this.logger.log(
+        `🧹 Cleaned up ${expiredSessions.length} expired search sessions`,
+      );
     }
   }
 
@@ -824,15 +894,23 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Calcula el score de un conductor basado en múltiples factores
    */
-  private async calculateDriverScore(driver: any, userLat: number, userLng: number): Promise<number> {
+  private async calculateDriverScore(
+    driver: any,
+    userLat: number,
+    userLng: number,
+  ): Promise<number> {
     // Simplified scoring algorithm - in production this would be more sophisticated
-    const distance = driver.distance || this.calculateDistance(
-      userLat, userLng,
-      driver.currentLatitude, driver.currentLongitude
-    );
+    const distance =
+      driver.distance ||
+      this.calculateDistance(
+        userLat,
+        userLng,
+        driver.currentLatitude,
+        driver.currentLongitude,
+      );
 
     // Distance score (higher for closer drivers)
-    const distanceScore = Math.max(0, 1 - (distance / 10)) * 40; // Max 40 points
+    const distanceScore = Math.max(0, 1 - distance / 10) * 40; // Max 40 points
 
     // Rating score (4.5 rating = 35 points, 5.0 rating = 35 points)
     const rating = driver.rating || driver.averageRating || 4.5;
@@ -840,7 +918,7 @@ export class AsyncMatchingService implements OnModuleInit, OnModuleDestroy {
 
     // Estimated time score (faster arrival = higher score)
     const estimatedTime = Math.max(1, (distance * 60) / 30); // minutes at 30 km/h
-    const timeScore = Math.max(0, 1 - (estimatedTime / 30)) * 25; // Max 25 points
+    const timeScore = Math.max(0, 1 - estimatedTime / 30) * 25; // Max 25 points
 
     const totalScore = distanceScore + ratingScore + timeScore;
 

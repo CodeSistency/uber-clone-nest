@@ -1,6 +1,15 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { VerificationCodeData, VerificationType, VerificationResult } from '../interfaces/verification.interface';
+import {
+  VerificationCodeData,
+  VerificationType,
+  VerificationResult,
+} from '../interfaces/verification.interface';
 
 @Injectable()
 export class VerificationCodesService {
@@ -26,7 +35,9 @@ export class VerificationCodesService {
     type: VerificationType,
     target: string,
   ): Promise<VerificationCodeData> {
-    this.logger.log(`Creating verification code for user ${userId}, type: ${type}, target: ${target}`);
+    this.logger.log(
+      `Creating verification code for user ${userId}, type: ${type}, target: ${target}`,
+    );
 
     // Limpiar códigos expirados del usuario para este tipo
     await this.cleanExpiredCodes(userId, type);
@@ -44,13 +55,19 @@ export class VerificationCodesService {
     });
 
     if (existingCode) {
-      this.logger.warn(`Active verification code already exists for user ${userId}, type: ${type}`);
-      throw new BadRequestException('Ya existe un código de verificación activo para esta operación');
+      this.logger.warn(
+        `Active verification code already exists for user ${userId}, type: ${type}`,
+      );
+      throw new BadRequestException(
+        'Ya existe un código de verificación activo para esta operación',
+      );
     }
 
     // Generar nuevo código
     const code = this.generateCode();
-    const expiresAt = new Date(Date.now() + this.CODE_EXPIRY_MINUTES * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + this.CODE_EXPIRY_MINUTES * 60 * 1000,
+    );
 
     // Crear código en la base de datos
     const verificationCode = await this.prisma.verificationCode.create({
@@ -65,7 +82,9 @@ export class VerificationCodesService {
       },
     });
 
-    this.logger.log(`Verification code created: ${verificationCode.id} for user ${userId}`);
+    this.logger.log(
+      `Verification code created: ${verificationCode.id} for user ${userId}`,
+    );
     return verificationCode as VerificationCodeData;
   }
 
@@ -77,7 +96,9 @@ export class VerificationCodesService {
     type: VerificationType,
     code: string,
   ): Promise<VerificationResult> {
-    this.logger.log(`Verifying code for user ${userId}, type: ${type}, code: ${code}`);
+    this.logger.log(
+      `Verifying code for user ${userId}, type: ${type}, code: ${code}`,
+    );
 
     // Buscar código activo
     const verificationCode = await this.prisma.verificationCode.findFirst({
@@ -93,7 +114,9 @@ export class VerificationCodesService {
     });
 
     if (!verificationCode) {
-      this.logger.warn(`Invalid or expired code for user ${userId}, type: ${type}`);
+      this.logger.warn(
+        `Invalid or expired code for user ${userId}, type: ${type}`,
+      );
       return {
         success: false,
         message: 'Código inválido o expirado',
@@ -103,7 +126,9 @@ export class VerificationCodesService {
 
     // Verificar intentos restantes
     if (verificationCode.attempts >= this.MAX_ATTEMPTS) {
-      this.logger.warn(`Max attempts exceeded for user ${userId}, type: ${type}`);
+      this.logger.warn(
+        `Max attempts exceeded for user ${userId}, type: ${type}`,
+      );
       await this.prisma.verificationCode.update({
         where: { id: verificationCode.id },
         data: { isUsed: true },
@@ -125,7 +150,9 @@ export class VerificationCodesService {
       },
     });
 
-    this.logger.log(`Code verified successfully for user ${userId}, type: ${type}`);
+    this.logger.log(
+      `Code verified successfully for user ${userId}, type: ${type}`,
+    );
     return {
       success: true,
       message: 'Código verificado exitosamente',
@@ -135,7 +162,10 @@ export class VerificationCodesService {
   /**
    * Obtiene los intentos restantes para un usuario y tipo
    */
-  async getRemainingAttempts(userId: number, type: VerificationType): Promise<number> {
+  async getRemainingAttempts(
+    userId: number,
+    type: VerificationType,
+  ): Promise<number> {
     const verificationCode = await this.prisma.verificationCode.findFirst({
       where: {
         userId,
@@ -157,7 +187,10 @@ export class VerificationCodesService {
   /**
    * Obtiene un código de verificación activo
    */
-  async getActiveCode(userId: number, type: VerificationType): Promise<VerificationCodeData | null> {
+  async getActiveCode(
+    userId: number,
+    type: VerificationType,
+  ): Promise<VerificationCodeData | null> {
     return this.prisma.verificationCode.findFirst({
       where: {
         userId,
@@ -176,8 +209,13 @@ export class VerificationCodesService {
   /**
    * Cancela un código de verificación activo
    */
-  async cancelVerificationCode(userId: number, type: VerificationType): Promise<void> {
-    this.logger.log(`Cancelling verification code for user ${userId}, type: ${type}`);
+  async cancelVerificationCode(
+    userId: number,
+    type: VerificationType,
+  ): Promise<void> {
+    this.logger.log(
+      `Cancelling verification code for user ${userId}, type: ${type}`,
+    );
 
     await this.prisma.verificationCode.updateMany({
       where: {
@@ -193,13 +231,18 @@ export class VerificationCodesService {
       },
     });
 
-    this.logger.log(`Verification code cancelled for user ${userId}, type: ${type}`);
+    this.logger.log(
+      `Verification code cancelled for user ${userId}, type: ${type}`,
+    );
   }
 
   /**
    * Limpia códigos expirados
    */
-  async cleanExpiredCodes(userId?: number, type?: VerificationType): Promise<void> {
+  async cleanExpiredCodes(
+    userId?: number,
+    type?: VerificationType,
+  ): Promise<void> {
     const whereClause: any = {
       expiresAt: {
         lt: new Date(),
@@ -235,35 +278,36 @@ export class VerificationCodesService {
     expiredCodes: number;
     usedCodes: number;
   }> {
-    const [totalCodes, activeCodes, expiredCodes, usedCodes] = await Promise.all([
-      this.prisma.verificationCode.count({
-        where: { userId },
-      }),
-      this.prisma.verificationCode.count({
-        where: {
-          userId,
-          isUsed: false,
-          expiresAt: {
-            gt: new Date(),
+    const [totalCodes, activeCodes, expiredCodes, usedCodes] =
+      await Promise.all([
+        this.prisma.verificationCode.count({
+          where: { userId },
+        }),
+        this.prisma.verificationCode.count({
+          where: {
+            userId,
+            isUsed: false,
+            expiresAt: {
+              gt: new Date(),
+            },
           },
-        },
-      }),
-      this.prisma.verificationCode.count({
-        where: {
-          userId,
-          isUsed: false,
-          expiresAt: {
-            lt: new Date(),
+        }),
+        this.prisma.verificationCode.count({
+          where: {
+            userId,
+            isUsed: false,
+            expiresAt: {
+              lt: new Date(),
+            },
           },
-        },
-      }),
-      this.prisma.verificationCode.count({
-        where: {
-          userId,
-          isUsed: true,
-        },
-      }),
-    ]);
+        }),
+        this.prisma.verificationCode.count({
+          where: {
+            userId,
+            isUsed: true,
+          },
+        }),
+      ]);
 
     return {
       totalCodes,
@@ -276,7 +320,10 @@ export class VerificationCodesService {
   /**
    * Valida si un usuario puede solicitar un nuevo código
    */
-  async canRequestNewCode(userId: number, type: VerificationType): Promise<boolean> {
+  async canRequestNewCode(
+    userId: number,
+    type: VerificationType,
+  ): Promise<boolean> {
     // Verificar si hay un código activo
     const activeCode = await this.getActiveCode(userId, type);
     if (activeCode) {

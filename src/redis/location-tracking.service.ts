@@ -157,7 +157,9 @@ export class LocationTrackingService extends RedisPubSubService {
 
       // If driver is coming online, emit event
       if (isComingOnline) {
-        console.log(`🟢 [LOCATION-TRACKING] Driver ${driverId} came online at ${location.lat}, ${location.lng}`);
+        console.log(
+          `🟢 [LOCATION-TRACKING] Driver ${driverId} came online at ${location.lat}, ${location.lng}`,
+        );
         this.driverEventsService.emitDriverOnline({
           driverId,
           lat: location.lat,
@@ -165,13 +167,11 @@ export class LocationTrackingService extends RedisPubSubService {
           timestamp: now,
         });
       }
-
     } catch (error) {
       console.error(`Failed to update driver location:`, error);
       throw error;
     }
   }
-
 
   getDriverLocation(driverId: number): DriverLocation | null {
     return this.driverLocations.get(driverId) || null;

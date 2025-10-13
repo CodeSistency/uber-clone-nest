@@ -12,7 +12,9 @@ export class EmailVerificationService {
    * Envía código de verificación por email
    */
   async sendVerificationCode(data: EmailVerificationData): Promise<void> {
-    this.logger.log(`Sending verification code to ${data.email} for type: ${data.type}`);
+    this.logger.log(
+      `Sending verification code to ${data.email} for type: ${data.type}`,
+    );
 
     const subject = this.getEmailSubject(data.type);
     const message = this.getEmailMessage(data);
@@ -35,7 +37,10 @@ export class EmailVerificationService {
 
       this.logger.log(`Verification code sent successfully to ${data.email}`);
     } catch (error) {
-      this.logger.error(`Failed to send verification code to ${data.email}:`, error);
+      this.logger.error(
+        `Failed to send verification code to ${data.email}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -43,8 +48,14 @@ export class EmailVerificationService {
   /**
    * Envía confirmación de cambio exitoso
    */
-  async sendChangeConfirmation(email: string, type: string, userName?: string): Promise<void> {
-    this.logger.log(`Sending change confirmation to ${email} for type: ${type}`);
+  async sendChangeConfirmation(
+    email: string,
+    type: string,
+    userName?: string,
+  ): Promise<void> {
+    this.logger.log(
+      `Sending change confirmation to ${email} for type: ${type}`,
+    );
 
     const subject = this.getConfirmationSubject(type);
     const message = this.getConfirmationMessage(type, userName);
@@ -66,7 +77,10 @@ export class EmailVerificationService {
 
       this.logger.log(`Change confirmation sent successfully to ${email}`);
     } catch (error) {
-      this.logger.error(`Failed to send change confirmation to ${email}:`, error);
+      this.logger.error(
+        `Failed to send change confirmation to ${email}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -79,7 +93,8 @@ export class EmailVerificationService {
       email_change: 'Código de verificación para cambio de email',
       password_change: 'Código de verificación para cambio de contraseña',
       phone_change: 'Código de verificación para cambio de teléfono',
-      identity_verification: 'Código de verificación para verificación de identidad',
+      identity_verification:
+        'Código de verificación para verificación de identidad',
     };
 
     return subjects[type] || 'Código de verificación';
@@ -151,7 +166,9 @@ El equipo de Uber Clone
       `,
     };
 
-    return messages[type] || `
+    return (
+      messages[type] ||
+      `
 ${greeting},
 
 Utiliza el siguiente código de verificación:
@@ -162,7 +179,8 @@ Este código expirará en 15 minutos por seguridad.
 
 Saludos,
 El equipo de Uber Clone
-    `;
+    `
+    );
   }
 
   /**
@@ -228,13 +246,16 @@ El equipo de Uber Clone
       `,
     };
 
-    return messages[type] || `
+    return (
+      messages[type] ||
+      `
 ${greeting},
 
 Tu solicitud ha sido procesada exitosamente.
 
 Saludos,
 El equipo de Uber Clone
-    `;
+    `
+    );
   }
 }

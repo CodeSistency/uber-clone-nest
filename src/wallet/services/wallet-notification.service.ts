@@ -4,7 +4,15 @@ import { NotificationsService } from '../../notifications/notifications.service'
 
 export interface WalletNotificationData {
   userId: number;
-  type: 'transaction_success' | 'transaction_failed' | 'wallet_blocked' | 'wallet_unblocked' | 'balance_low' | 'transfer_received' | 'transfer_sent' | 'refund_processed';
+  type:
+    | 'transaction_success'
+    | 'transaction_failed'
+    | 'wallet_blocked'
+    | 'wallet_unblocked'
+    | 'balance_low'
+    | 'transfer_received'
+    | 'transfer_sent'
+    | 'refund_processed';
   amount?: number;
   balance?: number;
   transactionId?: string;
@@ -26,7 +34,9 @@ export class WalletNotificationService {
 
   async sendWalletNotification(data: WalletNotificationData): Promise<void> {
     try {
-      this.logger.log(`📱 Enviando notificación de wallet: ${data.type} para usuario ${data.userId}`);
+      this.logger.log(
+        `📱 Enviando notificación de wallet: ${data.type} para usuario ${data.userId}`,
+      );
 
       // Get user preferences
       const user = await this.prisma.user.findUnique({
@@ -38,14 +48,18 @@ export class WalletNotificationService {
       });
 
       if (!user) {
-        this.logger.warn(`⚠️ Usuario ${data.userId} no encontrado para notificación`);
+        this.logger.warn(
+          `⚠️ Usuario ${data.userId} no encontrado para notificación`,
+        );
         return;
       }
 
       // Check if user wants wallet notifications
       const prefs = user.notificationPreferences;
       if (prefs && !prefs.emailEnabled) {
-        this.logger.log(`📵 Usuario ${data.userId} tiene notificaciones de wallet deshabilitadas`);
+        this.logger.log(
+          `📵 Usuario ${data.userId} tiene notificaciones de wallet deshabilitadas`,
+        );
         return;
       }
 
@@ -65,9 +79,13 @@ export class WalletNotificationService {
       // Store notification in database
       await this.storeNotification(data.userId, notification, data);
 
-      this.logger.log(`✅ Notificación enviada exitosamente: ${data.type} para usuario ${data.userId}`);
+      this.logger.log(
+        `✅ Notificación enviada exitosamente: ${data.type} para usuario ${data.userId}`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Error enviando notificación de wallet: ${error.message}`);
+      this.logger.error(
+        `❌ Error enviando notificación de wallet: ${error.message}`,
+      );
     }
   }
 
@@ -76,7 +94,15 @@ export class WalletNotificationService {
     body: string;
     data?: any;
   } {
-    const { type, amount, balance, description, recipientName, senderName, reason } = data;
+    const {
+      type,
+      amount,
+      balance,
+      description,
+      recipientName,
+      senderName,
+      reason,
+    } = data;
 
     switch (type) {
       case 'transaction_success':
@@ -181,7 +207,10 @@ export class WalletNotificationService {
     }
   }
 
-  private async sendPushNotification(pushTokens: any[], notification: any): Promise<void> {
+  private async sendPushNotification(
+    pushTokens: any[],
+    notification: any,
+  ): Promise<void> {
     try {
       for (const token of pushTokens) {
         await this.notificationsService.sendNotification({
@@ -193,14 +222,20 @@ export class WalletNotificationService {
         });
       }
     } catch (error) {
-      this.logger.error(`❌ Error enviando push notification: ${error.message}`);
+      this.logger.error(
+        `❌ Error enviando push notification: ${error.message}`,
+      );
     }
   }
 
-  private async sendEmailNotification(email: string, notification: any, data: WalletNotificationData): Promise<void> {
+  private async sendEmailNotification(
+    email: string,
+    notification: any,
+    data: WalletNotificationData,
+  ): Promise<void> {
     try {
       const emailContent = this.createEmailContent(notification, data);
-      
+
       await this.notificationsService.sendNotification({
         userId: '0',
         type: 'email' as any,
@@ -209,11 +244,16 @@ export class WalletNotificationService {
         data: emailContent,
       });
     } catch (error) {
-      this.logger.error(`❌ Error enviando email notification: ${error.message}`);
+      this.logger.error(
+        `❌ Error enviando email notification: ${error.message}`,
+      );
     }
   }
 
-  private createEmailContent(notification: any, data: WalletNotificationData): any {
+  private createEmailContent(
+    notification: any,
+    data: WalletNotificationData,
+  ): any {
     return {
       title: notification.title,
       body: notification.body,
@@ -226,7 +266,11 @@ export class WalletNotificationService {
     };
   }
 
-  private async storeNotification(userId: number, notification: any, data: WalletNotificationData): Promise<void> {
+  private async storeNotification(
+    userId: number,
+    notification: any,
+    data: WalletNotificationData,
+  ): Promise<void> {
     try {
       await this.prisma.notification.create({
         data: {
@@ -262,7 +306,7 @@ export class WalletNotificationService {
     amount: number,
     balance: number,
     transactionId: string,
-    description?: string
+    description?: string,
   ): Promise<void> {
     await this.sendWalletNotification({
       userId,
@@ -277,7 +321,7 @@ export class WalletNotificationService {
   async notifyTransactionFailed(
     userId: number,
     amount: number,
-    description: string
+    description: string,
   ): Promise<void> {
     await this.sendWalletNotification({
       userId,
@@ -287,10 +331,7 @@ export class WalletNotificationService {
     });
   }
 
-  async notifyWalletBlocked(
-    userId: number,
-    reason: string
-  ): Promise<void> {
+  async notifyWalletBlocked(userId: number, reason: string): Promise<void> {
     await this.sendWalletNotification({
       userId,
       type: 'wallet_blocked',
@@ -298,10 +339,7 @@ export class WalletNotificationService {
     });
   }
 
-  async notifyWalletUnblocked(
-    userId: number,
-    reason: string
-  ): Promise<void> {
+  async notifyWalletUnblocked(userId: number, reason: string): Promise<void> {
     await this.sendWalletNotification({
       userId,
       type: 'wallet_unblocked',
@@ -309,10 +347,7 @@ export class WalletNotificationService {
     });
   }
 
-  async notifyBalanceLow(
-    userId: number,
-    balance: number
-  ): Promise<void> {
+  async notifyBalanceLow(userId: number, balance: number): Promise<void> {
     await this.sendWalletNotification({
       userId,
       type: 'balance_low',
@@ -325,7 +360,7 @@ export class WalletNotificationService {
     amount: number,
     balance: number,
     senderName: string,
-    transactionId: string
+    transactionId: string,
   ): Promise<void> {
     await this.sendWalletNotification({
       userId,
@@ -342,7 +377,7 @@ export class WalletNotificationService {
     amount: number,
     balance: number,
     recipientName: string,
-    transactionId: string
+    transactionId: string,
   ): Promise<void> {
     await this.sendWalletNotification({
       userId,
@@ -359,7 +394,7 @@ export class WalletNotificationService {
     amount: number,
     balance: number,
     reason: string,
-    transactionId: string
+    transactionId: string,
   ): Promise<void> {
     await this.sendWalletNotification({
       userId,

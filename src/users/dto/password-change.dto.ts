@@ -17,12 +17,10 @@ export class RequestPasswordChangeDto {
   @IsString({ message: 'La contraseña debe ser una cadena de texto' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   @MaxLength(100, { message: 'La contraseña no puede exceder 100 caracteres' })
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    {
-      message: 'La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial',
-    },
-  )
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+    message:
+      'La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial',
+  })
   currentPassword: string;
 }
 
@@ -36,12 +34,10 @@ export class VerifyPasswordChangeDto {
   @IsString({ message: 'La contraseña debe ser una cadena de texto' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   @MaxLength(100, { message: 'La contraseña no puede exceder 100 caracteres' })
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    {
-      message: 'La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial',
-    },
-  )
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+    message:
+      'La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial',
+  })
   newPassword: string;
 
   @ApiProperty({

@@ -19,7 +19,11 @@ import { GetUser } from '../../auth/decorators/get-user.decorator';
 import { UsersService } from '../users.service';
 import { VerificationCodesService } from '../services/verification-codes.service';
 import { EmailVerificationService } from '../services/email-verification.service';
-import { RequestPasswordChangeDto, VerifyPasswordChangeDto, CancelPasswordChangeDto } from '../dto/password-change.dto';
+import {
+  RequestPasswordChangeDto,
+  VerifyPasswordChangeDto,
+  CancelPasswordChangeDto,
+} from '../dto/password-change.dto';
 import { VerificationType } from '../interfaces/verification.interface';
 import * as bcrypt from 'bcrypt';
 
@@ -74,8 +78,15 @@ export class PasswordChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Código de verificación enviado al email' },
-        expiresAt: { type: 'string', format: 'date-time', example: '2024-01-15T10:45:00.000Z' },
+        message: {
+          type: 'string',
+          example: 'Código de verificación enviado al email',
+        },
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:45:00.000Z',
+        },
       },
     },
   })
@@ -110,7 +121,10 @@ export class PasswordChangeController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 429 },
-        message: { type: 'string', example: 'Demasiadas solicitudes. Intenta más tarde' },
+        message: {
+          type: 'string',
+          example: 'Demasiadas solicitudes. Intenta más tarde',
+        },
         error: { type: 'string', example: 'Too Many Requests' },
       },
     },
@@ -132,12 +146,21 @@ export class PasswordChangeController {
 
       // 2. Verificar contraseña actual
       if (!currentUser.password) {
-        throw new HttpException('Usuario no tiene contraseña configurada', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Usuario no tiene contraseña configurada',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      const isPasswordValid = await bcrypt.compare(currentPassword, currentUser.password);
+      const isPasswordValid = await bcrypt.compare(
+        currentPassword,
+        currentUser.password,
+      );
       if (!isPasswordValid) {
-        throw new HttpException('Contraseña actual incorrecta', HttpStatus.UNAUTHORIZED);
+        throw new HttpException(
+          'Contraseña actual incorrecta',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       // 3. Verificar que no haya un código activo
@@ -153,11 +176,12 @@ export class PasswordChangeController {
       }
 
       // 4. Crear código de verificación
-      const verificationCode = await this.verificationCodesService.createVerificationCode(
-        user.id,
-        VerificationType.PASSWORD_CHANGE,
-        user.email, // Enviar al email actual
-      );
+      const verificationCode =
+        await this.verificationCodesService.createVerificationCode(
+          user.id,
+          VerificationType.PASSWORD_CHANGE,
+          user.email, // Enviar al email actual
+        );
 
       // 5. Enviar código por email
       await this.emailVerificationService.sendVerificationCode({
@@ -167,7 +191,9 @@ export class PasswordChangeController {
         userName: user.name,
       });
 
-      this.logger.log(`Password change code sent to ${user.email} for user ${user.id}`);
+      this.logger.log(
+        `Password change code sent to ${user.email} for user ${user.id}`,
+      );
 
       return {
         success: true,
@@ -175,11 +201,17 @@ export class PasswordChangeController {
         expiresAt: verificationCode.expiresAt,
       };
     } catch (error) {
-      this.logger.error(`Password change request failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Password change request failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -223,7 +255,10 @@ export class PasswordChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Contraseña actualizada exitosamente' },
+        message: {
+          type: 'string',
+          example: 'Contraseña actualizada exitosamente',
+        },
         user: {
           type: 'object',
           properties: {
@@ -264,7 +299,10 @@ export class PasswordChangeController {
       );
 
       if (!verificationResult.success) {
-        throw new HttpException(verificationResult.message, HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          verificationResult.message,
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // 2. Encriptar nueva contraseña
@@ -295,11 +333,17 @@ export class PasswordChangeController {
         },
       };
     } catch (error) {
-      this.logger.error(`Password change verification failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Password change verification failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -338,7 +382,10 @@ export class PasswordChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Solicitud de cambio de contraseña cancelada' },
+        message: {
+          type: 'string',
+          example: 'Solicitud de cambio de contraseña cancelada',
+        },
       },
     },
   })
@@ -350,7 +397,10 @@ export class PasswordChangeController {
       const { confirm } = cancelPasswordChangeDto;
 
       if (!confirm) {
-        throw new HttpException('Confirmación requerida para cancelar', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Confirmación requerida para cancelar',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       this.logger.log(`Cancelling password change for user ${user.id}`);
@@ -368,11 +418,17 @@ export class PasswordChangeController {
         message: 'Solicitud de cambio de contraseña cancelada',
       };
     } catch (error) {
-      this.logger.error(`Password change cancellation failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Password change cancellation failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

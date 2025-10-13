@@ -61,7 +61,7 @@ describe('TemporalPricingService', () => {
       const createDto: CreateTemporalPricingRuleDto = {
         name: 'Morning Peak Hours',
         description: 'Increased pricing during morning rush hour',
-          ruleType: 'TIME_RANGE' as any,
+        ruleType: 'TIME_RANGE' as any,
         startTime: '07:00',
         endTime: '09:00',
         daysOfWeek: [1, 2, 3, 4, 5], // Monday to Friday
@@ -85,7 +85,9 @@ describe('TemporalPricingService', () => {
         multiplier: createDto.multiplier, // Service transforms Decimal to number
       };
 
-      prismaService.temporalPricingRule.create.mockResolvedValue(prismaResult as any);
+      prismaService.temporalPricingRule.create.mockResolvedValue(
+        prismaResult as any,
+      );
 
       const result = await service.create(createDto);
 
@@ -167,7 +169,9 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(
+        mockRules as any,
+      );
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -215,7 +219,9 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(
+        mockRules as any,
+      );
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -250,7 +256,9 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(
+        mockRules as any,
+      );
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -286,7 +294,9 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(
+        mockRules as any,
+      );
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -321,7 +331,9 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(
+        mockRules as any,
+      );
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -357,7 +369,9 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(
+        mockRules as any,
+      );
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -410,7 +424,9 @@ describe('TemporalPricingService', () => {
         }),
       ];
 
-      prismaService.temporalPricingRule.findMany.mockResolvedValue(mockRules as any);
+      prismaService.temporalPricingRule.findMany.mockResolvedValue(
+        mockRules as any,
+      );
 
       // Note: evaluateTemporalRules method not implemented yet
       const result = {
@@ -517,7 +533,7 @@ describe('TemporalPricingService', () => {
     it('should handle rules with missing required fields', async () => {
       const createDto: CreateTemporalPricingRuleDto = {
         name: 'Invalid Rule',
-          ruleType: 'TIME_RANGE' as any,
+        ruleType: 'TIME_RANGE' as any,
         // Missing startTime, endTime
         multiplier: 1.2,
       };

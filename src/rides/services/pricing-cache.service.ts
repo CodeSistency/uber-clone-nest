@@ -46,12 +46,16 @@ export class PricingCacheService {
         const cached = await this.redisService.get(key);
         if (cached) {
           const data = JSON.parse(cached);
-          this.logger.debug(`Retrieved cached geographic zone for ${lat},${lng}`);
+          this.logger.debug(
+            `Retrieved cached geographic zone for ${lat},${lng}`,
+          );
           return data;
         }
       }
     } catch (error) {
-      this.logger.warn(`Failed to get cached geographic zone: ${error.message}`);
+      this.logger.warn(
+        `Failed to get cached geographic zone: ${error.message}`,
+      );
     }
 
     return null;
@@ -89,7 +93,9 @@ export class PricingCacheService {
         }
       }
     } catch (error) {
-      this.logger.warn(`Failed to get cached promotion ${code}: ${error.message}`);
+      this.logger.warn(
+        `Failed to get cached promotion ${code}: ${error.message}`,
+      );
     }
 
     return null;
@@ -98,7 +104,11 @@ export class PricingCacheService {
   /**
    * Invalidate geographic cache for a region
    */
-  async invalidateGeographicRegion(lat: number, lng: number, radiusKm: number = 1): Promise<void> {
+  async invalidateGeographicRegion(
+    lat: number,
+    lng: number,
+    radiusKm: number = 1,
+  ): Promise<void> {
     try {
       if (this.redisService) {
         // In a production system, you might want to invalidate a region
@@ -108,7 +118,9 @@ export class PricingCacheService {
         this.logger.debug(`Invalidated geographic cache for ${lat},${lng}`);
       }
     } catch (error) {
-      this.logger.warn(`Failed to invalidate geographic cache: ${error.message}`);
+      this.logger.warn(
+        `Failed to invalidate geographic cache: ${error.message}`,
+      );
     }
   }
 
@@ -124,7 +136,9 @@ export class PricingCacheService {
         this.logger.debug(`Invalidated promotion cache for ${code}`);
       }
     } catch (error) {
-      this.logger.warn(`Failed to invalidate promotion cache: ${error.message}`);
+      this.logger.warn(
+        `Failed to invalidate promotion cache: ${error.message}`,
+      );
     }
   }
 

@@ -466,7 +466,10 @@ export class UsersController {
         phone: { type: 'string', example: '+584141234567' },
         dateOfBirth: { type: 'string', format: 'date', example: '1990-05-15' },
         gender: { type: 'string', example: 'male' },
-        profileImage: { type: 'string', example: 'https://example.com/profile.jpg' },
+        profileImage: {
+          type: 'string',
+          example: 'https://example.com/profile.jpg',
+        },
         address: { type: 'string', example: 'Calle 123, Centro' },
         city: { type: 'string', example: 'Caracas' },
         state: { type: 'string', example: 'Miranda' },
@@ -479,7 +482,7 @@ export class UsersController {
         wallet: {
           type: 'object',
           properties: {
-            balance: { type: 'number', example: 150.50 },
+            balance: { type: 'number', example: 150.5 },
           },
         },
         emergencyContacts: {
@@ -569,7 +572,10 @@ export class UsersController {
     @Body() updateProfileDto: UpdateUserProfileDto,
   ): Promise<User> {
     try {
-      return await this.usersService.updateUserProfile(user.id, updateProfileDto);
+      return await this.usersService.updateUserProfile(
+        user.id,
+        updateProfileDto,
+      );
     } catch (error) {
       if (error.message === 'User not found') {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);

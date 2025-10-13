@@ -27,7 +27,7 @@ export class ExchangeRatesService {
       const response = await firstValueFrom(
         this.httpService.get<DollarApiResponse>(this.apiUrl, {
           timeout: 10000, // 10 segundos timeout
-        })
+        }),
       );
 
       const data = (response as any).data as DollarApiResponse;
@@ -39,7 +39,9 @@ export class ExchangeRatesService {
       const rate = data.promedio || data.venta || data.compra || 0;
 
       if (rate === 0) {
-        this.logger.warn(`⚠️ Warning: Rate is 0. API data: promedio=${data.promedio}, venta=${data.venta}, compra=${data.compra}`);
+        this.logger.warn(
+          `⚠️ Warning: Rate is 0. API data: promedio=${data.promedio}, venta=${data.venta}, compra=${data.compra}`,
+        );
       }
 
       const exchangeRateDto: ExchangeRateDto = {
@@ -52,11 +54,16 @@ export class ExchangeRatesService {
         fechaActualizacion: data.fechaActualizacion,
       };
 
-      this.logger.log(`✅ Dollar rate fetched successfully: ${exchangeRateDto.rate} VES (Fuente: ${exchangeRateDto.casa}, Promedio: ${data.promedio})`);
+      this.logger.log(
+        `✅ Dollar rate fetched successfully: ${exchangeRateDto.rate} VES (Fuente: ${exchangeRateDto.casa}, Promedio: ${data.promedio})`,
+      );
 
       return exchangeRateDto;
     } catch (error) {
-      this.logger.error('❌ Error fetching dollar rate from ve.dolarapi.com:', error);
+      this.logger.error(
+        '❌ Error fetching dollar rate from ve.dolarapi.com:',
+        error,
+      );
       throw new Error(`Failed to fetch exchange rate: ${error.message}`);
     }
   }
@@ -77,7 +84,9 @@ export class ExchangeRatesService {
         });
 
         if (existing) {
-          this.logger.log('⚠️ Exchange rate already exists for this timestamp, skipping...');
+          this.logger.log(
+            '⚠️ Exchange rate already exists for this timestamp, skipping...',
+          );
           return existing;
         }
       }
@@ -90,12 +99,15 @@ export class ExchangeRatesService {
           venta: exchangeRateDto.venta,
           source: exchangeRateDto.source,
           casa: exchangeRateDto.casa,
-          fechaActualizacion: exchangeRateDto.fechaActualizacion ?
-            new Date(exchangeRateDto.fechaActualizacion) : new Date(),
+          fechaActualizacion: exchangeRateDto.fechaActualizacion
+            ? new Date(exchangeRateDto.fechaActualizacion)
+            : new Date(),
         },
       });
 
-      this.logger.log(`💱 Exchange rate saved: ${exchangeRate.rate} VES (Casa: ${exchangeRate.casa})`);
+      this.logger.log(
+        `💱 Exchange rate saved: ${exchangeRate.rate} VES (Casa: ${exchangeRate.casa})`,
+      );
       return exchangeRate;
     } catch (error) {
       this.logger.error('❌ Error saving exchange rate:', error);
@@ -115,7 +127,9 @@ export class ExchangeRatesService {
 
       if (!latestRate) {
         // Si no hay datos, intentar obtenerlos de la API
-        this.logger.warn('⚠️ No exchange rate data in database, fetching from API...');
+        this.logger.warn(
+          '⚠️ No exchange rate data in database, fetching from API...',
+        );
         const freshData = await this.fetchDollarRate();
         return await this.saveExchangeRate(freshData);
       }
@@ -144,12 +158,16 @@ export class ExchangeRatesService {
   @Cron('0 0 */1 * * *') // Cada hora a los 0 minutos
   async updateExchangeRateHourly() {
     try {
-      this.logger.log('🚀 Starting scheduled job: Update exchange rate (hourly)');
+      this.logger.log(
+        '🚀 Starting scheduled job: Update exchange rate (hourly)',
+      );
 
       const exchangeRateData = await this.fetchDollarRate();
       const savedRate = await this.saveExchangeRate(exchangeRateData);
 
-      this.logger.log(`✅ Exchange rate updated (hourly): ${savedRate.rate} VES`);
+      this.logger.log(
+        `✅ Exchange rate updated (hourly): ${savedRate.rate} VES`,
+      );
     } catch (error) {
       this.logger.error('❌ Error in updateExchangeRateHourly job:', error);
     }
@@ -162,14 +180,21 @@ export class ExchangeRatesService {
   @Cron('0 0 9,12,15,18 * * *') // 9 AM, 12 PM, 3 PM, 6 PM
   async updateExchangeRateBusinessHours() {
     try {
-      this.logger.log('🏢 Starting scheduled job: Update exchange rate (business hours)');
+      this.logger.log(
+        '🏢 Starting scheduled job: Update exchange rate (business hours)',
+      );
 
       const exchangeRateData = await this.fetchDollarRate();
       const savedRate = await this.saveExchangeRate(exchangeRateData);
 
-      this.logger.log(`✅ Exchange rate updated (business hours): ${savedRate.rate} VES`);
+      this.logger.log(
+        `✅ Exchange rate updated (business hours): ${savedRate.rate} VES`,
+      );
     } catch (error) {
-      this.logger.error('❌ Error in updateExchangeRateBusinessHours job:', error);
+      this.logger.error(
+        '❌ Error in updateExchangeRateBusinessHours job:',
+        error,
+      );
     }
   }
 
@@ -183,7 +208,9 @@ export class ExchangeRatesService {
       const exchangeRateData = await this.fetchDollarRate();
       const savedRate = await this.saveExchangeRate(exchangeRateData);
 
-      this.logger.log(`✅ Manual exchange rate update completed: ${savedRate.rate} VES`);
+      this.logger.log(
+        `✅ Manual exchange rate update completed: ${savedRate.rate} VES`,
+      );
 
       return {
         success: true,
@@ -226,11 +253,12 @@ export class ExchangeRatesService {
         };
       }
 
-      const prices = rates.map(r => r.venta || r.rate);
+      const prices = rates.map((r) => r.venta || r.rate);
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
       const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
-      const latestPrice = rates[rates.length - 1].venta || rates[rates.length - 1].rate;
+      const latestPrice =
+        rates[rates.length - 1].venta || rates[rates.length - 1].rate;
 
       // Calcular variación
       const firstPrice = rates[0].venta || rates[0].rate;

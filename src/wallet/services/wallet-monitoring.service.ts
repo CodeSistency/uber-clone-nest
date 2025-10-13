@@ -48,12 +48,18 @@ export class WalletMonitoringService {
           },
         });
 
-        this.logger.log(`🔄 Límite diario reseteado para wallet ${wallet.id} (usuario ${wallet.userId})`);
+        this.logger.log(
+          `🔄 Límite diario reseteado para wallet ${wallet.id} (usuario ${wallet.userId})`,
+        );
       }
 
-      this.logger.log(`✅ Verificación de límites completada. ${walletsToReset.length} wallets reseteadas.`);
+      this.logger.log(
+        `✅ Verificación de límites completada. ${walletsToReset.length} wallets reseteadas.`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Error verificando límites diarios: ${error.message}`);
+      this.logger.error(
+        `❌ Error verificando límites diarios: ${error.message}`,
+      );
     }
   }
 
@@ -89,14 +95,18 @@ export class WalletMonitoringService {
         if (prefs && prefs.emailEnabled) {
           await this.walletNotification.notifyBalanceLow(
             wallet.userId,
-            Number(wallet.balance)
+            Number(wallet.balance),
           );
         }
       }
 
-      this.logger.log(`⚠️ ${lowBalanceWallets.length} wallets con balance bajo encontradas.`);
+      this.logger.log(
+        `⚠️ ${lowBalanceWallets.length} wallets con balance bajo encontradas.`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Error verificando balances bajos: ${error.message}`);
+      this.logger.error(
+        `❌ Error verificando balances bajos: ${error.message}`,
+      );
     }
   }
 
@@ -116,24 +126,35 @@ export class WalletMonitoringService {
       const stats = await this.getDailyStats(yesterday, today);
 
       // Log the report
-      this.logger.log(`📈 Reporte diario de wallets (${yesterday.toISOString().split('T')[0]}):`);
-      this.logger.log(`   💰 Total de transacciones: ${stats.totalTransactions}`);
-      this.logger.log(`   📈 Total de créditos: $${stats.totalCredits.toFixed(2)}`);
-      this.logger.log(`   📉 Total de débitos: $${stats.totalDebits.toFixed(2)}`);
+      this.logger.log(
+        `📈 Reporte diario de wallets (${yesterday.toISOString().split('T')[0]}):`,
+      );
+      this.logger.log(
+        `   💰 Total de transacciones: ${stats.totalTransactions}`,
+      );
+      this.logger.log(
+        `   📈 Total de créditos: $${stats.totalCredits.toFixed(2)}`,
+      );
+      this.logger.log(
+        `   📉 Total de débitos: $${stats.totalDebits.toFixed(2)}`,
+      );
       this.logger.log(`   🔄 Transferencias: ${stats.transfers}`);
       this.logger.log(`   🚫 Wallets bloqueadas: ${stats.blockedWallets}`);
-      this.logger.log(`   ⚠️ Wallets con balance bajo: ${stats.lowBalanceWallets}`);
+      this.logger.log(
+        `   ⚠️ Wallets con balance bajo: ${stats.lowBalanceWallets}`,
+      );
 
       // Store report in database (optional)
       await this.storeDailyReport(stats, yesterday);
-
     } catch (error) {
       this.logger.error(`❌ Error generando reporte diario: ${error.message}`);
     }
   }
 
   async checkSuspiciousActivity(userId: number): Promise<boolean> {
-    this.logger.log(`🔍 Verificando actividad sospechosa para usuario ${userId}`);
+    this.logger.log(
+      `🔍 Verificando actividad sospechosa para usuario ${userId}`,
+    );
 
     try {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -164,13 +185,15 @@ export class WalletMonitoringService {
         },
       });
 
-      const isSuspicious = 
+      const isSuspicious =
         recentTransactions > 10 || // More than 10 transactions in 1 hour
         largeTransactions.length > 3 || // More than 3 large transactions
         failedTransactions > 5; // More than 5 failed transactions
 
       if (isSuspicious) {
-        this.logger.warn(`⚠️ Actividad sospechosa detectada para usuario ${userId}`);
+        this.logger.warn(
+          `⚠️ Actividad sospechosa detectada para usuario ${userId}`,
+        );
         await this.flagSuspiciousActivity(userId, {
           recentTransactions,
           largeTransactions: largeTransactions.length,
@@ -180,7 +203,9 @@ export class WalletMonitoringService {
 
       return isSuspicious;
     } catch (error) {
-      this.logger.error(`❌ Error verificando actividad sospechosa: ${error.message}`);
+      this.logger.error(
+        `❌ Error verificando actividad sospechosa: ${error.message}`,
+      );
       return false;
     }
   }
@@ -227,9 +252,9 @@ export class WalletMonitoringService {
 
       // Check transaction frequency
       const recentTransactions = wallet.walletTransactions.filter(
-        t => t.createdAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        (t) => t.createdAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       );
-      
+
       if (recentTransactions.length === 0) {
         score -= 20;
         factors.push('Sin actividad reciente');
@@ -238,9 +263,9 @@ export class WalletMonitoringService {
 
       // Check failed transactions
       const failedTransactions = wallet.walletTransactions.filter(
-        t => t.status === 'FAILED'
+        (t) => t.status === 'FAILED',
       );
-      
+
       if (failedTransactions.length > 5) {
         score -= 25;
         factors.push('Muchas transacciones fallidas');
@@ -256,7 +281,8 @@ export class WalletMonitoringService {
 
       // Check daily limit usage
       const dailyUsage = Number(wallet.dailyLimitUsed);
-      if (dailyUsage > 800) { // 80% of $1000 limit
+      if (dailyUsage > 800) {
+        // 80% of $1000 limit
         score -= 15;
         factors.push('Límite diario casi alcanzado');
         recommendations.push('Esperar hasta mañana para más transacciones');
@@ -277,7 +303,10 @@ export class WalletMonitoringService {
     }
   }
 
-  private async getDailyStats(startDate: Date, endDate: Date): Promise<{
+  private async getDailyStats(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{
     totalTransactions: number;
     totalCredits: number;
     totalDebits: number;
@@ -345,13 +374,18 @@ export class WalletMonitoringService {
   private async storeDailyReport(stats: any, date: Date): Promise<void> {
     try {
       // You can store this in a separate reports table if needed
-      this.logger.log(`📊 Reporte almacenado para ${date.toISOString().split('T')[0]}`);
+      this.logger.log(
+        `📊 Reporte almacenado para ${date.toISOString().split('T')[0]}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Error almacenando reporte: ${error.message}`);
     }
   }
 
-  private async flagSuspiciousActivity(userId: number, metadata: any): Promise<void> {
+  private async flagSuspiciousActivity(
+    userId: number,
+    metadata: any,
+  ): Promise<void> {
     try {
       // Log suspicious activity
       await this.prisma.walletAuditLog.create({
@@ -369,9 +403,13 @@ export class WalletMonitoringService {
         },
       });
 
-      this.logger.warn(`🚨 Actividad sospechosa registrada para usuario ${userId}`);
+      this.logger.warn(
+        `🚨 Actividad sospechosa registrada para usuario ${userId}`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Error registrando actividad sospechosa: ${error.message}`);
+      this.logger.error(
+        `❌ Error registrando actividad sospechosa: ${error.message}`,
+      );
     }
   }
 
@@ -456,7 +494,7 @@ export class WalletMonitoringService {
         dailyTransactions,
         monthlyTransactions,
         averageTransaction: Number(averageTransactionResult._avg.amount || 0),
-        topUsers: topUsers.map(wallet => ({
+        topUsers: topUsers.map((wallet) => ({
           userId: wallet.userId,
           name: wallet.user.name,
           balance: Number(wallet.balance),
@@ -464,7 +502,9 @@ export class WalletMonitoringService {
         })),
       };
     } catch (error) {
-      this.logger.error(`❌ Error obteniendo estadísticas generales: ${error.message}`);
+      this.logger.error(
+        `❌ Error obteniendo estadísticas generales: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -483,7 +523,7 @@ export class WalletMonitoringService {
       status: string;
       message: string;
     }
-    
+
     const checks: HealthCheck[] = [];
     let overallStatus = 'healthy';
 
@@ -585,58 +625,66 @@ export class WalletMonitoringService {
         },
       });
 
-      const suspiciousUsersWithScores = suspiciousUsers.map(user => {
-        const transactions = user.wallet?.walletTransactions || [];
-        const reasons: string[] = [];
-        let riskScore = 0;
+      const suspiciousUsersWithScores = suspiciousUsers
+        .map((user) => {
+          const transactions = user.wallet?.walletTransactions || [];
+          const reasons: string[] = [];
+          let riskScore = 0;
 
-        // High frequency transactions
-        if (transactions.length > 10) {
-          reasons.push('Alta frecuencia de transacciones');
-          riskScore += 30;
-        }
+          // High frequency transactions
+          if (transactions.length > 10) {
+            reasons.push('Alta frecuencia de transacciones');
+            riskScore += 30;
+          }
 
-        // Large amounts
-        const largeTransactions = transactions.filter(t => Math.abs(Number(t.amount)) > 500);
-        if (largeTransactions.length > 3) {
-          reasons.push('Múltiples transacciones de gran monto');
-          riskScore += 25;
-        }
+          // Large amounts
+          const largeTransactions = transactions.filter(
+            (t) => Math.abs(Number(t.amount)) > 500,
+          );
+          if (largeTransactions.length > 3) {
+            reasons.push('Múltiples transacciones de gran monto');
+            riskScore += 25;
+          }
 
-        // Failed transactions
-        const failedTransactions = transactions.filter(t => t.status === 'FAILED');
-        if (failedTransactions.length > 5) {
-          reasons.push('Múltiples transacciones fallidas');
-          riskScore += 20;
-        }
+          // Failed transactions
+          const failedTransactions = transactions.filter(
+            (t) => t.status === 'FAILED',
+          );
+          if (failedTransactions.length > 5) {
+            reasons.push('Múltiples transacciones fallidas');
+            riskScore += 20;
+          }
 
-        // Rapid succession
-        const rapidTransactions = transactions.filter((t, i) => {
-          if (i === 0) return false;
-          const prev = transactions[i - 1];
-          return t.createdAt.getTime() - prev.createdAt.getTime() < 60000; // Less than 1 minute
-        });
-        if (rapidTransactions.length > 5) {
-          reasons.push('Transacciones en rápida sucesión');
-          riskScore += 15;
-        }
+          // Rapid succession
+          const rapidTransactions = transactions.filter((t, i) => {
+            if (i === 0) return false;
+            const prev = transactions[i - 1];
+            return t.createdAt.getTime() - prev.createdAt.getTime() < 60000; // Less than 1 minute
+          });
+          if (rapidTransactions.length > 5) {
+            reasons.push('Transacciones en rápida sucesión');
+            riskScore += 15;
+          }
 
-        return {
-          userId: user.id,
-          name: user.name,
-          email: user.email,
-          riskScore: Math.min(100, riskScore),
-          reasons,
-          lastActivity: transactions[0]?.createdAt || user.updatedAt,
-        };
-      }).filter(user => user.riskScore > 50); // Only users with risk score > 50
+          return {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            riskScore: Math.min(100, riskScore),
+            reasons,
+            lastActivity: transactions[0]?.createdAt || user.updatedAt,
+          };
+        })
+        .filter((user) => user.riskScore > 50); // Only users with risk score > 50
 
       return {
         suspiciousUsers: suspiciousUsersWithScores,
         totalSuspicious: suspiciousUsersWithScores.length,
       };
     } catch (error) {
-      this.logger.error(`❌ Error obteniendo reporte de actividad sospechosa: ${error.message}`);
+      this.logger.error(
+        `❌ Error obteniendo reporte de actividad sospechosa: ${error.message}`,
+      );
       throw error;
     }
   }

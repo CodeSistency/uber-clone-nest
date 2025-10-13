@@ -22,7 +22,8 @@ export class ExchangeRatesController {
   @Get('latest')
   async getLatestExchangeRate() {
     try {
-      const latestRate = await this.exchangeRatesService.getLatestExchangeRate();
+      const latestRate =
+        await this.exchangeRatesService.getLatestExchangeRate();
       // Retornar solo los datos - el TransformInterceptor se encarga del formato ApiResponse
       return latestRate;
     } catch (error) {
@@ -63,7 +64,8 @@ export class ExchangeRatesController {
         );
       }
 
-      const history = await this.exchangeRatesService.getExchangeRateHistory(limitNum);
+      const history =
+        await this.exchangeRatesService.getExchangeRateHistory(limitNum);
       // Retornar objeto con datos + metadata de paginación
       return {
         data: history,
@@ -115,7 +117,8 @@ export class ExchangeRatesController {
         );
       }
 
-      const stats = await this.exchangeRatesService.getExchangeRateStats(daysNum);
+      const stats =
+        await this.exchangeRatesService.getExchangeRateStats(daysNum);
       // Retornar solo los datos - TransformInterceptor agrega el wrapper ApiResponse
       return stats;
     } catch (error) {
@@ -144,7 +147,8 @@ export class ExchangeRatesController {
   @Post('update')
   async updateExchangeRateManually() {
     try {
-      const result = await this.exchangeRatesService.updateExchangeRateManually();
+      const result =
+        await this.exchangeRatesService.updateExchangeRateManually();
       // Retornar solo los datos - TransformInterceptor agrega el wrapper ApiResponse
       return result;
     } catch (error) {
@@ -170,7 +174,8 @@ export class ExchangeRatesController {
   async checkApiHealth() {
     try {
       // Intentar obtener el precio más reciente
-      const latestRate = await this.exchangeRatesService.getLatestExchangeRate();
+      const latestRate =
+        await this.exchangeRatesService.getLatestExchangeRate();
 
       // Retornar datos de health - TransformInterceptor agrega el wrapper ApiResponse
       return {
@@ -231,7 +236,8 @@ export class ExchangeRatesController {
 
       // Forzar un nuevo fetch
       const freshData = await this.exchangeRatesService.fetchDollarRate();
-      const savedRate = await this.exchangeRatesService.saveExchangeRate(freshData);
+      const savedRate =
+        await this.exchangeRatesService.saveExchangeRate(freshData);
 
       // Retornar datos del reset - TransformInterceptor agrega el wrapper ApiResponse
       return {

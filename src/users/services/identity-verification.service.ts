@@ -1,6 +1,14 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { IdentityVerificationData, IdentityVerificationStatus } from '../interfaces/verification.interface';
+import {
+  IdentityVerificationData,
+  IdentityVerificationStatus,
+} from '../interfaces/verification.interface';
 
 @Injectable()
 export class IdentityVerificationService {
@@ -17,16 +25,21 @@ export class IdentityVerificationService {
     frontPhotoUrl: string,
     backPhotoUrl: string,
   ): Promise<IdentityVerificationData> {
-    this.logger.log(`Creating identity verification request for user ${userId}, DNI: ${dniNumber}`);
+    this.logger.log(
+      `Creating identity verification request for user ${userId}, DNI: ${dniNumber}`,
+    );
 
     // Verificar si el usuario ya tiene una verificación pendiente o aprobada
-    const existingVerification = await this.prisma.identityVerification.findUnique({
-      where: { userId },
-    });
+    const existingVerification =
+      await this.prisma.identityVerification.findUnique({
+        where: { userId },
+      });
 
     if (existingVerification) {
       if (existingVerification.status === 'PENDING') {
-        throw new BadRequestException('Ya tienes una solicitud de verificación de identidad pendiente');
+        throw new BadRequestException(
+          'Ya tienes una solicitud de verificación de identidad pendiente',
+        );
       }
       if (existingVerification.status === 'VERIFIED') {
         throw new BadRequestException('Tu identidad ya ha sido verificada');
@@ -43,7 +56,9 @@ export class IdentityVerificationService {
     });
 
     if (dniInUse) {
-      throw new BadRequestException('Este número de DNI ya está registrado por otro usuario');
+      throw new BadRequestException(
+        'Este número de DNI ya está registrado por otro usuario',
+      );
     }
 
     // Crear o actualizar la verificación
@@ -67,14 +82,18 @@ export class IdentityVerificationService {
       },
     });
 
-    this.logger.log(`Identity verification request created: ${verification.id} for user ${userId}`);
+    this.logger.log(
+      `Identity verification request created: ${verification.id} for user ${userId}`,
+    );
     return verification as any;
   }
 
   /**
    * Obtiene la verificación de identidad de un usuario
    */
-  async getUserVerification(userId: number): Promise<IdentityVerificationData | null> {
+  async getUserVerification(
+    userId: number,
+  ): Promise<IdentityVerificationData | null> {
     return this.prisma.identityVerification.findUnique({
       where: { userId },
     }) as Promise<IdentityVerificationData | null>;
@@ -114,7 +133,9 @@ export class IdentityVerificationService {
     status: 'verified' | 'rejected',
     reason?: string,
   ): Promise<IdentityVerificationData> {
-    this.logger.log(`Processing identity verification ${verificationId} by admin ${adminId}, status: ${status}`);
+    this.logger.log(
+      `Processing identity verification ${verificationId} by admin ${adminId}, status: ${status}`,
+    );
 
     const verification = await this.prisma.identityVerification.findUnique({
       where: { id: verificationId },
@@ -130,7 +151,7 @@ export class IdentityVerificationService {
     }
 
     const updateData: any = {
-      status: status === 'verified' ? 'VERIFIED' as any : 'REJECTED' as any,
+      status: status === 'verified' ? ('VERIFIED' as any) : ('REJECTED' as any),
       verifiedBy: adminId,
       verifiedAt: new Date(),
     };
@@ -155,10 +176,14 @@ export class IdentityVerificationService {
         },
       });
 
-      this.logger.log(`User ${verification.userId} identity verified successfully`);
+      this.logger.log(
+        `User ${verification.userId} identity verified successfully`,
+      );
     }
 
-    this.logger.log(`Identity verification ${verificationId} processed: ${status}`);
+    this.logger.log(
+      `Identity verification ${verificationId} processed: ${status}`,
+    );
     return updatedVerification as any;
   }
 
@@ -240,7 +265,9 @@ export class IdentityVerificationService {
   /**
    * Obtiene una verificación específica por ID
    */
-  async getVerificationById(verificationId: number): Promise<IdentityVerificationData | null> {
+  async getVerificationById(
+    verificationId: number,
+  ): Promise<IdentityVerificationData | null> {
     return this.prisma.identityVerification.findUnique({
       where: { id: verificationId },
       include: {

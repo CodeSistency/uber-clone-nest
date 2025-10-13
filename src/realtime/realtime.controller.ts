@@ -759,8 +759,7 @@ export class RealtimeController {
           name: `${driver.firstName} ${driver.lastName}`,
           location: { lat: newLat, lng: newLng },
           distanceFromCenter: Math.round(distanceFromCenter * 100) / 100,
-          vehicleType:
-            'Unknown',
+          vehicleType: 'Unknown',
           status: 'ONLINE',
           locationActive: true,
         });
@@ -858,8 +857,7 @@ export class RealtimeController {
         locationAccuracy: driver.locationAccuracy
           ? Number(driver.locationAccuracy)
           : null,
-        vehicleType:
-          'Unknown',
+        vehicleType: 'Unknown',
         locationActive: true,
       })),
       total: drivers.length,

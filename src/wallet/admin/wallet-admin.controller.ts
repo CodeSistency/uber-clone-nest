@@ -1,13 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Query, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
   UseGuards,
   Req,
   HttpCode,
-  HttpStatus
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -43,7 +43,8 @@ export class WalletAdminController {
   @Get('stats')
   @ApiOperation({
     summary: 'Obtener estadísticas generales de wallets',
-    description: 'Obtiene estadísticas generales del sistema de wallets para administradores'
+    description:
+      'Obtiene estadísticas generales del sistema de wallets para administradores',
   })
   @ApiResponse({
     status: 200,
@@ -52,7 +53,7 @@ export class WalletAdminController {
       type: 'object',
       properties: {
         totalWallets: { type: 'number', example: 1250 },
-        totalBalance: { type: 'number', example: 125000.50 },
+        totalBalance: { type: 'number', example: 125000.5 },
         blockedWallets: { type: 'number', example: 15 },
         lowBalanceWallets: { type: 'number', example: 45 },
         dailyTransactions: { type: 'number', example: 250 },
@@ -65,7 +66,7 @@ export class WalletAdminController {
             properties: {
               userId: { type: 'number', example: 1 },
               name: { type: 'string', example: 'Juan Pérez' },
-              balance: { type: 'number', example: 500.00 },
+              balance: { type: 'number', example: 500.0 },
               transactionCount: { type: 'number', example: 25 },
             },
           },
@@ -74,7 +75,9 @@ export class WalletAdminController {
     },
   })
   @ApiUnauthorizedResponse({ description: 'Token JWT inválido' })
-  @ApiForbiddenResponse({ description: 'Acceso denegado - Se requieren permisos de administrador' })
+  @ApiForbiddenResponse({
+    description: 'Acceso denegado - Se requieren permisos de administrador',
+  })
   async getWalletStats(@Req() req: any) {
     // TODO: Add admin role check
     return this.monitoringService.getGeneralStats();
@@ -83,7 +86,8 @@ export class WalletAdminController {
   @Get('health-check')
   @ApiOperation({
     summary: 'Verificar salud del sistema de wallets',
-    description: 'Realiza una verificación completa de la salud del sistema de wallets'
+    description:
+      'Realiza una verificación completa de la salud del sistema de wallets',
   })
   @ApiResponse({
     status: 200,
@@ -115,7 +119,8 @@ export class WalletAdminController {
   @Get('suspicious-activity')
   @ApiOperation({
     summary: 'Obtener reporte de actividad sospechosa',
-    description: 'Obtiene un reporte de usuarios con actividad sospechosa en wallets'
+    description:
+      'Obtiene un reporte de usuarios con actividad sospechosa en wallets',
   })
   @ApiQuery({
     name: 'limit',
@@ -150,7 +155,7 @@ export class WalletAdminController {
   @ApiUnauthorizedResponse({ description: 'Token JWT inválido' })
   async getSuspiciousActivity(
     @Query('limit') limit: number = 20,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.monitoringService.getSuspiciousActivityReport(limit);
   }
@@ -158,7 +163,8 @@ export class WalletAdminController {
   @Get('user/:userId/health')
   @ApiOperation({
     summary: 'Obtener health score de un usuario',
-    description: 'Obtiene el health score y recomendaciones para un usuario específico'
+    description:
+      'Obtiene el health score y recomendaciones para un usuario específico',
   })
   @ApiResponse({
     status: 200,
@@ -176,17 +182,14 @@ export class WalletAdminController {
   })
   @ApiUnauthorizedResponse({ description: 'Token JWT inválido' })
   @ApiNotFoundResponse({ description: 'Usuario no encontrado' })
-  async getUserHealthScore(
-    @Query('userId') userId: number,
-    @Req() req: any
-  ) {
+  async getUserHealthScore(@Query('userId') userId: number, @Req() req: any) {
     return this.monitoringService.getWalletHealthScore(userId);
   }
 
   @Post('block')
   @ApiOperation({
     summary: 'Bloquear wallet de usuario',
-    description: 'Bloquea la wallet de un usuario por razones administrativas'
+    description: 'Bloquea la wallet de un usuario por razones administrativas',
   })
   @ApiBody({
     type: BlockWalletDto,
@@ -216,7 +219,7 @@ export class WalletAdminController {
   @Post('unblock')
   @ApiOperation({
     summary: 'Desbloquear wallet de usuario',
-    description: 'Desbloquea la wallet de un usuario'
+    description: 'Desbloquea la wallet de un usuario',
   })
   @ApiBody({
     type: UnblockWalletDto,
@@ -229,7 +232,10 @@ export class WalletAdminController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Wallet desbloqueada exitosamente' },
+        message: {
+          type: 'string',
+          example: 'Wallet desbloqueada exitosamente',
+        },
         unblockedAt: { type: 'string', format: 'date-time' },
         unblockedBy: { type: 'number', example: 1 },
       },
@@ -246,7 +252,8 @@ export class WalletAdminController {
   @Post('adjust-balance')
   @ApiOperation({
     summary: 'Ajustar balance de wallet',
-    description: 'Ajusta el balance de la wallet de un usuario (solo administradores)'
+    description:
+      'Ajusta el balance de la wallet de un usuario (solo administradores)',
   })
   @ApiBody({
     type: AdjustBalanceDto,
@@ -264,7 +271,7 @@ export class WalletAdminController {
           properties: {
             id: { type: 'number', example: 1 },
             userId: { type: 'number', example: 1 },
-            balance: { type: 'number', example: 150.00 },
+            balance: { type: 'number', example: 150.0 },
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
@@ -272,7 +279,7 @@ export class WalletAdminController {
           type: 'object',
           properties: {
             id: { type: 'number', example: 1 },
-            amount: { type: 'number', example: 25.00 },
+            amount: { type: 'number', example: 25.0 },
             description: { type: 'string', example: 'Ajuste administrativo' },
             createdAt: { type: 'string', format: 'date-time' },
           },
@@ -291,7 +298,8 @@ export class WalletAdminController {
   @Get('rate-limits/:userId')
   @ApiOperation({
     summary: 'Obtener estado de rate limits de usuario',
-    description: 'Obtiene el estado actual de rate limits para un usuario específico'
+    description:
+      'Obtiene el estado actual de rate limits para un usuario específico',
   })
   @ApiResponse({
     status: 200,
@@ -320,15 +328,21 @@ export class WalletAdminController {
   })
   @ApiUnauthorizedResponse({ description: 'Token JWT inválido' })
   @ApiNotFoundResponse({ description: 'Usuario no encontrado' })
-  async getUserRateLimits(
-    @Query('userId') userId: number,
-    @Req() req: any
-  ) {
-    const operations = ['addFunds', 'transfer', 'validate', 'balance', 'transactions'];
+  async getUserRateLimits(@Query('userId') userId: number, @Req() req: any) {
+    const operations = [
+      'addFunds',
+      'transfer',
+      'validate',
+      'balance',
+      'transactions',
+    ];
     const results = {};
 
     for (const operation of operations) {
-      results[operation] = await this.rateLimitService.getRateLimitStatus(userId, operation);
+      results[operation] = await this.rateLimitService.getRateLimitStatus(
+        userId,
+        operation,
+      );
     }
 
     return {
@@ -340,7 +354,7 @@ export class WalletAdminController {
   @Post('rate-limits/:userId/reset')
   @ApiOperation({
     summary: 'Resetear rate limits de usuario',
-    description: 'Resetea todos los rate limits para un usuario específico'
+    description: 'Resetea todos los rate limits para un usuario específico',
   })
   @ApiResponse({
     status: 200,
@@ -349,19 +363,25 @@ export class WalletAdminController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Rate limits reseteados exitosamente' },
+        message: {
+          type: 'string',
+          example: 'Rate limits reseteados exitosamente',
+        },
         resetAt: { type: 'string', format: 'date-time' },
       },
     },
   })
   @ApiUnauthorizedResponse({ description: 'Token JWT inválido' })
   @HttpCode(HttpStatus.OK)
-  async resetUserRateLimits(
-    @Query('userId') userId: number,
-    @Req() req: any
-  ) {
-    const operations = ['addFunds', 'transfer', 'validate', 'balance', 'transactions'];
-    
+  async resetUserRateLimits(@Query('userId') userId: number, @Req() req: any) {
+    const operations = [
+      'addFunds',
+      'transfer',
+      'validate',
+      'balance',
+      'transactions',
+    ];
+
     for (const operation of operations) {
       await this.rateLimitService.resetRateLimit(userId, operation);
     }

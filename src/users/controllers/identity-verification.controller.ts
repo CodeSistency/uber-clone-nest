@@ -23,7 +23,11 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { GetUser } from '../../auth/decorators/get-user.decorator';
 import { IdentityVerificationService } from '../services/identity-verification.service';
-import { SubmitIdentityVerificationDto, AdminVerifyIdentityDto, GetVerificationStatusDto } from '../dto/identity-verification.dto';
+import {
+  SubmitIdentityVerificationDto,
+  AdminVerifyIdentityDto,
+  GetVerificationStatusDto,
+} from '../dto/identity-verification.dto';
 import { IdentityVerificationStatus } from '../interfaces/verification.interface';
 
 @ApiTags('users')
@@ -82,7 +86,10 @@ export class IdentityVerificationController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Solicitud de verificación enviada exitosamente' },
+        message: {
+          type: 'string',
+          example: 'Solicitud de verificación enviada exitosamente',
+        },
         verification: {
           type: 'object',
           properties: {
@@ -102,7 +109,10 @@ export class IdentityVerificationController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Este número de DNI ya está registrado por otro usuario' },
+        message: {
+          type: 'string',
+          example: 'Este número de DNI ya está registrado por otro usuario',
+        },
         error: { type: 'string', example: 'Bad Request' },
       },
     },
@@ -114,7 +124,11 @@ export class IdentityVerificationController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
-        message: { type: 'string', example: 'Ya tienes una solicitud de verificación de identidad pendiente' },
+        message: {
+          type: 'string',
+          example:
+            'Ya tienes una solicitud de verificación de identidad pendiente',
+        },
         error: { type: 'string', example: 'Conflict' },
       },
     },
@@ -124,9 +138,12 @@ export class IdentityVerificationController {
     @Body() submitIdentityVerificationDto: SubmitIdentityVerificationDto,
   ): Promise<{ success: boolean; message: string; verification: any }> {
     try {
-      const { dniNumber, frontPhotoUrl, backPhotoUrl } = submitIdentityVerificationDto;
+      const { dniNumber, frontPhotoUrl, backPhotoUrl } =
+        submitIdentityVerificationDto;
 
-      this.logger.log(`Identity verification submission for user ${user.id}, DNI: ${dniNumber}`);
+      this.logger.log(
+        `Identity verification submission for user ${user.id}, DNI: ${dniNumber}`,
+      );
 
       // 1. Validar formato del DNI
       if (!this.identityVerificationService.validateDNIFormat(dniNumber)) {
@@ -137,14 +154,17 @@ export class IdentityVerificationController {
       }
 
       // 2. Crear solicitud de verificación
-      const verification = await this.identityVerificationService.createVerificationRequest(
-        user.id,
-        dniNumber,
-        frontPhotoUrl,
-        backPhotoUrl,
-      );
+      const verification =
+        await this.identityVerificationService.createVerificationRequest(
+          user.id,
+          dniNumber,
+          frontPhotoUrl,
+          backPhotoUrl,
+        );
 
-      this.logger.log(`Identity verification submitted: ${verification.id} for user ${user.id}`);
+      this.logger.log(
+        `Identity verification submitted: ${verification.id} for user ${user.id}`,
+      );
 
       return {
         success: true,
@@ -157,11 +177,17 @@ export class IdentityVerificationController {
         },
       };
     } catch (error) {
-      this.logger.error(`Identity verification submission failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Identity verification submission failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -205,8 +231,12 @@ export class IdentityVerificationController {
     try {
       this.logger.log(`Getting verification status for user ${user.id}`);
 
-      const verificationStatus = await this.identityVerificationService.getUserVerificationStatus(user.id);
-      const verification = await this.identityVerificationService.getUserVerification(user.id);
+      const verificationStatus =
+        await this.identityVerificationService.getUserVerificationStatus(
+          user.id,
+        );
+      const verification =
+        await this.identityVerificationService.getUserVerification(user.id);
 
       return {
         success: true,
@@ -217,8 +247,14 @@ export class IdentityVerificationController {
         },
       };
     } catch (error) {
-      this.logger.error(`Failed to get verification status for user ${user.id}:`, error);
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to get verification status for user ${user.id}:`,
+        error,
+      );
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -265,11 +301,15 @@ export class IdentityVerificationController {
       },
     },
   })
-  async getPendingVerifications(): Promise<{ success: boolean; verifications: any[] }> {
+  async getPendingVerifications(): Promise<{
+    success: boolean;
+    verifications: any[];
+  }> {
     try {
       this.logger.log('Getting pending identity verifications');
 
-      const verifications = await this.identityVerificationService.getPendingVerifications();
+      const verifications =
+        await this.identityVerificationService.getPendingVerifications();
 
       return {
         success: true,
@@ -277,7 +317,10 @@ export class IdentityVerificationController {
       };
     } catch (error) {
       this.logger.error('Failed to get pending verifications:', error);
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -327,7 +370,10 @@ export class IdentityVerificationController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Verificación procesada exitosamente' },
+        message: {
+          type: 'string',
+          example: 'Verificación procesada exitosamente',
+        },
         verification: {
           type: 'object',
           properties: {
@@ -347,7 +393,10 @@ export class IdentityVerificationController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Solicitud de verificación no encontrada' },
+        message: {
+          type: 'string',
+          example: 'Solicitud de verificación no encontrada',
+        },
         error: { type: 'string', example: 'Not Found' },
       },
     },
@@ -359,16 +408,21 @@ export class IdentityVerificationController {
     try {
       const { verificationId, status, reason } = adminVerifyIdentityDto;
 
-      this.logger.log(`Admin ${admin.id} processing verification ${verificationId}, status: ${status}`);
-
-      const verification = await this.identityVerificationService.verifyIdentity(
-        verificationId,
-        admin.id,
-        status as any,
-        reason,
+      this.logger.log(
+        `Admin ${admin.id} processing verification ${verificationId}, status: ${status}`,
       );
 
-      this.logger.log(`Verification ${verificationId} processed by admin ${admin.id}`);
+      const verification =
+        await this.identityVerificationService.verifyIdentity(
+          verificationId,
+          admin.id,
+          status as any,
+          reason,
+        );
+
+      this.logger.log(
+        `Verification ${verificationId} processed by admin ${admin.id}`,
+      );
 
       return {
         success: true,
@@ -385,7 +439,10 @@ export class IdentityVerificationController {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -429,7 +486,8 @@ export class IdentityVerificationController {
     try {
       this.logger.log('Getting identity verification stats');
 
-      const stats = await this.identityVerificationService.getVerificationStats();
+      const stats =
+        await this.identityVerificationService.getVerificationStats();
 
       return {
         success: true,
@@ -437,7 +495,10 @@ export class IdentityVerificationController {
       };
     } catch (error) {
       this.logger.error('Failed to get verification stats:', error);
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -527,13 +588,16 @@ export class IdentityVerificationController {
     try {
       const { status, page = 1, limit = 10 } = query;
 
-      this.logger.log(`Getting verifications by status: ${status}, page: ${page}, limit: ${limit}`);
-
-      const result = await this.identityVerificationService.getVerificationsByStatus(
-        status as any,
-        page,
-        limit,
+      this.logger.log(
+        `Getting verifications by status: ${status}, page: ${page}, limit: ${limit}`,
       );
+
+      const result =
+        await this.identityVerificationService.getVerificationsByStatus(
+          status as any,
+          page,
+          limit,
+        );
 
       return {
         success: true,
@@ -547,7 +611,10 @@ export class IdentityVerificationController {
       };
     } catch (error) {
       this.logger.error('Failed to get verifications by status:', error);
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

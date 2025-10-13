@@ -142,7 +142,10 @@ describe('RidesController (Integration)', () => {
     });
 
     it('should return 400 for invalid tierId', async () => {
-      await requestAgent('GET', '/api/ride/estimate?tierId=999&minutes=20&kilometers=5').expect(400);
+      await requestAgent(
+        'GET',
+        '/api/ride/estimate?tierId=999&minutes=20&kilometers=5',
+      ).expect(400);
     });
 
     it('should calculate consistent pricing for define-ride flow', async () => {
@@ -166,7 +169,9 @@ describe('RidesController (Integration)', () => {
 
       // 3. Verify breakdown is present
       expect(estimateResponse.body.data.breakdown).toBeDefined();
-      expect(estimateResponse.body.data.breakdown.finalPrice).toBe(estimatedPrice);
+      expect(estimateResponse.body.data.breakdown.finalPrice).toBe(
+        estimatedPrice,
+      );
     });
   });
 

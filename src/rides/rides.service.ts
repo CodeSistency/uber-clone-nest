@@ -228,7 +228,8 @@ export class RidesService {
     const perMinuteRate = Number(tier.perMinuteRate);
     const perKmRate = Number(tier.perKmRate);
 
-    const totalFare = baseFare + minutes * perMinuteRate + kilometers * perKmRate;
+    const totalFare =
+      baseFare + minutes * perMinuteRate + kilometers * perKmRate;
 
     return {
       tier: tier.name,

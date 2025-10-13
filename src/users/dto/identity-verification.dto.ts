@@ -26,7 +26,9 @@ export class SubmitIdentityVerificationDto {
     example: 'https://storage.example.com/dni/front_12345678.jpg',
   })
   @IsNotEmpty({ message: 'La foto frontal es requerida' })
-  @IsString({ message: 'La URL de la foto frontal debe ser una cadena de texto' })
+  @IsString({
+    message: 'La URL de la foto frontal debe ser una cadena de texto',
+  })
   frontPhotoUrl: string;
 
   @ApiProperty({
@@ -34,7 +36,9 @@ export class SubmitIdentityVerificationDto {
     example: 'https://storage.example.com/dni/back_12345678.jpg',
   })
   @IsNotEmpty({ message: 'La foto trasera es requerida' })
-  @IsString({ message: 'La URL de la foto trasera debe ser una cadena de texto' })
+  @IsString({
+    message: 'La URL de la foto trasera debe ser una cadena de texto',
+  })
   backPhotoUrl: string;
 }
 

@@ -22,7 +22,7 @@ import { SMSVerificationService } from './services/sms-verification.service';
 @Module({
   imports: [PrismaModule, AppConfigModule, NotificationsModule],
   controllers: [
-    UsersController, 
+    UsersController,
     OnboardingController,
     EmailChangeController,
     PasswordChangeController,

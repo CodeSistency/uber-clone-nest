@@ -310,20 +310,14 @@ export const validationSchema = Joi.object({
   // ===============================
   // MINIO CONFIGURATION
   // ===============================
-  MINIO_ENDPOINT: Joi.string()
-    .default('localhost')
-    .messages({
-      'string.base': 'MINIO_ENDPOINT debe ser una cadena de texto',
-    }),
+  MINIO_ENDPOINT: Joi.string().default('localhost').messages({
+    'string.base': 'MINIO_ENDPOINT debe ser una cadena de texto',
+  }),
 
-  MINIO_PORT: Joi.number()
-    .min(1)
-    .max(65535)
-    .default(9000)
-    .messages({
-      'number.min': 'MINIO_PORT debe ser mayor a 0',
-      'number.max': 'MINIO_PORT debe ser menor a 65535',
-    }),
+  MINIO_PORT: Joi.number().min(1).max(65535).default(9000).messages({
+    'number.min': 'MINIO_PORT debe ser mayor a 0',
+    'number.max': 'MINIO_PORT debe ser menor a 65535',
+  }),
 
   MINIO_ACCESS_KEY: Joi.string()
     .min(3)
@@ -353,19 +347,15 @@ export const validationSchema = Joi.object({
     .messages({
       'string.min': 'MINIO_BUCKET_NAME debe tener al menos 3 caracteres',
       'string.max': 'MINIO_BUCKET_NAME debe tener máximo 63 caracteres',
-      'string.pattern.base': 'MINIO_BUCKET_NAME debe seguir el formato de nombres de bucket S3',
+      'string.pattern.base':
+        'MINIO_BUCKET_NAME debe seguir el formato de nombres de bucket S3',
     }),
 
-  MINIO_REGION: Joi.string()
-    .default('us-east-1')
-    .messages({
-      'string.base': 'MINIO_REGION debe ser una cadena de texto',
-    }),
+  MINIO_REGION: Joi.string().default('us-east-1').messages({
+    'string.base': 'MINIO_REGION debe ser una cadena de texto',
+  }),
 
-  MINIO_PUBLIC_URL: Joi.string()
-    .uri()
-    .optional()
-    .messages({
-      'string.uri': 'MINIO_PUBLIC_URL debe ser una URL válida',
-    }),
+  MINIO_PUBLIC_URL: Joi.string().uri().optional().messages({
+    'string.uri': 'MINIO_PUBLIC_URL debe ser una URL válida',
+  }),
 });

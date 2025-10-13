@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../prisma/prisma.service';
 
 export interface DriverFilters {
@@ -921,7 +926,12 @@ export class DriverManagementService {
     const hasActiveErrands = driver.errands.length > 0;
     const hasActiveParcels = driver.parcels.length > 0;
 
-    if (hasActiveRides || hasActiveDeliveries || hasActiveErrands || hasActiveParcels) {
+    if (
+      hasActiveRides ||
+      hasActiveDeliveries ||
+      hasActiveErrands ||
+      hasActiveParcels
+    ) {
       const activeServices: string[] = [];
       if (hasActiveRides) activeServices.push('rides');
       if (hasActiveDeliveries) activeServices.push('deliveries');
@@ -941,7 +951,9 @@ export class DriverManagementService {
         where: { id: driverId },
       });
 
-      this.logger.log(`Admin ${adminId} permanently deleted driver ${driverId}`);
+      this.logger.log(
+        `Admin ${adminId} permanently deleted driver ${driverId}`,
+      );
     } else {
       // Soft delete - mark as deleted but keep the record
       result = await this.prisma.driver.update({

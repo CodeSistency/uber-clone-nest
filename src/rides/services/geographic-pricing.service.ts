@@ -46,9 +46,14 @@ export class GeographicPricingService {
   ): Promise<GeographicZone> {
     try {
       // Check cache first
-      const cached = await this.cacheService.getGeographicZone(userLat, userLng);
+      const cached = await this.cacheService.getGeographicZone(
+        userLat,
+        userLng,
+      );
       if (cached) {
-        this.logger.debug(`Using cached geographic zone for ${userLat}, ${userLng}`);
+        this.logger.debug(
+          `Using cached geographic zone for ${userLat}, ${userLng}`,
+        );
         return cached;
       }
 
@@ -56,13 +61,24 @@ export class GeographicPricingService {
       const nearestCity = await this.findNearestCity(userLat, userLng);
 
       // 2. Find containing service zone (if any)
-      const containingZone = await this.findContainingServiceZone(userLat, userLng);
+      const containingZone = await this.findContainingServiceZone(
+        userLat,
+        userLng,
+      );
 
       // 3. Calculate multipliers
-      const multipliers = this.calculateGeographicMultipliers(nearestCity, containingZone);
+      const multipliers = this.calculateGeographicMultipliers(
+        nearestCity,
+        containingZone,
+      );
 
       // 4. Check restrictions
-      const restrictions = this.checkZoneRestrictions(nearestCity, containingZone, userLat, userLng);
+      const restrictions = this.checkZoneRestrictions(
+        nearestCity,
+        containingZone,
+        userLat,
+        userLng,
+      );
 
       const result = {
         city: nearestCity,
@@ -76,7 +92,10 @@ export class GeographicPricingService {
 
       return result;
     } catch (error) {
-      this.logger.error(`Error finding geographic zone for ${userLat}, ${userLng}:`, error);
+      this.logger.error(
+        `Error finding geographic zone for ${userLat}, ${userLng}:`,
+        error,
+      );
       // Return default values if geographic lookup fails
       return {
         multipliers: { city: 1.0, zone: 1.0, total: 1.0 },
@@ -186,7 +205,12 @@ export class GeographicPricingService {
   /**
    * Check if location is in a restricted zone
    */
-  private checkZoneRestrictions(city: any, zone: any, userLat: number, userLng: number) {
+  private checkZoneRestrictions(
+    city: any,
+    zone: any,
+    userLat: number,
+    userLng: number,
+  ) {
     // Check if service zone is restricted
     if (zone?.zoneType === 'restricted') {
       return {
@@ -196,7 +220,10 @@ export class GeographicPricingService {
     }
 
     // Check if city has restricted areas
-    if (city?.restrictedAreas && this.isPointInRestrictedArea(userLat, userLng, city.restrictedAreas)) {
+    if (
+      city?.restrictedAreas &&
+      this.isPointInRestrictedArea(userLat, userLng, city.restrictedAreas)
+    ) {
       return {
         isAllowed: false,
         reason: 'Service not available in this area',
@@ -233,7 +260,11 @@ export class GeographicPricingService {
   /**
    * Check if point is in restricted area (simplified)
    */
-  private isPointInRestrictedArea(lat: number, lng: number, restrictedAreas: any): boolean {
+  private isPointInRestrictedArea(
+    lat: number,
+    lng: number,
+    restrictedAreas: any,
+  ): boolean {
     // This is a placeholder - in production parse GeoJSON and check containment
     // For now, return false (no restrictions)
     return false;

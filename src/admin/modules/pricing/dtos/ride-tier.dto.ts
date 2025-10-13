@@ -316,7 +316,7 @@ export class RideTierResponseDto {
     description: 'Associated vehicle types with IDs and names',
     example: [
       { id: 1, name: 'car', displayName: 'Carro' },
-      { id: 2, name: 'motorcycle', displayName: 'Moto' }
+      { id: 2, name: 'motorcycle', displayName: 'Moto' },
     ],
   })
   vehicleTypes?: Array<{

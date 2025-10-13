@@ -45,7 +45,8 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @IsString()
   @Matches(/^\+[1-9]\d{1,14}$/, {
-    message: 'Phone number must be in international format (e.g., +584141234567)',
+    message:
+      'Phone number must be in international format (e.g., +584141234567)',
   })
   phone?: string;
 
@@ -55,7 +56,10 @@ export class UpdateUserProfileDto {
     format: 'date',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'Date of birth must be a valid date in YYYY-MM-DD format' })
+  @IsDateString(
+    {},
+    { message: 'Date of birth must be a valid date in YYYY-MM-DD format' },
+  )
   dateOfBirth?: string;
 
   @ApiPropertyOptional({

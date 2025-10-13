@@ -321,7 +321,8 @@ export class DriverManagementController {
   @RequirePermissions(AdminPermission.DRIVERS_DELETE)
   @ApiOperation({
     summary: 'Eliminar driver',
-    description: 'Elimina un driver del sistema. Por defecto hace soft delete, pero puede hacer eliminación permanente.',
+    description:
+      'Elimina un driver del sistema. Por defecto hace soft delete, pero puede hacer eliminación permanente.',
   })
   @ApiParam({
     name: 'id',

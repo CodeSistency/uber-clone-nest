@@ -97,8 +97,12 @@ export class PromotionService {
         promotion: {
           id: promotion.id,
           code: promotion.promoCode,
-          discountPercentage: promotion.discountPercentage ? Number(promotion.discountPercentage) : undefined,
-          discountAmount: promotion.discountAmount ? Number(promotion.discountAmount) : undefined,
+          discountPercentage: promotion.discountPercentage
+            ? Number(promotion.discountPercentage)
+            : undefined,
+          discountAmount: promotion.discountAmount
+            ? Number(promotion.discountAmount)
+            : undefined,
           expiryDate: promotion.expiryDate || undefined,
         },
         discount: Math.round(discount * 100) / 100, // Round to 2 decimal places
@@ -106,7 +110,10 @@ export class PromotionService {
       };
 
       // Cache the validation result
-      await this.cacheService.setPromotion(promoCode, { promotion, validation: result });
+      await this.cacheService.setPromotion(promoCode, {
+        promotion,
+        validation: result,
+      });
 
       return result;
     } catch (error) {
@@ -132,7 +139,10 @@ export class PromotionService {
   /**
    * Check if promotion can be used by user (future enhancement)
    */
-  async canUserUsePromotion(userId: number, promotionId: number): Promise<boolean> {
+  async canUserUsePromotion(
+    userId: number,
+    promotionId: number,
+  ): Promise<boolean> {
     // Future: Implement usage limits, user-specific restrictions, etc.
     // For now, always allow
     return true;
@@ -148,6 +158,8 @@ export class PromotionService {
     serviceType: string = 'ride',
   ): Promise<void> {
     // Future: Log promotion usage for analytics
-    this.logger.log(`Promotion ${promotionId} used by user ${userId} for ${discountAmount} discount`);
+    this.logger.log(
+      `Promotion ${promotionId} used by user ${userId} for ${discountAmount} discount`,
+    );
   }
 }

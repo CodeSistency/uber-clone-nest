@@ -234,8 +234,10 @@ export class TemporalPricingController {
       totalActiveRules: rawRules.length,
       rulesByType: {
         time_range: rawRules.filter((r) => r.ruleType === 'TIME_RANGE').length,
-        day_of_week: rawRules.filter((r) => r.ruleType === 'DAY_OF_WEEK').length,
-        date_specific: rawRules.filter((r) => r.ruleType === 'DATE_SPECIFIC').length,
+        day_of_week: rawRules.filter((r) => r.ruleType === 'DAY_OF_WEEK')
+          .length,
+        date_specific: rawRules.filter((r) => r.ruleType === 'DATE_SPECIFIC')
+          .length,
         seasonal: rawRules.filter((r) => r.ruleType === 'SEASONAL').length,
       },
       rulesByScope: {
@@ -255,9 +257,13 @@ export class TemporalPricingController {
             rawRules.length
           : 0,
       highestMultiplier:
-        rawRules.length > 0 ? Math.max(...rawRules.map((r) => Number(r.multiplier))) : 0,
+        rawRules.length > 0
+          ? Math.max(...rawRules.map((r) => Number(r.multiplier)))
+          : 0,
       lowestMultiplier:
-        rawRules.length > 0 ? Math.min(...rawRules.map((r) => Number(r.multiplier))) : 0,
+        rawRules.length > 0
+          ? Math.min(...rawRules.map((r) => Number(r.multiplier)))
+          : 0,
     };
 
     return { summary };
@@ -275,7 +281,9 @@ export class TemporalPricingController {
     description: 'Simulación completada',
     type: SimulatePricingResponseDto,
   })
-  async simulatePricing(@Body() simulationDto: SimulatePricingDto): Promise<SimulatePricingResponseDto> {
+  async simulatePricing(
+    @Body() simulationDto: SimulatePricingDto,
+  ): Promise<SimulatePricingResponseDto> {
     const {
       tierId,
       distance,
@@ -300,7 +308,7 @@ export class TemporalPricingController {
           stateId,
           cityId,
           zoneId,
-        }
+        },
       );
     } else {
       // Evaluate temporal pricing automatically
@@ -328,16 +336,21 @@ export class TemporalPricingController {
 
     // Apply temporal multiplier to the base pricing
     const temporalMultiplier = temporalResult.combinedMultiplier || 1.0;
-    const temporalAdjustedTotal = basePricing.finalPricing.baseAmount * temporalMultiplier;
-    const temporalAdjustments = temporalAdjustedTotal - basePricing.finalPricing.baseAmount;
+    const temporalAdjustedTotal =
+      basePricing.finalPricing.baseAmount * temporalMultiplier;
+    const temporalAdjustments =
+      temporalAdjustedTotal - basePricing.finalPricing.baseAmount;
 
     // Recalculate final pricing with temporal adjustments
-    const totalAmountWithTemporal = temporalAdjustedTotal + basePricing.finalPricing.serviceFees + basePricing.finalPricing.taxes;
+    const totalAmountWithTemporal =
+      temporalAdjustedTotal +
+      basePricing.finalPricing.serviceFees +
+      basePricing.finalPricing.taxes;
 
     // Combine all applied rules
     const allAppliedRules = [
       ...basePricing.metadata.appliedRules,
-      ...(temporalMultiplier !== 1.0 ? ['temporal_pricing'] : [])
+      ...(temporalMultiplier !== 1.0 ? ['temporal_pricing'] : []),
     ];
 
     return {
@@ -359,7 +372,10 @@ export class TemporalPricingController {
       metadata: {
         ...basePricing.metadata,
         appliedRules: allAppliedRules,
-        simulationMode: ruleIds && ruleIds.length > 0 ? 'manual_rules' : 'automatic_evaluation',
+        simulationMode:
+          ruleIds && ruleIds.length > 0
+            ? 'manual_rules'
+            : 'automatic_evaluation',
       },
       tier: basePricing.tier,
       scope: temporalResult.scope,

@@ -1,15 +1,15 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Query, 
-  Body, 
-  Req, 
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Body,
+  Req,
   UseGuards,
   Param,
   ParseIntPipe,
   HttpCode,
-  HttpStatus
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,7 +25,10 @@ import {
   ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { WalletRateLimitGuard, WalletRateLimit } from './guards/wallet-rate-limit.guard';
+import {
+  WalletRateLimitGuard,
+  WalletRateLimit,
+} from './guards/wallet-rate-limit.guard';
 import { WalletService } from './wallet.service';
 import { Wallet } from '@prisma/client';
 import { AddFundsDto } from './dto/add-funds.dto';
@@ -106,7 +109,8 @@ export class WalletController {
   @WalletRateLimit('balance')
   @ApiOperation({
     summary: 'Obtener balance actual de wallet',
-    description: 'Obtiene únicamente el balance actual de la wallet del usuario'
+    description:
+      'Obtiene únicamente el balance actual de la wallet del usuario',
   })
   @ApiResponse({
     status: 200,
@@ -130,7 +134,7 @@ export class WalletController {
   @WalletRateLimit('transactions')
   @ApiOperation({
     summary: 'Obtener historial de transacciones',
-    description: 'Obtiene historial paginado de transacciones de la wallet'
+    description: 'Obtiene historial paginado de transacciones de la wallet',
   })
   @ApiQuery({
     name: 'page',
@@ -215,8 +219,9 @@ export class WalletController {
   @UseGuards(WalletRateLimitGuard)
   @WalletRateLimit('addFunds')
   @ApiOperation({
-    summary: "Agregar fondos a la wallet",
-    description: 'Agrega dinero a la wallet del usuario autenticado y crea un registro de transacción'
+    summary: 'Agregar fondos a la wallet',
+    description:
+      'Agrega dinero a la wallet del usuario autenticado y crea un registro de transacción',
   })
   @ApiBody({
     type: AddFundsDto,
@@ -264,7 +269,7 @@ export class WalletController {
   @WalletRateLimit('transfer')
   @ApiOperation({
     summary: 'Transferir fondos a otro usuario',
-    description: 'Transfiere fondos de la wallet del usuario a otro usuario'
+    description: 'Transfiere fondos de la wallet del usuario a otro usuario',
   })
   @ApiBody({
     type: TransferFundsDto,
@@ -284,19 +289,24 @@ export class WalletController {
       },
     },
   })
-  @ApiBadRequestResponse({ description: 'Datos inválidos o fondos insuficientes' })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos o fondos insuficientes',
+  })
   @ApiUnauthorizedResponse({ description: 'Token JWT inválido' })
   async transferFunds(@Body() dto: TransferFundsDto, @Req() req: any) {
-    return this.walletService.transferFunds({
-      ...dto,
-      fromUserId: req.user.id,
-    }, req.ip);
+    return this.walletService.transferFunds(
+      {
+        ...dto,
+        fromUserId: req.user.id,
+      },
+      req.ip,
+    );
   }
 
   @Get('stats')
   @ApiOperation({
     summary: 'Obtener estadísticas de wallet',
-    description: 'Obtiene estadísticas detalladas de la wallet del usuario'
+    description: 'Obtiene estadísticas detalladas de la wallet del usuario',
   })
   @ApiResponse({
     status: 200,
@@ -331,7 +341,7 @@ export class WalletController {
   @Get('limits')
   @ApiOperation({
     summary: 'Obtener límites de transacción',
-    description: 'Obtiene los límites de transacción del usuario'
+    description: 'Obtiene los límites de transacción del usuario',
   })
   @ApiResponse({
     status: 200,
@@ -357,13 +367,17 @@ export class WalletController {
   @WalletRateLimit('validate')
   @ApiOperation({
     summary: 'Validar operación de wallet',
-    description: 'Valida si una operación de wallet es posible antes de ejecutarla'
+    description:
+      'Valida si una operación de wallet es posible antes de ejecutarla',
   })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        operation: { type: 'string', enum: ['add_funds', 'transfer', 'deduct'] },
+        operation: {
+          type: 'string',
+          enum: ['add_funds', 'transfer', 'deduct'],
+        },
         amount: { type: 'number', example: 50.0 },
         toUserEmail: { type: 'string', example: 'usuario@example.com' },
       },

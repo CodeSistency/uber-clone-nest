@@ -3,10 +3,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class UnblockWalletDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
     description: 'ID del usuario cuya wallet se va a desbloquear',
-    minimum: 1
+    minimum: 1,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -14,21 +14,21 @@ export class UnblockWalletDto {
   @Type(() => Number)
   userId: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'Issue resolved after investigation',
     description: 'Razón del desbloqueo',
     minLength: 1,
-    maxLength: 500
+    maxLength: 500,
   })
   @IsNotEmpty()
   @IsString()
   @Length(1, 500)
   reason: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
     description: 'ID del administrador que realiza el desbloqueo',
-    minimum: 1
+    minimum: 1,
   })
   @IsNotEmpty()
   @IsNumber()

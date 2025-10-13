@@ -429,10 +429,14 @@ export class WebSocketGatewayClass
    * Used by AsyncMatchingService to notify users about matching events
    */
   public sendMatchingEvent(
-    eventType: 'driver-found' | 'search-timeout' | 'search-cancelled' | 'search-expired',
+    eventType:
+      | 'driver-found'
+      | 'search-timeout'
+      | 'search-cancelled'
+      | 'search-expired',
     searchId: string,
     userId: number,
-    data?: any
+    data?: any,
   ) {
     try {
       const event = {
@@ -446,9 +450,14 @@ export class WebSocketGatewayClass
       // Send to user-specific room (used by mobile apps)
       this.server.to(`user-${userId}`).emit('matching-event', event);
 
-      this.logger.log(`📡 [WS] Sent ${eventType} for search ${searchId} to user ${userId}`);
+      this.logger.log(
+        `📡 [WS] Sent ${eventType} for search ${searchId} to user ${userId}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to send matching event: ${error.message}`, error);
+      this.logger.error(
+        `Failed to send matching event: ${error.message}`,
+        error,
+      );
     }
   }
 

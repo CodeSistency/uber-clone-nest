@@ -1,12 +1,20 @@
-import { IsNotEmpty, IsString, IsNumber, Min, Max, Length, IsIn } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+  Length,
+  IsIn,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class AdjustBalanceDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
     description: 'ID del usuario cuya wallet se va a ajustar',
-    minimum: 1
+    minimum: 1,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -14,11 +22,12 @@ export class AdjustBalanceDto {
   @Type(() => Number)
   userId: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 50.0,
-    description: 'Monto del ajuste (positivo para crédito, negativo para débito)',
+    description:
+      'Monto del ajuste (positivo para crédito, negativo para débito)',
     minimum: -1000,
-    maximum: 1000
+    maximum: 1000,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -27,31 +36,31 @@ export class AdjustBalanceDto {
   @Type(() => Number)
   amount: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'Manual adjustment for refund',
     description: 'Descripción del ajuste',
     minLength: 1,
-    maxLength: 255
+    maxLength: 255,
   })
   @IsNotEmpty()
   @IsString()
   @Length(1, 255)
   description: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'admin_adjustment',
     description: 'Tipo de ajuste',
-    enum: ['admin_adjustment', 'refund', 'correction', 'bonus']
+    enum: ['admin_adjustment', 'refund', 'correction', 'bonus'],
   })
   @IsNotEmpty()
   @IsString()
   @IsIn(['admin_adjustment', 'refund', 'correction', 'bonus'])
   adjustmentType: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
     description: 'ID del administrador que realiza el ajuste',
-    minimum: 1
+    minimum: 1,
   })
   @IsNotEmpty()
   @IsNumber()

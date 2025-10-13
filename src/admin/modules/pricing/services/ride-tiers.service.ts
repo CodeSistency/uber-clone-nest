@@ -77,9 +77,12 @@ export class RideTiersService {
     });
 
     // Create vehicle type associations if provided
-    if (createRideTierDto.vehicleTypeIds && createRideTierDto.vehicleTypeIds.length > 0) {
+    if (
+      createRideTierDto.vehicleTypeIds &&
+      createRideTierDto.vehicleTypeIds.length > 0
+    ) {
       await this.prisma.tierVehicleType.createMany({
-        data: createRideTierDto.vehicleTypeIds.map(vehicleTypeId => ({
+        data: createRideTierDto.vehicleTypeIds.map((vehicleTypeId) => ({
           tierId: tier.id,
           vehicleTypeId,
           isActive: true,
@@ -432,20 +435,31 @@ export class RideTiersService {
     }
 
     // Convert string values to numbers if needed, with defaults
-    const baseFare = tier.baseFare !== undefined
-      ? (typeof tier.baseFare === 'string' ? parseFloat(tier.baseFare) : Number(tier.baseFare))
-      : 250; // default value
+    const baseFare =
+      tier.baseFare !== undefined
+        ? typeof tier.baseFare === 'string'
+          ? parseFloat(tier.baseFare)
+          : Number(tier.baseFare)
+        : 250; // default value
 
-    const perMinuteRate = tier.perMinuteRate !== undefined
-      ? (typeof tier.perMinuteRate === 'string' ? parseFloat(tier.perMinuteRate) : Number(tier.perMinuteRate))
-      : 15; // default value
+    const perMinuteRate =
+      tier.perMinuteRate !== undefined
+        ? typeof tier.perMinuteRate === 'string'
+          ? parseFloat(tier.perMinuteRate)
+          : Number(tier.perMinuteRate)
+        : 15; // default value
 
-    const perKmRate = tier.perKmRate !== undefined
-      ? (typeof tier.perKmRate === 'string' ? parseFloat(tier.perKmRate) : Number(tier.perKmRate))
-      : 80; // default value
+    const perKmRate =
+      tier.perKmRate !== undefined
+        ? typeof tier.perKmRate === 'string'
+          ? parseFloat(tier.perKmRate)
+          : Number(tier.perKmRate)
+        : 80; // default value
 
     if (isNaN(baseFare) || isNaN(perMinuteRate) || isNaN(perKmRate)) {
-      throw new Error('Invalid tier data: baseFare, perMinuteRate, and perKmRate must be valid numbers');
+      throw new Error(
+        'Invalid tier data: baseFare, perMinuteRate, and perKmRate must be valid numbers',
+      );
     }
 
     // Basic validation rules
@@ -643,12 +657,13 @@ export class RideTiersService {
 
               if (vehicleType) {
                 // Check if combination already exists
-                const existingCombination = await this.prisma.tierVehicleType.findFirst({
-                  where: {
-                    tierId: tier.id,
-                    vehicleTypeId: vehicleType.id,
-                  },
-                });
+                const existingCombination =
+                  await this.prisma.tierVehicleType.findFirst({
+                    where: {
+                      tierId: tier.id,
+                      vehicleTypeId: vehicleType.id,
+                    },
+                  });
 
                 if (!existingCombination) {
                   const combination = await this.prisma.tierVehicleType.create({
@@ -765,13 +780,11 @@ export class RideTiersService {
       where: {
         isActive: true,
       },
-      orderBy: [
-        { displayName: 'asc' },
-      ],
+      orderBy: [{ displayName: 'asc' }],
     });
 
     // Create a completely new object structure to avoid any Prisma-related validation issues
-    const data = vehicleTypes.map(vehicleType => {
+    const data = vehicleTypes.map((vehicleType) => {
       return {
         id: parseInt(vehicleType.id.toString()), // Convert to plain number
         name: vehicleType.name.toString(), // Convert to plain string

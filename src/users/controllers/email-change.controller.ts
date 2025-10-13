@@ -19,7 +19,11 @@ import { GetUser } from '../../auth/decorators/get-user.decorator';
 import { UsersService } from '../users.service';
 import { VerificationCodesService } from '../services/verification-codes.service';
 import { EmailVerificationService } from '../services/email-verification.service';
-import { RequestEmailChangeDto, VerifyEmailChangeDto, CancelEmailChangeDto } from '../dto/email-change.dto';
+import {
+  RequestEmailChangeDto,
+  VerifyEmailChangeDto,
+  CancelEmailChangeDto,
+} from '../dto/email-change.dto';
 import { VerificationType } from '../interfaces/verification.interface';
 import * as bcrypt from 'bcrypt';
 
@@ -76,8 +80,15 @@ export class EmailChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Código de verificación enviado al nuevo email' },
-        expiresAt: { type: 'string', format: 'date-time', example: '2024-01-15T10:45:00.000Z' },
+        message: {
+          type: 'string',
+          example: 'Código de verificación enviado al nuevo email',
+        },
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:45:00.000Z',
+        },
       },
     },
   })
@@ -88,7 +99,10 @@ export class EmailChangeController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'El email ya está en uso por otro usuario' },
+        message: {
+          type: 'string',
+          example: 'El email ya está en uso por otro usuario',
+        },
         error: { type: 'string', example: 'Bad Request' },
       },
     },
@@ -112,7 +126,10 @@ export class EmailChangeController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 429 },
-        message: { type: 'string', example: 'Demasiadas solicitudes. Intenta más tarde' },
+        message: {
+          type: 'string',
+          example: 'Demasiadas solicitudes. Intenta más tarde',
+        },
         error: { type: 'string', example: 'Too Many Requests' },
       },
     },
@@ -124,7 +141,9 @@ export class EmailChangeController {
     try {
       const { newEmail, password } = requestEmailChangeDto;
 
-      this.logger.log(`Email change request for user ${user.id}, new email: ${newEmail}`);
+      this.logger.log(
+        `Email change request for user ${user.id}, new email: ${newEmail}`,
+      );
 
       // 1. Obtener usuario actual con contraseña
       const currentUser = await this.usersService.findUserByEmail(user.email);
@@ -134,18 +153,30 @@ export class EmailChangeController {
 
       // 2. Verificar contraseña actual
       if (!currentUser.password) {
-        throw new HttpException('Usuario no tiene contraseña configurada', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Usuario no tiene contraseña configurada',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      const isPasswordValid = await bcrypt.compare(password, currentUser.password);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        currentUser.password,
+      );
       if (!isPasswordValid) {
-        throw new HttpException('Contraseña incorrecta', HttpStatus.UNAUTHORIZED);
+        throw new HttpException(
+          'Contraseña incorrecta',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       // 3. Verificar que el nuevo email no esté en uso
       const emailExists = await this.usersService.findUserByEmail(newEmail);
       if (emailExists && emailExists.id !== user.id) {
-        throw new HttpException('El email ya está en uso por otro usuario', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'El email ya está en uso por otro usuario',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // 4. Verificar que no haya un código activo
@@ -161,11 +192,12 @@ export class EmailChangeController {
       }
 
       // 5. Crear código de verificación
-      const verificationCode = await this.verificationCodesService.createVerificationCode(
-        user.id,
-        VerificationType.EMAIL_CHANGE,
-        newEmail,
-      );
+      const verificationCode =
+        await this.verificationCodesService.createVerificationCode(
+          user.id,
+          VerificationType.EMAIL_CHANGE,
+          newEmail,
+        );
 
       // 6. Enviar código por email
       await this.emailVerificationService.sendVerificationCode({
@@ -175,7 +207,9 @@ export class EmailChangeController {
         userName: user.name,
       });
 
-      this.logger.log(`Email change code sent to ${newEmail} for user ${user.id}`);
+      this.logger.log(
+        `Email change code sent to ${newEmail} for user ${user.id}`,
+      );
 
       return {
         success: true,
@@ -183,11 +217,17 @@ export class EmailChangeController {
         expiresAt: verificationCode.expiresAt,
       };
     } catch (error) {
-      this.logger.error(`Email change request failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Email change request failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -262,7 +302,9 @@ export class EmailChangeController {
     try {
       const { newEmail, code } = verifyEmailChangeDto;
 
-      this.logger.log(`Email change verification for user ${user.id}, new email: ${newEmail}`);
+      this.logger.log(
+        `Email change verification for user ${user.id}, new email: ${newEmail}`,
+      );
 
       // 1. Verificar código
       const verificationResult = await this.verificationCodesService.verifyCode(
@@ -272,7 +314,10 @@ export class EmailChangeController {
       );
 
       if (!verificationResult.success) {
-        throw new HttpException(verificationResult.message, HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          verificationResult.message,
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // 2. Actualizar email del usuario
@@ -288,7 +333,9 @@ export class EmailChangeController {
         user.name,
       );
 
-      this.logger.log(`Email changed successfully for user ${user.id} to ${newEmail}`);
+      this.logger.log(
+        `Email changed successfully for user ${user.id} to ${newEmail}`,
+      );
 
       return {
         success: true,
@@ -301,11 +348,17 @@ export class EmailChangeController {
         },
       };
     } catch (error) {
-      this.logger.error(`Email change verification failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Email change verification failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -344,7 +397,10 @@ export class EmailChangeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Solicitud de cambio de email cancelada' },
+        message: {
+          type: 'string',
+          example: 'Solicitud de cambio de email cancelada',
+        },
       },
     },
   })
@@ -356,7 +412,10 @@ export class EmailChangeController {
       const { confirm } = cancelEmailChangeDto;
 
       if (!confirm) {
-        throw new HttpException('Confirmación requerida para cancelar', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Confirmación requerida para cancelar',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       this.logger.log(`Cancelling email change for user ${user.id}`);
@@ -374,11 +433,17 @@ export class EmailChangeController {
         message: 'Solicitud de cambio de email cancelada',
       };
     } catch (error) {
-      this.logger.error(`Email change cancellation failed for user ${user.id}:`, error);
+      this.logger.error(
+        `Email change cancellation failed for user ${user.id}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

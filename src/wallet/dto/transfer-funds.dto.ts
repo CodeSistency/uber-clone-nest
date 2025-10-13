@@ -1,22 +1,32 @@
-import { IsNotEmpty, IsString, IsNumber, Min, Max, Length, IsIn, IsOptional, IsEmail } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+  Length,
+  IsIn,
+  IsOptional,
+  IsEmail,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class TransferFundsDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'usuario@example.com',
     description: 'Email del usuario destinatario',
-    format: 'email'
+    format: 'email',
   })
   @IsNotEmpty()
   @IsEmail()
   toUserEmail: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 25.0,
     description: 'Monto a transferir',
     minimum: 0.01,
-    maximum: 500
+    maximum: 500,
   })
   @IsNotEmpty()
   @IsNumber()
@@ -25,21 +35,21 @@ export class TransferFundsDto {
   @Type(() => Number)
   amount: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'Transfer between users',
     description: 'Descripción de la transferencia',
     minLength: 1,
-    maxLength: 255
+    maxLength: 255,
   })
   @IsNotEmpty()
   @IsString()
   @Length(1, 255)
   description: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'user_transfer',
     description: 'Tipo de referencia de la transferencia',
-    enum: ['user_transfer', 'referral_reward', 'admin_transfer']
+    enum: ['user_transfer', 'referral_reward', 'admin_transfer'],
   })
   @IsOptional()
   @IsString()

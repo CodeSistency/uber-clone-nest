@@ -23,9 +23,13 @@ export class SMSVerificationService {
       });
 
       if (result) {
-        this.logger.log(`SMS sent successfully to ${data.phone}, SID: ${result.sid}`);
+        this.logger.log(
+          `SMS sent successfully to ${data.phone}, SID: ${result.sid}`,
+        );
       } else {
-        this.logger.warn(`SMS service not available, message not sent to ${data.phone}`);
+        this.logger.warn(
+          `SMS service not available, message not sent to ${data.phone}`,
+        );
       }
     } catch (error) {
       this.logger.error(`Failed to send SMS to ${data.phone}:`, error);
@@ -36,7 +40,10 @@ export class SMSVerificationService {
   /**
    * Envía confirmación de cambio exitoso
    */
-  async sendChangeConfirmation(phone: string, userName?: string): Promise<void> {
+  async sendChangeConfirmation(
+    phone: string,
+    userName?: string,
+  ): Promise<void> {
     this.logger.log(`Sending change confirmation to ${phone}`);
 
     const message = this.getConfirmationMessage(userName);
@@ -48,9 +55,13 @@ export class SMSVerificationService {
       });
 
       if (result) {
-        this.logger.log(`Confirmation SMS sent successfully to ${phone}, SID: ${result.sid}`);
+        this.logger.log(
+          `Confirmation SMS sent successfully to ${phone}, SID: ${result.sid}`,
+        );
       } else {
-        this.logger.warn(`SMS service not available, confirmation not sent to ${phone}`);
+        this.logger.warn(
+          `SMS service not available, confirmation not sent to ${phone}`,
+        );
       }
     } catch (error) {
       this.logger.error(`Failed to send confirmation SMS to ${phone}:`, error);

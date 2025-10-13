@@ -64,12 +64,17 @@ export class RidesController {
 
   @Get('estimate')
   @ApiOperation({
-    summary: 'Provide fare estimate based on route and ride tier with geographic pricing',
-    description: 'Calculates fare estimate including tier multipliers, geographic pricing, temporal rules, and promotional discounts. Validates service availability in the area.',
+    summary:
+      'Provide fare estimate based on route and ride tier with geographic pricing',
+    description:
+      'Calculates fare estimate including tier multipliers, geographic pricing, temporal rules, and promotional discounts. Validates service availability in the area.',
   })
   @ApiQuery({ name: 'tierId', description: 'The ID of the ride_tier' })
   @ApiQuery({ name: 'minutes', description: 'Estimated duration of the ride' })
-  @ApiQuery({ name: 'kilometers', description: 'Estimated distance of the ride in kilometers' })
+  @ApiQuery({
+    name: 'kilometers',
+    description: 'Estimated distance of the ride in kilometers',
+  })
   @ApiResponse({
     status: 200,
     description: 'Returns comprehensive fare calculation with breakdown',
@@ -95,25 +100,25 @@ export class RidesController {
                   properties: {
                     city: { type: 'number' },
                     zone: { type: 'number' },
-                    total: { type: 'number' }
-                  }
-                }
-              }
+                    total: { type: 'number' },
+                  },
+                },
+              },
             },
             promotion: {
               type: 'object',
               properties: {
                 code: { type: 'string' },
                 discount: { type: 'number' },
-                type: { type: 'string', enum: ['percentage', 'fixed'] }
-              }
+                type: { type: 'string', enum: ['percentage', 'fixed'] },
+              },
             },
             restrictions: {
               type: 'object',
               properties: {
                 isAllowed: { type: 'boolean' },
-                reason: { type: 'string' }
-              }
+                reason: { type: 'string' },
+              },
             },
             breakdown: {
               type: 'object',
@@ -124,17 +129,26 @@ export class RidesController {
                 temporalMultiplier: { type: 'number' },
                 priceBeforeDiscount: { type: 'number' },
                 discount: { type: 'number' },
-                finalPrice: { type: 'number' }
-              }
+                finalPrice: { type: 'number' },
+              },
             },
-            totalFare: { type: 'number', description: 'Final calculated price' },
+            totalFare: {
+              type: 'number',
+              description: 'Final calculated price',
+            },
           },
         },
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Missing required parameters or invalid promo code' })
-  @ApiResponse({ status: 403, description: 'Service not available in this area' })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing required parameters or invalid promo code',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Service not available in this area',
+  })
   @ApiResponse({ status: 500, description: 'Database error' })
   async getFareEstimate(
     @Query('tierId') tierId: string,

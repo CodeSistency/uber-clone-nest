@@ -9,10 +9,10 @@ export class WalletAuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async logTransaction(
-    transaction: WalletTransaction, 
-    userId: number, 
+    transaction: WalletTransaction,
+    userId: number,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
   ): Promise<void> {
     try {
       await this.prisma.walletAuditLog.create({
@@ -37,18 +37,22 @@ export class WalletAuditService {
         },
       });
 
-      this.logger.log(`📝 Log de transacción creado: TXN-${transaction.id} para usuario ${userId}`);
+      this.logger.log(
+        `📝 Log de transacción creado: TXN-${transaction.id} para usuario ${userId}`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Error creando log de transacción: ${error.message}`);
+      this.logger.error(
+        `❌ Error creando log de transacción: ${error.message}`,
+      );
     }
   }
 
   async logWalletAccess(
-    userId: number, 
-    action: string, 
+    userId: number,
+    action: string,
     ipAddress?: string,
     userAgent?: string,
-    details?: any
+    details?: any,
   ): Promise<void> {
     try {
       await this.prisma.walletAuditLog.create({
@@ -69,7 +73,9 @@ export class WalletAuditService {
         },
       });
 
-      this.logger.log(`📝 Log de acceso a wallet creado: ${action} para usuario ${userId}`);
+      this.logger.log(
+        `📝 Log de acceso a wallet creado: ${action} para usuario ${userId}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Error creando log de acceso: ${error.message}`);
     }
@@ -80,7 +86,7 @@ export class WalletAuditService {
     adminId: number,
     reason: string,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
   ): Promise<void> {
     try {
       await this.prisma.walletAuditLog.create({
@@ -90,11 +96,11 @@ export class WalletAuditService {
           resource: 'wallet',
           resourceId: userId.toString(),
           oldValue: { status: 'active' },
-          newValue: { 
-            status: 'blocked', 
+          newValue: {
+            status: 'blocked',
             reason,
             blockedAt: new Date(),
-            blockedBy: adminId
+            blockedBy: adminId,
           },
           ipAddress,
           userAgent,
@@ -102,7 +108,9 @@ export class WalletAuditService {
         },
       });
 
-      this.logger.log(`📝 Log de bloqueo de wallet creado: Usuario ${userId} bloqueado por admin ${adminId}`);
+      this.logger.log(
+        `📝 Log de bloqueo de wallet creado: Usuario ${userId} bloqueado por admin ${adminId}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Error creando log de bloqueo: ${error.message}`);
     }
@@ -113,7 +121,7 @@ export class WalletAuditService {
     adminId: number,
     reason: string,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
   ): Promise<void> {
     try {
       await this.prisma.walletAuditLog.create({
@@ -123,11 +131,11 @@ export class WalletAuditService {
           resource: 'wallet',
           resourceId: userId.toString(),
           oldValue: { status: 'blocked' },
-          newValue: { 
-            status: 'active', 
+          newValue: {
+            status: 'active',
             reason,
             unblockedAt: new Date(),
-            unblockedBy: adminId
+            unblockedBy: adminId,
           },
           ipAddress,
           userAgent,
@@ -135,7 +143,9 @@ export class WalletAuditService {
         },
       });
 
-      this.logger.log(`📝 Log de desbloqueo de wallet creado: Usuario ${userId} desbloqueado por admin ${adminId}`);
+      this.logger.log(
+        `📝 Log de desbloqueo de wallet creado: Usuario ${userId} desbloqueado por admin ${adminId}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Error creando log de desbloqueo: ${error.message}`);
     }
@@ -149,7 +159,7 @@ export class WalletAuditService {
     adjustment: number,
     reason: string,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
   ): Promise<void> {
     try {
       await this.prisma.walletAuditLog.create({
@@ -159,12 +169,12 @@ export class WalletAuditService {
           resource: 'wallet',
           resourceId: userId.toString(),
           oldValue: { balance: oldBalance },
-          newValue: { 
+          newValue: {
             balance: newBalance,
             adjustment,
             reason,
             adjustedAt: new Date(),
-            adjustedBy: adminId
+            adjustedBy: adminId,
           },
           ipAddress,
           userAgent,
@@ -172,7 +182,9 @@ export class WalletAuditService {
         },
       });
 
-      this.logger.log(`📝 Log de ajuste de balance creado: Usuario ${userId}, Ajuste: ${adjustment} por admin ${adminId}`);
+      this.logger.log(
+        `📝 Log de ajuste de balance creado: Usuario ${userId}, Ajuste: ${adjustment} por admin ${adminId}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Error creando log de ajuste: ${error.message}`);
     }
@@ -181,7 +193,7 @@ export class WalletAuditService {
   async getAuditHistory(
     userId: number,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<{
     logs: any[];
     pagination: {
@@ -217,10 +229,7 @@ export class WalletAuditService {
       }),
       this.prisma.walletAuditLog.count({
         where: {
-          OR: [
-            { adminId: userId },
-            { resourceId: userId.toString() },
-          ],
+          OR: [{ adminId: userId }, { resourceId: userId.toString() }],
         },
       }),
     ]);
