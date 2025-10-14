@@ -165,7 +165,7 @@ export class ServiceZonesService {
 
     // Zone type filter
     if (zoneType) {
-      where.zoneType = zoneType;
+      where.zoneType = this.mapZoneTypeToEnum(zoneType);
     }
 
     // Active status filter
@@ -753,10 +753,28 @@ export class ServiceZonesService {
   private transformServiceZoneListItem(zone: any) {
     return {
       id: zone.id,
+      name: zone.name,
       zoneType: zone.zoneType,
       pricingMultiplier: Number(zone.pricingMultiplier),
       demandMultiplier: Number(zone.demandMultiplier),
       isActive: zone.isActive,
     };
+  }
+
+  private mapZoneTypeToEnum(zoneType: string): any {
+    const zoneTypeMap: { [key: string]: string } = {
+      'regular': 'REGULAR',
+      'premium': 'PREMIUM',
+      'restricted': 'RESTRICTED'
+    };
+
+    const mappedType = zoneTypeMap[zoneType.toLowerCase()];
+    if (!mappedType) {
+      throw new BadRequestException(
+        `Invalid zone type: ${zoneType}. Allowed values: regular, premium, restricted`
+      );
+    }
+
+    return mappedType;
   }
 }

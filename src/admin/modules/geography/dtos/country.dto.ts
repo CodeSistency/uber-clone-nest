@@ -1891,6 +1891,12 @@ export class ServiceZoneListItemDto {
   id: number;
 
   @ApiProperty({
+    description: 'Zone name',
+    example: 'Downtown LA',
+  })
+  name: string;
+
+  @ApiProperty({
     description: 'Zone type',
     example: 'premium',
     enum: ['regular', 'premium', 'restricted'],

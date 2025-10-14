@@ -671,6 +671,7 @@ interface ServiceZoneListResponse {
 
 interface ServiceZoneListItem {
   id: number;
+  name: string;                   // Zone name
   zoneType: 'regular' | 'premium' | 'restricted';
   pricingMultiplier: number;      // Price multiplier for the zone (e.g., 1.2 = 20% more expensive)
   demandMultiplier: number;       // Demand multiplier for dynamic pricing
