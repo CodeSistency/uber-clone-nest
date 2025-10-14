@@ -640,64 +640,41 @@ interface StateCitiesResponse extends Array<City> {
 
 ## Service Zones Endpoints
 
-### `GET /admin/geography/zones`
+### `GET /admin/geography/service-zones`
 
-**Purpose:** List service zones with pagination and filters
+**Purpose:** List service zones with pagination and filters (optimized for performance)
 
 **Query Parameters:**
 ```typescript
-interface ZonesQueryParams {
+interface ServiceZonesQueryParams {
   page?: number;        // Default: 1
   limit?: number;       // Default: 20, Max: 100
   cityId?: number;      // Filter by city
-  zoneType?: 'pickup' | 'dropoff' | 'both';
+  stateId?: number;     // Filter by state
+  zoneType?: 'regular' | 'premium' | 'restricted';
   isActive?: boolean;
-  search?: string;      // Search in name
-  sortBy?: 'name' | 'zoneType' | 'priority' | 'createdAt';
+  search?: string;      // Search in zone name
+  sortBy?: 'id' | 'zoneType' | 'pricingMultiplier' | 'demandMultiplier';
   sortOrder?: 'asc' | 'desc';
 }
 ```
 
 **Response:**
 ```typescript
-interface ZonesListResponse {
-  zones: ServiceZone[];
+interface ServiceZoneListResponse {
+  zones: ServiceZoneListItem[];
   total: number;
   page: number;
   limit: number;
   totalPages: number;
 }
 
-interface ServiceZone {
+interface ServiceZoneListItem {
   id: number;
-  name: string;
-  description?: string;
-  cityId: number;
-  city: {
-    id: number;
-    name: string;
-    state: {
-      id: number;
-      name: string;
-      country: {
-        id: number;
-        name: string;
-        code: string;
-      };
-    };
-  };
-  zoneType: 'pickup' | 'dropoff' | 'both';
-  geoJson: any;                   // GeoJSON geometry object
-  centerLatitude: number;         // Zone center latitude
-  centerLongitude: number;        // Zone center longitude
-  radiusMeters?: number;          // For circular zones
-  areaSquareKm?: number;          // Calculated area
+  zoneType: 'regular' | 'premium' | 'restricted';
+  pricingMultiplier: number;      // Price multiplier for the zone (e.g., 1.2 = 20% more expensive)
+  demandMultiplier: number;       // Demand multiplier for dynamic pricing
   isActive: boolean;
-  priority: number;               // Zone priority (higher = more important)
-  serviceTierIds?: number[];      // Associated ride tier IDs
-  restrictions?: string[];        // Zone-specific restrictions
-  createdAt: string;              // ISO date string
-  updatedAt: string;              // ISO date string
 }
 ```
 
@@ -705,33 +682,61 @@ interface ServiceZone {
 
 ---
 
-### `POST /admin/geography/zones`
+### `POST /admin/geography/service-zones`
 
 **Purpose:** Create a new service zone
 
 **Request Body:**
 ```typescript
 interface CreateServiceZoneDto {
-  name: string;                    // Required: 2-100 chars
-  description?: string;            // Optional
+  name: string;                    // Required: 2-100 chars, unique within city
   cityId: number;                  // Required: valid city ID
-  zoneType: 'pickup' | 'dropoff' | 'both';  // Required
-  geoJson: any;                    // Required: valid GeoJSON geometry
-  centerLatitude: number;          // Required: -90 to 90
-  centerLongitude: number;         // Required: -180 to 180
-  radiusMeters?: number;           // Optional: for circular zones
-  areaSquareKm?: number;           // Optional: auto-calculated if not provided
+  zoneType?: 'regular' | 'premium' | 'restricted';  // Optional: default 'regular'
+  boundaries: any;                 // Required: GeoJSON Polygon geometry
+  centerLat: number;               // Required: zone center latitude (-90 to 90)
+  centerLng: number;               // Required: zone center longitude (-180 to 180)
   isActive?: boolean;              // Optional: default true
-  priority?: number;               // Optional: 1-100, default 1
-  serviceTierIds?: number[];       // Optional: ride tier IDs
-  restrictions?: string[];         // Optional: restriction descriptions
+  pricingMultiplier?: number;      // Optional: price multiplier (0.1-5.0), default 1.0
+  maxDrivers?: number;             // Optional: maximum drivers allowed in zone
+  minDrivers?: number;             // Optional: minimum drivers required in zone
+  peakHours?: any;                 // Optional: peak hours configuration
+  demandMultiplier?: number;       // Optional: demand multiplier (0.1-5.0), default 1.0
 }
 ```
 
 **Response:**
 ```typescript
-interface ServiceZoneResponse extends ServiceZone {
-  // Same as ServiceZone interface above
+interface ServiceZoneResponse {
+  id: number;
+  name: string;
+  cityId: number;
+  zoneType: 'regular' | 'premium' | 'restricted';
+  boundaries: any;                 // GeoJSON Polygon
+  centerLat: number;
+  centerLng: number;
+  isActive: boolean;
+  pricingMultiplier: number;
+  maxDrivers?: number;
+  minDrivers?: number;
+  peakHours?: any;
+  demandMultiplier: number;
+  createdAt: string;               // ISO date string
+  updatedAt: string;               // ISO date string
+  city: {
+    id: number;
+    name: string;
+    state: {
+      id: number;
+      name: string;
+      code: string;
+      country: {
+        id: number;
+        name: string;
+        code: string;
+        isoCode2: string;
+      };
+    };
+  };
 }
 ```
 
@@ -739,21 +744,50 @@ interface ServiceZoneResponse extends ServiceZone {
 
 ---
 
-### `GET /admin/geography/zones/:id`
+### `GET /admin/geography/service-zones/:id`
 
-**Purpose:** Get details of a specific service zone
+**Purpose:** Get complete details of a specific service zone
 
 **Path Parameters:**
 ```typescript
-interface ZonePathParams {
+interface ServiceZonePathParams {
   id: number;  // Service zone ID
 }
 ```
 
 **Response:**
 ```typescript
-interface ServiceZoneResponse extends ServiceZone {
-  // Same as ServiceZone interface above
+interface ServiceZoneResponse {
+  id: number;
+  name: string;
+  cityId: number;
+  zoneType: 'regular' | 'premium' | 'restricted';
+  boundaries: any;                 // GeoJSON Polygon geometry
+  centerLat: number;
+  centerLng: number;
+  isActive: boolean;
+  pricingMultiplier: number;
+  maxDrivers?: number;
+  minDrivers?: number;
+  peakHours?: any;
+  demandMultiplier: number;
+  createdAt: string;               // ISO date string
+  updatedAt: string;               // ISO date string
+  city: {
+    id: number;
+    name: string;
+    state: {
+      id: number;
+      name: string;
+      code: string;
+      country: {
+        id: number;
+        name: string;
+        code: string;
+        isoCode2: string;
+      };
+    };
+  };
 }
 ```
 
@@ -761,13 +795,13 @@ interface ServiceZoneResponse extends ServiceZone {
 
 ---
 
-### `PATCH /admin/geography/zones/:id`
+### `PATCH /admin/geography/service-zones/:id`
 
 **Purpose:** Update an existing service zone
 
 **Path Parameters:**
 ```typescript
-interface ZonePathParams {
+interface ServiceZonePathParams {
   id: number;  // Service zone ID
 }
 ```
@@ -775,26 +809,54 @@ interface ZonePathParams {
 **Request Body:**
 ```typescript
 interface UpdateServiceZoneDto {
-  name?: string;                   // 2-100 chars
-  description?: string;
+  name?: string;                   // 2-100 chars, unique within city
   cityId?: number;                 // Valid city ID
-  zoneType?: 'pickup' | 'dropoff' | 'both';
-  geoJson?: any;                   // Valid GeoJSON geometry
-  centerLatitude?: number;         // -90 to 90
-  centerLongitude?: number;        // -180 to 180
-  radiusMeters?: number;           // For circular zones
-  areaSquareKm?: number;           // Auto-calculated if not provided
+  zoneType?: 'regular' | 'premium' | 'restricted';
+  boundaries?: any;                // GeoJSON Polygon geometry
+  centerLat?: number;              // -90 to 90
+  centerLng?: number;              // -180 to 180
   isActive?: boolean;
-  priority?: number;               // 1-100
-  serviceTierIds?: number[];       // Ride tier IDs
-  restrictions?: string[];         // Restriction descriptions
+  pricingMultiplier?: number;      // 0.1-5.0
+  maxDrivers?: number;             // Maximum drivers allowed
+  minDrivers?: number;             // Minimum drivers required
+  peakHours?: any;                 // Peak hours configuration
+  demandMultiplier?: number;       // 0.1-5.0
 }
 ```
 
 **Response:**
 ```typescript
-interface ServiceZoneResponse extends ServiceZone {
-  // Same as ServiceZone interface above
+interface ServiceZoneResponse {
+  id: number;
+  name: string;
+  cityId: number;
+  zoneType: 'regular' | 'premium' | 'restricted';
+  boundaries: any;                 // GeoJSON Polygon
+  centerLat: number;
+  centerLng: number;
+  isActive: boolean;
+  pricingMultiplier: number;
+  maxDrivers?: number;
+  minDrivers?: number;
+  peakHours?: any;
+  demandMultiplier: number;
+  createdAt: string;               // ISO date string
+  updatedAt: string;               // ISO date string
+  city: {
+    id: number;
+    name: string;
+    state: {
+      id: number;
+      name: string;
+      code: string;
+      country: {
+        id: number;
+        name: string;
+        code: string;
+        isoCode2: string;
+      };
+    };
+  };
 }
 ```
 
@@ -802,13 +864,13 @@ interface ServiceZoneResponse extends ServiceZone {
 
 ---
 
-### `DELETE /admin/geography/zones/:id`
+### `DELETE /admin/geography/service-zones/:id`
 
 **Purpose:** Delete a service zone
 
 **Path Parameters:**
 ```typescript
-interface ZonePathParams {
+interface ServiceZonePathParams {
   id: number;  // Service zone ID
 }
 ```
@@ -819,29 +881,46 @@ interface ZonePathParams {
 
 ---
 
-### `GET /admin/geography/cities/:cityId/zones`
+### `GET /admin/geography/service-zones/by-city/:cityId`
 
-**Purpose:** Get all zones for a specific city
+**Purpose:** Get all active service zones for a specific city with pagination
 
 **Path Parameters:**
 ```typescript
-interface CityZonesParams {
+interface CityServiceZonesParams {
   cityId: number;  // City ID
 }
 ```
 
 **Query Parameters:**
 ```typescript
-interface CityZonesQueryParams {
-  zoneType?: 'pickup' | 'dropoff' | 'both';
-  isActive?: boolean;
+interface CityServiceZonesQueryParams {
+  activeOnly?: boolean;  // Default: true - Only return active zones
+  page?: number;         // Default: 1
+  limit?: number;        // Default: 20, Max: 100
 }
 ```
 
 **Response:**
 ```typescript
-interface CityZonesResponse extends Array<ServiceZone> {
-  // Array of ServiceZone objects for the city
+interface CityServiceZonesListResponse {
+  zones: Array<{
+    id: number;
+    name: string;
+    zoneType: 'regular' | 'premium' | 'restricted';
+    boundaries: any;                 // GeoJSON Polygon
+    centerLat: number;
+    centerLng: number;
+    isActive: boolean;
+    pricingMultiplier: number;
+    demandMultiplier: number;
+    maxDrivers?: number;
+    minDrivers?: number;
+  }>;
+  total: number;        // Total number of zones
+  page: number;         // Current page
+  limit: number;        // Items per page
+  totalPages: number;   // Total pages
 }
 ```
 
@@ -849,41 +928,80 @@ interface CityZonesResponse extends Array<ServiceZone> {
 
 ---
 
-### `POST /admin/geography/zones/point-in-zone`
+### `PATCH /admin/geography/service-zones/:id/toggle-status`
 
-**Purpose:** Check if a point is within a service zone
+**Purpose:** Toggle the active status of a service zone
 
-**Request Body:**
+**Path Parameters:**
 ```typescript
-interface PointInZoneDto {
-  latitude: number;               // Required: -90 to 90
-  longitude: number;              // Required: -180 to 180
-  cityId?: number;                // Optional: filter by city
-  zoneType?: 'pickup' | 'dropoff' | 'both';  // Optional: filter by zone type
+interface ServiceZonePathParams {
+  id: number;  // Service zone ID
 }
 ```
 
 **Response:**
 ```typescript
-interface PointInZoneResponse {
-  point: {
-    latitude: number;
-    longitude: number;
+interface ServiceZoneResponse {
+  id: number;
+  name: string;
+  cityId: number;
+  zoneType: 'regular' | 'premium' | 'restricted';
+  boundaries: any;                 // GeoJSON Polygon
+  centerLat: number;
+  centerLng: number;
+  isActive: boolean;
+  pricingMultiplier: number;
+  maxDrivers?: number;
+  minDrivers?: number;
+  peakHours?: any;
+  demandMultiplier: number;
+  createdAt: string;               // ISO date string
+  updatedAt: string;               // ISO date string
+  city: {
+    id: number;
+    name: string;
+    state: {
+      id: number;
+      name: string;
+      code: string;
+      country: {
+        id: number;
+        name: string;
+        code: string;
+        isoCode2: string;
+      };
+    };
   };
-  zones: Array<{
-    id: number;
-    name: string;
-    zoneType: string;
-    cityId: number;
-    cityName: string;
-    isWithinZone: boolean;
-    distance?: number;             // Distance to zone boundary in meters (if outside)
-  }>;
-  nearestZone?: {
-    id: number;
-    name: string;
-    zoneType: string;
-    distance: number;              // Distance in meters
+}
+```
+
+**Status Codes:** `200 OK`, `404 Not Found`, `401 Unauthorized`, `403 Forbidden`
+
+---
+
+### `POST /admin/geography/service-zones/validate-geometry`
+
+**Purpose:** Validate service zone geometry and boundaries
+
+**Request Body:**
+```typescript
+interface ValidateZoneGeometryDto {
+  boundaries: any;                // GeoJSON Polygon to validate
+  cityId: number;                 // City ID for validation context
+  excludeZoneId?: number;         // Optional: exclude this zone from overlap checks
+}
+```
+
+**Response:**
+```typescript
+interface ZoneValidationResult {
+  isValid: boolean;
+  errors: string[];               // Validation errors
+  warnings: string[];             // Validation warnings
+  coverage?: {
+    areaKm2: number;              // Calculated area in square kilometers
+    overlapPercentage: number;    // Percentage of overlap with existing zones
+    gapPercentage: number;        // Percentage of uncovered area
   };
 }
 ```
@@ -892,92 +1010,109 @@ interface PointInZoneResponse {
 
 ---
 
-### `POST /admin/geography/zones/create-city-zones`
+### `GET /admin/geography/service-zones/coverage-analysis/city/:cityId`
 
-**Purpose:** Create standard zones for a city
+**Purpose:** Analyze coverage and statistics for all zones in a city
 
-**Request Body:**
+**Path Parameters:**
 ```typescript
-interface CreateCityZonesDto {
-  cityId: number;                 // Required: valid city ID
-  zones: Array<{
-    name: string;                 // Zone name
-    zoneType: 'pickup' | 'dropoff' | 'both';
-    centerLatitude: number;       // -90 to 90
-    centerLongitude: number;      // -180 to 180
-    radiusMeters: number;         // Zone radius in meters
-    priority?: number;            // Zone priority
-  }>;
+interface CityCoverageAnalysisParams {
+  cityId: number;  // City ID
 }
 ```
 
 **Response:**
 ```typescript
-interface CreateCityZonesResponse {
-  created: number;        // Number of zones created
-  zones: ServiceZone[];   // Array of created zones
-  skipped: Array<{        // Zones that were skipped
-    name: string;
-    reason: string;
-  }>;
+interface CityCoverageAnalysis {
+  cityId: number;
+  cityName: string;
+  totalCoverage: number;           // Percentage of city covered (0-100)
+  overlappingArea: number;         // Percentage of overlapping zones
+  uncoveredArea: number;           // Percentage of uncovered area
+  coverageByType: {
+    regular: number;               // Coverage percentage by regular zones
+    premium: number;               // Coverage percentage by premium zones
+    restricted: number;            // Coverage percentage by restricted zones
+  };
+  issues: string[];                // List of geometry issues found
+  recommendations: string[];       // Suggested improvements
 }
 ```
 
-**Status Codes:** `200 OK`, `400 Bad Request`, `409 Conflict`, `401 Unauthorized`, `403 Forbidden`
+**Status Codes:** `200 OK`, `404 Not Found`, `401 Unauthorized`, `403 Forbidden`
 
 ---
 
-### `GET /admin/geography/zones/analytics`
+### `POST /admin/geography/service-zones/bulk-update-status`
 
-**Purpose:** Get geography analytics and statistics
+**Purpose:** Bulk update active status for multiple service zones
 
-**Query Parameters:**
+**Request Body:**
 ```typescript
-interface GeographyAnalyticsQueryParams {
-  countryId?: number;    // Optional: filter by country
-  stateId?: number;      // Optional: filter by state
-  cityId?: number;       // Optional: filter by city
+interface BulkUpdateZoneStatusDto {
+  zoneIds: number[];              // Array of zone IDs to update
+  isActive: boolean;              // New active status for all zones
 }
 ```
 
 **Response:**
 ```typescript
-interface GeographyAnalyticsResponse {
-  countries: {
-    total: number;
-    active: number;
-  };
-  states: {
-    total: number;
-    active: number;
-  };
-  cities: {
-    total: number;
-    active: number;
-  };
-  zones: {
-    total: number;
-    active: number;
-    byType: Record<string, number>;  // pickup, dropoff, both
-  };
-  coverage: {
-    totalAreaKm2: number;           // Total covered area
-    averageZoneSizeKm2: number;     // Average zone size
-    largestZone: {
-      id: number;
-      name: string;
-      areaKm2: number;
-    };
-    smallestZone: {
-      id: number;
-      name: string;
-      areaKm2: number;
-    };
-  };
+interface BulkUpdateZoneStatusResponse {
+  updated: number;                // Number of zones updated
+  skipped: number;                // Number of zones skipped
+  zones: Array<{
+    id: number;
+    name: string;
+    previousStatus: boolean;
+    newStatus: boolean;
+  }>;
 }
 ```
 
-**Status Codes:** `200 OK`, `401 Unauthorized`, `403 Forbidden`
+**Status Codes:** `200 OK`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`
+
+---
+
+### `GET /admin/geography/service-zones/pricing-matrix/city/:cityId`
+
+**Purpose:** Get pricing matrix for all active zones in a city with pagination
+
+**Path Parameters:**
+```typescript
+interface CityPricingMatrixParams {
+  cityId: number;  // City ID
+}
+```
+
+**Query Parameters:**
+```typescript
+interface CityPricingMatrixQueryParams {
+  page?: number;   // Default: 1
+  limit?: number;  // Default: 20, Max: 100
+}
+```
+
+**Response:**
+```typescript
+interface CityPricingMatrixResponse {
+  cityId: number;
+  zones: Array<{
+    id: number;
+    name: string;
+    type: 'regular' | 'premium' | 'restricted';  // Note: 'type' instead of 'zoneType'
+    pricingMultiplier: number;
+    demandMultiplier: number;
+    maxDrivers?: number;
+    minDrivers?: number;
+  }>;
+  total: number;      // Total number of zones
+  page: number;       // Current page
+  limit: number;      // Items per page
+  totalPages: number; // Total pages
+}
+```
+
+**Status Codes:** `200 OK`, `404 Not Found`, `401 Unauthorized`, `403 Forbidden`
 
 ---
 

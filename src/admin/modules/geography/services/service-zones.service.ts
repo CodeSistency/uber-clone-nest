@@ -128,13 +128,21 @@ export class ServiceZonesService {
       stateId,
       zoneType,
       isActive,
-      sortBy = 'name',
+      sortBy = 'id',
       sortOrder = 'asc',
       page = 1,
       limit = 20,
     } = query;
 
     const skip = (page - 1) * limit;
+
+    // Validate sortBy field
+    const allowedSortFields = ['id', 'zoneType', 'pricingMultiplier', 'demandMultiplier'];
+    if (sortBy && !allowedSortFields.includes(sortBy)) {
+      throw new BadRequestException(
+        `Invalid sort field. Allowed fields: ${allowedSortFields.join(', ')}`,
+      );
+    }
 
     const where: any = {};
 
@@ -173,27 +181,13 @@ export class ServiceZonesService {
 
     const zones = await this.prisma.serviceZone.findMany({
       where,
-      include: {
-        city: {
-          select: {
-            id: true,
-            name: true,
-            state: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                country: {
-                  select: {
-                    id: true,
-                    name: true,
-                    isoCode2: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        name: true, // Needed for search filter
+        zoneType: true,
+        pricingMultiplier: true,
+        demandMultiplier: true,
+        isActive: true,
       },
       orderBy,
       skip,
@@ -203,7 +197,7 @@ export class ServiceZonesService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      zones: zones.map((zone) => this.transformServiceZone(zone)),
+      zones: zones.map((zone) => this.transformServiceZoneListItem(zone)),
       total,
       page,
       limit,
@@ -373,12 +367,20 @@ export class ServiceZonesService {
     return { message: 'Service zone deleted successfully' };
   }
 
-  async findByCity(cityId: number, activeOnly: boolean = true) {
+  async findByCity(
+    cityId: number,
+    activeOnly: boolean = true,
+    page: number = 1,
+    limit: number = 20
+  ) {
+    const skip = (page - 1) * limit;
     const where: any = { cityId };
 
     if (activeOnly) {
       where.isActive = true;
     }
+
+    const total = await this.prisma.serviceZone.count({ where });
 
     const zones = await this.prisma.serviceZone.findMany({
       where,
@@ -398,13 +400,71 @@ export class ServiceZonesService {
       orderBy: {
         name: 'asc',
       },
+      skip,
+      take: limit,
     });
 
-    return zones.map((zone) => ({
-      ...zone,
-      pricingMultiplier: Number(zone.pricingMultiplier),
-      demandMultiplier: Number(zone.demandMultiplier),
-    }));
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      zones: zones.map((zone) => ({
+        ...zone,
+        pricingMultiplier: Number(zone.pricingMultiplier),
+        demandMultiplier: Number(zone.demandMultiplier),
+      })),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  async getPricingMatrix(
+    cityId: number,
+    page: number = 1,
+    limit: number = 20
+  ) {
+    const skip = (page - 1) * limit;
+    const where: any = { cityId, isActive: true };
+
+    const total = await this.prisma.serviceZone.count({ where });
+
+    const zones = await this.prisma.serviceZone.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        zoneType: true,
+        pricingMultiplier: true,
+        demandMultiplier: true,
+        maxDrivers: true,
+        minDrivers: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+      skip,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      cityId,
+      zones: zones.map((zone) => ({
+        id: zone.id,
+        name: zone.name,
+        type: zone.zoneType,
+        pricingMultiplier: Number(zone.pricingMultiplier),
+        demandMultiplier: Number(zone.demandMultiplier),
+        maxDrivers: zone.maxDrivers,
+        minDrivers: zone.minDrivers,
+      })),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async toggleActiveStatus(id: number) {
@@ -687,6 +747,16 @@ export class ServiceZonesService {
       ...zone,
       pricingMultiplier: Number(zone.pricingMultiplier),
       demandMultiplier: Number(zone.demandMultiplier),
+    };
+  }
+
+  private transformServiceZoneListItem(zone: any) {
+    return {
+      id: zone.id,
+      zoneType: zone.zoneType,
+      pricingMultiplier: Number(zone.pricingMultiplier),
+      demandMultiplier: Number(zone.demandMultiplier),
+      isActive: zone.isActive,
     };
   }
 }

@@ -34,8 +34,11 @@ import {
   ServiceZoneListQueryDto,
   ServiceZoneResponseDto,
   ServiceZoneListResponseDto,
+  ServiceZoneListItemDto,
   ZoneValidationResultDto,
   CityCoverageAnalysisDto,
+  CityServiceZonesListResponseDto,
+  CityPricingMatrixResponseDto,
 } from '../dtos/country.dto';
 
 @ApiTags('Admin Geography - Service Zones')
@@ -101,17 +104,35 @@ export class ServiceZonesController {
     example: true,
     required: false,
   })
+  @ApiQuery({
+    name: 'page',
+    description: 'Número de página',
+    example: 1,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Elementos por página',
+    example: 20,
+    required: false,
+  })
   @ApiResponse({
     status: 200,
     description: 'Zonas obtenidas exitosamente',
+    type: CityServiceZonesListResponseDto,
   })
   async findByCity(
     @Param('cityId', ParseIntPipe) cityId: number,
     @Query('activeOnly') activeOnly?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     const activeOnlyBool =
       activeOnly === undefined ? true : activeOnly === 'true';
-    return this.serviceZonesService.findByCity(cityId, activeOnlyBool);
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+
+    return this.serviceZonesService.findByCity(cityId, activeOnlyBool, pageNum, limitNum);
   }
 
   @Get(':id')
@@ -314,31 +335,38 @@ export class ServiceZonesController {
   @ApiOperation({
     summary: 'Matriz de pricing por ciudad',
     description:
-      'Obtiene todos los multiplicadores de pricing organizados por zona',
+      'Obtiene todos los multiplicadores de pricing organizados por zona con paginación',
   })
   @ApiParam({
     name: 'cityId',
     description: 'ID de la ciudad',
     example: 1,
   })
+  @ApiQuery({
+    name: 'page',
+    description: 'Número de página',
+    example: 1,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Elementos por página',
+    example: 20,
+    required: false,
+  })
   @ApiResponse({
     status: 200,
     description: 'Matriz de pricing obtenida',
+    type: CityPricingMatrixResponseDto,
   })
-  async getPricingMatrix(@Param('cityId', ParseIntPipe) cityId: number) {
-    const zones = await this.serviceZonesService.findByCity(cityId, true);
+  async getPricingMatrix(
+    @Param('cityId', ParseIntPipe) cityId: number,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
 
-    return {
-      cityId,
-      zones: zones.map((zone) => ({
-        id: zone.id,
-        name: zone.name,
-        type: zone.zoneType,
-        pricingMultiplier: zone.pricingMultiplier,
-        demandMultiplier: zone.demandMultiplier,
-        maxDrivers: zone.maxDrivers,
-        minDrivers: zone.minDrivers,
-      })),
-    };
+    return this.serviceZonesService.getPricingMatrix(cityId, pageNum, limitNum);
   }
 }

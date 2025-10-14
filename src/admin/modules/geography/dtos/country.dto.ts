@@ -1843,8 +1843,8 @@ export class ServiceZoneListQueryDto {
 
   @ApiPropertyOptional({
     description: 'Sort field',
-    example: 'name',
-    enum: ['name', 'createdAt', 'zoneType'],
+    example: 'id',
+    enum: ['id', 'zoneType', 'pricingMultiplier', 'demandMultiplier'],
   })
   @IsOptional()
   @IsString()
@@ -1883,12 +1883,45 @@ export class ServiceZoneListQueryDto {
   limit?: number = 20;
 }
 
+export class ServiceZoneListItemDto {
+  @ApiProperty({
+    description: 'Zone ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Zone type',
+    example: 'premium',
+    enum: ['regular', 'premium', 'restricted'],
+  })
+  zoneType: 'regular' | 'premium' | 'restricted';
+
+  @ApiProperty({
+    description: 'Pricing multiplier',
+    example: 1.2,
+  })
+  pricingMultiplier: number;
+
+  @ApiProperty({
+    description: 'Demand multiplier',
+    example: 1.5,
+  })
+  demandMultiplier: number;
+
+  @ApiProperty({
+    description: 'Active status',
+    example: true,
+  })
+  isActive: boolean;
+}
+
 export class ServiceZoneListResponseDto {
   @ApiProperty({
     description: 'Array of service zones',
-    type: [ServiceZoneResponseDto],
+    type: [ServiceZoneListItemDto],
   })
-  zones: ServiceZoneResponseDto[];
+  zones: ServiceZoneListItemDto[];
 
   @ApiProperty({
     description: 'Total number of zones',
@@ -2000,4 +2033,123 @@ export class CityCoverageAnalysisDto {
     example: ['Add zone for uncovered area in northwest'],
   })
   recommendations: string[];
+}
+
+// =========================================
+// SECTION 7: PAGINATED RESPONSE DTOS
+// =========================================
+
+export class CityServiceZonesListResponseDto {
+  @ApiProperty({
+    description: 'Array of service zones for the city',
+    type: [ServiceZoneResponseDto],
+  })
+  zones: ServiceZoneResponseDto[];
+
+  @ApiProperty({
+    description: 'Total number of zones',
+    example: 50,
+  })
+  total: number;
+
+  @ApiProperty({
+    description: 'Current page',
+    example: 1,
+  })
+  page: number;
+
+  @ApiProperty({
+    description: 'Items per page',
+    example: 20,
+  })
+  limit: number;
+
+  @ApiProperty({
+    description: 'Total pages',
+    example: 5,
+  })
+  totalPages: number;
+}
+
+export class PricingMatrixItemDto {
+  @ApiProperty({
+    description: 'Zone ID',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'Zone name',
+    example: 'Downtown LA',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Zone type',
+    example: 'premium',
+    enum: ['regular', 'premium', 'restricted'],
+  })
+  type: 'regular' | 'premium' | 'restricted';
+
+  @ApiProperty({
+    description: 'Pricing multiplier',
+    example: 1.2,
+  })
+  pricingMultiplier: number;
+
+  @ApiProperty({
+    description: 'Demand multiplier',
+    example: 1.5,
+  })
+  demandMultiplier: number;
+
+  @ApiPropertyOptional({
+    description: 'Maximum drivers allowed',
+    example: 100,
+  })
+  maxDrivers?: number;
+
+  @ApiPropertyOptional({
+    description: 'Minimum drivers required',
+    example: 10,
+  })
+  minDrivers?: number;
+}
+
+export class CityPricingMatrixResponseDto {
+  @ApiProperty({
+    description: 'City ID',
+    example: 1,
+  })
+  cityId: number;
+
+  @ApiProperty({
+    description: 'Array of pricing matrix items',
+    type: [PricingMatrixItemDto],
+  })
+  zones: PricingMatrixItemDto[];
+
+  @ApiProperty({
+    description: 'Total number of zones',
+    example: 50,
+  })
+  total: number;
+
+  @ApiProperty({
+    description: 'Current page',
+    example: 1,
+  })
+  page: number;
+
+  @ApiProperty({
+    description: 'Items per page',
+    example: 20,
+  })
+  limit: number;
+
+  @ApiProperty({
+    description: 'Total pages',
+    example: 5,
+  })
+  totalPages: number;
 }
