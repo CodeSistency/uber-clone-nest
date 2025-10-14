@@ -879,17 +879,17 @@ export class ReportsAnalyticsService {
     const entityType = filters.entityType;
     switch (entityType) {
       case 'rides':
-        return 'Rides Report';
+        return 'Reporte de Viajes';
       case 'users':
-        return 'Users Report';
+        return 'Reporte de Usuarios';
       case 'drivers':
-        return 'Drivers Report';
+        return 'Reporte de Conductores';
       case 'financial':
-        return 'Financial Report';
+        return 'Reporte Financiero';
       case 'performance':
-        return 'Performance Report';
+        return 'Reporte de Rendimiento';
       default:
-        return 'Comprehensive Report';
+        return 'Reporte Integral';
     }
   }
 
@@ -897,11 +897,11 @@ export class ReportsAnalyticsService {
     // Simple CSV export implementation
     const { summary, details } = reportData;
 
-    let csv = 'Report Summary\n';
+    let csv = 'Resumen del Reporte\n';
     csv += Object.entries(summary)
       .map(([key, value]) => `${key},${value}`)
       .join('\n');
-    csv += '\n\nDetailed Data\n';
+    csv += '\n\nDatos Detallados\n';
 
     if (details.length > 0) {
       const headers = Object.keys(details[0]).join(',');
@@ -918,14 +918,14 @@ export class ReportsAnalyticsService {
 
     // Set workbook properties
     workbook.creator = 'Uber Clone Admin';
-    workbook.lastModifiedBy = 'Uber Clone System';
+    workbook.lastModifiedBy = 'Sistema Uber Clone';
     workbook.created = new Date();
     workbook.modified = new Date();
 
     const reportTitle = this.getReportTypeTitle(metadata.filters);
 
     // ===== SUMMARY SHEET =====
-    const summarySheet = workbook.addWorksheet('Summary');
+    const summarySheet = workbook.addWorksheet('Resumen');
 
     // Title
     const titleRow = summarySheet.addRow([reportTitle]);
@@ -934,23 +934,23 @@ export class ReportsAnalyticsService {
 
     // Generated info
     summarySheet.addRow([]);
-    summarySheet.addRow(['Generated At:', this.formatDate(metadata.generatedAt)]);
-    summarySheet.addRow(['Total Records:', metadata.totalRecords]);
-    summarySheet.addRow(['Execution Time:', `${metadata.executionTime}ms`]);
+    summarySheet.addRow(['Generado el:', this.formatDate(metadata.generatedAt)]);
+    summarySheet.addRow(['Total de Registros:', metadata.totalRecords]);
+    summarySheet.addRow(['Tiempo de Ejecución:', `${metadata.executionTime}ms`]);
 
     // Period info
     summarySheet.addRow([]);
-    summarySheet.addRow(['Report Period:']);
+    summarySheet.addRow(['Período del Reporte:']);
     if (metadata.filters.dateFrom && metadata.filters.dateTo) {
-      summarySheet.addRow(['From:', this.formatDate(metadata.filters.dateFrom)]);
-      summarySheet.addRow(['To:', this.formatDate(metadata.filters.dateTo)]);
+      summarySheet.addRow(['Desde:', this.formatDate(metadata.filters.dateFrom)]);
+      summarySheet.addRow(['Hasta:', this.formatDate(metadata.filters.dateTo)]);
     } else {
-      summarySheet.addRow(['Period:', metadata.filters.period || 'Custom']);
+      summarySheet.addRow(['Período:', metadata.filters.period || 'Personalizado']);
     }
 
     // Summary data
     summarySheet.addRow([]);
-    summarySheet.addRow(['SUMMARY METRICS']);
+    summarySheet.addRow(['MÉTRICAS RESUMEN']);
     summarySheet.addRow([]);
 
     // Flatten and format summary data
@@ -980,7 +980,7 @@ export class ReportsAnalyticsService {
 
     // ===== DETAILS SHEET =====
     if (details && details.length > 0) {
-      const detailsSheet = workbook.addWorksheet('Details');
+      const detailsSheet = workbook.addWorksheet('Detalles');
 
       // Get all possible keys from details
       const allKeys = new Set<string>();
@@ -1036,7 +1036,7 @@ export class ReportsAnalyticsService {
 
     // ===== CHART DATA SHEET =====
     if (chartData && chartData.length > 0) {
-      const chartSheet = workbook.addWorksheet('Chart Data');
+      const chartSheet = workbook.addWorksheet('Datos de Gráficos');
 
       // Process each chart dataset
       let currentRow = 1;
@@ -1134,27 +1134,27 @@ export class ReportsAnalyticsService {
 
       // Metadata
       doc.fontSize(10).font('Helvetica');
-      doc.text(`Generated: ${this.formatDate(metadata.generatedAt)}`, { align: 'right' });
-      doc.text(`Total Records: ${metadata.totalRecords}`, { align: 'right' });
-      doc.text(`Execution Time: ${metadata.executionTime}ms`, { align: 'right' });
+      doc.text(`Generado: ${this.formatDate(metadata.generatedAt)}`, { align: 'right' });
+      doc.text(`Total de Registros: ${metadata.totalRecords}`, { align: 'right' });
+      doc.text(`Tiempo de Ejecución: ${metadata.executionTime}ms`, { align: 'right' });
       doc.moveDown();
 
       // Period information
       doc.fontSize(12).font('Helvetica-Bold');
-      doc.text('Report Period:', { underline: true });
+      doc.text('Período del Reporte:', { underline: true });
       doc.fontSize(10).font('Helvetica');
       if (metadata.filters.dateFrom && metadata.filters.dateTo) {
-        doc.text(`From: ${this.formatDate(metadata.filters.dateFrom)}`);
-        doc.text(`To: ${this.formatDate(metadata.filters.dateTo)}`);
+        doc.text(`Desde: ${this.formatDate(metadata.filters.dateFrom)}`);
+        doc.text(`Hasta: ${this.formatDate(metadata.filters.dateTo)}`);
       } else {
-        doc.text(`Period: ${metadata.filters.period || 'Custom'}`);
+        doc.text(`Período: ${metadata.filters.period || 'Personalizado'}`);
       }
       doc.moveDown(2);
 
       // ===== SUMMARY SECTION =====
       if (summary) {
         doc.fontSize(16).font('Helvetica-Bold');
-        doc.text('EXECUTIVE SUMMARY', { underline: true });
+        doc.text('RESUMEN EJECUTIVO', { underline: true });
         doc.moveDown();
 
         doc.fontSize(11).font('Helvetica');
@@ -1225,7 +1225,7 @@ export class ReportsAnalyticsService {
         }
 
         doc.fontSize(16).font('Helvetica-Bold');
-        doc.text('DETAILED DATA', { underline: true });
+        doc.text('DATOS DETALLADOS', { underline: true });
         doc.moveDown();
 
         // Limit details to first 50 records for PDF readability
@@ -1234,7 +1234,7 @@ export class ReportsAnalyticsService {
 
         if (!showAllRecords) {
           doc.fontSize(10).font('Helvetica-Oblique');
-          doc.text(`Showing first 50 of ${details.length} records`, { align: 'center' });
+          doc.text(`Mostrando primeros 50 de ${details.length} registros`, { align: 'center' });
           doc.moveDown();
         }
 
@@ -1317,13 +1317,13 @@ export class ReportsAnalyticsService {
         }
 
         doc.fontSize(16).font('Helvetica-Bold');
-        doc.text('CHART DATA SUMMARY', { underline: true });
+        doc.text('RESUMEN DE DATOS DE GRÁFICOS', { underline: true });
         doc.moveDown();
 
         doc.fontSize(11).font('Helvetica');
 
         chartData.forEach((chart, index) => {
-          doc.font('Helvetica-Bold').text(`${index + 1}. ${chart.title || 'Chart Data'}`, { underline: true });
+          doc.font('Helvetica-Bold').text(`${index + 1}. ${chart.title || 'Datos de Gráfico'}`, { underline: true });
           doc.moveDown(0.5);
 
           if (chart.data && Array.isArray(chart.data) && chart.data.length > 0) {
@@ -1346,14 +1346,14 @@ export class ReportsAnalyticsService {
                 })
                 .join(', ');
 
-              doc.font('Helvetica').text(`  Row ${itemIndex + 1}: ${displayText}`);
+              doc.font('Helvetica').text(`  Fila ${itemIndex + 1}: ${displayText}`);
             });
 
             if (chart.data.length > 3) {
-              doc.font('Helvetica-Oblique').text(`  ... and ${chart.data.length - 3} more rows`);
+              doc.font('Helvetica-Oblique').text(`  ... y ${chart.data.length - 3} filas más`);
             }
           } else {
-            doc.font('Helvetica').text('  No data available');
+            doc.font('Helvetica').text('  No hay datos disponibles');
           }
 
           doc.moveDown();
@@ -1366,7 +1366,7 @@ export class ReportsAnalyticsService {
         doc.switchToPage(i);
         doc.fontSize(8).font('Helvetica-Oblique');
         doc.text(
-          `Generated by Uber Clone Admin System - Page ${i + 1} of ${totalPages}`,
+          `Generado por Sistema Admin Uber Clone - Página ${i + 1} de ${totalPages}`,
           50,
           doc.page.height - 30,
           { align: 'center', width: doc.page.width - 100 }
