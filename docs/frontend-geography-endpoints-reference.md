@@ -647,15 +647,15 @@ interface StateCitiesResponse extends Array<City> {
 **Query Parameters:**
 ```typescript
 interface ServiceZonesQueryParams {
+  search?: string;      // Search by zone name
+  cityId?: number;      // Filter by city ID
+  stateId?: number;     // Filter by state ID
+  zoneType?: 'regular' | 'premium' | 'restricted';  // Filter by zone type
+  isActive?: boolean;   // Filter by active status
+  sortBy?: 'id' | 'zoneType' | 'pricingMultiplier' | 'demandMultiplier';  // Sort field
+  sortOrder?: 'asc' | 'desc';  // Sort order
   page?: number;        // Default: 1
   limit?: number;       // Default: 20, Max: 100
-  cityId?: number;      // Filter by city
-  stateId?: number;     // Filter by state
-  zoneType?: 'regular' | 'premium' | 'restricted';
-  isActive?: boolean;
-  search?: string;      // Search in zone name
-  sortBy?: 'id' | 'zoneType' | 'pricingMultiplier' | 'demandMultiplier';
-  sortOrder?: 'asc' | 'desc';
 }
 ```
 
@@ -986,8 +986,8 @@ interface ServiceZoneResponse {
 
 **Request Body:**
 ```typescript
-interface ValidateZoneGeometryDto {
-  boundaries: any;                // GeoJSON Polygon to validate
+interface ValidateZoneGeometryRequest {
+  zoneData: CreateServiceZoneDto | UpdateServiceZoneDto;  // Zone data containing boundaries
   cityId: number;                 // City ID for validation context
   excludeZoneId?: number;         // Optional: exclude this zone from overlap checks
 }
@@ -1050,7 +1050,7 @@ interface CityCoverageAnalysis {
 
 **Request Body:**
 ```typescript
-interface BulkUpdateZoneStatusDto {
+interface BulkUpdateZoneStatusRequest {
   zoneIds: number[];              // Array of zone IDs to update
   isActive: boolean;              // New active status for all zones
 }
@@ -1059,14 +1059,15 @@ interface BulkUpdateZoneStatusDto {
 **Response:**
 ```typescript
 interface BulkUpdateZoneStatusResponse {
-  updated: number;                // Number of zones updated
-  skipped: number;                // Number of zones skipped
-  zones: Array<{
-    id: number;
-    name: string;
-    previousStatus: boolean;
-    newStatus: boolean;
+  message: string;                // Completion message
+  results: Array<{                // Detailed results for each zone
+    zoneId: number;               // Zone ID
+    success: boolean;             // Whether the update was successful
+    data?: ServiceZoneResponse;   // Zone data if successful
+    error?: string;               // Error message if failed
   }>;
+  successful: number;             // Number of successful updates
+  failed: number;                 // Number of failed updates
 }
 ```
 

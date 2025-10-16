@@ -20,6 +20,7 @@ import {
   ApiParam,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 
 import { AdminAuthGuard } from '../../../guards/admin-auth.guard';
@@ -237,6 +238,23 @@ export class ServiceZonesController {
     description:
       'Valida geometría GeoJSON y verifica conflictos con zonas existentes',
   })
+  @ApiBody({
+    description: 'Datos para validar geometría de zona',
+    schema: {
+      type: 'object',
+      properties: {
+        zoneData: {
+          oneOf: [
+            { $ref: '#/components/schemas/CreateServiceZoneDto' },
+            { $ref: '#/components/schemas/UpdateServiceZoneDto' },
+          ],
+        },
+        cityId: { type: 'number', example: 1 },
+        excludeZoneId: { type: 'number', example: 1 },
+      },
+      required: ['zoneData', 'cityId'],
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'Validación completada',
@@ -288,6 +306,21 @@ export class ServiceZonesController {
   @ApiOperation({
     summary: 'Actualización masiva de estado',
     description: 'Cambia el estado activo/inactivo de múltiples zonas',
+  })
+  @ApiBody({
+    description: 'Datos para actualización masiva de estado',
+    schema: {
+      type: 'object',
+      properties: {
+        zoneIds: {
+          type: 'array',
+          items: { type: 'number' },
+          example: [1, 2, 3],
+        },
+        isActive: { type: 'boolean', example: true },
+      },
+      required: ['zoneIds', 'isActive'],
+    },
   })
   @ApiResponse({
     status: 200,
